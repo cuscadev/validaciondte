@@ -1,0 +1,32 @@
+# *
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api
+Disallow: /bancos
+Disallow: /configuraciones
+Disallow: /consultarjson
+Disallow: /dashboard
+Disallow: /escaneo-qr
+Disallow: /escaneos-mobile
+Disallow: /extraer
+Disallow: /landing
+Disallow: /login
+Disallow: /mfa-login
+Disallow: /mfa-setup
+Disallow: /profile
+Disallow: /protected
+Disallow: /prrocesardte
+Disallow: /register
+Disallow: /reportes
+Disallow: /reset-password
+Disallow: /totp-verify
+Disallow: /tributario
+Disallow: /usuarios
+Disallow: /verificadorDTE
+
+# Host
+Host: https://verificadordte.cuscadev.com
+
+# Sitemaps
+Sitemap: https://verificadordte.cuscadev.com/sitemap.xml

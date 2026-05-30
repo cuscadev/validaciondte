@@ -1,0 +1,106 @@
+# =========================
+# NEXT.JS
+# =========================
+
+**/node_modules/
+**/.next/
+**/out/
+**/.turbo/
+
+# Build cache
+**/*.tsbuildinfo
+
+# =========================
+# VARIABLES DE ENTORNO
+# =========================
+
+**/.env
+**/.env.local
+**/.env.development.local
+**/.env.production.local
+**/.env.test.local
+
+# =========================
+# LOGS
+# =========================
+
+**/*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =========================
+# GO
+# =========================
+
+**/bin/
+**/tmp/
+**/dist/
+**/coverage/
+
+# Ejecutables Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test Go
+*.test
+
+# Coverage
+*.out
+
+# =========================
+# VS CODE
+# =========================
+
+.vscode/
+.history/
+
+# =========================
+# SISTEMA OPERATIVO
+# =========================
+
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# =========================
+# FIREBASE
+# =========================
+
+firebase-debug.log
+
+# =========================
+# CACHE
+# =========================
+
+.cache/
+.parcel-cache/
+
+# =========================
+# ARCHIVOS TEMPORALES
+# =========================
+
+*.tmp
+*.temp
+*.bak
+*.swp
+
+# =========================
+# CERTIFICADOS PRIVADOS
+# =========================
+
+*.p12
+*.pfx
+*.pem
+*.key
+*.crt
+
+# =========================
+# GIT
+# =========================
+
+.git/
