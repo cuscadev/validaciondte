@@ -4,7 +4,8 @@ import PlanGate from '@/components/PlanGate'
 import UploadFormSection from '@/components/upload/UploadFormSection'
 import UploadFormAccordion from '@/components/upload/UploadFormAccordion'
 import UploadResultsReveal from '@/components/upload/UploadResultsReveal'
-import UploadTableExportBar from '@/components/upload/UploadTableExportBar'
+import UploadTableToolbar from '@/components/upload/UploadTableToolbar'
+import UploadTableBasicFilters, { countBasicFilters } from '@/components/upload/UploadTableBasicFilters'
 import {
   buildExportFilename,
   exportPdfByProfile,
@@ -15,14 +16,11 @@ import HelpTooltip from '@/components/upload/HelpTooltip'
 import UploadTemplateDownloadButton from '@/components/upload/UploadTemplateDownloadButton'
 import { useUploadResultsReveal } from '@/components/upload/useUploadResultsReveal'
 import { useEffect, useMemo, useState } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { recordProcessingLog } from '@/lib/client-processing-log'
 import { summarizeFiles, summarizeResults } from '@/lib/processing-log'
 import { summarizeDteUploadResults } from '@/lib/upload-dte-stats'
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import { toast } from 'sonner'
 
 const FORMAT_HELP = (
@@ -68,8 +66,17 @@ type Resultado = {
   otrosTributos?: string
   documentoAjustado?: string
   documentoEventoAplicado?: string
+  ajustado?: boolean
   observacionesTexto?: string
   observaciones?: Array<{ numero: string; observacion: string }>
+  relacionadosTexto?: string
+  tieneNotaCredito?: boolean
+  notaCreditoCodigoGeneracion?: string
+  notaCreditoFechaGeneracion?: string
+  notaCreditoFechaEmi?: string
+  notaCreditoSelloRecepcion?: string
+  notaCreditoEstado?: string
+  notaCreditoLinkVisita?: string
   error?: string
 
   /* 🔗 NUEVO: datos para visitar el enlace */
@@ -178,8 +185,18 @@ export default function HomePage() {
     { key: 'fechaHoraGeneracion', label: 'Fecha Generación' },
     { key: 'numeroControl', label: 'N° Control' },
     { key: 'montoTotal', label: 'Monto Total' },
+    { key: 'ajustado', label: 'Ajustado' },
+    { key: 'documentoAjustado', label: 'Doc. Ajustado' },
+    { key: 'tieneNotaCredito', label: 'Tiene NC' },
+    { key: 'notaCreditoCodigoGeneracion', label: 'Código NC' },
+    { key: 'notaCreditoFechaGeneracion', label: 'Fecha NC' },
+    { key: 'notaCreditoFechaEmi', label: 'Fecha Emi NC' },
+    { key: 'notaCreditoSelloRecepcion', label: 'Sello NC' },
+    { key: 'notaCreditoEstado', label: 'Estado NC' },
+    { key: 'notaCreditoLinkVisita', label: 'Abrir NC' },
+    { key: 'relacionadosTexto', label: 'Docs. Relacionados' },
+    { key: 'observacionesTexto', label: 'Observaciones' },
     { key: 'error', label: 'Error' },
-    /* 🆕 Columna para visitar */
     { key: 'visitar', label: 'Visitar' },
   ] as const), [])
 
@@ -191,6 +208,8 @@ export default function HomePage() {
       const campos = [
         r.codGen, r.estado, r.descripcionEstado, r.tipoDte,
         r.numeroControl, r.montoTotal, r.fechaHoraGeneracion, r.observacionesTexto,
+        r.documentoAjustado, r.relacionadosTexto, r.notaCreditoEstado, r.notaCreditoCodigoGeneracion,
+        r.notaCreditoFechaGeneracion, r.notaCreditoFechaEmi, r.notaCreditoSelloRecepcion,
         r.linkVisita, r.url
       ]
       return campos.some(v => (v || '').toLowerCase().includes(q))
@@ -233,9 +252,7 @@ export default function HomePage() {
 
   return (
     <PlanGate routeKey="verificador">
-    <main className="w-full max-w-full dark:bg-background">
-      <Card className="w-full max-w-full overflow-hidden border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-950">
-        <CardContent className="space-y-6 pt-6">
+    <main className="w-full max-w-full space-y-6 dark:bg-background">
           <form onSubmit={onSubmit} className="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10">
             <UploadFormAccordion
               accordionApiRef={accordionApiRef}
@@ -277,64 +294,54 @@ export default function HomePage() {
           </form>
 
           <UploadResultsReveal visible={resultsVisible && data.length > 0}>
-          {/* Barra de herramientas de tabla */}
-          <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span className="hidden sm:inline">Resultados:</span>
-              <span className="font-medium text-foreground">{filtered.length}</span>
-              {filtered.length !== data.length && (
-                <span className="text-xs">(de {data.length} totales)</span>
-              )}
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-              <UploadTableExportBar
-                excel={{
-                  href: downloadHref,
-                  download: filename,
-                  label: 'Descargar Excel completo',
-                }}
-                csv={{
-                  onClick: () =>
-                    exportRowsToCsv(
-                      data as Record<string, unknown>[],
-                      buildExportFilename('resultados_dtes', 'csv')
-                    ),
-                }}
-                pdf={{
-                  onClick: () =>
-                    exportPdfByProfile(
-                      data as Record<string, unknown>[],
-                      'verificador',
-                      buildExportFilename('resultados_dtes', 'pdf')
-                    ),
-                }}
-              />
-              {/* Search */}
-              <div className="relative">
-                <Input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Buscar por código, estado, N° control…"
-                  className="pl-9 w-[280px]"
+          <UploadTableToolbar
+            resultCount={{ filtered: filtered.length, total: data.length }}
+            export={{
+              excel: {
+                href: downloadHref,
+                download: filename,
+                label: 'Descargar Excel completo',
+              },
+              csv: {
+                onClick: () =>
+                  exportRowsToCsv(
+                    data as Record<string, unknown>[],
+                    buildExportFilename('resultados_dtes', 'csv')
+                  ),
+              },
+              pdf: {
+                onClick: () =>
+                  exportPdfByProfile(
+                    data as Record<string, unknown>[],
+                    'verificador',
+                    buildExportFilename('resultados_dtes', 'pdf')
+                  ),
+              },
+            }}
+            filters={{
+              activeCount: countBasicFilters(search, rowsPerPage),
+              onClear: () => {
+                setSearch('')
+                setRowsPerPage(10)
+                setCurrentPage(1)
+              },
+              children: (
+                <UploadTableBasicFilters
+                  search={search}
+                  onSearchChange={(value) => {
+                    setSearch(value)
+                    setCurrentPage(1)
+                  }}
+                  searchPlaceholder="Buscar por código, estado, N° control…"
+                  rowsPerPage={rowsPerPage}
+                  onRowsPerPageChange={(value) => {
+                    setRowsPerPage(value)
+                    setCurrentPage(1)
+                  }}
                 />
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              </div>
-
-              {/* Rows per page */}
-              <div className="flex items-center gap-2">
-                <Label htmlFor="rpp" className="text-sm">Filas</Label>
-                <select
-                  id="rpp"
-                  value={rowsPerPage}
-                  onChange={(e) => { setRowsPerPage(Number(e.target.value)); setCurrentPage(1) }}
-                  className="h-9 rounded-md border bg-background px-2 text-sm"
-                >
-                  {[10, 20, 50, 100].map(n => <option key={n} value={n}>{n}</option>)}
-                </select>
-              </div>
-            </div>
-          </div>
+              ),
+            }}
+          />
 
           {/* Tabla */}
           <div className="overflow-hidden rounded-md border border-slate-200 dark:border-white/10">
@@ -368,10 +375,16 @@ export default function HomePage() {
                     >
                       {columnas.map(col => {
                         const v = (r as any)[col.key] ?? ''
-                        const isEstado = col.key === 'estado'
+                        const isEstado = col.key === 'estado' || col.key === 'notaCreditoEstado'
                         const isVisitar = col.key === 'visitar'
+                        const isNotaCreditoLink = col.key === 'notaCreditoLinkVisita'
+                        const isBool = col.key === 'ajustado' || col.key === 'tieneNotaCredito'
+                        const isLongText = col.key === 'relacionadosTexto' || col.key === 'descripcionEstado' || col.key === 'observacionesTexto' || col.key === 'documentoAjustado'
                         return (
-                          <td key={col.key as string} className="p-2 align-top whitespace-nowrap">
+                          <td
+                            key={col.key as string}
+                            className={`p-2 align-top ${isLongText ? 'max-w-xs whitespace-normal break-words' : 'whitespace-nowrap'}`}
+                          >
                             {isEstado ? (
                               <span className={`px-2 py-0.5 rounded-full text-xs ${estadoPill(String(v))}`}>
                                 {String(v || '')}
@@ -390,6 +403,22 @@ export default function HomePage() {
                               ) : (
                                 ''
                               )
+                            ) : isNotaCreditoLink ? (
+                              r.notaCreditoLinkVisita ? (
+                                <a
+                                  href={r.notaCreditoLinkVisita}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center rounded-md px-2 py-1 border text-xs font-medium hover:bg-primary hover:text-primary-foreground transition-colors"
+                                  title="Abrir nota de crédito en Hacienda"
+                                >
+                                  Abrir NC
+                                </a>
+                              ) : (
+                                ''
+                              )
+                            ) : isBool ? (
+                              v === true || v === 'true' ? 'Sí' : v === false || v === 'false' ? 'No' : String(v || '')
                             ) : (
                               String(v || '')
                             )}
@@ -445,8 +474,6 @@ export default function HomePage() {
             </div>
           </div>
           </UploadResultsReveal>
-        </CardContent>
-      </Card>
     </main>
     </PlanGate>
   )

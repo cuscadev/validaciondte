@@ -11,6 +11,50 @@ export const WEBAPP = 'https://webapp.dtes.mh.gob.sv/consultaPublica';
 /* ========================= Utils ========================= */
 const limpiar = s => (s || '').replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim();
 const sinAcentos = s => (s || '').normalize('NFD').replace(/\p{Diacritic}/gu, '');
+
+function normalizeHeader(s) {
+  return sinAcentos(limpiar(s)).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+function indexOfHeader(headers, needle, fallback = 0) {
+  const idx = headers.findIndex(h => h.includes(needle));
+  return idx >= 0 ? idx : fallback;
+}
+
+function indexOfHeaderAny(headers, needles, fallback = 0) {
+  for (const needle of needles) {
+    const idx = headers.findIndex(h => h.includes(needle));
+    if (idx >= 0) return idx;
+  }
+  return fallback;
+}
+
+function indexOfTipoHeader(headers) {
+  const idx = indexOfHeaderAny(headers, ['tipo de documento', 'tipo de documentacion'], -1);
+  if (idx >= 0) return idx;
+  const split = headers.findIndex(h => h.includes('tipo') && h.includes('documento'));
+  if (split >= 0) return split;
+  return headers.length > 0 ? headers.length - 1 : 4;
+}
+
+function tableHeadersFromCheerio($, table) {
+  return $(table).find('thead th, tr:first-child th').toArray().map(th => normalizeHeader($(th).text()));
+}
+
+function formatObservacionesTexto(observaciones) {
+  if (!Array.isArray(observaciones) || !observaciones.length) return '';
+  return observaciones.map(o => `${o.numero}. ${o.observacion}`).join('\n');
+}
+
+function formatRelacionadosTexto(relacionados) {
+  if (!Array.isArray(relacionados) || !relacionados.length) return '';
+  return relacionados.map((rel, i) => [
+    `${i + 1}. ${rel.tipoDocumentacion}`,
+    rel.codigoGeneracion,
+    rel.fechaGeneracion,
+    rel.selloRecepcion,
+  ].join(' | ')).join('\n');
+}
 const COD_RE = /^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$/;
 
 export const isProbableCodGen = s => !!s && COD_RE.test(String(s).trim());
@@ -153,19 +197,191 @@ export async function optimizarPagina(page) {
   page.setDefaultNavigationTimeout(20000);
 }
 
-async function getResultadoScope(page) {
-  try {
-    await page.waitForSelector('text=/Estado\\s+del\\s+documento/i', { timeout: 6000 });
-    return { html: await page.content() };
-  } catch {}
+/* ========================= Scrape cache / retry ========================= */
+const scrapeCache = new Map();
+const SCRAPE_CACHE_TTL_MS = Number(process.env.DTE_SCRAPE_CACHE_TTL_MS || 600_000);
 
-  for (const f of page.frames()) {
-    try {
-      await f.waitForSelector('text=/Estado\\s+del\\s+documento/i', { timeout: 3000 });
-      return { html: await f.content() };
-    } catch {}
+function cacheKeyFromURL(url) {
+  try {
+    const u = new URL(url);
+    u.hash = '';
+    return u.toString().toUpperCase();
+  } catch {
+    return String(url || '').toUpperCase();
+  }
+}
+
+function getCachedScrape(url) {
+  const key = cacheKeyFromURL(url);
+  const entry = scrapeCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    scrapeCache.delete(key);
+    return null;
+  }
+  return entry.result;
+}
+
+function setCachedScrape(url, result) {
+  if (!result || result.estado === 'ERROR' || result.error) return;
+  scrapeCache.set(cacheKeyFromURL(url), {
+    result,
+    expiresAt: Date.now() + SCRAPE_CACHE_TTL_MS,
+  });
+}
+
+function shouldRetryScrape(result) {
+  if (!result) return true;
+  if (result.error) return true;
+  if (result.estado === 'ERROR') return true;
+  return false;
+}
+
+async function consultWithRetry(page, url) {
+  const cached = getCachedScrape(url);
+  if (cached) return cached;
+
+  let result = await consultarConClick(page, url);
+  if (!shouldRetryScrape(result)) {
+    setCachedScrape(url, result);
+    return result;
   }
 
+  result = await consultarConClick(page, url);
+  if (!shouldRetryScrape(result)) {
+    setCachedScrape(url, result);
+  }
+  return result;
+}
+
+const MIN_INTERVAL_MS = Number(process.env.DTE_MIN_INTERVAL_MS || 0);
+let lastScrapeAt = 0;
+
+async function rateLimitScrape() {
+  if (MIN_INTERVAL_MS <= 0) return;
+  const now = Date.now();
+  const wait = lastScrapeAt + MIN_INTERVAL_MS - now;
+  if (wait > 0) await new Promise(r => setTimeout(r, wait));
+  lastScrapeAt = Date.now();
+}
+
+let sharedBrowserPromise = null;
+
+export async function getSharedBrowser() {
+  if (!sharedBrowserPromise) {
+    sharedBrowserPromise = launchBrowser();
+  }
+  return sharedBrowserPromise;
+}
+
+class PagePool {
+  constructor(ctx, size) {
+    this.ctx = ctx;
+    this.size = Math.max(1, size);
+    this.pages = [];
+    this.available = [];
+    this.waiters = [];
+  }
+
+  async init() {
+    for (let i = 0; i < this.size; i++) {
+      const page = await this.ctx.newPage();
+      await optimizarPagina(page);
+      this.pages.push(page);
+      this.available.push(page);
+    }
+  }
+
+  async acquire() {
+    if (this.available.length) return this.available.pop();
+    return new Promise(resolve => this.waiters.push(resolve));
+  }
+
+  release(page) {
+    if (this.waiters.length) {
+      this.waiters.shift()(page);
+      return;
+    }
+    this.available.push(page);
+  }
+
+  async close() {
+    await Promise.all(this.pages.map(p => p.close().catch(() => {})));
+    this.pages = [];
+    this.available = [];
+  }
+}
+
+export async function createPagePool(ctx, size = 2) {
+  const pool = new PagePool(ctx, size);
+  await pool.init();
+  return pool;
+}
+
+const scrapeReadyPredicate = () => {
+  const bodyText = document.body?.innerText || '';
+  const text = bodyText.toLowerCase();
+  const basic = text.includes('estado del dte')
+    || text.includes('estado del documento')
+    || text.includes('no encontrado')
+    || text.includes('no existe')
+    || text.includes('transmitido satisfactoriamente')
+    || text.includes('rechazado')
+    || text.includes('invalidado');
+  if (!basic) return false;
+
+  const needsRelated = text.includes('documentos relacionados')
+    || text.includes('documento ha sido ajustado');
+  if (!needsRelated) return true;
+
+  const uuids = bodyText.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi) || [];
+  return uuids.length >= 2;
+};
+
+async function waitForScrapeReady(target) {
+  const deadline = Date.now() + 12000;
+  let basicSeen = false;
+  while (Date.now() < deadline) {
+    const ready = await target.evaluate(scrapeReadyPredicate).catch(() => false);
+    if (ready) {
+      await new Promise(r => setTimeout(r, 150));
+      return;
+    }
+    const bodyText = await target.evaluate(() => (document.body?.innerText || '')).catch(() => '');
+    const text = bodyText.toLowerCase();
+    if (
+      text.includes('estado del dte') ||
+      text.includes('estado del documento') ||
+      text.includes('no encontrado') ||
+      text.includes('no existe') ||
+      text.includes('transmitido satisfactoriamente') ||
+      text.includes('rechazado') ||
+      text.includes('invalidado')
+    ) {
+      basicSeen = true;
+    }
+    await new Promise(r => setTimeout(r, basicSeen ? 80 : 150));
+  }
+  throw new Error('pagina no lista para scrape');
+}
+
+async function getResultadoScope(page) {
+  const estadoSelectors = [
+    'text=/Estado\\s+del\\s+DTE/i',
+    'text=/Estado\\s+del\\s+documento/i',
+  ];
+
+  for (const target of [page, ...page.frames()]) {
+    for (const selector of estadoSelectors) {
+      try {
+        await target.waitForSelector(selector, { timeout: 5000 });
+        await waitForScrapeReady(target);
+        return { html: await target.content() };
+      } catch {}
+    }
+  }
+
+  await waitForScrapeReady(page);
   return { html: await page.content() };
 }
 
@@ -280,7 +496,6 @@ export async function consultarConClick(page, url) {
       }
     }
 
-    await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
     const { html } = await getResultadoScope(page);
 
     // Parseo principal
@@ -296,9 +511,10 @@ export async function consultarConClick(page, url) {
       if (heur !== 'DESCONOCIDO') { det.estado = heur; det.estadoRaw = linea; }
     }
 
-    // Relacionados
-    let relacionados = [];
-    if (det.ajustado) relacionados = extraerDocumentosRelacionados(html);
+    const observaciones = extraerObservaciones(html);
+    const observacionesTexto = formatObservacionesTexto(observaciones);
+    const relacionados = extraerDocumentosRelacionados(html);
+    const relacionadosTexto = formatRelacionadosTexto(relacionados);
 
     return {
       ok: true,
@@ -310,7 +526,10 @@ export async function consultarConClick(page, url) {
       codGen,
       fechaEmi,
       ...det,
+      observaciones,
+      observacionesTexto,
       relacionados,
+      relacionadosTexto,
       error: ''
     };
   } catch (e) {
@@ -327,99 +546,235 @@ export async function consultarConClick(page, url) {
       estadoRaw: '',
       tipoDte: '',
       tipoDteNorm: 'SIN_TIPO',
+      observaciones: [],
+      observacionesTexto: '',
       relacionados: [],
+      relacionadosTexto: '',
       error: e?.message || String(e)
     };
   }
 }
 
-function extraerDocumentosRelacionados(html) {
+function extraerObservaciones(html) {
   const $ = cheerioLoad(html);
-  const norm = s => limpiar(s).toLowerCase();
   const table = $('table').toArray().find(t => {
-    const headers = $(t).find('thead th, tr:first-child th').toArray().map(th => norm($(th).text())).join('|');
-    return headers.includes('fecha de generación')
-      && (headers.includes('código de generación') || headers.includes('codigo de generación'))
-      && headers.includes('sello de recepción')
-      && headers.includes('tipo de documentación');
+    const headers = tableHeadersFromCheerio($, t);
+    return headers.join('|').includes('observacion');
   });
   if (!table) return [];
-  const $t = $(table);
-  const head = $t.find('thead th, tr:first-child th').toArray().map(th => norm($(th).text()));
-  const idxF = head.findIndex(h => h.includes('fecha de generación'));
-  const idxC = head.findIndex(h => h.includes('código de generación') || h.includes('codigo de generación'));
-  const idxS = head.findIndex(h => h.includes('sello de recepción'));
-  const idxT = head.findIndex(h => h.includes('tipo de documentación'));
+
+  const headers = tableHeadersFromCheerio($, table);
+  const obsIdx = indexOfHeader(headers, 'observacion', 1);
   const rows = [];
-  $t.find('tbody tr').toArray().forEach(tr => {
+  $(table).find('tbody tr').toArray().forEach((tr, i) => {
+    const tds = $(tr).find('td').toArray();
+    const get = idx => (idx >= 0 && tds[idx]) ? limpiar($(tds[idx]).text()) : '';
+    const observacion = get(obsIdx);
+    if (!observacion) return;
+    let numero = get(0);
+    if (!numero) numero = String(i + 1);
+    rows.push({ numero, observacion });
+  });
+  return rows;
+}
+
+function extraerDocumentosRelacionados(html) {
+  const $ = cheerioLoad(html);
+  const table = $('table').toArray().find(t => {
+    const headers = tableHeadersFromCheerio($, t);
+    const joined = headers.join('|');
+    return joined.includes('fecha de generacion')
+      && joined.includes('codigo de generacion')
+      && joined.includes('sello de recepcion');
+  });
+  if (!table) return [];
+
+  const headers = tableHeadersFromCheerio($, table);
+  const idxF = indexOfHeader(headers, 'fecha de generacion', 1);
+  const idxC = indexOfHeader(headers, 'codigo de generacion', 2);
+  const idxS = indexOfHeader(headers, 'sello de recepcion', 3);
+  const idxT = indexOfTipoHeader(headers);
+  const rows = [];
+  $(table).find('tbody tr').toArray().forEach(tr => {
     const tds = $(tr).find('td').toArray();
     const get = i => (i >= 0 && tds[i]) ? limpiar($(tds[i]).text()) : '';
+    const codigoGeneracion = get(idxC);
+    if (!codigoGeneracion) return;
     rows.push({
       fechaGeneracion: get(idxF),
-      codigoGeneracion: get(idxC),
+      codigoGeneracion,
       selloRecepcion: get(idxS),
-      tipoDocumentacion: get(idxT)
+      tipoDocumentacion: get(idxT),
     });
   });
   return rows;
 }
 
+function isNotaCreditoTipo(tipo) {
+  const t = sinAcentos(limpiar(tipo)).toUpperCase();
+  return t.includes('NOTA') && t.includes('CREDITO');
+}
+
+function pickNotaCredito(relacionados) {
+  if (!Array.isArray(relacionados)) return null;
+  const byTipo = relacionados.find(r => isNotaCreditoTipo(r.tipoDocumentacion) && r.codigoGeneracion);
+  if (byTipo) return byTipo;
+  return relacionados.find(r => r.codigoGeneracion) || null;
+}
+
+export function fechaEmiFromGeneracion(fecha) {
+  const raw = limpiar(fecha).split(' ')[0].replace(/-/g, '/');
+  const parts = raw.split('/');
+  if (parts.length === 3 && parts[2].length === 4) {
+    return `${parts[2]}-${String(parts[1]).padStart(2, '0')}-${String(parts[0]).padStart(2, '0')}`;
+  }
+  return raw;
+}
+
+function applyNotaCreditoFields(parent, nc, verified, verifyErr) {
+  if (!parent || !nc) return;
+  parent.tieneNotaCredito = true;
+  parent.notaCreditoCodigoGeneracion = nc.codigoGeneracion;
+  parent.notaCreditoSelloRecepcion = nc.selloRecepcion;
+  parent.notaCreditoFechaGeneracion = nc.fechaGeneracion;
+  parent.notaCreditoFechaEmi = fechaEmiFromGeneracion(nc.fechaGeneracion);
+  parent.notaCreditoTipoDocumento = nc.tipoDocumentacion;
+
+  if (verifyErr) {
+    parent.notaCreditoError = verifyErr?.message || String(verifyErr);
+    nc.error = parent.notaCreditoError;
+    return;
+  }
+
+  parent.notaCreditoEstado = verified?.estado || '';
+  parent.notaCreditoEstadoRaw = verified?.estadoRaw || '';
+  parent.notaCreditoNumeroControl = verified?.numeroControl || '';
+  parent.notaCreditoMontoTotal = verified?.montoTotal || '';
+  parent.notaCreditoLinkVisita = verified?.linkVisita || verified?.url || '';
+  nc.estado = parent.notaCreditoEstado;
+  nc.estadoRaw = parent.notaCreditoEstadoRaw;
+  nc.verificado = true;
+}
+
+async function enrichCreditNotesFromRelated(ctx, resultados, pagePool, concurrencia = 2) {
+  const jobs = [];
+  resultados.forEach((r, idx) => {
+    if (r?.tieneNotaCredito) return;
+    const nc = pickNotaCredito(r.relacionados);
+    if (!nc) return;
+    jobs.push({ idx, nc, ambiente: r.ambiente || '01' });
+  });
+  if (!jobs.length) return resultados;
+
+  const pending = new Map();
+  for (const job of jobs) {
+    const fechaYmd = fechaEmiFromGeneracion(job.nc.fechaGeneracion);
+    if (!fechaYmd) {
+      applyNotaCreditoFields(resultados[job.idx], job.nc, null, new Error('no se pudo obtener fecha de emision de la nota de credito relacionada'));
+      continue;
+    }
+    const url = buildQuery(ADMIN, {
+      ambiente: job.ambiente,
+      codGen: job.nc.codigoGeneracion,
+      fechaEmi: fechaYmd,
+    });
+    const key = cacheKeyFromURL(url);
+    const cached = getCachedScrape(url);
+    if (cached) {
+      applyNotaCreditoFields(resultados[job.idx], job.nc, cached, null);
+      continue;
+    }
+    if (!pending.has(key)) pending.set(key, { url, callbacks: [] });
+    const capturedIdx = job.idx;
+    const capturedNC = job.nc;
+    pending.get(key).callbacks.push((verified) => {
+      applyNotaCreditoFields(resultados[capturedIdx], capturedNC, verified, null);
+    });
+  }
+
+  const entries = Array.from(pending.values());
+  if (!entries.length) return resultados;
+
+  const ownPool = !pagePool;
+  const pool = pagePool || await createPagePool(ctx, Math.min(concurrencia, entries.length));
+
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < entries.length) {
+      const entry = entries[cursor++];
+      const page = await pool.acquire();
+      try {
+        await rateLimitScrape();
+        const verified = await consultWithRetry(page, entry.url);
+        for (const cb of entry.callbacks) cb(verified);
+      } finally {
+        pool.release(page);
+      }
+    }
+  };
+
+  await Promise.all(
+    Array.from({ length: Math.min(concurrencia, entries.length) }, worker),
+  );
+
+  if (ownPool) await pool.close();
+  return resultados;
+}
+
 /* ===== Pool por FILAS codGen/fecha ===== */
 export async function procesarFilasConPool(ctx, filas, concurrencia = 2) {
-  const resultados = [];
   const cola = filas.slice();
   const hosts = [ADMIN, WEBAPP];
-  const workers = [];
+  const resultados = [];
+  const pagePool = await createPagePool(ctx, Math.min(concurrencia, cola.length || 1));
 
   const tieneDetalle = (r) =>
     !!(r?.codigoGeneracion || r?.numeroControl || r?.selloRecepcion || r?.montoTotal);
 
-  for (let i = 0; i < Math.min(concurrencia, cola.length); i++) {
-    workers.push((async () => {
-      const page = await ctx.newPage();
-      await optimizarPagina(page);
+  const worker = async () => {
+    while (cola.length) {
+      const { codGen, fechaYmd } = cola.shift();
+      const page = await pagePool.acquire();
+      try {
+        await rateLimitScrape();
+        let mejor = null;
+        let candidatoEstado = null;
+        for (const base of hosts) {
+          const url = buildQuery(base, { ambiente: '01', codGen, fechaEmi: fechaYmd });
+          const r = await consultWithRetry(page, url);
+          const est = (r.estado || '').toUpperCase();
 
-      while (cola.length) {
-        const { codGen, fechaYmd } = cola.shift();
-        try {
-          let mejor = null;
-          let candidatoEstado = null; 
-          for (const base of hosts) {
-            const url = buildQuery(base, { ambiente: '01', codGen, fechaEmi: fechaYmd });
-            const r = await consultarConClick(page, url);
-            const est = (r.estado || '').toUpperCase();
-
-            if (r.ok && tieneDetalle(r)) { mejor = r; break; } 
-            if ((est === 'EMITIDO' || est === 'INVALIDADO') && !candidatoEstado) {
-              candidatoEstado = r;
-            }
+          if (r.ok && tieneDetalle(r)) { mejor = r; break; }
+          if ((est === 'EMITIDO' || est === 'INVALIDADO') && !candidatoEstado) {
+            candidatoEstado = r;
           }
-
-          mejor = mejor || candidatoEstado || {
-            ok: false, url: '', linkVisita: '', visitar: 'Abrir',
-            host: '', ambiente: '01', codGen, fechaEmi: fechaYmd,
-            estado: 'NO ENCONTRADO', estadoRaw: '', tipoDte: '', tipoDteNorm: 'SIN_TIPO',
-            relacionados: [], error: ''
-          };
-
-          resultados.push(mejor);
-        } catch (err) {
-          resultados.push({
-            ok: false, url: '', linkVisita: '', visitar: 'Abrir',
-            host: '', ambiente: '01', codGen, fechaEmi: fechaYmd,
-            estado: 'ERROR', estadoRaw: '', tipoDte: '', tipoDteNorm: 'SIN_TIPO',
-            relacionados: [], error: err?.message || String(err)
-          });
         }
 
-        await page.waitForTimeout(180);
+        resultados.push(mejor || candidatoEstado || {
+          ok: false, url: '', linkVisita: '', visitar: 'Abrir',
+          host: '', ambiente: '01', codGen, fechaEmi: fechaYmd,
+          estado: 'NO ENCONTRADO', estadoRaw: '', tipoDte: '', tipoDteNorm: 'SIN_TIPO',
+          relacionados: [], error: '',
+        });
+      } catch (err) {
+        resultados.push({
+          ok: false, url: '', linkVisita: '', visitar: 'Abrir',
+          host: '', ambiente: '01', codGen, fechaEmi: fechaYmd,
+          estado: 'ERROR', estadoRaw: '', tipoDte: '', tipoDteNorm: 'SIN_TIPO',
+          relacionados: [], error: err?.message || String(err),
+        });
+      } finally {
+        pagePool.release(page);
       }
+    }
+  };
 
-      await page.close();
-    })());
-  }
+  await Promise.all(
+    Array.from({ length: Math.min(concurrencia, filas.length) }, worker),
+  );
 
-  await Promise.all(workers);
+  await enrichCreditNotesFromRelated(ctx, resultados, pagePool, concurrencia);
+  await pagePool.close();
   return resultados;
 }
 
@@ -688,6 +1043,8 @@ export function buildWorkbook(resultados, options = {}) {
           codigoGeneracion: rel.codigoGeneracion,
           selloRecepcion: rel.selloRecepcion,
           tipoDocumentacion: rel.tipoDocumentacion,
+          estado: rel.estado || '',
+          estadoRaw: rel.estadoRaw || '',
           linkVisita: r.linkVisita || r.url,
           visitar: 'Abrir'
         });

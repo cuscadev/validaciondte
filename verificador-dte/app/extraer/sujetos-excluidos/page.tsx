@@ -4,7 +4,11 @@ import PlanGate from '@/components/PlanGate'
 import UploadFormSection from '@/components/upload/UploadFormSection'
 import UploadFormAccordion from '@/components/upload/UploadFormAccordion'
 import UploadResultsReveal from '@/components/upload/UploadResultsReveal'
-import UploadTableExportBar from '@/components/upload/UploadTableExportBar'
+import UploadTableToolbar from '@/components/upload/UploadTableToolbar'
+import UploadTableBasicFilters, { countBasicFilters } from '@/components/upload/UploadTableBasicFilters'
+import UploadTableDateRangeFilters, {
+  countDateRangeFilters,
+} from '@/components/upload/UploadTableDateRangeFilters'
 import {
   buildExportFilename,
   exportPdfByProfile,
@@ -12,9 +16,6 @@ import {
 } from '@/lib/upload-table-export'
 import { useUploadResultsReveal } from '@/components/upload/useUploadResultsReveal'
 import { useEffect, useMemo, useState } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { recordProcessingLog } from '@/lib/client-processing-log'
 import { summarizeFiles } from '@/lib/processing-log'
@@ -28,7 +29,6 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Search,
   Trash2,
   ArrowUpDown,
 } from 'lucide-react'
@@ -539,9 +539,7 @@ export default function SujetosExcluidosPage() {
 
   return (
     <PlanGate routeKey="sujetos-excluidos">
-      <main className="w-full max-w-full dark:bg-background">
-        <Card className="w-full max-w-full overflow-hidden border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-950">
-          <CardContent className="space-y-6 pt-6">
+      <main className="w-full max-w-full space-y-6 dark:bg-background">
             <form
               onSubmit={onSubmit}
               className="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10"
@@ -632,110 +630,75 @@ export default function SujetosExcluidosPage() {
               </div>
             </section>
 
-            <section className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-black">
-              <div className="grid gap-3 md:grid-cols-3">
-                <div className="space-y-1">
-                  <Label htmlFor="from">Desde</Label>
-                  <Input
-                    id="from"
-                    type="date"
-                    value={filterFrom}
-                    onChange={(e) => setFilterFrom(e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <Label htmlFor="to">Hasta</Label>
-                  <Input
-                    id="to"
-                    type="date"
-                    value={filterTo}
-                    onChange={(e) => setFilterTo(e.target.value)}
-                  />
-                </div>
-
-                <div className="flex items-end">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => {
-                      setFilterFrom('')
-                      setFilterTo(new Date().toISOString().slice(0, 10))
-                    }}
-                  >
-                    Limpiar filtros
-                  </Button>
-                </div>
-              </div>
-            </section>
-
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span className="hidden sm:inline">Resultados:</span>
-                <span className="font-medium text-foreground">
-                  {sortedData.length}
-                </span>
-                {sortedData.length !== data.length && (
-                  <span className="text-xs">(de {data.length} totales)</span>
-                )}
-              </div>
-
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <UploadTableExportBar
-                  excel={{
-                    onClick: () => exportExcel(data),
-                    label: 'Descargar Excel completo',
-                  }}
-                  csv={{
-                    onClick: () =>
-                      exportRowsToCsv(
-                        data as Record<string, unknown>[],
-                        buildExportFilename('sujetos_excluidos', 'csv')
-                      ),
-                  }}
-                  pdf={{
-                    onClick: () =>
-                      exportPdfByProfile(
-                        data as Record<string, unknown>[],
-                        'sujetosExcluidos',
-                        buildExportFilename('sujetos_excluidos', 'pdf')
-                      ),
-                  }}
-                />
-                <div className="relative">
-                  <Input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Buscar por código, documento, nombre…"
-                    className="w-[280px] pl-9"
-                  />
-                  <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="rpp" className="text-sm">
-                    Filas
-                  </Label>
-
-                  <select
-                    id="rpp"
-                    value={rowsPerPage}
-                    onChange={(e) => {
-                      setRowsPerPage(Number(e.target.value))
-                      setCurrentPage(1)
-                    }}
-                    className="h-9 rounded-md border bg-background px-2 text-sm"
-                  >
-                    {ROWS_OPTIONS.map((n) => (
-                      <option key={n} value={n}>
-                        {n}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
+            <UploadTableToolbar
+              resultCount={{ filtered: sortedData.length, total: data.length }}
+              export={{
+                excel: {
+                  onClick: () => exportExcel(data),
+                  label: 'Descargar Excel completo',
+                },
+                csv: {
+                  onClick: () =>
+                    exportRowsToCsv(
+                      data as Record<string, unknown>[],
+                      buildExportFilename('sujetos_excluidos', 'csv')
+                    ),
+                },
+                pdf: {
+                  onClick: () =>
+                    exportPdfByProfile(
+                      data as Record<string, unknown>[],
+                      'sujetosExcluidos',
+                      buildExportFilename('sujetos_excluidos', 'pdf')
+                    ),
+                },
+              }}
+              filters={{
+                activeCount:
+                  countBasicFilters(search, rowsPerPage) +
+                  countDateRangeFilters(
+                    filterFrom,
+                    filterTo,
+                    new Date().toISOString().slice(0, 10)
+                  ),
+                onClear: () => {
+                  setFilterFrom('')
+                  setFilterTo(new Date().toISOString().slice(0, 10))
+                  setSearch('')
+                  setRowsPerPage(10)
+                  setCurrentPage(1)
+                },
+                children: (
+                  <>
+                    <UploadTableDateRangeFilters
+                      filterFrom={filterFrom}
+                      filterTo={filterTo}
+                      onFromChange={(value) => {
+                        setFilterFrom(value)
+                        setCurrentPage(1)
+                      }}
+                      onToChange={(value) => {
+                        setFilterTo(value)
+                        setCurrentPage(1)
+                      }}
+                    />
+                    <UploadTableBasicFilters
+                      search={search}
+                      onSearchChange={(value) => {
+                        setSearch(value)
+                        setCurrentPage(1)
+                      }}
+                      searchPlaceholder="Buscar por código, documento, nombre…"
+                      rowsPerPage={rowsPerPage}
+                      onRowsPerPageChange={(value) => {
+                        setRowsPerPage(value)
+                        setCurrentPage(1)
+                      }}
+                    />
+                  </>
+                ),
+              }}
+            />
 
             <div className="overflow-hidden rounded-md border border-slate-200 dark:border-white/10">
               <div className="max-h-[60vh] overflow-auto">
@@ -847,8 +810,6 @@ export default function SujetosExcluidosPage() {
               </div>
             </div>
             </UploadResultsReveal>
-          </CardContent>
-        </Card>
       </main>
     </PlanGate>
   )

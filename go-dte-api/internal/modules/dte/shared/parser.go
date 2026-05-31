@@ -51,6 +51,14 @@ func NormalizarFecha(fecha string) string {
 	return f
 }
 
+func FechaEmiFromGeneracion(fecha string) string {
+	fecha = Clean(fecha)
+	if idx := strings.Index(fecha, " "); idx > 0 {
+		fecha = fecha[:idx]
+	}
+	return NormalizarFecha(fecha)
+}
+
 func BuildConsultaURL(codGen, fechaYMD, ambiente string) string {
 	q := url.Values{}
 	q.Set("ambiente", ambiente)

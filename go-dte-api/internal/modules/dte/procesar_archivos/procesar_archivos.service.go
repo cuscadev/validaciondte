@@ -60,7 +60,7 @@ func (s *Service) Process(c *fiber.Ctx) (shared.ProcessResponse, error) {
 		return shared.ProcessResponse{}, errors.New("no se encontraron URLs validas en los archivos")
 	}
 
-	results := shared.ProcessLinks(c.Context(), links, s.cfg.Concurrency)
+	results := shared.ProcessBatch(c.Context(), links, s.cfg.Concurrency)
 	return buildResponse(results, true)
 }
 

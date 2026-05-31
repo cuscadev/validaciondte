@@ -5,7 +5,8 @@ import { useEffect, useMemo, useState } from 'react'
 import UploadFormSection from '@/components/upload/UploadFormSection'
 import UploadFormAccordion from '@/components/upload/UploadFormAccordion'
 import UploadResultsReveal from '@/components/upload/UploadResultsReveal'
-import UploadTableExportBar from '@/components/upload/UploadTableExportBar'
+import UploadTableToolbar from '@/components/upload/UploadTableToolbar'
+import UploadTableBasicFilters, { countBasicFilters } from '@/components/upload/UploadTableBasicFilters'
 import {
   buildExportFilename,
   exportPdfByProfile,
@@ -15,11 +16,9 @@ import {
 import { useUploadResultsReveal } from '@/components/upload/useUploadResultsReveal'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Search, ExternalLink } from 'lucide-react'
+import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, ExternalLink } from 'lucide-react'
 import { formatMontoDisplay } from '@/lib/dte-result-normalize'
 import { summarizeDteUploadResults } from '@/lib/upload-dte-stats'
 
@@ -45,6 +44,17 @@ type Resultado = {
   montoTotal?: string
   totalPagarOperacion?: string
   ivaOperaciones?: string
+  ajustado?: boolean
+  documentoAjustado?: string
+  tieneNotaCredito?: boolean
+  notaCreditoCodigoGeneracion?: string
+  notaCreditoFechaGeneracion?: string
+  notaCreditoFechaEmi?: string
+  notaCreditoSelloRecepcion?: string
+  notaCreditoEstado?: string
+  notaCreditoLinkVisita?: string
+  observacionesTexto?: string
+  relacionadosTexto?: string
 }
 
 export default function ConsultarJsonPage() {
@@ -104,7 +114,9 @@ export default function ConsultarJsonPage() {
     return data.filter(r => {
       const campos = [
         r.codGen, r.estado, r.descripcionEstado, r.fechaEmi, r.tipoDte, r.numeroControl,
-        r.emisorNombre, r.emisorNit, r.receptorNombre, r.receptorNit
+        r.emisorNombre, r.emisorNit, r.receptorNombre, r.receptorNit,
+        r.documentoAjustado, r.observacionesTexto, r.relacionadosTexto,
+        r.notaCreditoCodigoGeneracion, r.notaCreditoEstado, r.notaCreditoFechaEmi,
       ]
       return campos.some(v => (v || '').toLowerCase().includes(q))
     })
@@ -156,50 +168,57 @@ export default function ConsultarJsonPage() {
           </form>
 
           <UploadResultsReveal visible={resultsVisible && data.length > 0}>
-          {/* Toolbar */}
-          <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
-            <div className="text-sm text-muted-foreground">
-              {t('consultarjson_resultados')}: <span className="font-medium text-foreground">{filtered.length}</span>{filtered.length !== data.length && <> ({t('consultarjson_de')} {data.length} {t('consultarjson_totales')})</>}
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-              <UploadTableExportBar
-                excel={{
-                  onClick: () =>
-                    exportRowsToExcel(
-                      data as Record<string, unknown>[],
-                      buildExportFilename('consultar_json', 'xlsx'),
-                      'Consultar JSON'
-                    ),
-                }}
-                csv={{
-                  onClick: () =>
-                    exportRowsToCsv(
-                      data as Record<string, unknown>[],
-                      buildExportFilename('consultar_json', 'csv')
-                    ),
-                }}
-                pdf={{
-                  onClick: () =>
-                    exportPdfByProfile(
-                      data as Record<string, unknown>[],
-                      'consultarjson',
-                      buildExportFilename('consultar_json', 'pdf')
-                    ),
-                }}
-              />
-              <div className="relative">
-                <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('consultarjson_buscar_placeholder')} className="pl-8 w-[280px]" />
-                <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              </div>
-              <div className="flex items-center gap-2">
-                <Label htmlFor="rpp" className="text-sm">{t('consultarjson_filas')}</Label>
-                <select id="rpp" value={rowsPerPage} onChange={(e) => { setRowsPerPage(Number(e.target.value)); setCurrentPage(1) }} className="h-9 rounded-md border bg-background px-2 text-sm">
-                  {[10, 20, 50, 100].map(n => <option key={n} value={n}>{n}</option>)}
-                </select>
-              </div>
-            </div>
-          </div>
+          <UploadTableToolbar
+            resultCount={{ filtered: filtered.length, total: data.length }}
+            export={{
+              excel: {
+                onClick: () =>
+                  exportRowsToExcel(
+                    data as Record<string, unknown>[],
+                    buildExportFilename('consultar_json', 'xlsx'),
+                    'Consultar JSON'
+                  ),
+              },
+              csv: {
+                onClick: () =>
+                  exportRowsToCsv(
+                    data as Record<string, unknown>[],
+                    buildExportFilename('consultar_json', 'csv')
+                  ),
+              },
+              pdf: {
+                onClick: () =>
+                  exportPdfByProfile(
+                    data as Record<string, unknown>[],
+                    'consultarjson',
+                    buildExportFilename('consultar_json', 'pdf')
+                  ),
+              },
+            }}
+            filters={{
+              activeCount: countBasicFilters(search, rowsPerPage),
+              onClear: () => {
+                setSearch('')
+                setRowsPerPage(10)
+                setCurrentPage(1)
+              },
+              children: (
+                <UploadTableBasicFilters
+                  search={search}
+                  onSearchChange={(value) => {
+                    setSearch(value)
+                    setCurrentPage(1)
+                  }}
+                  searchPlaceholder={t('consultarjson_buscar_placeholder')}
+                  rowsPerPage={rowsPerPage}
+                  onRowsPerPageChange={(value) => {
+                    setRowsPerPage(value)
+                    setCurrentPage(1)
+                  }}
+                />
+              ),
+            }}
+          />
 
           {/* Tabla */}
           <div className="rounded-md border overflow-hidden">
@@ -218,13 +237,17 @@ export default function ConsultarJsonPage() {
                     <th className="text-left p-2 whitespace-nowrap">{t('consultarjson_monto')}</th>
                     <th className="text-left p-2 whitespace-nowrap">{t('consultarjson_total')}</th>
                     <th className="text-left p-2 whitespace-nowrap">{t('consultarjson_iva')}</th>
+                    <th className="text-left p-2 whitespace-nowrap">Ajustado</th>
+                    <th className="text-left p-2 whitespace-nowrap">Código NC</th>
+                    <th className="text-left p-2 whitespace-nowrap">Estado NC</th>
+                    <th className="text-left p-2 whitespace-nowrap">Abrir NC</th>
                     <th className="text-left p-2">{t('consultarjson_enlace')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
                   {paginated.length === 0 && (
                     <tr>
-                      <td colSpan={12} className="p-6 text-center text-muted-foreground">
+                      <td colSpan={16} className="p-6 text-center text-muted-foreground">
                         {loading ? t('consultarjson_cargando') : t('consultarjson_sin_resultados')}
                       </td>
                     </tr>
@@ -255,6 +278,16 @@ export default function ConsultarJsonPage() {
                       <td className="p-2 whitespace-nowrap">{formatMontoDisplay(r.montoTotal)}</td>
                       <td className="p-2 whitespace-nowrap">{formatMontoDisplay(r.totalPagarOperacion)}</td>
                       <td className="p-2 whitespace-nowrap">{formatMontoDisplay(r.ivaOperaciones)}</td>
+                      <td className="p-2 whitespace-nowrap">{r.ajustado ? 'Sí' : r.documentoAjustado ? 'Sí' : 'No'}</td>
+                      <td className="p-2 whitespace-nowrap">{r.notaCreditoCodigoGeneracion || '-'}</td>
+                      <td className="p-2 whitespace-nowrap">{r.notaCreditoEstado || '-'}</td>
+                      <td className="p-2 whitespace-nowrap">
+                        {r.notaCreditoLinkVisita ? (
+                          <a href={r.notaCreditoLinkVisita} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-600 underline text-xs">
+                            Abrir NC <ExternalLink className="w-3 h-3" />
+                          </a>
+                        ) : '-'}
+                      </td>
                       <td className="p-2">
                         {(r.linkVisita || r.url) ? (
                           <a href={r.linkVisita || r.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-600 underline text-xs">

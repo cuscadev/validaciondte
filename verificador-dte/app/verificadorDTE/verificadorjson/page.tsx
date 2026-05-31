@@ -4,7 +4,8 @@ import PlanGate from '@/components/PlanGate'
 import UploadFormSection from '@/components/upload/UploadFormSection'
 import UploadFormAccordion from '@/components/upload/UploadFormAccordion'
 import UploadResultsReveal from '@/components/upload/UploadResultsReveal'
-import UploadTableExportBar from '@/components/upload/UploadTableExportBar'
+import UploadTableToolbar from '@/components/upload/UploadTableToolbar'
+import UploadTableBasicFilters, { countBasicFilters } from '@/components/upload/UploadTableBasicFilters'
 import {
   buildExportFilename,
   exportPdfByProfile,
@@ -13,15 +14,12 @@ import {
 import UploadTableHints from '@/components/upload/UploadTableHints'
 import { useUploadResultsReveal } from '@/components/upload/useUploadResultsReveal'
 import { useEffect, useMemo, useState } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { recordProcessingLog } from '@/lib/client-processing-log'
 import { summarizeFiles, summarizeResults } from '@/lib/processing-log'
 import { summarizeDteUploadResults } from '@/lib/upload-dte-stats'
 import {
-  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -293,9 +291,7 @@ export default function Page() {
 
   return (
     <PlanGate routeKey="verificadorjson">
-    <main className="w-full max-w-full">
-      <Card className="w-full max-w-full overflow-hidden border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-950">
-        <CardContent className="space-y-6 pt-6">
+    <main className="w-full max-w-full space-y-6">
           <form onSubmit={onSubmit} className="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10">
             <UploadFormAccordion
               accordionApiRef={accordionApiRef}
@@ -331,64 +327,54 @@ export default function Page() {
           </form>
 
           <UploadResultsReveal visible={resultsVisible && data.length > 0}>
-          {/* Barra de herramientas de tabla */}
-          <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span className="hidden sm:inline">Resultados:</span>
-              <span className="font-medium text-foreground">{filtered.length}</span>
-              {filtered.length !== data.length && (
-                <span className="text-xs">(de {data.length} totales)</span>
-              )}
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-              <UploadTableExportBar
-                excel={{
-                  href: downloadHref,
-                  download: filename,
-                  label: 'Descargar Excel completo',
-                }}
-                csv={{
-                  onClick: () =>
-                    exportRowsToCsv(
-                      data as Record<string, unknown>[],
-                      buildExportFilename('verificacion_json', 'csv')
-                    ),
-                }}
-                pdf={{
-                  onClick: () =>
-                    exportPdfByProfile(
-                      data as Record<string, unknown>[],
-                      'verificador',
-                      buildExportFilename('verificacion_json', 'pdf')
-                    ),
-                }}
-              />
-              {/* Search */}
-              <div className="relative">
-                <Input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Buscar por código, estado, emisor, receptor…"
-                  className="pl-9 w-[300px]"
+          <UploadTableToolbar
+            resultCount={{ filtered: filtered.length, total: data.length }}
+            export={{
+              excel: {
+                href: downloadHref,
+                download: filename,
+                label: 'Descargar Excel completo',
+              },
+              csv: {
+                onClick: () =>
+                  exportRowsToCsv(
+                    data as Record<string, unknown>[],
+                    buildExportFilename('verificacion_json', 'csv')
+                  ),
+              },
+              pdf: {
+                onClick: () =>
+                  exportPdfByProfile(
+                    data as Record<string, unknown>[],
+                    'verificador',
+                    buildExportFilename('verificacion_json', 'pdf')
+                  ),
+              },
+            }}
+            filters={{
+              activeCount: countBasicFilters(search, rowsPerPage),
+              onClear: () => {
+                setSearch('')
+                setRowsPerPage(10)
+                setCurrentPage(1)
+              },
+              children: (
+                <UploadTableBasicFilters
+                  search={search}
+                  onSearchChange={(value) => {
+                    setSearch(value)
+                    setCurrentPage(1)
+                  }}
+                  searchPlaceholder="Buscar por código, estado, emisor, receptor…"
+                  rowsPerPage={rowsPerPage}
+                  onRowsPerPageChange={(value) => {
+                    setRowsPerPage(value)
+                    setCurrentPage(1)
+                  }}
                 />
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              </div>
-
-              {/* Rows per page */}
-              <div className="flex items-center gap-2">
-                <Label htmlFor="rpp" className="text-sm">Filas</Label>
-                <select
-                  id="rpp"
-                  value={rowsPerPage}
-                  onChange={(e) => { setRowsPerPage(Number(e.target.value)); setCurrentPage(1) }}
-                  className="h-9 rounded-md border bg-background px-2 text-sm"
-                >
-                  {[10, 20, 50, 100].map(n => <option key={n} value={n}>{n}</option>)}
-                </select>
-              </div>
-            </div>
-          </div>
+              ),
+            }}
+          />
 
           {/* Tabla */}
           <div className="overflow-hidden rounded-md border border-slate-200 dark:border-white/10">
@@ -503,8 +489,6 @@ export default function Page() {
             </div>
           </div>
           </UploadResultsReveal>
-        </CardContent>
-      </Card>
     </main>
     </PlanGate>
   )

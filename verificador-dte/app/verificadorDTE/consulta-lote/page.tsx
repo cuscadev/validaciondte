@@ -3,7 +3,7 @@
 import PlanGate from '@/components/PlanGate';
 import { auth } from '@/lib/firebase';
 import { useMemo, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -105,14 +105,13 @@ export default function ConsultaLotePage() {
   return (
     <PlanGate routeKey="consulta_lote">
       <main className="space-y-5">
-        <Card>
-          <CardHeader>
-            <CardTitle>Consulta de lote DTE</CardTitle>
-            <CardDescription>
+        <section className="space-y-4">
+          <header>
+            <h1 className="text-2xl font-semibold">Consulta de lote DTE</h1>
+            <p className="text-muted-foreground text-sm">
               Consulta en Hacienda el resultado de un lote enviado previamente usando el codigoLote.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+            </p>
+          </header>
             <form onSubmit={onSubmit} className="grid gap-3 md:grid-cols-[180px_1fr_auto] md:items-end">
               <div className="space-y-2">
                 <Label htmlFor="ambiente">Ambiente</Label>
@@ -140,9 +139,7 @@ export default function ConsultaLotePage() {
                 Consultar
               </Button>
             </form>
-
-          </CardContent>
-        </Card>
+        </section>
 
         {data && (
           <>

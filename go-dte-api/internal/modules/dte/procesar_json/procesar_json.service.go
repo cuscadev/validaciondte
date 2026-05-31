@@ -84,7 +84,7 @@ func (s *Service) ProcessFiles(c *fiber.Ctx) (shared.ProcessResponse, error) {
 		links = append(links, shared.BuildConsultaURL(row.CodGen, row.FechaYMD, "01"))
 	}
 
-	results := shared.ProcessLinks(c.Context(), links, s.cfg.Concurrency)
+	results := shared.ProcessBatch(c.Context(), links, s.cfg.Concurrency)
 	for idx := range results {
 		key := shared.ResultLookupKey(results[idx].CodGen, results[idx].FechaEmi)
 		if extra, ok := extrasByKey[key]; ok {
@@ -137,7 +137,7 @@ func (s *Service) Process(ctx context.Context, req dto.ProcessJSONRequest) (shar
 		links = append(links, shared.BuildConsultaURL(item.CodGen, shared.DMYToYMD(item.Fecha), ambiente))
 	}
 
-	results := shared.ProcessLinks(ctx, links, concurrency)
+	results := shared.ProcessBatch(ctx, links, concurrency)
 	return buildResponse(results, req.IncludeExcel)
 }
 

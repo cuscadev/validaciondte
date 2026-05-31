@@ -6,7 +6,8 @@ import UploadFormAccordion from '@/components/upload/UploadFormAccordion'
 import UploadResultsReveal from '@/components/upload/UploadResultsReveal'
 import { useUploadResultsReveal } from '@/components/upload/useUploadResultsReveal'
 import { auth } from '@/lib/firebase';
-import UploadTableExportBar from '@/components/upload/UploadTableExportBar'
+import UploadTableToolbar from '@/components/upload/UploadTableToolbar'
+import UploadTableBasicFilters, { countBasicFilters } from '@/components/upload/UploadTableBasicFilters'
 import {
   buildExportFilename,
   exportPdfByProfile,
@@ -15,10 +16,8 @@ import {
 } from '@/lib/upload-table-export';
 import { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Search } from 'lucide-react';
 import { toast } from 'sonner';
 
 type LoteItem = {
@@ -183,8 +182,6 @@ export default function ConsultaLotesJSONPage() {
   return (
     <PlanGate routeKey="consulta_lote">
       <main className="space-y-5">
-        <Card>
-          <CardContent className="space-y-4 pt-6">
             <form onSubmit={onSubmit} className="overflow-hidden rounded-lg border border-border">
               <UploadFormAccordion
                 accordionApiRef={accordionApiRef}
@@ -228,8 +225,6 @@ export default function ConsultaLotesJSONPage() {
 
               </UploadFormAccordion>
             </form>
-          </CardContent>
-        </Card>
 
         <UploadResultsReveal visible={resultsVisible && results.length > 0}>
             <section className="grid gap-3 md:grid-cols-4">
@@ -253,47 +248,49 @@ export default function ConsultaLotesJSONPage() {
 
             <Card>
               <CardHeader>
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                  <CardTitle>Resultados Hacienda</CardTitle>
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <UploadTableExportBar
-                      excel={{
-                        onClick: () =>
-                          exportRowsToExcel(
-                            allRows as Record<string, unknown>[],
-                            buildExportFilename('consultas_lotes', 'xlsx'),
-                            'Consultas lotes'
-                          ),
-                      }}
-                      csv={{
-                        onClick: () =>
-                          exportRowsToCsv(
-                            allRows as Record<string, unknown>[],
-                            buildExportFilename('consultas_lotes', 'csv')
-                          ),
-                      }}
-                      pdf={{
-                        onClick: () =>
-                          exportPdfByProfile(
-                            allRows as Record<string, unknown>[],
-                            'consultasLotes',
-                            buildExportFilename('consultas_lotes', 'pdf')
-                          ),
-                      }}
-                    />
-                    <div className="relative w-full md:w-80">
-                    <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      value={search}
-                      onChange={(event) => setSearch(event.target.value)}
-                      placeholder="Buscar lote, codigo, mensaje..."
-                      className="pl-9"
-                    />
-                  </div>
-                </div>
-                </div>
+                <CardTitle>Resultados Hacienda</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                <UploadTableToolbar
+                  resultCount={{ filtered: rows.length, total: allRows.length }}
+                  export={{
+                    excel: {
+                      onClick: () =>
+                        exportRowsToExcel(
+                          allRows as Record<string, unknown>[],
+                          buildExportFilename('consultas_lotes', 'xlsx'),
+                          'Consultas lotes'
+                        ),
+                    },
+                    csv: {
+                      onClick: () =>
+                        exportRowsToCsv(
+                          allRows as Record<string, unknown>[],
+                          buildExportFilename('consultas_lotes', 'csv')
+                        ),
+                    },
+                    pdf: {
+                      onClick: () =>
+                        exportPdfByProfile(
+                          allRows as Record<string, unknown>[],
+                          'consultasLotes',
+                          buildExportFilename('consultas_lotes', 'pdf')
+                        ),
+                    },
+                  }}
+                  filters={{
+                    activeCount: countBasicFilters(search, undefined, 10),
+                    onClear: () => setSearch(''),
+                    children: (
+                      <UploadTableBasicFilters
+                        search={search}
+                        onSearchChange={setSearch}
+                        searchPlaceholder="Buscar lote, codigo, mensaje..."
+                        showRowsPerPage={false}
+                      />
+                    ),
+                  }}
+                />
                 <div className="overflow-auto rounded-md border">
                   <table className="w-full min-w-[1150px] text-sm">
                     <thead className="bg-muted">

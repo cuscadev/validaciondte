@@ -24,10 +24,6 @@ import {
 
 const Sidebar = dynamic(() => import('@/components/Sidebar'), { ssr: false })
 const Navbar = dynamic(() => import('@/components/Navbar'), { ssr: false })
-
-const SIDEBAR_WIDTH = 256
-const SIDEBAR_COLLAPSED_WIDTH = 72
-
 export default function ProtectedAppShell({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
@@ -249,10 +245,10 @@ function ProtectedAppShellContent({ children }: { children: React.ReactNode }) {
       <div className="relative flex h-screen overflow-hidden">
         <aside
           className={[
-            'hidden md:block fixed z-30 top-0 left-0 h-screen bg-black border-r border-white/10',
-            'transition-[width] duration-300 ease-in-out',
+            'hidden md:block fixed z-30 top-0 left-0 h-screen bg-black border-r border-white/10 shadow-lg',
+            'transition-[width] duration-300 ease-in-out overflow-y-auto overflow-x-visible',
+            sidebarOpen ? 'w-64' : 'w-16',
           ].join(' ')}
-          style={{ width: sidebarOpen ? SIDEBAR_WIDTH : SIDEBAR_COLLAPSED_WIDTH }}
         >
           <Sidebar collapsed={!sidebarOpen} />
         </aside>
@@ -280,7 +276,7 @@ function ProtectedAppShellContent({ children }: { children: React.ReactNode }) {
           className={[
             'relative flex-1 h-screen overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable]',
             'transition-[margin] duration-300 ease-in-out',
-            sidebarOpen ? 'md:ml-64' : 'md:ml-[72px]',
+            sidebarOpen ? 'md:ml-64' : 'md:ml-16',
           ].join(' ')}
         >
           <div className="sticky top-0 z-20 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">

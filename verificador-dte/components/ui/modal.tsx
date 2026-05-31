@@ -1,14 +1,18 @@
 import * as React from "react";
 
+import { cn } from "@/lib/utils";
+
 export function Modal({
   open,
   onClose,
   disableClose = false,
+  className,
   children,
 }: {
   open: boolean;
   onClose: () => void;
   disableClose?: boolean;
+  className?: string;
   children: React.ReactNode;
 }) {
   if (!open) return null;
@@ -24,7 +28,10 @@ export function Modal({
       role="presentation"
     >
       <div
-        className="relative max-w-full min-w-[320px] rounded-xl bg-background p-6 shadow-xl"
+        className={cn(
+          "relative max-w-full min-w-[320px] rounded-xl bg-background p-6 shadow-xl",
+          className
+        )}
         onClick={(e) => e.stopPropagation()}
       >
         <button

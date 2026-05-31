@@ -4,7 +4,8 @@ import PlanGate from '@/components/PlanGate'
 import UploadFormSection from '@/components/upload/UploadFormSection'
 import UploadFormAccordion from '@/components/upload/UploadFormAccordion'
 import UploadResultsReveal from '@/components/upload/UploadResultsReveal'
-import UploadTableExportBar from '@/components/upload/UploadTableExportBar'
+import UploadTableToolbar from '@/components/upload/UploadTableToolbar'
+import UploadTableBasicFilters, { countBasicFilters } from '@/components/upload/UploadTableBasicFilters'
 import {
   buildExportFilename,
   exportPdfByProfile,
@@ -12,9 +13,6 @@ import {
 } from '@/lib/upload-table-export'
 import { useUploadResultsReveal } from '@/components/upload/useUploadResultsReveal'
 import { useEffect, useMemo, useState } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { recordProcessingLog } from '@/lib/client-processing-log'
 import { summarizeFiles } from '@/lib/processing-log'
@@ -30,7 +28,6 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Search,
 } from 'lucide-react'
 import * as XLSX from 'xlsx-js-style'
 import { toast } from 'sonner'
@@ -463,9 +460,7 @@ export default function ComprasJsonPage() {
 
   return (
     <PlanGate routeKey="compras-json">
-      <main className="w-full max-w-full dark:bg-background">
-        <Card className="w-full max-w-full overflow-hidden border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-950">
-          <CardContent className="space-y-6 pt-6">
+      <main className="w-full max-w-full space-y-6 dark:bg-background">
             <form
               onSubmit={onSubmit}
               className="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10"
@@ -535,71 +530,53 @@ export default function ComprasJsonPage() {
               </div>
             </section>
 
-            <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span className="hidden sm:inline">Resultados:</span>
-                <span className="font-medium text-foreground">
-                  {filtered.length}
-                </span>
-                {filtered.length !== data.length && (
-                  <span className="text-xs">(de {data.length} totales)</span>
-                )}
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-                <UploadTableExportBar
-                  excel={{
-                    onClick: () => exportExcel(data),
-                    label: 'Descargar Excel completo',
-                  }}
-                  csv={{
-                    onClick: () =>
-                      exportRowsToCsv(
-                        data as Record<string, unknown>[],
-                        buildExportFilename('compras_json', 'csv')
-                      ),
-                  }}
-                  pdf={{
-                    onClick: () =>
-                      exportPdfByProfile(
-                        data as Record<string, unknown>[],
-                        'compras',
-                        buildExportFilename('compras_json', 'pdf')
-                      ),
-                  }}
-                />
-                <div className="relative">
-                  <Input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Buscar por código, NRC, proveedor…"
-                    className="pl-9 w-[280px]"
-                  />
-                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="rpp" className="text-sm">
-                    Filas
-                  </Label>
-                  <select
-                    id="rpp"
-                    value={rowsPerPage}
-                    onChange={(e) => {
-                      setRowsPerPage(Number(e.target.value))
+            <UploadTableToolbar
+              resultCount={{ filtered: filtered.length, total: data.length }}
+              export={{
+                excel: {
+                  onClick: () => exportExcel(data),
+                  label: 'Descargar Excel completo',
+                },
+                csv: {
+                  onClick: () =>
+                    exportRowsToCsv(
+                      data as Record<string, unknown>[],
+                      buildExportFilename('compras_json', 'csv')
+                    ),
+                },
+                pdf: {
+                  onClick: () =>
+                    exportPdfByProfile(
+                      data as Record<string, unknown>[],
+                      'compras',
+                      buildExportFilename('compras_json', 'pdf')
+                    ),
+                },
+              }}
+              filters={{
+                activeCount: countBasicFilters(search, rowsPerPage),
+                onClear: () => {
+                  setSearch('')
+                  setRowsPerPage(10)
+                  setCurrentPage(1)
+                },
+                children: (
+                  <UploadTableBasicFilters
+                    search={search}
+                    onSearchChange={(value) => {
+                      setSearch(value)
                       setCurrentPage(1)
                     }}
-                    className="h-9 rounded-md border bg-background px-2 text-sm"
-                  >
-                    {[10, 20, 50, 100].map((n) => (
-                      <option key={n} value={n}>
-                        {n}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
+                    searchPlaceholder="Buscar por código, NRC, proveedor…"
+                    rowsPerPage={rowsPerPage}
+                    onRowsPerPageChange={(value) => {
+                      setRowsPerPage(value)
+                      setCurrentPage(1)
+                    }}
+                  />
+                ),
+              }}
+            />
 
             <div className="overflow-hidden rounded-md border border-slate-200 dark:border-white/10">
               <div className="max-h-[60vh] overflow-auto">
@@ -701,8 +678,6 @@ export default function ComprasJsonPage() {
               </div>
             </div>
             </UploadResultsReveal>
-          </CardContent>
-        </Card>
       </main>
     </PlanGate>
   )

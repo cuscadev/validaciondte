@@ -1,164 +1,82 @@
-// app/prrocesardte/page.tsx
 'use client';
 
 import PlanGate from '@/components/PlanGate';
-import React, { useMemo, useState } from 'react';
+import FechaEmiInput from '@/components/dte/FechaEmiInput';
+import UploadResultsReveal from '@/components/upload/UploadResultsReveal';
+import UploadTableToolbar from '@/components/upload/UploadTableToolbar';
+import UploadTableBasicFilters, { countBasicFilters } from '@/components/upload/UploadTableBasicFilters';
+import UploadTableHints from '@/components/upload/UploadTableHints';
+import { useUploadResultsReveal } from '@/components/upload/useUploadResultsReveal';
+import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { FECHA_DMY_REGEX } from '@/lib/dte-fecha-input';
+import { parsePastedItems, UUID_REGEX } from '@/lib/dte-individual-paste';
+import {
+  DTE_RESULT_COLUMNS,
+  type DteResultRow,
+  dteResultSearchFields,
+  isDteResultLongTextColumn,
+  renderDteResultCell,
+} from '@/lib/dte-result-table';
+import {
+  buildExportFilename,
+  exportPdfByProfile,
+  exportRowsToCsv,
+} from '@/lib/upload-table-export';
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  ClipboardPaste,
+  Plus,
+  Trash2,
+} from 'lucide-react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 type Item = { numItem: number; codGen: string; fechaEmi: string };
 
-type Resultado = {
-  estado: string;
-  tipoDte?: string;
-  tipoDteNorm?: string;
-  descripcionEstado?: string;
-  linkVisita?: string;
-  codigoGeneracion?: string;
-  numeroControl?: string;
-  error?: string;
-};
-
-const FECHA_REGEX = /^\d{2}\/\d{2}\/\d{4}$/; // dd/mm/yyyy
-const UUID_HEX_REGEX =
-  /^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$/;
 const MAX_ITEMS = 10;
 
-/* ================= Helpers UI ================= */
-function formatFechaInput(raw: string) {
-  // deja solo dígitos y coloca / en 2 y 4
-  const digits = raw.replace(/\D/g, '').slice(0, 8);
-  const dd = digits.slice(0, 2);
-  const mm = digits.slice(2, 4);
-  const yyyy = digits.slice(4, 8);
-  let out = dd;
-  if (mm) out += `/${mm}`;
-  if (yyyy) out += `/${yyyy}`;
-  return out;
-}
-
-function estadoBadgeClasses(estado?: string) {
-  const e = (estado || '').toUpperCase();
-  if (e.includes('EMITIDO'))
-    return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
-  if (e.includes('RECHAZ'))
-    return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
-  if (e.includes('ANULAD'))
-    return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300';
-  if (e.includes('INVALID'))
-    return 'bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300';
-  if (e.includes('NO ENCONTRADO'))
-    return 'bg-gray-200 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
-  if (e.includes('ERROR'))
-    return 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300';
-  return 'bg-slate-100 text-slate-800 dark:bg-slate-800/60 dark:text-slate-200';
-}
-
-/* ============ Helpers para pegado Excel/CSV (clipboard) ============ */
-function toDMY(fecha: string) {
-  const t = (fecha || '').trim().replace(/-/g, '/');
-  const dmY = /^\d{2}[\/\-]\d{2}[\/\-]\d{4}$/;
-  if (!dmY.test(t)) return '';
-  const [dd, mm, yyyy] = t.replace(/-/g, '/').split('/');
-  return `${dd.padStart(2, '0')}/${mm.padStart(2, '0')}/${yyyy}`;
-}
-function guessSeparator(line: string): string | RegExp {
-  if (line.includes('\t')) return '\t';
-  if (line.includes(';')) return ';';
-  if (line.includes(',')) return ',';
-  return /\s{2,}/; // 2+ espacios
-}
-function parsePastedItems(texto: string): Array<{ codGen: string; fechaEmi: string }> {
-  const out: Array<{ codGen: string; fechaEmi: string }> = [];
-  const lines = (texto || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-
-  for (const line of lines) {
-    if (/c[oó]d/i.test(line) && /fecha/i.test(line)) continue; // posible header
-    const sep = guessSeparator(line);
-    const cells = typeof sep === 'string' ? line.split(sep) : line.split(sep);
-    if (!cells.length) continue;
-
-    let codGen = '';
-    let fechaEmi = '';
-
-    for (const cRaw of cells) {
-      const c = cRaw.trim();
-      if (!codGen && UUID_HEX_REGEX.test(c)) codGen = c;
-      if (!fechaEmi && /^\d{2}[\/\-]\d{2}[\/\-]\d{4}$/.test(c)) fechaEmi = toDMY(c);
-    }
-
-    if ((!codGen || !fechaEmi) && cells.length >= 2) {
-      const a = (cells[0] || '').trim();
-      const b = (cells[1] || '').trim();
-      if (!codGen && UUID_HEX_REGEX.test(a)) codGen = a;
-      if (!codGen && UUID_HEX_REGEX.test(b)) codGen = b;
-      if (!fechaEmi && /^\d{2}[\/\-]\d{2}[\/\-]\d{4}$/.test(a)) fechaEmi = toDMY(a);
-      if (!fechaEmi && /^\d{2}[\/\-]\d{2}[\/\-]\d{4}$/.test(b)) fechaEmi = toDMY(b);
-    }
-
-    if (codGen && fechaEmi) out.push({ codGen, fechaEmi });
-    if (out.length >= MAX_ITEMS) break;
-  }
-  return out.slice(0, MAX_ITEMS);
-}
-
-function downloadBase64File(base64: string, filename: string) {
-  const byteChars = atob(base64);
-  const byteNumbers = new Array(byteChars.length);
-  for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
-  const byteArray = new Uint8Array(byteNumbers);
-  const blob = new Blob([byteArray], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-
-/* ======================= Página ======================= */
 export default function Page() {
   const { t } = useTranslation();
   const [items, setItems] = useState<Item[]>([{ numItem: 1, codGen: '', fechaEmi: '' }]);
   const [loading, setLoading] = useState(false);
-  const [resultados, setResultados] = useState<Record<number, Resultado>>({});
+  const [data, setData] = useState<DteResultRow[]>([]);
   const [ambiente, setAmbiente] = useState<'00' | '01'>('01');
   const [errorGlobal, setErrorGlobal] = useState<string | null>(null);
-  const [excelInfo, setExcelInfo] = useState<{ url?: string; base64?: string; name?: string } | null>(null);
+  const [downloadHref, setDownloadHref] = useState<string | null>(null);
+  const [filename, setFilename] = useState('resultados_dtes.xlsx');
+  const [search, setSearch] = useState('');
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+  const { resultsVisible, resetResultsVisibility, onResultsReveal } = useUploadResultsReveal();
 
-  const puedeAgregar = useMemo(() => items.length < MAX_ITEMS, [items.length]);
+  const puedeAgregar = items.length < MAX_ITEMS;
 
   const agregarItem = () =>
-    setItems(prev => (prev.length < MAX_ITEMS ? [...prev, { numItem: prev.length + 1, codGen: '', fechaEmi: '' }] : prev));
+    setItems((prev) =>
+      prev.length < MAX_ITEMS
+        ? [...prev, { numItem: prev.length + 1, codGen: '', fechaEmi: '' }]
+        : prev
+    );
 
   const eliminarItem = (idx: number) => {
     if (idx === 0) return;
-    setItems(prev => prev.filter((_, i) => i !== idx).map((it, i) => ({ ...it, numItem: i + 1 })));
-    setResultados(prev => {
-      const n: Record<number, Resultado> = {};
-      Object.entries(prev).forEach(([k, v]) => {
-        const i = Number(k);
-        if (i < idx) n[i] = v;
-        else if (i > idx) n[i - 1] = v;
-      });
-      return n;
-    });
+    setItems((prev) =>
+      prev.filter((_, i) => i !== idx).map((it, i) => ({ ...it, numItem: i + 1 }))
+    );
   };
 
   const updateItem = (idx: number, field: keyof Item, value: string) =>
-    setItems(prev => prev.map((it, i) => (i === idx ? { ...it, [field]: value } : it)));
+    setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, [field]: value } : it)));
 
-  const limpiarResultados = () => {
-    setResultados({});
-    setErrorGlobal(null);
-    setExcelInfo(null);
-  };
-
-  /* ====== PEGAR DESDE PORTAPAPELES (como estaba) ====== */
   const pegarDesdePortapapeles = async () => {
     try {
       const text = await navigator.clipboard.readText();
@@ -168,14 +86,14 @@ export default function Page() {
         toast.error(msg);
         return;
       }
-      const parsed = parsePastedItems(text);
+      const parsed = parsePastedItems(text, MAX_ITEMS);
       if (!parsed.length) {
         const msg = t('prrocesardte_clipboard_invalid');
         setErrorGlobal(msg);
         toast.error(msg);
         return;
       }
-      const actuales = items.filter(it => it.codGen || it.fechaEmi);
+      const actuales = items.filter((it) => it.codGen || it.fechaEmi);
       const capacidad = MAX_ITEMS - actuales.length;
       const aInsertar = parsed.slice(0, capacidad);
 
@@ -184,10 +102,9 @@ export default function Page() {
         nuevos.push({ numItem: nuevos.length + 1, codGen: p.codGen, fechaEmi: p.fechaEmi });
       }
       setItems(nuevos.length ? nuevos : [{ numItem: 1, codGen: '', fechaEmi: '' }]);
-      setResultados({});
-      setExcelInfo(null);
       setErrorGlobal(null);
-    } catch (e: any) {
+      toast.success(t('prrocesardte_pegar_ok', { count: aInsertar.length }));
+    } catch {
       const msg = t('prrocesardte_clipboard_error');
       setErrorGlobal(msg);
       toast.error(msg);
@@ -196,8 +113,10 @@ export default function Page() {
 
   const validar = async () => {
     setErrorGlobal(null);
-    setResultados({});
-    setExcelInfo(null);
+    resetResultsVisibility();
+    setData([]);
+    setDownloadHref(null);
+    setCurrentPage(1);
 
     if (!items.length) {
       const msg = t('prrocesardte_error_no_items');
@@ -218,13 +137,13 @@ export default function Page() {
         toast.error(msg);
         return;
       }
-      if (!FECHA_REGEX.test(it.fechaEmi.trim())) {
+      if (!FECHA_DMY_REGEX.test(it.fechaEmi.trim())) {
         const msg = t('prrocesardte_error_fecha');
         setErrorGlobal(msg);
         toast.error(msg);
         return;
       }
-      if (!UUID_HEX_REGEX.test(it.codGen.trim())) {
+      if (!UUID_REGEX.test(it.codGen.trim())) {
         const msg = t('prrocesardte_error_codigo', { code: it.codGen });
         setErrorGlobal(msg);
         toast.error(msg);
@@ -238,39 +157,29 @@ export default function Page() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({
-          items: items.map(it => ({ codGen: it.codGen.trim(), fecha: it.fechaEmi.trim() })),
+          items: items.map((it) => ({ codGen: it.codGen.trim(), fecha: it.fechaEmi.trim() })),
           concurrencia: 2,
           ambiente,
-          includeExcel: true, // Pedir Excel al backend
+          includeExcel: true,
         }),
       });
 
       const payload = await res.json();
       if (!res.ok) throw new Error(payload?.error || res.statusText);
 
-      const map: Record<number, Resultado> = {};
-      (payload.resultados as any[])?.forEach((r: any, i: number) => {
-        map[i] = {
-          estado: r?.estado || 'DESCONOCIDO',
-          tipoDte: r?.tipoDte,
-          tipoDteNorm: r?.tipoDteNorm,
-          descripcionEstado: r?.descripcionEstado,
-          linkVisita: r?.linkVisita,
-          codigoGeneracion: r?.codigoGeneracion,
-          numeroControl: r?.numeroControl,
-          error: r?.error,
-        };
-      });
-      setResultados(map);
-
-      // Excel listo para descargar
-      if (payload.downloadUrl) {
-        setExcelInfo({ url: payload.downloadUrl, name: payload.filename || 'resultados_dtes.xlsx' });
-      } else if (payload.excelBase64) {
-        setExcelInfo({ base64: payload.excelBase64, name: payload.filename || 'resultados_dtes.xlsx' });
-      }
-    } catch (e: any) {
-      const msg = e?.message || t('prrocesardte_error_unexpected');
+      const resultados = (payload.resultados as DteResultRow[]) || [];
+      setData(resultados);
+      setFilename(payload.filename || 'resultados_dtes.xlsx');
+      setDownloadHref(
+        payload.downloadUrl ||
+          (payload.excelBase64
+            ? `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${payload.excelBase64}`
+            : null)
+      );
+      onResultsReveal();
+      toast.success(t('prrocesardte_validar_ok'));
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : t('prrocesardte_error_unexpected');
       setErrorGlobal(msg);
       toast.error(msg);
     } finally {
@@ -278,254 +187,277 @@ export default function Page() {
     }
   };
 
-  const exportarExcel = () => {
-    if (!excelInfo) return;
-    if (excelInfo.url) {
-      const a = document.createElement('a');
-      a.href = excelInfo.url;
-      a.download = excelInfo.name || 'resultados_dtes.xlsx';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    } else if (excelInfo.base64) {
-      downloadBase64File(excelInfo.base64, excelInfo.name || 'resultados_dtes.xlsx');
-    }
-  };
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return data;
+    return data.filter((r) =>
+      dteResultSearchFields(r).some((v) => v.toLowerCase().includes(q))
+    );
+  }, [data, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [filtered.length, rowsPerPage, totalPages, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * rowsPerPage;
+    return filtered.slice(start, start + rowsPerPage);
+  }, [filtered, currentPage, rowsPerPage]);
+
+  const iconButton = (
+    label: string,
+    onClick: () => void,
+    icon: ReactNode,
+    disabled?: boolean
+  ) => (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          onClick={onClick}
+          disabled={disabled}
+          aria-label={label}
+        >
+          {icon}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
 
   return (
     <PlanGate routeKey="verificacion_individual">
-    <main className="w-full max-w-full">
-      <header className="mb-6 rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-950">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.28em] text-amber-600 dark:text-yellow-300">
-          Consulta individual
-        </p>
-        <h1 className="text-3xl font-bold text-slate-950 dark:text-white">
-          {t('prrocesardte_title')}
-        </h1>
-        <p className="mt-2 text-sm text-slate-600 dark:text-zinc-300">
-          Ingresa hasta {MAX_ITEMS} documentos con código de generación y fecha de emisión para consultar su estado en Hacienda.
-        </p>
-      </header>
-
-      {/* Entrada */}
-      <section className="mb-8 rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-zinc-950">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <h2 className="text-lg font-bold text-slate-950 dark:text-white">
-            {t('prrocesardte_detalle', { count: items.length, max: MAX_ITEMS })}
-          </h2>
-
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-muted-foreground">{t('prrocesardte_ambiente')}</label>
-            <select
-              value={ambiente}
-              onChange={(e) => setAmbiente(e.target.value === '00' ? '00' : '01')}
-              className="rounded border border-slate-200 bg-background px-2 py-1 text-sm dark:border-white/10"
-              title="01 = Producción, 00 = Pruebas"
-            >
-              <option value="01">01 ({t('prrocesardte_produccion')})</option>
-              <option value="00">00 ({t('prrocesardte_pruebas')})</option>
-            </select>
-
-            <button
-              type="button"
-              onClick={agregarItem}
-              disabled={!puedeAgregar}
-              className="rounded bg-yellow-400 px-4 py-2 font-bold text-black hover:bg-yellow-300 disabled:opacity-50"
-            >
-              {t('prrocesardte_agregar')}
-            </button>
-
-            {/* Mantener el botón de pegar desde portapapeles tal cual */}
-            <button
-              type="button"
-              onClick={pegarDesdePortapapeles}
-              className="rounded bg-zinc-900 px-4 py-2 text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-              title="Pega filas copiadas desde Excel: UUID y fecha dd/mm/yyyy"
-            >
-              {t('prrocesardte_pegar')}
-            </button>
-
-            <button
-              type="button"
-              onClick={limpiarResultados}
-              className="rounded bg-slate-200 px-4 py-2 text-slate-800 hover:bg-slate-300 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
-            >
-              {t('prrocesardte_limpiar')}
-            </button>
+      <main className="w-full max-w-full space-y-6 dark:bg-background">
+        <section className="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-white/10">
+            <h2 className="text-sm font-semibold text-foreground">
+              {t('prrocesardte_detalle', { count: items.length, max: MAX_ITEMS })}
+            </h2>
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                {t('prrocesardte_ambiente')}
+                <select
+                  value={ambiente}
+                  onChange={(e) => setAmbiente(e.target.value === '00' ? '00' : '01')}
+                  className="rounded-md border border-slate-200 bg-background px-2 py-1 text-sm dark:border-white/10"
+                  title="01 = Producción, 00 = Pruebas"
+                >
+                  <option value="01">01 ({t('prrocesardte_produccion')})</option>
+                  <option value="00">00 ({t('prrocesardte_pruebas')})</option>
+                </select>
+              </label>
+              {iconButton(
+                t('prrocesardte_tooltip_agregar'),
+                agregarItem,
+                <Plus className="size-4" />,
+                !puedeAgregar
+              )}
+              {iconButton(
+                t('prrocesardte_tooltip_pegar'),
+                () => void pegarDesdePortapapeles(),
+                <ClipboardPaste className="size-4" />
+              )}
+            </div>
           </div>
-        </div>
 
-        <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 shadow-sm dark:border-white/10 dark:bg-black dark:text-white">
-          <h3 className="font-semibold text-amber-600 dark:text-yellow-300">Indicaciones para completar la tabla</h3>
-          <p className="mt-1 text-slate-600 dark:text-zinc-300">
-            Usa formato UUID para el código y fecha dd/mm/yyyy. Puedes pegar filas copiadas desde Excel; se tomarán hasta {MAX_ITEMS} documentos.
-          </p>
-        </div>
-
-        <div className="overflow-x-auto rounded-md border border-slate-200 dark:border-white/10">
-          <table className="min-w-full table-auto text-sm">
-            <thead className="bg-slate-100 text-slate-950 dark:bg-zinc-900 dark:text-zinc-100">
-              <tr>
-                <th className="border border-slate-200 px-4 py-2 dark:border-white/10">{t('prrocesardte_item')}</th>
-                <th className="border border-slate-200 px-4 py-2 dark:border-white/10">{t('prrocesardte_codigo')}</th>
-                <th className="border border-slate-200 px-4 py-2 text-center dark:border-white/10">{t('prrocesardte_fecha')}</th>
-                <th className="border border-slate-200 px-4 py-2 dark:border-white/10">{t('prrocesardte_acciones')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((it, idx) => (
-                <tr key={idx} className="bg-white hover:bg-slate-50 dark:bg-zinc-950 dark:hover:bg-black">
-                  <td className="border border-slate-200 px-2 py-1 dark:border-white/10">
-                    <input
-                      type="text"
-                      value={it.numItem}
-                      readOnly
-                      className="w-full rounded bg-slate-100 px-2 py-1 text-center text-sm text-slate-950 focus:outline-none dark:bg-zinc-900 dark:text-zinc-100"
-                    />
-                  </td>
-                  <td className="border border-slate-200 px-2 py-1 dark:border-white/10">
-                    <input
-                      type="text"
-                      value={it.codGen}
-                      onChange={(e) => updateItem(idx, 'codGen', e.target.value)}
-                      placeholder={t('prrocesardte_codigo_placeholder')}
-                      className="w-full bg-transparent px-2 py-1 text-center text-sm text-foreground focus:outline-none"
-                    />
-                  </td>
-                  <td className="border border-slate-200 px-2 py-1 text-center dark:border-white/10">
-                    <input
-                      type="text"
-                      value={it.fechaEmi}
-                      onChange={(e) => updateItem(idx, 'fechaEmi', formatFechaInput(e.target.value))}
-                      placeholder={t('prrocesardte_fecha_placeholder')}
-                      inputMode="numeric"
-                      className="w-full bg-transparent px-2 py-1 text-center text-sm text-foreground focus:outline-none"
-                    />
-                  </td>
-                  <td className="border border-slate-200 px-2 py-1 text-center dark:border-white/10">
-                    <button
-                      type="button"
-                      onClick={() => eliminarItem(idx)}
-                      disabled={idx === 0}
-                      title={idx === 0 ? 'La primera fila no se puede eliminar' : undefined}
-                      className="text-red-600 hover:underline disabled:cursor-not-allowed disabled:text-slate-400 disabled:no-underline dark:text-red-400 dark:disabled:text-zinc-600"
-                    >
-                      {t('prrocesardte_eliminar')}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={validar}
-            disabled={loading || items.length === 0}
-            className="rounded bg-yellow-400 px-4 py-2 font-bold text-black hover:bg-yellow-300 disabled:opacity-60"
-          >
-            {loading ? t('prrocesardte_validando') : t('prrocesardte_validar')}
-          </button>
-
-          <button
-            type="button"
-            onClick={exportarExcel}
-            disabled={loading || !excelInfo}
-            className="rounded bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700 disabled:opacity-60"
-          >
-            {t('prrocesardte_exportar')}
-          </button>
-
-          {errorGlobal && <span className="text-red-600 dark:text-red-400">{errorGlobal}</span>}
-        </div>
-      </section>
-
-      {/* Resultados */}
-      <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-zinc-950">
-        <h2 className="mb-4 text-lg font-bold text-slate-950 dark:text-white">{t('prrocesardte_resultados')}</h2>
-        <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 shadow-sm dark:border-white/10 dark:bg-black dark:text-white">
-          <h3 className="font-semibold text-amber-600 dark:text-yellow-300">Indicaciones para revisar resultados</h3>
-          <p className="mt-1 text-slate-600 dark:text-zinc-300">
-            Después de validar, revisa el estado, descripción y número de control. Usa Abrir para ir al comprobante oficial cuando el enlace esté disponible.
-          </p>
-        </div>
-        <div className="overflow-x-auto rounded-md border border-slate-200 dark:border-white/10">
-          <table className="min-w-full table-auto text-center text-sm">
-            <thead className="bg-slate-100 text-center text-slate-950 dark:bg-zinc-900 dark:text-zinc-100">
-              <tr>
-                <th className="border border-slate-200 px-3 py-2 text-center dark:border-white/10">{t('prrocesardte_item')}</th>
-                <th className="border border-slate-200 px-3 py-2 text-center dark:border-white/10">{t('prrocesardte_estado')}</th>
-                <th className="border border-slate-200 px-3 py-2 text-center dark:border-white/10">{t('prrocesardte_tipo')}</th>
-                <th className="border border-slate-200 px-3 py-2 text-center dark:border-white/10">{t('prrocesardte_descripcion')}</th>
-                <th className="border border-slate-200 px-3 py-2 text-center dark:border-white/10">{t('prrocesardte_codigo')}</th>
-                <th className="border border-slate-200 px-3 py-2 text-center dark:border-white/10">{t('prrocesardte_control')}</th>
-                <th className="border border-slate-200 px-3 py-2 text-center dark:border-white/10">{t('prrocesardte_abrir')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((it, idx) => {
-                const r = resultados[idx];
-                return (
-                  <tr key={idx} className="bg-white hover:bg-slate-50 dark:bg-zinc-950 dark:hover:bg-black">
-                    <td className="border border-slate-200 px-2 py-1 text-center dark:border-white/10">{it.numItem}</td>
-                    <td className="border border-slate-200 px-2 py-1 text-center dark:border-white/10">
-                      {r ? (
-                        <>
-                          <span
-                            className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${estadoBadgeClasses(
-                              r.estado
-                            )}`}
-                          >
-                            {r.estado}
-                          </span>
-                          {r?.error && (
-                            <div className="text-xs mt-1 text-rose-600 dark:text-rose-400">
-                              {r.error}
-                            </div>
-                          )}
-                        </>
-                      ) : loading ? (
-                        'Consultando…'
-                      ) : (
-                        '-'
-                      )}
-                    </td>
-                    <td className="border border-slate-200 px-2 py-1 dark:border-white/10">
-                      {r?.tipoDte || r?.tipoDteNorm || '-'}
-                    </td>
-                    <td className="border border-slate-200 px-2 py-1 dark:border-white/10">
-                      {r?.descripcionEstado || '-'}
-                    </td>
-                    <td className="border border-slate-200 px-2 py-1 dark:border-white/10">
-                      {r?.codigoGeneracion || '-'}
-                    </td>
-                    <td className="border border-slate-200 px-2 py-1 dark:border-white/10">
-                      {r?.numeroControl || '-'}
-                    </td>
-                    <td className="border border-slate-200 px-2 py-1 text-center dark:border-white/10">
-                      {r?.linkVisita ? (
-                        <a
-                          href={r.linkVisita}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-amber-600 underline dark:text-yellow-300"
-                        >
-                          {t('prrocesardte_abrir')}
-                        </a>
-                      ) : (
-                        <span>-</span>
-                      )}
-                    </td>
+          <div className="grid gap-4 p-4 lg:grid-cols-[1fr_16rem]">
+            <div className="overflow-x-auto rounded-md border border-slate-200 dark:border-white/10">
+              <table className="min-w-full text-sm">
+                <thead className="bg-slate-100 text-slate-950 dark:bg-zinc-900 dark:text-zinc-100">
+                  <tr>
+                    <th className="px-3 py-2 text-left whitespace-nowrap">{t('prrocesardte_item')}</th>
+                    <th className="px-3 py-2 text-left whitespace-nowrap">{t('prrocesardte_codigo')}</th>
+                    <th className="px-3 py-2 text-center whitespace-nowrap">{t('prrocesardte_fecha')}</th>
+                    <th className="px-3 py-2 text-center whitespace-nowrap">{t('prrocesardte_acciones')}</th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </main>
+                </thead>
+                <tbody className="divide-y divide-slate-200 dark:divide-white/10">
+                  {items.map((it, idx) => (
+                    <tr key={idx} className="hover:bg-muted/30">
+                      <td className="px-3 py-2 text-center text-muted-foreground">{it.numItem}</td>
+                      <td className="px-2 py-1">
+                        <input
+                          type="text"
+                          value={it.codGen}
+                          onChange={(e) => updateItem(idx, 'codGen', e.target.value)}
+                          placeholder={t('prrocesardte_codigo_placeholder')}
+                          className="w-full min-w-[14rem] bg-transparent px-2 py-1 text-sm focus:outline-none"
+                        />
+                      </td>
+                      <td className="px-2 py-1">
+                        <FechaEmiInput
+                          value={it.fechaEmi}
+                          onChange={(value) => updateItem(idx, 'fechaEmi', value)}
+                          placeholder={t('prrocesardte_fecha_placeholder')}
+                        />
+                      </td>
+                      <td className="px-2 py-1 text-center">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="size-8 text-destructive hover:text-destructive"
+                              onClick={() => eliminarItem(idx)}
+                              disabled={idx === 0}
+                              aria-label={t('prrocesardte_tooltip_eliminar')}
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>{t('prrocesardte_tooltip_eliminar')}</TooltipContent>
+                        </Tooltip>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <UploadTableHints title={t('prrocesardte_hints_entrada_title')}>
+              {t('prrocesardte_hints_entrada_body', { max: MAX_ITEMS })}
+            </UploadTableHints>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 border-t border-slate-200 px-4 py-3 dark:border-white/10">
+            <Button type="button" onClick={() => void validar()} disabled={loading || items.length === 0}>
+              {loading ? t('prrocesardte_validando') : t('prrocesardte_validar')}
+            </Button>
+            {errorGlobal && <span className="text-sm text-destructive">{errorGlobal}</span>}
+          </div>
+        </section>
+
+        <UploadResultsReveal visible={resultsVisible && data.length > 0}>
+          <UploadTableToolbar
+            resultCount={{ filtered: filtered.length, total: data.length }}
+            export={{
+              excel: {
+                href: downloadHref,
+                download: filename,
+                label: t('prrocesardte_exportar'),
+              },
+              csv: {
+                onClick: () =>
+                  exportRowsToCsv(
+                    data as Record<string, unknown>[],
+                    buildExportFilename('verificacion_individual', 'csv')
+                  ),
+              },
+              pdf: {
+                onClick: () =>
+                  exportPdfByProfile(
+                    data as Record<string, unknown>[],
+                    'verificador',
+                    buildExportFilename('verificacion_individual', 'pdf')
+                  ),
+              },
+            }}
+            filters={{
+              activeCount: countBasicFilters(search, rowsPerPage),
+              onClear: () => {
+                setSearch('');
+                setRowsPerPage(10);
+                setCurrentPage(1);
+              },
+              children: (
+                <UploadTableBasicFilters
+                  search={search}
+                  onSearchChange={(value) => {
+                    setSearch(value);
+                    setCurrentPage(1);
+                  }}
+                  searchPlaceholder={t('prrocesardte_buscar_placeholder')}
+                  rowsPerPage={rowsPerPage}
+                  onRowsPerPageChange={(value) => {
+                    setRowsPerPage(value);
+                    setCurrentPage(1);
+                  }}
+                />
+              ),
+            }}
+          />
+
+          <div className="mt-4 overflow-hidden rounded-md border border-slate-200 dark:border-white/10">
+            <div className="max-h-[60vh] overflow-auto">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 z-10 bg-slate-100 text-slate-950 backdrop-blur supports-[backdrop-filter]:bg-slate-100/90 dark:bg-zinc-900 dark:text-zinc-100">
+                  <tr>
+                    {DTE_RESULT_COLUMNS.map((col) => (
+                      <th key={col.key} className="whitespace-nowrap p-2 text-left font-semibold">
+                        {col.label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {paginatedData.length === 0 && (
+                    <tr>
+                      <td colSpan={DTE_RESULT_COLUMNS.length} className="p-6 text-center text-muted-foreground">
+                        {loading ? t('prrocesardte_validando') : t('prrocesardte_sin_resultados')}
+                      </td>
+                    </tr>
+                  )}
+                  {paginatedData.map((r, i) => (
+                    <tr key={r.codGen || r.codigoGeneracion || i} className="transition-colors hover:bg-muted/40">
+                      {DTE_RESULT_COLUMNS.map((col) => (
+                        <td
+                          key={col.key}
+                          className={`p-2 align-top ${isDteResultLongTextColumn(col.key) ? 'max-w-xs whitespace-normal break-words' : 'whitespace-nowrap'}`}
+                        >
+                          {renderDteResultCell(col.key, r)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-black sm:flex-row">
+              <span className="text-sm text-muted-foreground">
+                {t('prrocesardte_pagina', { current: currentPage, total: totalPages })}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setCurrentPage(1)} disabled={currentPage === 1}>
+                  <ChevronsLeft className="size-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="size-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight className="size-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronsRight className="size-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </UploadResultsReveal>
+      </main>
     </PlanGate>
   );
 }

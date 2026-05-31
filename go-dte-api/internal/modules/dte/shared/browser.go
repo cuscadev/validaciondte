@@ -2,8 +2,10 @@ package shared
 
 import (
 	"context"
+	"errors"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -26,6 +28,11 @@ func NewScraper(parent context.Context) (*Scraper, error) {
 		chromedp.Flag("disable-background-networking", true),
 		chromedp.Flag("disable-extensions", true),
 		chromedp.Flag("disable-sync", true),
+		chromedp.Flag("disable-images", true),
+		chromedp.Flag("blink-settings", "imagesEnabled=false"),
+		chromedp.Flag("disable-translate", true),
+		chromedp.Flag("mute-audio", true),
+		chromedp.Flag("disable-default-apps", true),
 		chromedp.UserAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 VerificadorDTE-Go/1.0 Chrome Safari"),
 	)
 
@@ -96,11 +103,14 @@ func (s *Scraper) ConsultarDTE(parent context.Context, rawURL string) Result {
 		chromedp.Navigate(sanitized),
 		chromedp.WaitReady("body", chromedp.ByQuery),
 		chromedp.Evaluate(clickSearchButtonJS, nil),
-		waitForResultOrIdle(),
+		waitForScrapeReady(),
 		chromedp.OuterHTML("html", &html),
 	)
 	if err != nil {
 		result.Error = err.Error()
+		if errors.Is(err, errScrapeNotReady) {
+			result.Estado = "ERROR"
+		}
 		return result
 	}
 
@@ -135,22 +145,46 @@ func baseErrorResult(rawURL string, err error) Result {
 	}
 }
 
-func waitForResultOrIdle() chromedp.Action {
+func waitForScrapeReady() chromedp.Action {
 	return chromedp.ActionFunc(func(ctx context.Context) error {
-		deadline := time.Now().Add(8 * time.Second)
+		deadline := time.Now().Add(12 * time.Second)
+		basicSeen := false
 		for time.Now().Before(deadline) {
-			var found bool
-			err := chromedp.Evaluate(resultReadyJS, &found).Do(ctx)
+			var ready bool
+			err := chromedp.Evaluate(scrapeReadyJS, &ready).Do(ctx)
 			if err != nil {
 				return err
 			}
-			if found {
+			if ready {
+				time.Sleep(150 * time.Millisecond)
 				return nil
 			}
-			time.Sleep(150 * time.Millisecond)
+
+			var bodyText string
+			_ = chromedp.Evaluate(`(document.body && document.body.innerText) || ""`, &bodyText).Do(ctx)
+			if scrapeReadyBasic(bodyText) {
+				basicSeen = true
+			}
+
+			interval := 150 * time.Millisecond
+			if basicSeen {
+				interval = 80 * time.Millisecond
+			}
+			time.Sleep(interval)
 		}
-		return nil
+		return errScrapeNotReady
 	})
+}
+
+func scrapeReadyBasic(bodyText string) bool {
+	text := strings.ToLower(bodyText)
+	return strings.Contains(text, "estado del dte") ||
+		strings.Contains(text, "estado del documento") ||
+		strings.Contains(text, "no encontrado") ||
+		strings.Contains(text, "no existe") ||
+		strings.Contains(text, "transmitido satisfactoriamente") ||
+		strings.Contains(text, "rechazado") ||
+		strings.Contains(text, "invalidado")
 }
 
 func MapHTMLResult(html string, base Result) Result {
@@ -183,12 +217,8 @@ func MapHTMLResult(html string, base Result) Result {
 	detail.CodGen = base.CodGen
 	detail.FechaEmi = base.FechaEmi
 	detail.OK = detail.Estado != "ERROR"
-	detail.Relacionados = []RelatedDocument{}
 	detail.Observaciones = extractObservations(html)
-
-	if detail.Ajustado {
-		detail.Relacionados = extractRelated(html)
-	}
+	detail.Relacionados = extractRelated(html)
 	if len(detail.Observaciones) > 0 {
 		lines := make([]string, 0, len(detail.Observaciones))
 		for _, obs := range detail.Observaciones {
@@ -196,8 +226,32 @@ func MapHTMLResult(html string, base Result) Result {
 		}
 		detail.ObservacionesTexto = strings.Join(lines, "\n")
 	}
+	if len(detail.Relacionados) > 0 {
+		detail.RelacionadosTexto = formatRelacionadosTexto(detail.Relacionados)
+	}
 
 	return detail
+}
+
+func formatRelacionadosTexto(relacionados []RelatedDocument) string {
+	lines := make([]string, 0, len(relacionados))
+	for i, rel := range relacionados {
+		lines = append(lines, strings.Join([]string{
+			strconv.Itoa(i+1) + ". " + rel.TipoDocumentacion,
+			rel.CodigoGeneracion,
+			rel.FechaGeneracion,
+			rel.SelloRecepcion,
+		}, " | "))
+	}
+	return strings.Join(lines, "\n")
+}
+
+func tableHeaders(table *goquery.Selection) []string {
+	headers := []string{}
+	table.Find("thead th, tr:first-child th").Each(func(_ int, th *goquery.Selection) {
+		headers = append(headers, normalizeLabel(th.Text()))
+	})
+	return headers
 }
 
 func extractRelated(html string) []RelatedDocument {
@@ -208,22 +262,27 @@ func extractRelated(html string) []RelatedDocument {
 
 	var rows []RelatedDocument
 	doc.Find("table").EachWithBreak(func(_ int, table *goquery.Selection) bool {
-		headers := []string{}
-		table.Find("thead th, tr:first-child th").Each(func(_ int, th *goquery.Selection) {
-			headers = append(headers, normalizeLabel(th.Text()))
-		})
+		headers := tableHeaders(table)
 		joined := strings.Join(headers, "|")
 		if !strings.Contains(joined, "fecha de generacion") || !strings.Contains(joined, "codigo de generacion") || !strings.Contains(joined, "sello de recepcion") {
 			return true
 		}
 
+		tipoIdx := indexOfTipoHeader(headers)
+		fechaIdx := indexOfHeader(headers, "fecha de generacion", 1)
+		codigoIdx := indexOfHeader(headers, "codigo de generacion", 2)
+		selloIdx := indexOfHeader(headers, "sello de recepcion", 3)
 		table.Find("tbody tr").Each(func(_ int, tr *goquery.Selection) {
 			cells := tr.Find("td")
+			codigo := Clean(cells.Eq(codigoIdx).Text())
+			if codigo == "" {
+				return
+			}
 			rows = append(rows, RelatedDocument{
-				FechaGeneracion:   Clean(cells.Eq(indexOfHeader(headers, "fecha de generacion", 0)).Text()),
-				CodigoGeneracion:  Clean(cells.Eq(indexOfHeader(headers, "codigo de generacion", 1)).Text()),
-				SelloRecepcion:    Clean(cells.Eq(indexOfHeader(headers, "sello de recepcion", 2)).Text()),
-				TipoDocumentacion: Clean(cells.Eq(indexOfHeader(headers, "tipo de documentacion", 3)).Text()),
+				FechaGeneracion:   Clean(cells.Eq(fechaIdx).Text()),
+				CodigoGeneracion:  codigo,
+				SelloRecepcion:    Clean(cells.Eq(selloIdx).Text()),
+				TipoDocumentacion: Clean(cells.Eq(tipoIdx).Text()),
 			})
 		})
 		return false
@@ -239,10 +298,7 @@ func extractObservations(html string) []Observation {
 
 	var rows []Observation
 	doc.Find("table").EachWithBreak(func(_ int, table *goquery.Selection) bool {
-		headers := []string{}
-		table.Find("thead th, tr:first-child th").Each(func(_ int, th *goquery.Selection) {
-			headers = append(headers, normalizeLabel(th.Text()))
-		})
+		headers := tableHeaders(table)
 		if !strings.Contains(strings.Join(headers, "|"), "observacion") {
 			return true
 		}
@@ -276,6 +332,32 @@ func indexOfHeader(headers []string, needle string, fallback int) int {
 	return fallback
 }
 
+func indexOfHeaderAny(headers []string, needles []string, fallback int) int {
+	for _, needle := range needles {
+		for i, h := range headers {
+			if strings.Contains(h, needle) {
+				return i
+			}
+		}
+	}
+	return fallback
+}
+
+func indexOfTipoHeader(headers []string) int {
+	if idx := indexOfHeaderAny(headers, []string{"tipo de documento", "tipo de documentacion"}, -1); idx >= 0 {
+		return idx
+	}
+	for i, h := range headers {
+		if strings.Contains(h, "tipo") && strings.Contains(h, "documento") {
+			return i
+		}
+	}
+	if len(headers) > 0 {
+		return len(headers) - 1
+	}
+	return 4
+}
+
 func stripTags(html string) string {
 	return Clean(regexp.MustCompile(`<[^>]+>`).ReplaceAllString(html, " "))
 }
@@ -286,12 +368,46 @@ const clickSearchButtonJS = `(function(){
   if (target) target.click();
 })();`
 
-const resultReadyJS = `(function(){
-  const text = (document.body && document.body.innerText || '').toLowerCase();
-  return text.includes('resultado de consulta')
+const scrapeReadyJS = `(function(){
+  const bodyText = (document.body && document.body.innerText) || '';
+  const text = bodyText.toLowerCase();
+  const basic = text.includes('estado del dte')
     || text.includes('estado del documento')
-    || text.includes('estado del dte')
-    || text.includes('documentos relacionados')
     || text.includes('no encontrado')
-    || text.includes('no existe');
+    || text.includes('no existe')
+    || text.includes('transmitido satisfactoriamente')
+    || text.includes('rechazado')
+    || text.includes('invalidado');
+  if (!basic) return false;
+
+  const needsRelated = text.includes('documentos relacionados')
+    || text.includes('documento ha sido ajustado');
+  if (!needsRelated) return true;
+
+  const uuids = bodyText.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi) || [];
+  return uuids.length >= 2;
 })();`
+
+var uuidInTextPattern = regexp.MustCompile(`(?i)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
+
+func scrapeReadyFromText(bodyText string) bool {
+	text := strings.ToLower(bodyText)
+	basic := strings.Contains(text, "estado del dte") ||
+		strings.Contains(text, "estado del documento") ||
+		strings.Contains(text, "no encontrado") ||
+		strings.Contains(text, "no existe") ||
+		strings.Contains(text, "transmitido satisfactoriamente") ||
+		strings.Contains(text, "rechazado") ||
+		strings.Contains(text, "invalidado")
+	if !basic {
+		return false
+	}
+
+	needsRelated := strings.Contains(text, "documentos relacionados") ||
+		strings.Contains(text, "documento ha sido ajustado")
+	if !needsRelated {
+		return true
+	}
+
+	return len(uuidInTextPattern.FindAllString(bodyText, -1)) >= 2
+}

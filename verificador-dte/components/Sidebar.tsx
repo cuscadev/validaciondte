@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   type LucideIcon,
@@ -11,6 +11,7 @@ import {
   FileText,
   Settings,
   ChevronDown,
+  ChevronUp,
   ChevronRight,
   Users,
   ClipboardList,
@@ -24,6 +25,19 @@ import {
 
 import { useAuth } from '@/components/AuthProvider';
 import { canManageOrgUsers } from '@/lib/firestoreUser';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 
 type NavChild = {
   href: string;
@@ -41,6 +55,170 @@ function isActivePath(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+const collapsedIconBtn =
+  'box-border mx-0.5 size-10 shrink-0 rounded-xl inline-flex items-center justify-center p-0 text-sm font-medium transition';
+
+const collapsedItemWrap = 'flex w-full shrink-0 justify-center';
+
+function collapsedItemClass(active: boolean) {
+  return cn(
+    collapsedIconBtn,
+    active
+      ? 'bg-yellow-400 text-black shadow-sm shadow-yellow-400/20'
+      : 'text-zinc-300 hover:bg-white/10 hover:text-white',
+  );
+}
+
+function SidebarTooltip({
+  collapsed,
+  label,
+  children,
+}: {
+  collapsed: boolean;
+  label: string;
+  children: React.ReactElement;
+}) {
+  if (!collapsed) return children;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent side="right" sideOffset={8}>
+        {label}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function SidebarSubmenuFlyout({
+  itemLabel,
+  active,
+  icon: Icon,
+  children,
+  pathname,
+  onNavigate,
+  t,
+  open,
+  onOpenChange,
+}: {
+  itemLabel: string;
+  active: boolean;
+  icon: LucideIcon;
+  children: NavChild[];
+  pathname: string;
+  onNavigate?: () => void;
+  t: (key: string) => string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  return (
+    <div className={collapsedItemWrap}>
+      <DropdownMenu open={open} onOpenChange={onOpenChange} modal={false}>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className={collapsedItemClass(active || open)}
+            aria-label={itemLabel}
+            aria-expanded={open}
+          >
+            <Icon className="h-5 w-5 shrink-0" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          side="right"
+          align="start"
+          sideOffset={8}
+          className="min-w-52"
+        >
+          <DropdownMenuLabel className="text-xs uppercase tracking-wide text-muted-foreground">
+            {itemLabel}
+          </DropdownMenuLabel>
+          {children.map((c) => (
+            <DropdownMenuItem key={c.href} asChild>
+              <Link
+                href={c.href}
+                onClick={() => {
+                  onOpenChange(false);
+                  onNavigate?.();
+                }}
+                className={
+                  isActivePath(pathname, c.href)
+                    ? 'bg-yellow-400/10 text-yellow-700 dark:text-yellow-300'
+                    : ''
+                }
+              >
+                {t(c.label)}
+              </Link>
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}
+
+const collapsedChevronBtn =
+  'mx-0.5 flex h-6 w-10 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-white/10 hover:text-white disabled:pointer-events-none disabled:opacity-25';
+
+function CollapsedNavRail({ children }: { children: React.ReactNode }) {
+  const navRef = useRef<HTMLElement>(null);
+  const [canScrollUp, setCanScrollUp] = useState(false);
+  const [canScrollDown, setCanScrollDown] = useState(false);
+
+  const updateScrollState = useCallback(() => {
+    const el = navRef.current;
+    if (!el) return;
+    setCanScrollUp(el.scrollTop > 4);
+    setCanScrollDown(el.scrollTop + el.clientHeight < el.scrollHeight - 4);
+  }, []);
+
+  useEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+    updateScrollState();
+    el.addEventListener('scroll', updateScrollState, { passive: true });
+    const observer = new ResizeObserver(updateScrollState);
+    observer.observe(el);
+    return () => {
+      el.removeEventListener('scroll', updateScrollState);
+      observer.disconnect();
+    };
+  }, [updateScrollState, children]);
+
+  const scrollBy = (delta: number) => {
+    navRef.current?.scrollBy({ top: delta, behavior: 'smooth' });
+  };
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col items-center gap-0.5">
+      <button
+        type="button"
+        className={collapsedChevronBtn}
+        disabled={!canScrollUp}
+        onClick={() => scrollBy(-132)}
+        aria-label="Subir menú"
+      >
+        <ChevronUp className="h-4 w-4" />
+      </button>
+      <nav
+        ref={navRef}
+        className="sidebar-rail-scroll flex w-full min-h-0 flex-1 flex-col items-center gap-1.5 overflow-y-auto overflow-x-hidden py-0.5"
+      >
+        {children}
+      </nav>
+      <button
+        type="button"
+        className={collapsedChevronBtn}
+        disabled={!canScrollDown}
+        onClick={() => scrollBy(132)}
+        aria-label="Bajar menú"
+      >
+        <ChevronDown className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
 export default function Sidebar({
   collapsed = false,
   onNavigate,
@@ -52,6 +230,7 @@ export default function Sidebar({
   const pathname = usePathname();
 
   const [openHref, setOpenHref] = useState<string | null>(null);
+  const [openFlyoutHref, setOpenFlyoutHref] = useState<string | null>(null);
 
   const { appUser } = useAuth();
 
@@ -269,6 +448,10 @@ export default function Sidebar({
   }, [isSuperadmin, showOrgUsers, isCliente]);
 
   useEffect(() => {
+    setOpenFlyoutHref(null);
+  }, [pathname]);
+
+  useEffect(() => {
     const activeParent = items.find((item) =>
       item.children?.some((child) =>
         isActivePath(pathname, child.href)
@@ -284,32 +467,114 @@ export default function Sidebar({
     setOpenHref(openHref === href ? null : href);
   };
 
+  const brandName = t('app.brandName', 'KAYDTE');
+
   return (
     <div
-      className={[
-        'flex h-full w-full flex-col bg-black text-white transition-[padding] duration-300',
-        collapsed ? 'p-3' : 'p-4',
-      ].join(' ')}
+      className={cn(
+        'flex h-full w-full flex-col bg-black text-white',
+        collapsed ? 'px-2.5 py-3' : 'p-4',
+      )}
     >
-      <div className="mb-6 flex items-center justify-center border-b border-white/10 pb-5">
-        <Link
-          href="/dashboard"
-          onClick={onNavigate}
-          className="rounded-md px-2 py-1 transition hover:bg-white/10"
-          title="Kaiser DTE"
-        >
-          <Image
-            src="/TemaDarkLogo.png"
-            alt="Kaiser DTE"
-            width={collapsed ? 34 : 140}
-            height={48}
-            className="object-contain"
-            priority
-          />
-        </Link>
+      <div
+        className={cn(
+          'border-b border-white/10',
+          collapsed ? 'mb-3 flex justify-center pb-3' : 'mb-6 pb-5',
+        )}
+      >
+        <div className={cn(collapsed && collapsedItemWrap)}>
+          <SidebarTooltip collapsed={collapsed} label={brandName}>
+          <Link
+            href="/dashboard"
+            onClick={onNavigate}
+            className={cn(
+              'transition',
+              collapsed
+                ? 'relative mx-0.5 block size-10 shrink-0 overflow-hidden rounded-xl border border-white/15 bg-white/5 hover:bg-white/10'
+                : 'flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-white/10',
+            )}
+            title={collapsed ? undefined : brandName}
+          >
+            {collapsed ? (
+              <Image
+                src="/TemaDarkLogo.png"
+                alt={brandName}
+                fill
+                sizes="44px"
+                className="object-cover"
+                priority
+              />
+            ) : (
+              <>
+                <div className="relative size-11 shrink-0 overflow-hidden rounded-xl border border-white/15 bg-white/5">
+                  <Image
+                    src="/TemaDarkLogo.png"
+                    alt={brandName}
+                    fill
+                    sizes="44px"
+                    className="object-cover"
+                    priority
+                  />
+                </div>
+                <span className="text-base font-semibold tracking-[0.18em] text-white">
+                  {brandName}
+                </span>
+              </>
+            )}
+          </Link>
+        </SidebarTooltip>
+        </div>
       </div>
 
-      <nav className="flex-1 space-y-2 overflow-y-auto overflow-x-hidden pr-1">
+      {collapsed ? (
+        <CollapsedNavRail>
+          {items.map(({ href, label, icon: Icon, children }) => {
+            const isParentActive = isActivePath(pathname, href);
+            const isChildActive = children?.some((c) =>
+              isActivePath(pathname, c.href),
+            );
+            const active = isChildActive || isParentActive;
+            const itemLabel = t(label);
+
+            if (!children) {
+              const link = (
+                <Link
+                  href={href}
+                  onClick={onNavigate}
+                  aria-current={active ? 'page' : undefined}
+                  className={collapsedItemClass(active)}
+                >
+                  <Icon className="h-5 w-5 shrink-0" />
+                </Link>
+              );
+
+              return (
+                <div key={href} className={collapsedItemWrap}>
+                  <SidebarTooltip collapsed label={itemLabel}>
+                    {link}
+                  </SidebarTooltip>
+                </div>
+              );
+            }
+
+            return (
+              <SidebarSubmenuFlyout
+                key={href}
+                itemLabel={itemLabel}
+                active={active}
+                icon={Icon}
+                children={children}
+                pathname={pathname}
+                onNavigate={onNavigate}
+                t={t}
+                open={openFlyoutHref === href}
+                onOpenChange={(next) => setOpenFlyoutHref(next ? href : null)}
+              />
+            );
+          })}
+        </CollapsedNavRail>
+      ) : (
+      <nav className="flex-1 min-h-0 space-y-2 overflow-y-auto overflow-x-hidden pr-1">
         {items.map(({ href, label, icon: Icon, children }) => {
           const isParentActive = isActivePath(pathname, href);
 
@@ -318,30 +583,27 @@ export default function Sidebar({
           );
 
           const active = isChildActive || isParentActive;
+          const itemLabel = t(label);
 
           if (!children) {
-            return (
+            const link = (
               <Link
-                key={href}
                 href={href}
                 onClick={onNavigate}
                 aria-current={active ? 'page' : undefined}
-                title={collapsed ? t(label) : undefined}
-                className={`flex items-center rounded-md text-sm font-medium transition ${
+                className={cn(
+                  'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition',
                   active
                     ? 'bg-yellow-400 text-black shadow-sm shadow-yellow-400/20'
-                    : 'text-zinc-300 hover:bg-white/10 hover:text-white'
-                } ${
-                  collapsed
-                    ? 'h-11 justify-center px-0'
-                    : 'gap-3 px-3 py-2'
-                }`}
+                    : 'text-zinc-300 hover:bg-white/10 hover:text-white',
+                )}
               >
                 <Icon className="h-5 w-5 shrink-0" />
-
-                {!collapsed && <span>{t(label)}</span>}
+                <span>{itemLabel}</span>
               </Link>
             );
+
+            return <div key={href}>{link}</div>;
           }
 
           const isOpen = openHref === href;
@@ -351,36 +613,25 @@ export default function Sidebar({
               <button
                 type="button"
                 onClick={() => toggleOpen(href)}
-                title={collapsed ? t(label) : undefined}
-                className={`flex w-full items-center rounded-md text-sm font-medium transition ${
+                className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-sm font-medium transition ${
                   active
                     ? 'bg-yellow-400 text-black shadow-sm shadow-yellow-400/20'
                     : 'text-zinc-300 hover:bg-white/10 hover:text-white'
-                } ${
-                  collapsed
-                    ? 'h-11 justify-center px-0'
-                    : 'justify-between gap-3 px-3 py-2'
                 }`}
               >
-                <div
-                  className={`flex items-center ${
-                    collapsed ? 'justify-center' : 'gap-3'
-                  }`}
-                >
+                <div className="flex items-center gap-3">
                   <Icon className="h-5 w-5 shrink-0" />
-
-                  {!collapsed && <span>{t(label)}</span>}
+                  <span>{itemLabel}</span>
                 </div>
 
-                {!collapsed &&
-                  (isOpen ? (
-                    <ChevronDown className="h-4 w-4" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4" />
-                  ))}
+                {isOpen ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
               </button>
 
-              {isOpen && !collapsed && (
+              {isOpen && (
                 <div className="ml-4 mt-2 space-y-1 border-l border-yellow-400/30 pl-3">
                   {children.map((c) => {
                     const childActive = isActivePath(
@@ -421,6 +672,7 @@ export default function Sidebar({
           );
         })}
       </nav>
+      )}
     </div>
   );
 }

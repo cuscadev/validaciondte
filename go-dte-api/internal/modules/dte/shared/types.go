@@ -5,6 +5,10 @@ type RelatedDocument struct {
 	CodigoGeneracion  string `json:"codigoGeneracion,omitempty"`
 	SelloRecepcion    string `json:"selloRecepcion,omitempty"`
 	TipoDocumentacion string `json:"tipoDocumentacion,omitempty"`
+	Estado            string `json:"estado,omitempty"`
+	EstadoRaw         string `json:"estadoRaw,omitempty"`
+	Verificado        bool   `json:"verificado,omitempty"`
+	Error             string `json:"error,omitempty"`
 }
 
 type Observation struct {
@@ -46,7 +50,21 @@ type Result struct {
 	Relacionados            []RelatedDocument `json:"relacionados"`
 	Observaciones           []Observation     `json:"observaciones,omitempty"`
 	ObservacionesTexto      string            `json:"observacionesTexto,omitempty"`
+	RelacionadosTexto       string            `json:"relacionadosTexto,omitempty"`
 	Error                   string            `json:"error,omitempty"`
+
+	TieneNotaCredito            bool   `json:"tieneNotaCredito,omitempty"`
+	NotaCreditoCodigoGeneracion string `json:"notaCreditoCodigoGeneracion,omitempty"`
+	NotaCreditoSelloRecepcion   string `json:"notaCreditoSelloRecepcion,omitempty"`
+	NotaCreditoFechaGeneracion  string `json:"notaCreditoFechaGeneracion,omitempty"`
+	NotaCreditoFechaEmi         string `json:"notaCreditoFechaEmi,omitempty"`
+	NotaCreditoTipoDocumento    string `json:"notaCreditoTipoDocumento,omitempty"`
+	NotaCreditoNumeroControl    string `json:"notaCreditoNumeroControl,omitempty"`
+	NotaCreditoMontoTotal       string `json:"notaCreditoMontoTotal,omitempty"`
+	NotaCreditoEstado           string `json:"notaCreditoEstado,omitempty"`
+	NotaCreditoEstadoRaw        string `json:"notaCreditoEstadoRaw,omitempty"`
+	NotaCreditoLinkVisita       string `json:"notaCreditoLinkVisita,omitempty"`
+	NotaCreditoError            string `json:"notaCreditoError,omitempty"`
 
 	EmisorNit             string `json:"emisorNit,omitempty"`
 	EmisorNrc             string `json:"emisorNrc,omitempty"`

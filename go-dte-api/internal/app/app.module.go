@@ -1,6 +1,8 @@
 package app
 
 import (
+	"context"
+	"log"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -8,10 +10,19 @@ import (
 
 	"verificador-dte/go-dte-api/internal/common/config"
 	dtemodule "verificador-dte/go-dte-api/internal/modules/dte"
+	"verificador-dte/go-dte-api/internal/modules/dte/shared"
 	haciendamodule "verificador-dte/go-dte-api/internal/modules/hacienda"
 )
 
 func New(cfg config.Config) *fiber.App {
+	if cfg.PrewarmBrowsers {
+		if err := shared.InitScrapeRuntime(context.Background(), cfg); err != nil {
+			log.Printf("warn: pre-warm scrape runtime failed: %v", err)
+		} else {
+			log.Printf("scrape runtime pre-warmed (%d browsers)", cfg.BrowserPoolSize)
+		}
+	}
+
 	app := fiber.New(fiber.Config{
 		AppName:      "verificador-dte-go-api",
 		BodyLimit:    50 * 1024 * 1024,
