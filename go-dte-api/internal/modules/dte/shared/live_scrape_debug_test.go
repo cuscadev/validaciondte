@@ -17,7 +17,10 @@ func TestLiveProcessLinksEnrichNC(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 
-	results := ProcessBatch(ctx, []string{url}, 1)
+	results := ProcessBatchWithOptions(ctx, []string{url}, BatchOptions{
+		Concurrency:       1,
+		EnrichCreditNotes: true,
+	})
 	if len(results) != 1 {
 		t.Fatalf("len(results) = %d", len(results))
 	}
@@ -42,6 +45,21 @@ func TestLiveProcessLinksEnrichNC(t *testing.T) {
 	}
 }
 
+func TestLiveCompositeScraperRace(t *testing.T) {
+	if os.Getenv("LIVE_SCRAPE") != "1" {
+		t.Skip("set LIVE_SCRAPE=1 to run")
+	}
+
+	url := "https://admin.factura.gob.sv/consultaPublica?ambiente=01&codGen=94C33B18-35A3-4589-8C62-D9B68FDD6408&fechaEmi=2026-05-23"
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+
+	scraper := NewCompositeScraper()
+	result := scraper.ConsultarDTE(ctx, url)
+	if result.Estado == "" && result.Error == "" {
+		t.Fatalf("empty composite result")
+	}
+}
 func TestLiveConsultAdjustedCCFF(t *testing.T) {
 	if os.Getenv("LIVE_SCRAPE") != "1" {
 		t.Skip("set LIVE_SCRAPE=1 to run")
@@ -71,7 +89,7 @@ func BenchmarkLiveScraperEngine(b *testing.B) {
 	url := "https://admin.factura.gob.sv/consultaPublica?ambiente=01&codGen=94C33B18-35A3-4589-8C62-D9B68FDD6408&fechaEmi=2026-05-23"
 	useRod := os.Getenv("GO_DTE_USE_ROD") == "1"
 	useBrowser := os.Getenv("GO_DTE_USE_BROWSER") == "1"
-	engine := "http-api"
+	engine := "composite-http"
 	if useBrowser {
 		engine = "chromedp"
 		if useRod {

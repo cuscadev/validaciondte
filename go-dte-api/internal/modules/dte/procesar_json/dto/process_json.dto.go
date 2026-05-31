@@ -7,9 +7,11 @@ type ProcessItem struct {
 }
 
 type ProcessJSONRequest struct {
-	Items        []ProcessItem `json:"items"`
-	PasteText    string        `json:"pasteText"`
-	Ambiente     string        `json:"ambiente"`
-	Concurrencia int           `json:"concurrencia"`
-	IncludeExcel bool          `json:"includeExcel"`
+	Items             []ProcessItem `json:"items"`
+	PasteText         string        `json:"pasteText"`
+	Ambiente          string        `json:"ambiente"`
+	Concurrencia      int           `json:"concurrencia"`
+	IncludeExcel      bool          `json:"includeExcel"`
+	EnrichCreditNotes bool          `json:"enrichCreditNotes"`
+	Async             bool          `json:"async"`
 }

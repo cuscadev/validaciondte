@@ -28,7 +28,9 @@ import {
   exportRowsToCsv,
 } from '@/lib/upload-table-export';
 import { recordProcessingLog } from '@/lib/client-processing-log';
+import { DEFAULT_CONCURRENCY, pollDteJob } from '@/lib/go-dte-api';
 import { summarizeResults } from '@/lib/processing-log';
+import { Switch } from '@/components/ui/switch';
 import {
   ChevronLeft,
   ChevronRight,
@@ -58,6 +60,9 @@ export default function Page() {
   const [search, setSearch] = useState('');
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+  const [enrichCreditNotes, setEnrichCreditNotes] = useState(false);
+  const [progressDone, setProgressDone] = useState(0);
+  const [progressTotal, setProgressTotal] = useState(0);
   const { resultsVisible, resetResultsVisibility, onResultsReveal } = useUploadResultsReveal();
 
   const puedeAgregar = items.length < MAX_ITEMS;
@@ -154,6 +159,8 @@ export default function Page() {
     }
 
     setLoading(true);
+    setProgressDone(0);
+    setProgressTotal(items.length);
     const startedAt = new Date();
     const started = performance.now();
     const emptyFiles = { count: 0, totalBytes: 0, extensions: [], mimeTypes: [] };
@@ -164,14 +171,23 @@ export default function Page() {
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({
           items: items.map((it) => ({ codGen: it.codGen.trim(), fecha: it.fechaEmi.trim() })),
-          concurrencia: 2,
+          concurrencia: DEFAULT_CONCURRENCY,
           ambiente,
           includeExcel: true,
+          enrichCreditNotes,
+          async: items.length > 10,
         }),
       });
 
-      const payload = await res.json();
+      let payload = await res.json();
       if (!res.ok) throw new Error(payload?.error || res.statusText);
+
+      if (payload.jobId && payload.status === 'pending') {
+        payload = await pollDteJob(payload.jobId, (status) => {
+          setProgressDone(status.done ?? 0);
+          setProgressTotal(status.total ?? items.length);
+        });
+      }
 
       const resultados = (payload.resultados as DteResultRow[]) || [];
       setData(resultados);
@@ -357,9 +373,22 @@ export default function Page() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3 border-t border-slate-200 px-4 py-3 dark:border-white/10">
+            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Switch
+                checked={enrichCreditNotes}
+                onCheckedChange={setEnrichCreditNotes}
+                aria-label="Verificar notas de crédito relacionadas"
+              />
+              Verificar notas de crédito relacionadas
+            </label>
             <Button type="button" onClick={() => void validar()} disabled={loading || items.length === 0}>
               {loading ? t('prrocesardte_validando') : t('prrocesardte_validar')}
             </Button>
+            {loading && progressTotal > 0 && (
+              <span className="text-sm text-muted-foreground">
+                {progressDone}/{progressTotal}
+              </span>
+            )}
             {errorGlobal && <span className="text-sm text-destructive">{errorGlobal}</span>}
           </div>
         </section>

@@ -15,12 +15,8 @@ import (
 )
 
 func New(cfg config.Config) *fiber.App {
-	if cfg.PrewarmBrowsers && cfg.UseBrowser {
-		if err := shared.InitScrapeRuntime(context.Background(), cfg); err != nil {
-			log.Printf("warn: pre-warm scrape runtime failed: %v", err)
-		} else {
-			log.Printf("scrape runtime pre-warmed (%d browsers)", cfg.BrowserPoolSize)
-		}
+	if err := shared.InitScrapeRuntime(context.Background(), cfg); err != nil {
+		log.Printf("warn: scrape runtime init failed: %v", err)
 	}
 
 	app := fiber.New(fiber.Config{
@@ -36,6 +32,10 @@ func New(cfg config.Config) *fiber.App {
 
 	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"ok": true, "service": "go-dte-api"})
+	})
+
+	app.Get("/metrics", func(c *fiber.Ctx) error {
+		return c.JSON(shared.MetricsSnapshot())
 	})
 
 	dtemodule.Register(app, cfg)

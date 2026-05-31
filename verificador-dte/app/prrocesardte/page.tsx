@@ -245,7 +245,7 @@ export default function Page() {
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({
           items: items.map(it => ({ codGen: it.codGen.trim(), fecha: it.fechaEmi.trim() })),
-          concurrencia: 2,
+          concurrencia: 8,
           ambiente,
           includeExcel: true, // Pedir Excel al backend
         }),

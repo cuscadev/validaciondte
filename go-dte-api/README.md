@@ -71,6 +71,29 @@ GET https://admin.factura.gob.sv/{prod|test}/consultas/publica/simple/1
 
 No hace falta instalar Chrome/Chromium en Render ni en local.
 
+La consulta usa **race HTTP** entre `admin.factura.gob.sv` y `webapp.dtes.mh.gob.sv` (gana la respuesta válida más rápida).
+
+Variables de rendimiento:
+
+```bash
+GO_DTE_CONCURRENCY=8
+GO_DTE_ENRICH_NC=false          # notas de crédito relacionadas (off por defecto)
+GO_DTE_ASYNC_THRESHOLD=10       # lotes >10 ítems pueden ir async con Redis
+GO_DTE_REDIS_ENABLED=true
+REDIS_URL=rediss://...          # Upstash u otro Redis
+GO_DTE_REDIS_TTL=600
+```
+
+Worker dedicado (Render background service):
+
+```bash
+go run ./cmd/worker
+```
+
+Métricas: `GET /metrics` (cache hits/misses, latencia media, fuente admin/webapp).
+
+Jobs async: `GET /api/dte/jobs/:id`
+
 Si necesitas el scraper legacy con navegador headless (chromedp/rod), actívalo explícitamente:
 
 ```bash

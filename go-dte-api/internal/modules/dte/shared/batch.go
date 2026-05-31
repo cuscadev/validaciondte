@@ -8,7 +8,7 @@ import (
 	"verificador-dte/go-dte-api/internal/common/config"
 )
 
-const scrapeTimeout = 18 * time.Second
+const scrapeTimeout = 10 * time.Second
 
 type ScrapeRuntime struct {
 	pool  *ScraperPool
@@ -34,6 +34,7 @@ func InitScrapeRuntime(parent context.Context, cfg config.Config) error {
 		return err
 	}
 	defaultRuntime = runtime
+	InitRedisStore(cfg)
 	return nil
 }
 
@@ -44,6 +45,7 @@ func CloseScrapeRuntime() {
 		defaultRuntime.Close()
 		defaultRuntime = nil
 	}
+	CloseRedisStore()
 }
 
 func runtimeOrNil() *ScrapeRuntime {
@@ -73,13 +75,13 @@ func (r *ScrapeRuntime) Close() {
 	}
 }
 
-func ProcessBatch(parent context.Context, links []string, concurrency int) []Result {
+func ProcessBatchWithOptions(parent context.Context, links []string, opts BatchOptions) []Result {
 	cfg := config.Load()
 	if runtimeOrNil() == nil {
 		_ = InitScrapeRuntime(context.Background(), cfg)
 	}
 	if runtime := runtimeOrNil(); runtime != nil {
-		return runtime.ProcessBatch(parent, links, concurrency)
+		return runtime.processBatch(parent, links, opts)
 	}
 	runtime, err := NewScrapeRuntime(parent, cfg)
 	if err != nil {
@@ -90,7 +92,7 @@ func ProcessBatch(parent context.Context, links []string, concurrency int) []Res
 		return results
 	}
 	defer runtime.Close()
-	return runtime.ProcessBatch(parent, links, concurrency)
+	return runtime.processBatch(parent, links, opts)
 }
 
 type pendingWork struct {
@@ -98,10 +100,11 @@ type pendingWork struct {
 	callbacks []func(Result)
 }
 
-func (r *ScrapeRuntime) ProcessBatch(parent context.Context, links []string, concurrency int) []Result {
+func (r *ScrapeRuntime) processBatch(parent context.Context, links []string, opts BatchOptions) []Result {
 	if len(links) == 0 {
 		return nil
 	}
+	concurrency := opts.Concurrency
 	if concurrency < 1 {
 		concurrency = r.cfg.Concurrency
 	}
@@ -111,6 +114,8 @@ func (r *ScrapeRuntime) ProcessBatch(parent context.Context, links []string, con
 
 	results := make([]Result, len(links))
 	plan := dedupeLinks(links)
+	completed := 0
+	var progressMu sync.Mutex
 
 	jobs := make(chan *pendingWork, len(plan.unique)+16)
 	var wg sync.WaitGroup
@@ -118,14 +123,31 @@ func (r *ScrapeRuntime) ProcessBatch(parent context.Context, links []string, con
 	var pendingMu sync.Mutex
 	limiter := newRateLimiter(r.cfg.MinIntervalMs)
 
+	reportProgress := func() {
+		if opts.OnProgress == nil {
+			return
+		}
+		progressMu.Lock()
+		done := completed
+		progressMu.Unlock()
+		opts.OnProgress(done, len(results), append([]Result(nil), results...))
+	}
+
 	submit := func(url string, onComplete func(Result)) {
 		key := cacheKeyFromURL(url)
+		if hit, ok := LookupConsultCache(url); ok {
+			RecordCacheHit()
+			onComplete(hit)
+			return
+		}
 		if r.cache != nil {
 			if hit, ok := r.cache.Get(url); ok {
+				RecordCacheHit()
 				onComplete(hit)
 				return
 			}
 		}
+		RecordCacheMiss()
 
 		pendingMu.Lock()
 		item, exists := pending[key]
@@ -140,6 +162,9 @@ func (r *ScrapeRuntime) ProcessBatch(parent context.Context, links []string, con
 	}
 
 	enqueueNC := func(parentIdx int, res Result) {
+		if !opts.EnrichCreditNotes {
+			return
+		}
 		nc := PickNotaCredito(res.Relacionados)
 		if nc == nil {
 			return
@@ -171,6 +196,10 @@ func (r *ScrapeRuntime) ProcessBatch(parent context.Context, links []string, con
 			for origIdx, mapped := range plan.origToUnique {
 				if mapped == uIdx {
 					results[origIdx] = res
+					progressMu.Lock()
+					completed++
+					progressMu.Unlock()
+					reportProgress()
 					enqueueNC(origIdx, res)
 				}
 			}
@@ -182,6 +211,7 @@ func (r *ScrapeRuntime) ProcessBatch(parent context.Context, links []string, con
 			for item := range jobs {
 				limiter.wait()
 				result := r.scrapeOne(parent, item.url)
+				StoreConsultCache(item.url, result)
 				for _, cb := range item.callbacks {
 					cb(result)
 				}
@@ -192,6 +222,7 @@ func (r *ScrapeRuntime) ProcessBatch(parent context.Context, links []string, con
 
 	wg.Wait()
 	close(jobs)
+	_ = completed
 
 	return results
 }
@@ -201,8 +232,6 @@ func (r *ScrapeRuntime) scrapeOne(parent context.Context, url string) Result {
 	if item == nil || item.scraper == nil {
 		return baseErrorResult(url, errScraperUnavailable)
 	}
-	item.sem <- struct{}{}
-	defer func() { <-item.sem }()
 
 	if r.cache != nil {
 		return r.cache.Consult(item.scraper, parent, url, scrapeTimeout)

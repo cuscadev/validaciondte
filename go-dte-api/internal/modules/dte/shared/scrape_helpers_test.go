@@ -3,14 +3,14 @@ package shared
 import "testing"
 
 func TestShouldRetryScrape(t *testing.T) {
-	if !shouldRetryScrape(Result{Estado: "ERROR"}, nil) {
-		t.Fatal("expected retry on ERROR")
+	if !shouldRetryScrape(Result{Error: "i/o timeout"}, nil) {
+		t.Fatal("expected retry on network timeout message")
 	}
-	if !shouldRetryScrape(Result{Error: "timeout"}, nil) {
-		t.Fatal("expected retry on error message")
+	if shouldRetryScrape(Result{Estado: "ERROR", Error: "Hacienda respondio HTTP 404"}, nil) {
+		t.Fatal("should not retry business HTTP errors")
 	}
-	if shouldRetryScrape(Result{Estado: "DESCONOCIDO"}, nil) {
-		t.Fatal("should not retry DESCONOCIDO")
+	if shouldRetryScrape(Result{Estado: "NO ENCONTRADO"}, nil) {
+		t.Fatal("should not retry NO ENCONTRADO")
 	}
 	if shouldRetryScrape(Result{Estado: "EMITIDO"}, nil) {
 		t.Fatal("should not retry EMITIDO")

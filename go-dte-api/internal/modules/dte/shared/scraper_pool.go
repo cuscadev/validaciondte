@@ -8,7 +8,6 @@ import (
 
 type pooledScraper struct {
 	scraper ConsultaScraper
-	sem     chan struct{}
 }
 
 type ScraperPool struct {
@@ -17,7 +16,7 @@ type ScraperPool struct {
 }
 
 func newConsultaScraper(_ context.Context, _ bool, _ bool, _ bool) (ConsultaScraper, error) {
-	return NewPublicAPIScraper(), nil
+	return NewCompositeScraper(), nil
 }
 
 func NewScraperPool(parent context.Context, size int, _ bool, _ bool, _ bool) (*ScraperPool, error) {
@@ -31,10 +30,7 @@ func NewScraperPool(parent context.Context, size int, _ bool, _ bool, _ bool) (*
 			pool.Close()
 			return nil, err
 		}
-		pool.items = append(pool.items, &pooledScraper{
-			scraper: scraper,
-			sem:     make(chan struct{}, 2),
-		})
+		pool.items = append(pool.items, &pooledScraper{scraper: scraper})
 	}
 	return pool, nil
 }

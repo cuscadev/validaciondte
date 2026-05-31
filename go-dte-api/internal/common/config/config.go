@@ -13,10 +13,15 @@ type Config struct {
 	BrowserPoolSize             int
 	MinIntervalMs               int
 	ScrapeCacheTTLSeconds       int
+	EnrichCreditNotes           bool
 	PrewarmBrowsers             bool
 	UseRodScraper               bool
 	UseBrowser                  bool
 	HTTPFastPath                bool
+	RedisEnabled                bool
+	RedisURL                    string
+	RedisTTLSeconds             int
+	AsyncBatchThreshold         int
 	HaciendaEnvironment         string
 	HaciendaUserAgent           string
 	HaciendaConsultaDteLoteTest string
@@ -37,7 +42,12 @@ func Load() Config {
 		BrowserPoolSize:               poolSize,
 		MinIntervalMs:                 getenvInt("GO_DTE_MIN_INTERVAL_MS", 0),
 		ScrapeCacheTTLSeconds:         getenvInt("GO_DTE_SCRAPE_CACHE_TTL", 600),
+		EnrichCreditNotes:             getenvBool("GO_DTE_ENRICH_NC", false),
 		PrewarmBrowsers:               getenvBool("GO_DTE_PREWARM", false),
+		RedisEnabled:                  getenvBool("GO_DTE_REDIS_ENABLED", false),
+		RedisURL:                      getenv("REDIS_URL", ""),
+		RedisTTLSeconds:               getenvInt("GO_DTE_REDIS_TTL", 600),
+		AsyncBatchThreshold:           getenvInt("GO_DTE_ASYNC_THRESHOLD", 10),
 		UseRodScraper:                 getenvBool("GO_DTE_USE_ROD", false),
 		UseBrowser:                    getenvBool("GO_DTE_USE_BROWSER", false),
 		HTTPFastPath:                  getenvBool("GO_DTE_HTTP_FAST_PATH", false),

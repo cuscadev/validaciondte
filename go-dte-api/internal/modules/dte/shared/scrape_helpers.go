@@ -3,22 +3,48 @@ package shared
 import (
 	"context"
 	"errors"
+	"net"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 )
 
+// shouldRetryScrape kept for tests documenting old behavior expectations.
 func shouldRetryScrape(result Result, scrapeErr error) bool {
+	return isRetryableScrapeError(result, scrapeErr)
+}
+
+func isRetryableScrapeError(result Result, scrapeErr error) bool {
 	if scrapeErr != nil {
-		return true
+		return isTransientNetworkError(scrapeErr)
 	}
-	if strings.TrimSpace(result.Error) != "" {
-		return true
-	}
-	if result.Estado == "ERROR" {
-		return true
+	if msg := strings.TrimSpace(result.Error); msg != "" {
+		return isTransientNetworkError(errors.New(msg))
 	}
 	return false
+}
+
+func isTransientNetworkError(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+		return true
+	}
+	var netErr net.Error
+	if errors.As(err, &netErr) && netErr.Timeout() {
+		return true
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "connection reset") ||
+		strings.Contains(msg, "connection refused") ||
+		strings.Contains(msg, "broken pipe") ||
+		strings.Contains(msg, "i/o timeout") ||
+		strings.Contains(msg, "no such host") ||
+		strings.Contains(msg, "tls handshake timeout") ||
+		errors.Is(err, syscall.ECONNRESET) ||
+		errors.Is(err, syscall.ECONNREFUSED)
 }
 
 func consultWithRetry(scraper ConsultaScraper, parent context.Context, url string, timeout time.Duration) Result {
@@ -26,21 +52,17 @@ func consultWithRetry(scraper ConsultaScraper, parent context.Context, url strin
 	result := scraper.ConsultarDTE(ctx, url)
 	cancel()
 
-	if !shouldRetryScrape(result, nil) {
+	if !isRetryableScrapeError(result, nil) {
 		return result
 	}
 
 	ctxRetry, cancelRetry := context.WithTimeout(parent, timeout)
 	defer cancelRetry()
-	retry := scraper.ConsultarDTE(ctxRetry, url)
-	if shouldRetryScrape(retry, nil) {
-		return retry
-	}
-	return retry
+	return scraper.ConsultarDTE(ctxRetry, url)
 }
 
 type dedupePlan struct {
-	unique   []string
+	unique       []string
 	origToUnique []int
 }
 

@@ -84,7 +84,7 @@ func (s *Service) ProcessFiles(c *fiber.Ctx) (shared.ProcessResponse, error) {
 		links = append(links, shared.BuildConsultaURL(row.CodGen, row.FechaYMD, "01"))
 	}
 
-	results := shared.ProcessBatch(c.Context(), links, s.cfg.Concurrency)
+	results := shared.ProcessBatchWithOptions(c.Context(), links, shared.BatchOptionsFromConfig(s.cfg, s.cfg.Concurrency))
 	for idx := range results {
 		key := shared.ResultLookupKey(results[idx].CodGen, results[idx].FechaEmi)
 		if extra, ok := extrasByKey[key]; ok {
@@ -148,8 +148,38 @@ func (s *Service) Process(ctx context.Context, req dto.ProcessJSONRequest) (shar
 		links = append(links, shared.BuildConsultaURL(item.codGen, item.fechaYMD, ambiente))
 	}
 
-	results := shared.ProcessBatch(ctx, links, concurrency)
+	enrichNC := req.EnrichCreditNotes
+	if shouldAsyncBatch(s.cfg, req.Async, len(links)) {
+		jobID, err := shared.EnqueueBatchJob(shared.BatchJobPayload{
+			Links:             links,
+			Concurrency:       concurrency,
+			EnrichCreditNotes: enrichNC,
+			IncludeExcel:      req.IncludeExcel,
+		})
+		if err != nil {
+			return shared.ProcessResponse{}, err
+		}
+		return shared.ProcessResponse{
+			JobID:  jobID,
+			Status: "pending",
+			Total:  len(links),
+			Done:   0,
+		}, nil
+	}
+
+	opts := shared.BatchOptions{
+		Concurrency:       concurrency,
+		EnrichCreditNotes: enrichNC,
+	}
+	results := shared.ProcessBatchWithOptions(ctx, links, opts)
 	return buildResponse(results, req.IncludeExcel)
+}
+
+func shouldAsyncBatch(cfg config.Config, async bool, count int) bool {
+	if !cfg.RedisEnabled {
+		return false
+	}
+	return async || count > cfg.AsyncBatchThreshold
 }
 
 func buildResponse(results []shared.Result, includeExcel bool) (shared.ProcessResponse, error) {

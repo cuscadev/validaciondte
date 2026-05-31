@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
-import { consultCodFechaViaGo } from '@/lib/go-dte-api';
+import { consultCodFechaViaGo, DEFAULT_CONCURRENCY } from '@/lib/go-dte-api';
 import {
   buildWorkbook,
   tryParseFechaFlexible,
@@ -244,7 +244,7 @@ export async function POST(req: NextRequest, context: Params) {
     if (filas.length) {
       const goResp = await consultCodFechaViaGo(
         filas.map((f) => ({ codGen: f.codGen, fechaYmd: f.fechaYmd })),
-        { concurrencia: 2 },
+        { concurrencia: DEFAULT_CONCURRENCY, enrichCreditNotes: false },
       );
       consultados = goResp.resultados;
     }

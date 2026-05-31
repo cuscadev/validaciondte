@@ -89,8 +89,11 @@ type Result struct {
 }
 
 type ProcessResponse struct {
+	JobID       string   `json:"jobId,omitempty"`
+	Status      string   `json:"status,omitempty"`
 	Filename    string   `json:"filename,omitempty"`
 	Total       int      `json:"total,omitempty"`
+	Done        int      `json:"done,omitempty"`
 	Resultados  []Result `json:"resultados"`
 	ExcelBase64 string   `json:"excelBase64,omitempty"`
 }

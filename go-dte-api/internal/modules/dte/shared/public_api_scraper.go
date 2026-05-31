@@ -12,16 +12,43 @@ import (
 	"time"
 )
 
-const publicAPIHost = "https://admin.factura.gob.sv"
+const (
+	publicAPIHostAdmin  = "https://admin.factura.gob.sv"
+	publicAPIHostWebapp = "https://webapp.dtes.mh.gob.sv"
+	publicAPITimeout    = 8 * time.Second
+)
 
 type PublicAPIScraper struct {
 	client *http.Client
+	host   string
+	source string
+}
+
+func NewAdminPublicAPIScraper() *PublicAPIScraper {
+	return newPublicAPIScraper(publicAPIHostAdmin, "admin")
+}
+
+func NewWebappPublicAPIScraper() *PublicAPIScraper {
+	return newPublicAPIScraper(publicAPIHostWebapp, "webapp")
 }
 
 func NewPublicAPIScraper() *PublicAPIScraper {
+	return NewAdminPublicAPIScraper()
+}
+
+func newPublicAPIScraper(host, source string) *PublicAPIScraper {
 	return &PublicAPIScraper{
-		client: &http.Client{Timeout: 15 * time.Second},
+		client: SharedHTTPClient(publicAPITimeout),
+		host:   host,
+		source: source,
 	}
+}
+
+func (p *PublicAPIScraper) SourceName() string {
+	if p == nil || p.source == "" {
+		return "admin"
+	}
+	return p.source
 }
 
 func (p *PublicAPIScraper) Close() {}
@@ -54,7 +81,7 @@ func (p *PublicAPIScraper) ConsultarDTE(parent context.Context, rawURL string) R
 	envPrefix := publicAPIEnvPrefix(ambiente)
 	apiURL := fmt.Sprintf(
 		"%s/%s/consultas/publica/simple/1?codigoGeneracion=%s&fechaEmi=%s&ambiente=%s",
-		publicAPIHost,
+		p.host,
 		envPrefix,
 		url.QueryEscape(codGen),
 		url.QueryEscape(fechaEmi),
