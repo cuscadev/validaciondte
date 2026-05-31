@@ -70,15 +70,19 @@ func BenchmarkLiveScraperEngine(b *testing.B) {
 
 	url := "https://admin.factura.gob.sv/consultaPublica?ambiente=01&codGen=94C33B18-35A3-4589-8C62-D9B68FDD6408&fechaEmi=2026-05-23"
 	useRod := os.Getenv("GO_DTE_USE_ROD") == "1"
-	engine := "chromedp"
-	if useRod {
-		engine = "rod"
+	useBrowser := os.Getenv("GO_DTE_USE_BROWSER") == "1"
+	engine := "http-api"
+	if useBrowser {
+		engine = "chromedp"
+		if useRod {
+			engine = "rod"
+		}
 	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
-		scraper, err := newConsultaScraper(ctx, useRod, false)
+		scraper, err := newConsultaScraper(ctx, useRod, useBrowser, false)
 		if err != nil {
 			cancel()
 			b.Fatalf("newConsultaScraper: %v", err)

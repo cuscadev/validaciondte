@@ -17,3 +17,11 @@ func (ct *Controller) Process(c *fiber.Ctx) error {
 	}
 	return c.JSON(resp)
 }
+
+func (ct *Controller) ProcessCodFecha(c *fiber.Ctx) error {
+	resp, err := ct.service.ProcessCodFecha(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	return c.JSON(resp)
+}

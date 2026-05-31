@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { consultCodFechaViaGo } from '@/lib/go-dte-api';
 import {
-  launchBrowser,
-  optimizarPagina,
-  procesarFilasConPool,
   buildWorkbook,
   tryParseFechaFlexible,
   isProbableCodGen,
@@ -192,7 +190,6 @@ function invalidResult(value: string, error: string) {
 }
 
 export async function POST(req: NextRequest, context: Params) {
-  let browser = null;
   let batchRef: FirebaseFirestore.DocumentReference | null = null;
 
   try {
@@ -243,19 +240,13 @@ export async function POST(req: NextRequest, context: Params) {
       filas.push(parsed);
     }
 
-    let consultados = [];
+    let consultados: Record<string, unknown>[] = [];
     if (filas.length) {
-      browser = await launchBrowser();
-      const ctx = await browser.newContext({
-        userAgent: 'Mozilla/5.0 (X11; Linux x86_64) VerificadorDTE/1.0 Chrome Safari',
-      });
-
-      const page = await ctx.newPage();
-      await optimizarPagina(page);
-      await page.close();
-
-      consultados = await procesarFilasConPool(ctx, filas, 2);
-      await ctx.close();
+      const goResp = await consultCodFechaViaGo(
+        filas.map((f) => ({ codGen: f.codGen, fechaYmd: f.fechaYmd })),
+        { concurrencia: 2 },
+      );
+      consultados = goResp.resultados;
     }
 
     const results = [...invalidos, ...consultados];
@@ -294,7 +285,5 @@ export async function POST(req: NextRequest, context: Params) {
       { error: error instanceof Error ? error.message : 'Error interno' },
       { status: 500 }
     );
-  } finally {
-    if (browser) await browser.close();
   }
 }

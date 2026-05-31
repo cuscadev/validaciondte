@@ -2,120 +2,17 @@ package shared
 
 import (
 	"context"
-	"errors"
 	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/chromedp/cdproto/network"
-	"github.com/chromedp/chromedp"
 )
 
-type Scraper struct {
-	browserCtx context.Context
-	cancel     context.CancelFunc
-}
-
-func NewScraper(parent context.Context) (*Scraper, error) {
-	opts := append(chromedp.DefaultExecAllocatorOptions[:],
-		chromedp.Flag("headless", true),
-		chromedp.Flag("disable-gpu", true),
-		chromedp.Flag("no-sandbox", true),
-		chromedp.Flag("disable-dev-shm-usage", true),
-		chromedp.Flag("disable-background-networking", true),
-		chromedp.Flag("disable-extensions", true),
-		chromedp.Flag("disable-sync", true),
-		chromedp.Flag("disable-images", true),
-		chromedp.Flag("blink-settings", "imagesEnabled=false"),
-		chromedp.Flag("disable-translate", true),
-		chromedp.Flag("mute-audio", true),
-		chromedp.Flag("disable-default-apps", true),
-		chromedp.UserAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 VerificadorDTE-Go/1.0 Chrome Safari"),
-	)
-
-	allocCtx, cancelAlloc := chromedp.NewExecAllocator(parent, opts...)
-	browserCtx, cancelBrowser := chromedp.NewContext(allocCtx)
-
-	if err := chromedp.Run(browserCtx); err != nil {
-		cancelBrowser()
-		cancelAlloc()
-		return nil, err
-	}
-
-	return &Scraper{
-		browserCtx: browserCtx,
-		cancel: func() {
-			cancelBrowser()
-			cancelAlloc()
-		},
-	}, nil
-}
-
-func (s *Scraper) Close() {
-	if s != nil && s.cancel != nil {
-		s.cancel()
-	}
-}
-
 func ConsultarDTE(parent context.Context, rawURL string) Result {
-	scraper, err := NewScraper(parent)
-	if err != nil {
-		return baseErrorResult(rawURL, err)
-	}
-	defer scraper.Close()
-
+	scraper := NewPublicAPIScraper()
 	return scraper.ConsultarDTE(parent, rawURL)
-}
-
-func (s *Scraper) ConsultarDTE(parent context.Context, rawURL string) Result {
-	sanitized := SanitizarURL(rawURL)
-	parsed, _ := url.Parse(sanitized)
-	query := parsed.Query()
-
-	result := Result{
-		OK:            false,
-		URL:           sanitized,
-		LinkVisita:    sanitized,
-		Visitar:       "Abrir",
-		Host:          parsed.Host,
-		Ambiente:      firstQuery(query, "ambiente"),
-		CodGen:        strings.ToUpper(firstQuery(query, "codGen")),
-		FechaEmi:      firstQuery(query, "fechaEmi"),
-		TipoDteNorm:   "SIN_TIPO",
-		Estado:        "ERROR",
-		Relacionados:  []RelatedDocument{},
-		Observaciones: []Observation{},
-	}
-
-	ctx, cancel := chromedp.NewContext(s.browserCtx)
-	defer cancel()
-
-	var html string
-	err := chromedp.Run(ctx,
-		network.Enable(),
-		network.SetBlockedURLs([]string{
-			"*.png", "*.jpg", "*.jpeg", "*.gif", "*.webp", "*.svg", "*.ico",
-			"*.css", "*.woff", "*.woff2", "*.ttf", "*.otf", "*.mp4", "*.webm",
-		}),
-		chromedp.Navigate(sanitized),
-		chromedp.WaitReady("body", chromedp.ByQuery),
-		chromedp.Evaluate(clickSearchButtonJS, nil),
-		waitForScrapeReady(),
-		chromedp.OuterHTML("html", &html),
-	)
-	if err != nil {
-		result.Error = err.Error()
-		if errors.Is(err, errScrapeNotReady) {
-			result.Estado = "ERROR"
-		}
-		return result
-	}
-
-	result = MapHTMLResult(html, result)
-	return result
 }
 
 func baseErrorResult(rawURL string, err error) Result {
@@ -143,48 +40,6 @@ func baseErrorResult(rawURL string, err error) Result {
 		Observaciones: []Observation{},
 		Error:         msg,
 	}
-}
-
-func waitForScrapeReady() chromedp.Action {
-	return chromedp.ActionFunc(func(ctx context.Context) error {
-		deadline := time.Now().Add(12 * time.Second)
-		basicSeen := false
-		for time.Now().Before(deadline) {
-			var ready bool
-			err := chromedp.Evaluate(scrapeReadyJS, &ready).Do(ctx)
-			if err != nil {
-				return err
-			}
-			if ready {
-				time.Sleep(150 * time.Millisecond)
-				return nil
-			}
-
-			var bodyText string
-			_ = chromedp.Evaluate(`(document.body && document.body.innerText) || ""`, &bodyText).Do(ctx)
-			if scrapeReadyBasic(bodyText) {
-				basicSeen = true
-			}
-
-			interval := 150 * time.Millisecond
-			if basicSeen {
-				interval = 80 * time.Millisecond
-			}
-			time.Sleep(interval)
-		}
-		return errScrapeNotReady
-	})
-}
-
-func scrapeReadyBasic(bodyText string) bool {
-	text := strings.ToLower(bodyText)
-	return strings.Contains(text, "estado del dte") ||
-		strings.Contains(text, "estado del documento") ||
-		strings.Contains(text, "no encontrado") ||
-		strings.Contains(text, "no existe") ||
-		strings.Contains(text, "transmitido satisfactoriamente") ||
-		strings.Contains(text, "rechazado") ||
-		strings.Contains(text, "invalidado")
 }
 
 func MapHTMLResult(html string, base Result) Result {
@@ -361,32 +216,6 @@ func indexOfTipoHeader(headers []string) int {
 func stripTags(html string) string {
 	return Clean(regexp.MustCompile(`<[^>]+>`).ReplaceAllString(html, " "))
 }
-
-const clickSearchButtonJS = `(function(){
-  const candidates = Array.from(document.querySelectorAll('button,input[type=button],input[type=submit],a'));
-  const target = candidates.find(el => /Realizar\s+B[uú]squeda/i.test((el.innerText || el.value || '').trim()));
-  if (target) target.click();
-})();`
-
-const scrapeReadyJS = `(function(){
-  const bodyText = (document.body && document.body.innerText) || '';
-  const text = bodyText.toLowerCase();
-  const basic = text.includes('estado del dte')
-    || text.includes('estado del documento')
-    || text.includes('no encontrado')
-    || text.includes('no existe')
-    || text.includes('transmitido satisfactoriamente')
-    || text.includes('rechazado')
-    || text.includes('invalidado');
-  if (!basic) return false;
-
-  const needsRelated = text.includes('documentos relacionados')
-    || text.includes('documento ha sido ajustado');
-  if (!needsRelated) return true;
-
-  const uuids = bodyText.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi) || [];
-  return uuids.length >= 2;
-})();`
 
 var uuidInTextPattern = regexp.MustCompile(`(?i)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
 

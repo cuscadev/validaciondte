@@ -15,6 +15,7 @@ type Config struct {
 	ScrapeCacheTTLSeconds       int
 	PrewarmBrowsers             bool
 	UseRodScraper               bool
+	UseBrowser                  bool
 	HTTPFastPath                bool
 	HaciendaEnvironment         string
 	HaciendaUserAgent           string
@@ -38,6 +39,7 @@ func Load() Config {
 		ScrapeCacheTTLSeconds:         getenvInt("GO_DTE_SCRAPE_CACHE_TTL", 600),
 		PrewarmBrowsers:               getenvBool("GO_DTE_PREWARM", false),
 		UseRodScraper:                 getenvBool("GO_DTE_USE_ROD", false),
+		UseBrowser:                    getenvBool("GO_DTE_USE_BROWSER", false),
 		HTTPFastPath:                  getenvBool("GO_DTE_HTTP_FAST_PATH", false),
 		HaciendaEnvironment:           getenv("HACIENDA_ENV", "test"),
 		HaciendaUserAgent:             getenv("HACIENDA_USER_AGENT", "KaiserDTE"),

@@ -1,13 +1,13 @@
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const GO_DTE_API_URL = process.env.GO_DTE_API_URL || 'http://127.0.0.1:8081';
+import { getGoDteApiUrl } from '@/lib/go-dte-api';
 
 export async function POST(req: Request) {
   const body = Buffer.from(await req.arrayBuffer());
   const contentType = req.headers.get('content-type') || 'multipart/form-data';
 
-  const upstream = await fetch(`${GO_DTE_API_URL}/api/procesar`, {
+  const upstream = await fetch(`${getGoDteApiUrl()}/api/procesar`, {
     method: 'POST',
     headers: {
       'content-type': contentType,

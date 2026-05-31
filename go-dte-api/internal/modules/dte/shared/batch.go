@@ -53,7 +53,7 @@ func runtimeOrNil() *ScrapeRuntime {
 }
 
 func NewScrapeRuntime(parent context.Context, cfg config.Config) (*ScrapeRuntime, error) {
-	pool, err := NewScraperPool(parent, cfg.BrowserPoolSize, cfg.UseRodScraper, cfg.HTTPFastPath)
+	pool, err := NewScraperPool(parent, cfg.BrowserPoolSize, cfg.UseRodScraper, cfg.UseBrowser, cfg.HTTPFastPath)
 	if err != nil {
 		return nil, err
 	}

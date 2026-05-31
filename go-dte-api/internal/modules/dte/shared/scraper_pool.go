@@ -16,27 +16,17 @@ type ScraperPool struct {
 	rr    uint32
 }
 
-func newConsultaScraper(parent context.Context, useRod bool, httpFastPath bool) (ConsultaScraper, error) {
-	var scraper ConsultaScraper
-	var err error
-	if useRod {
-		scraper, err = NewRodScraper(parent)
-	} else {
-		scraper, err = NewScraper(parent)
-	}
-	if err != nil {
-		return nil, err
-	}
-	return wrapHTTPFastPath(scraper, httpFastPath), nil
+func newConsultaScraper(_ context.Context, _ bool, _ bool, _ bool) (ConsultaScraper, error) {
+	return NewPublicAPIScraper(), nil
 }
 
-func NewScraperPool(parent context.Context, size int, useRod bool, httpFastPath bool) (*ScraperPool, error) {
+func NewScraperPool(parent context.Context, size int, _ bool, _ bool, _ bool) (*ScraperPool, error) {
 	if size < 1 {
 		size = 1
 	}
 	pool := &ScraperPool{items: make([]*pooledScraper, 0, size)}
 	for i := 0; i < size; i++ {
-		scraper, err := newConsultaScraper(parent, useRod, httpFastPath)
+		scraper, err := newConsultaScraper(parent, false, false, false)
 		if err != nil {
 			pool.Close()
 			return nil, err

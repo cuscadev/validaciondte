@@ -1,12 +1,10 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { requireAuth } from '@/lib/server-auth';
+import { consultCodFechaViaGo } from '@/lib/go-dte-api';
 import {
   buildWorkbook,
   isProbableCodGen,
-  launchBrowser,
-  optimizarPagina,
-  procesarFilasConPool,
   tryParseFechaFlexible,
 } from '@/lib/dteCommon';
 import * as XLSX from 'xlsx-js-style';
@@ -120,7 +118,6 @@ function invalidResult(value: string, error: string) {
 }
 
 export async function POST(req: NextRequest, context: Params) {
-  let browser = null;
   let activeSessionRef: FirebaseFirestore.DocumentReference | null = null;
   let activeFolderId = '';
   let processingStarted = false;
@@ -187,18 +184,13 @@ export async function POST(req: NextRequest, context: Params) {
       filas.push(parsed);
     }
 
-    let consultados = [];
+    let consultados: Record<string, unknown>[] = [];
     if (filas.length) {
-      browser = await launchBrowser();
-      const ctx = await browser.newContext({
-        userAgent: 'Mozilla/5.0 (X11; Linux x86_64) VerificadorDTE/1.0 Chrome Safari',
-      });
-      const page = await ctx.newPage();
-      await optimizarPagina(page);
-      await page.close();
-
-      consultados = await procesarFilasConPool(ctx, filas, 2);
-      await ctx.close();
+      const goResp = await consultCodFechaViaGo(
+        filas.map((f) => ({ codGen: f.codGen, fechaYmd: f.fechaYmd })),
+        { concurrencia: 2 },
+      );
+      consultados = goResp.resultados;
     }
 
     const results = [...invalidos, ...consultados];
@@ -255,8 +247,6 @@ export async function POST(req: NextRequest, context: Params) {
       { error: message },
       { status }
     );
-  } finally {
-    if (browser) await browser.close();
   }
 }
 

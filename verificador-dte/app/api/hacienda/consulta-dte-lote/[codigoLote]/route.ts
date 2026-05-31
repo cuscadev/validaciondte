@@ -1,8 +1,7 @@
+import { getGoDteApiUrl } from '@/lib/go-dte-api';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/server-auth';
 import { getHaciendaTokenForUser } from '@/lib/hacienda-auth';
-
-const GO_DTE_API_URL = process.env.GO_DTE_API_URL || 'http://127.0.0.1:8081';
 
 export async function GET(
   req: NextRequest,
@@ -17,7 +16,7 @@ export async function GET(
     const token = await getHaciendaTokenForUser(user.uid, false, environment);
 
     const upstream = await fetch(
-      `${GO_DTE_API_URL}/api/hacienda/consulta-dte-lote/${encodeURIComponent(codigoLote)}?environment=${environment}`,
+      `${getGoDteApiUrl()}/api/hacienda/consulta-dte-lote/${encodeURIComponent(codigoLote)}?environment=${environment}`,
       {
         headers: {
           Authorization: token,

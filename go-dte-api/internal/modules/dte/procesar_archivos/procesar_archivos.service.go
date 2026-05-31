@@ -21,6 +21,56 @@ func NewService(cfg config.Config) *Service {
 	return &Service{cfg: cfg}
 }
 
+func (s *Service) ProcessCodFecha(c *fiber.Ctx) (shared.ProcessResponse, error) {
+	form, err := c.MultipartForm()
+	if err != nil {
+		return shared.ProcessResponse{}, errors.New("no se proporcionaron archivos")
+	}
+
+	files := collectFiles(form.File["files"], form.File["file"])
+	if len(files) == 0 {
+		return shared.ProcessResponse{}, errors.New("no se proporcionaron archivos")
+	}
+
+	seen := map[string]bool{}
+	var links []string
+
+	for _, header := range files {
+		opened, err := header.Open()
+		if err != nil {
+			continue
+		}
+		data, readErr := io.ReadAll(opened)
+		_ = opened.Close()
+		if readErr != nil {
+			continue
+		}
+
+		for _, row := range shared.ParseCodFechaFromFile(header.Filename, data) {
+			key := row.CodGen + "|" + row.FechaYMD
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+			links = append(links, shared.BuildConsultaURL(row.CodGen, row.FechaYMD, "01"))
+		}
+	}
+
+	if len(links) == 0 {
+		return shared.ProcessResponse{}, errors.New(
+			"no se encontraron filas validas. Se espera CSV/XLSX con columnas: codGen,fecha (yyyy-MM-dd o dd/MM/yyyy)",
+		)
+	}
+
+	results := shared.ProcessBatch(c.Context(), links, s.cfg.Concurrency)
+	resp, err := buildResponse(results, true)
+	if err != nil {
+		return shared.ProcessResponse{}, err
+	}
+	resp.Filename = fmt.Sprintf("verificacion_cod_fecha_%d.xlsx", time.Now().UnixMilli())
+	return resp, nil
+}
+
 func (s *Service) Process(c *fiber.Ctx) (shared.ProcessResponse, error) {
 	form, err := c.MultipartForm()
 	if err != nil {

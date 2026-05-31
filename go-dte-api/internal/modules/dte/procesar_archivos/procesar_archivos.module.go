@@ -14,4 +14,5 @@ func Register(api fiber.Router, dte fiber.Router, cfg config.Config) {
 
 	// Alias compatible con el route actual de Next.js.
 	api.Post("/procesar", controller.Process)
+	api.Post("/verificarcodyfecha", controller.ProcessCodFecha)
 }

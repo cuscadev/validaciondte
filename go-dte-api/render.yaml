@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: go-dte-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    envVars:
+      - key: PORT
+        value: "8081"
+    healthCheckPath: /health

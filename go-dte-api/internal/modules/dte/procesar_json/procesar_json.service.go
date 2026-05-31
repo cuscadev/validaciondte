@@ -113,10 +113,21 @@ func (s *Service) Process(ctx context.Context, req dto.ProcessJSONRequest) (shar
 		return shared.ProcessResponse{}, fmt.Errorf("maximo permitido: %d items", shared.MaxItems)
 	}
 
+	type resolvedItem struct {
+		codGen   string
+		fechaYMD string
+	}
+	resolved := make([]resolvedItem, 0, len(items))
 	for _, item := range items {
-		if !shared.IsUUID(item.CodGen) || !shared.IsDMY(item.Fecha) {
-			return shared.ProcessResponse{}, errors.New("datos invalidos: use codGen UUID y fecha dd/mm/yyyy")
+		codGen := strings.ToUpper(strings.TrimSpace(item.CodGen))
+		if !shared.IsUUID(codGen) {
+			return shared.ProcessResponse{}, errors.New("datos invalidos: use codGen UUID")
 		}
+		fechaYMD, ok := resolveProcessItemDate(item)
+		if !ok {
+			return shared.ProcessResponse{}, errors.New("datos invalidos: use fecha dd/mm/yyyy o fechaYmd yyyy-mm-dd")
+		}
+		resolved = append(resolved, resolvedItem{codGen: codGen, fechaYMD: fechaYMD})
 	}
 
 	ambiente := "01"
@@ -132,9 +143,9 @@ func (s *Service) Process(ctx context.Context, req dto.ProcessJSONRequest) (shar
 		concurrency = 12
 	}
 
-	links := make([]string, 0, len(items))
-	for _, item := range items {
-		links = append(links, shared.BuildConsultaURL(item.CodGen, shared.DMYToYMD(item.Fecha), ambiente))
+	links := make([]string, 0, len(resolved))
+	for _, item := range resolved {
+		links = append(links, shared.BuildConsultaURL(item.codGen, item.fechaYMD, ambiente))
 	}
 
 	results := shared.ProcessBatch(ctx, links, concurrency)
@@ -172,15 +183,37 @@ func dedupeItems(items []dto.ProcessItem) []dto.ProcessItem {
 	out := []dto.ProcessItem{}
 	for _, item := range items {
 		cod := strings.ToUpper(strings.TrimSpace(item.CodGen))
-		fecha := strings.TrimSpace(item.Fecha)
-		key := cod + "|" + fecha
-		if cod == "" || fecha == "" || seen[key] {
+		if cod == "" {
+			continue
+		}
+		fechaYMD, ok := resolveProcessItemDate(item)
+		if !ok {
+			continue
+		}
+		key := cod + "|" + fechaYMD
+		if seen[key] {
 			continue
 		}
 		seen[key] = true
-		out = append(out, dto.ProcessItem{CodGen: cod, Fecha: fecha})
+		out = append(out, dto.ProcessItem{
+			CodGen:   cod,
+			FechaYmd: fechaYMD,
+		})
 	}
 	return out
+}
+
+func resolveProcessItemDate(item dto.ProcessItem) (string, bool) {
+	if ymd := strings.TrimSpace(item.FechaYmd); ymd != "" {
+		return shared.TryParseFechaFlexible(ymd)
+	}
+	if shared.IsDMY(item.Fecha) {
+		return shared.DMYToYMD(item.Fecha), true
+	}
+	if ymd, ok := shared.TryParseFechaFlexible(strings.TrimSpace(item.Fecha)); ok {
+		return ymd, true
+	}
+	return "", false
 }
 
 func robustJSONParse(data []byte) []map[string]any {

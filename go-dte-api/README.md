@@ -51,7 +51,64 @@ El valor por defecto es `8`, pensado para acercarse a unas 2 consultas por segun
 En Next.js, configura la URL pública con la que el frontend llama a esta API (distinto del bind interno):
 
 ```bash
+# Local
 GO_DTE_API_URL=http://127.0.0.1:8081
+
+# Render (producción)
+GO_DTE_API_URL=https://validaciondte.onrender.com
+```
+
+Si no defines `GO_DTE_API_URL`, Next.js usa `http://127.0.0.1:8081` en desarrollo y `https://validaciondte.onrender.com` en producción (ver `verificador-dte/lib/go-dte-api.ts`).
+
+## Consulta DTE (sin Chromium por defecto)
+
+Por defecto la API consulta Hacienda con **HTTP puro**, usando el mismo endpoint REST que el portal Angular:
+
+```text
+GET https://admin.factura.gob.sv/{prod|test}/consultas/publica/simple/1
+    ?codigoGeneracion=...&fechaEmi=...&ambiente=...
+```
+
+No hace falta instalar Chrome/Chromium en Render ni en local.
+
+Si necesitas el scraper legacy con navegador headless (chromedp/rod), actívalo explícitamente:
+
+```bash
+GO_DTE_USE_BROWSER=true go run ./cmd/api
+```
+
+Opcional con navegador: `GO_DTE_USE_ROD=true`, `GO_DTE_HTTP_FAST_PATH=true`, `GO_DTE_CHROME_PATH=/usr/bin/chromium`.
+
+## Chromium / Chrome (solo si GO_DTE_USE_BROWSER=true)
+
+La verificación de enlaces DTE usa un navegador headless (chromedp). En Linux el binario debe existir en el servidor; si no, verás:
+
+```text
+exec: "google-chrome": executable file not found in $PATH
+```
+
+Resolución automática de ruta (en orden):
+
+1. `GO_DTE_CHROME_PATH` o `CHROME_PATH`
+2. Rutas Linux: `/usr/bin/chromium`, `/usr/bin/chromium-browser`, etc.
+
+**Render / Docker:** despliega con el `Dockerfile` incluido (instala Chromium). En el dashboard de Render:
+
+- Runtime: **Docker**
+- Root directory: `go-dte-api`
+- Dockerfile path: `./Dockerfile`
+
+O usa `render.yaml` en ese directorio. Variable recomendada:
+
+```bash
+GO_DTE_CHROME_PATH=/usr/bin/chromium
+```
+
+**Desarrollo local (Windows):** con Chrome/Edge instalado no hace falta configurar nada. Para probar sin la API de Render:
+
+```bash
+GO_DTE_API_URL=http://127.0.0.1:8081
+PORT=8081 go run ./cmd/api
 ```
 
 Variables de Hacienda usadas por Next.js y Go:
