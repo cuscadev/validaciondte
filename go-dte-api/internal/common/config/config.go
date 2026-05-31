@@ -5,8 +5,9 @@ import (
 	"strconv"
 )
 
+const defaultListenHost = "0.0.0.0"
+
 type Config struct {
-	Host                        string
 	Port                        string
 	Concurrency                 int
 	BrowserPoolSize             int
@@ -22,8 +23,7 @@ type Config struct {
 }
 
 func Load() Config {
-	port := getenv("GO_DTE_API_PORT", "8081")
-	host := getenv("GO_DTE_API_HOST", "127.0.0.1")
+	port := getenv("PORT", "8081")
 	concurrency := getenvInt("GO_DTE_CONCURRENCY", 8)
 	poolSize := getenvInt("GO_DTE_BROWSER_POOL", minInt(concurrency, 4))
 	if poolSize < 1 {
@@ -31,7 +31,6 @@ func Load() Config {
 	}
 
 	return Config{
-		Host:                          host,
 		Port:                          port,
 		Concurrency:                   concurrency,
 		BrowserPoolSize:               poolSize,
@@ -48,7 +47,7 @@ func Load() Config {
 }
 
 func (c Config) Addr() string {
-	return c.Host + ":" + c.Port
+	return defaultListenHost + ":" + c.Port
 }
 
 func getenv(key, fallback string) string {

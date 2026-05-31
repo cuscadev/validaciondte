@@ -32,11 +32,13 @@ go mod tidy
 go run ./cmd/api
 ```
 
-Por defecto escucha en `127.0.0.1:8081`. Puedes cambiarlo con:
+Por defecto escucha en `0.0.0.0:8081`. El host lo fija el servidor; solo puedes cambiar el puerto con la variable estándar `PORT`:
 
 ```bash
-GO_DTE_API_HOST=127.0.0.1 GO_DTE_API_PORT=8081 go run ./cmd/api
+PORT=8081 go run ./cmd/api
 ```
+
+En plataformas cloud (Railway, Render, Fly, etc.) la plataforma inyecta `PORT` automáticamente.
 
 Para ajustar velocidad/concurrencia del scraping:
 
@@ -46,7 +48,7 @@ GO_DTE_CONCURRENCY=8 go run ./cmd/api
 
 El valor por defecto es `8`, pensado para acercarse a unas 2 consultas por segundo cuando Hacienda responde en 3-4 segundos. Si Hacienda empieza a responder lento o bloquea, baja a `4` o `2`.
 
-En Next.js, configura si necesitas otro host:
+En Next.js, configura la URL pública con la que el frontend llama a esta API (distinto del bind interno):
 
 ```bash
 GO_DTE_API_URL=http://127.0.0.1:8081
