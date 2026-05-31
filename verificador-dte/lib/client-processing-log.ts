@@ -1,6 +1,7 @@
 'use client';
 
 import { auth } from '@/lib/firebase';
+import { invalidateDashboardStats } from '@/lib/query-client-registry';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import type { ProcessingLogPayload } from '@/lib/processing-log';
 
@@ -28,7 +29,7 @@ export async function recordProcessingLog(payload: ProcessingLogPayload) {
 
     if (!token) return;
 
-    await fetch('/api/processing-logs', {
+    const res = await fetch('/api/processing-logs', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -39,6 +40,10 @@ export async function recordProcessingLog(payload: ProcessingLogPayload) {
         userAgent: navigator.userAgent,
       }),
     });
+
+    if (res.ok) {
+      invalidateDashboardStats();
+    }
   } catch {
     // Logging must never block the user's result flow.
   }

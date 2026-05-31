@@ -27,6 +27,8 @@ import {
   exportPdfByProfile,
   exportRowsToCsv,
 } from '@/lib/upload-table-export';
+import { recordProcessingLog } from '@/lib/client-processing-log';
+import { summarizeResults } from '@/lib/processing-log';
 import {
   ChevronLeft,
   ChevronRight,
@@ -152,6 +154,10 @@ export default function Page() {
     }
 
     setLoading(true);
+    const startedAt = new Date();
+    const started = performance.now();
+    const emptyFiles = { count: 0, totalBytes: 0, extensions: [], mimeTypes: [] };
+
     try {
       const res = await fetch('/api/procesaedte', {
         method: 'POST',
@@ -178,10 +184,33 @@ export default function Page() {
       );
       onResultsReveal();
       toast.success(t('prrocesardte_validar_ok'));
+      await recordProcessingLog({
+        routeKey: 'verificacion_individual',
+        moduleName: 'Verificacion Individual',
+        startedAt: startedAt.toISOString(),
+        endedAt: new Date().toISOString(),
+        durationMs: Math.round(performance.now() - started),
+        files: emptyFiles,
+        ...summarizeResults(resultados),
+      });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : t('prrocesardte_error_unexpected');
       setErrorGlobal(msg);
       toast.error(msg);
+      await recordProcessingLog({
+        routeKey: 'verificacion_individual',
+        moduleName: 'Verificacion Individual',
+        startedAt: startedAt.toISOString(),
+        endedAt: new Date().toISOString(),
+        durationMs: Math.round(performance.now() - started),
+        files: emptyFiles,
+        totalRecords: items.length,
+        successCount: 0,
+        errorCount: items.length,
+        statusBreakdown: { ERROR: items.length },
+        outcome: 'error',
+        errorMessage: msg,
+      });
     } finally {
       setLoading(false);
     }

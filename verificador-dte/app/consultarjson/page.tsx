@@ -20,6 +20,8 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, ExternalLink } from 'lucide-react'
 import { formatMontoDisplay } from '@/lib/dte-result-normalize'
+import { recordProcessingLog } from '@/lib/client-processing-log'
+import { summarizeFiles, summarizeResults } from '@/lib/processing-log'
 import { summarizeDteUploadResults } from '@/lib/upload-dte-stats'
 
 type Resultado = {
@@ -84,6 +86,8 @@ export default function ConsultarJsonPage() {
     resetResultsVisibility()
     setData([])
     setCurrentPage(1)
+    const startedAt = new Date()
+    const started = performance.now()
 
     try {
       const fd = new FormData()
@@ -101,8 +105,32 @@ export default function ConsultarJsonPage() {
         summarizeDteUploadResults(json.resultados || [])
       )
       toast.success(t('consultarjson_completada'))
+      await recordProcessingLog({
+        routeKey: 'consultarjson',
+        moduleName: 'Consultar JSON',
+        startedAt: startedAt.toISOString(),
+        endedAt: new Date().toISOString(),
+        durationMs: Math.round(performance.now() - started),
+        files: summarizeFiles(selectedFiles),
+        ...summarizeResults(json.resultados || []),
+      })
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : t('consultarjson_error'))
+      const message = e instanceof Error ? e.message : t('consultarjson_error')
+      toast.error(message)
+      await recordProcessingLog({
+        routeKey: 'consultarjson',
+        moduleName: 'Consultar JSON',
+        startedAt: startedAt.toISOString(),
+        endedAt: new Date().toISOString(),
+        durationMs: Math.round(performance.now() - started),
+        files: summarizeFiles(selectedFiles),
+        totalRecords: 0,
+        successCount: 0,
+        errorCount: selectedFiles.length || 1,
+        statusBreakdown: { ERROR: selectedFiles.length || 1 },
+        outcome: 'error',
+        errorMessage: message,
+      })
     } finally {
       setLoading(false)
     }

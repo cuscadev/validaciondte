@@ -60,9 +60,24 @@
       "collectionGroup": "processingLogs",
       "queryScope": "COLLECTION",
       "fields": [
+        { "fieldPath": "uid", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "processingLogs",
+      "queryScope": "COLLECTION",
+      "fields": [
         { "fieldPath": "routeKey", "order": "ASCENDING" },
         { "fieldPath": "outcome", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "days",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "date", "order": "ASCENDING" }
       ]
     }
   ],

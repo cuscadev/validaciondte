@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Filter } from 'firebase-admin/firestore';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { incrementUserProcessingStats } from '@/lib/processing-stats-rollup';
 import { requireSuperadmin } from '@/lib/server-auth';
 
 function getClientIp(req: NextRequest) {
@@ -161,6 +162,12 @@ export async function POST(req: NextRequest) {
       errorMessage: body.errorMessage || '',
       userAgent,
       createdAt: new Date(),
+    });
+
+    await incrementUserProcessingStats(decoded.uid, {
+      totalRecords: Number(body.totalRecords || 0),
+      successCount: Number(body.successCount || 0),
+      errorCount: Number(body.errorCount || 0),
     });
 
     return NextResponse.json({ success: true });

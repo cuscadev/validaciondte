@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { incrementUserProcessingStats } from '@/lib/processing-stats-rollup';
 
 const JWT_SECRET = process.env.JWT_SECRET || '';
 if (!JWT_SECRET) {
@@ -78,6 +79,12 @@ export async function POST(req: NextRequest) {
       userAgent: body.userAgent || '',
       createdAt: now,
     });
+
+    await incrementUserProcessingStats(identity.uid, {
+      totalRecords: Number(body.totalRecords || 0),
+      successCount: Number(body.successCount || 0),
+      errorCount: Number(body.errorCount || 0),
+    }, now);
 
     return NextResponse.json({ success: true });
   } catch (error) {

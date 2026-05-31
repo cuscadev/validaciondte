@@ -2,6 +2,8 @@
 
 import PlanGate from '@/components/PlanGate';
 import { auth } from '@/lib/firebase';
+import { recordProcessingLog } from '@/lib/client-processing-log';
+import type { ProcessingOutcome } from '@/lib/processing-log';
 import { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -36,6 +38,26 @@ function estadoClass(estado?: string) {
   if (estado === 'PROCESADO') return 'bg-emerald-500 text-white';
   if (estado === 'RECHAZADO') return 'bg-red-500 text-white';
   return 'bg-slate-500 text-white';
+}
+
+const emptyFiles = { count: 0, totalBytes: 0, extensions: [], mimeTypes: [] };
+
+function summarizeLoteResults(payload: LoteResponse) {
+  const procesados = payload.procesados?.length || 0;
+  const rechazados = payload.rechazados?.length || 0;
+  const outcome: ProcessingOutcome =
+    rechazados === 0 ? 'success' : procesados === 0 ? 'error' : 'partial';
+
+  return {
+    totalRecords: procesados + rechazados,
+    successCount: procesados,
+    errorCount: rechazados,
+    statusBreakdown: {
+      PROCESADO: procesados,
+      RECHAZADO: rechazados,
+    },
+    outcome,
+  };
 }
 
 export default function ConsultaLotePage() {
@@ -79,6 +101,8 @@ export default function ConsultaLotePage() {
 
     setLoading(true);
     setData(null);
+    const startedAt = new Date();
+    const started = performance.now();
 
     try {
       const token = await auth.currentUser?.getIdToken();
@@ -95,8 +119,32 @@ export default function ConsultaLotePage() {
 
       setData(payload);
       toast.success('Consulta completada.');
+      await recordProcessingLog({
+        routeKey: 'consulta-lote',
+        moduleName: 'Consulta por Codigo',
+        startedAt: startedAt.toISOString(),
+        endedAt: new Date().toISOString(),
+        durationMs: Math.round(performance.now() - started),
+        files: emptyFiles,
+        ...summarizeLoteResults(payload),
+      });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'No se pudo consultar el lote.');
+      const message = error instanceof Error ? error.message : 'No se pudo consultar el lote.';
+      toast.error(message);
+      await recordProcessingLog({
+        routeKey: 'consulta-lote',
+        moduleName: 'Consulta por Codigo',
+        startedAt: startedAt.toISOString(),
+        endedAt: new Date().toISOString(),
+        durationMs: Math.round(performance.now() - started),
+        files: emptyFiles,
+        totalRecords: 1,
+        successCount: 0,
+        errorCount: 1,
+        statusBreakdown: { ERROR: 1 },
+        outcome: 'error',
+        errorMessage: message,
+      });
     } finally {
       setLoading(false);
     }
