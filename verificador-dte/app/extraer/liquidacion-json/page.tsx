@@ -712,7 +712,7 @@ export default function LiquidacionJsonPage() {
               export={{
                 excel: {
                   onClick: exportExcel,
-                  label: 'Descargar Excel completo',
+                  label: 'EXCEL',
                 },
                 csv: {
                   onClick: () =>

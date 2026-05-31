@@ -10,6 +10,7 @@ const defaultListenHost = "0.0.0.0"
 type Config struct {
 	Port                        string
 	Concurrency                 int
+	RateLimitPerSec             int
 	BrowserPoolSize             int
 	MinIntervalMs               int
 	ScrapeCacheTTLSeconds       int
@@ -39,6 +40,7 @@ func Load() Config {
 	return Config{
 		Port:                          port,
 		Concurrency:                   concurrency,
+		RateLimitPerSec:               getenvInt("GO_DTE_RATE_LIMIT_PER_SEC", 10),
 		BrowserPoolSize:               poolSize,
 		MinIntervalMs:                 getenvInt("GO_DTE_MIN_INTERVAL_MS", 0),
 		ScrapeCacheTTLSeconds:         getenvInt("GO_DTE_SCRAPE_CACHE_TTL", 600),
@@ -60,6 +62,18 @@ func Load() Config {
 
 func (c Config) Addr() string {
 	return defaultListenHost + ":" + c.Port
+}
+
+// EffectiveMinIntervalMs returns the minimum delay between outbound DTE consults.
+// GO_DTE_MIN_INTERVAL_MS takes precedence when set; otherwise derives from GO_DTE_RATE_LIMIT_PER_SEC.
+func (c Config) EffectiveMinIntervalMs() int {
+	if c.MinIntervalMs > 0 {
+		return c.MinIntervalMs
+	}
+	if c.RateLimitPerSec <= 0 {
+		return 0
+	}
+	return (1000 + c.RateLimitPerSec - 1) / c.RateLimitPerSec
 }
 
 func getenv(key, fallback string) string {

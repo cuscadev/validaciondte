@@ -13,16 +13,23 @@ import (
 var ymdPattern = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
 
 type CodFechaRow struct {
-	CodGen   string
-	FechaYMD string
+	CodGen        string
+	FechaYMD      string
+	NombreArchivo string
 }
 
 func ParseCodFechaFromFile(filename string, data []byte) []CodFechaRow {
 	name := strings.ToLower(filename)
+	var rows []CodFechaRow
 	if strings.HasSuffix(name, ".xlsx") || strings.HasSuffix(name, ".xlsm") || strings.HasSuffix(name, ".xls") {
-		return parseCodFechaXLSX(data)
+		rows = parseCodFechaXLSX(data)
+	} else {
+		rows = parseCodFechaCSV(decodeText(data))
 	}
-	return parseCodFechaCSV(decodeText(data))
+	for i := range rows {
+		rows[i].NombreArchivo = filename
+	}
+	return rows
 }
 
 func parseCodFechaCSV(text string) []CodFechaRow {

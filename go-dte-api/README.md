@@ -77,6 +77,7 @@ Variables de rendimiento:
 
 ```bash
 GO_DTE_CONCURRENCY=8
+GO_DTE_RATE_LIMIT_PER_SEC=10   # max consultas a Hacienda por segundo (default 10)
 GO_DTE_ENRICH_NC=false          # notas de crédito relacionadas (off por defecto)
 GO_DTE_ASYNC_THRESHOLD=10       # lotes >10 ítems pueden ir async con Redis
 GO_DTE_REDIS_ENABLED=true

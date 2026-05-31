@@ -41,6 +41,7 @@ const FORMAT_HELP = (
 )
 
 type Resultado = {
+  nombreArchivo?: string
   url: string
   host: string
   ambiente: string
@@ -178,6 +179,7 @@ export default function HomePage() {
   }
 
   const columnas = useMemo(() => ([
+    { key: 'nombreArchivo', label: 'Archivo' },
     { key: 'codGen', label: 'Código Generación' },
     { key: 'estado', label: 'Estado' },
     { key: 'descripcionEstado', label: 'Descripción Estado' },
@@ -206,7 +208,7 @@ export default function HomePage() {
     if (!q) return data
     return data.filter(r => {
       const campos = [
-        r.codGen, r.estado, r.descripcionEstado, r.tipoDte,
+        r.nombreArchivo, r.codGen, r.estado, r.descripcionEstado, r.tipoDte,
         r.numeroControl, r.montoTotal, r.fechaHoraGeneracion, r.observacionesTexto,
         r.documentoAjustado, r.relacionadosTexto, r.notaCreditoEstado, r.notaCreditoCodigoGeneracion,
         r.notaCreditoFechaGeneracion, r.notaCreditoFechaEmi, r.notaCreditoSelloRecepcion,
@@ -300,7 +302,7 @@ export default function HomePage() {
               excel: {
                 href: downloadHref,
                 download: filename,
-                label: 'Descargar Excel completo',
+                label: 'EXCEL',
               },
               csv: {
                 onClick: () =>

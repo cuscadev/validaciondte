@@ -39,10 +39,6 @@ function resolveIcon(routeKey: string): LucideIcon {
 
 export function ModuleBreakdown({ byModule, loading, className }: ModuleBreakdownProps) {
   const topModules = byModule.slice(0, TOP_MODULES);
-  const maxOutcomes = Math.max(
-    ...topModules.map((m) => m.successCount + m.errorCount),
-    1
-  );
 
   return (
     <FadeIn delay={0.12} className={className}>
@@ -73,7 +69,10 @@ export function ModuleBreakdown({ byModule, loading, className }: ModuleBreakdow
               {topModules.map((mod) => {
                 const Icon = resolveIcon(mod.routeKey);
                 const totalOutcomes = mod.successCount + mod.errorCount;
-                const widthPct = Math.max((totalOutcomes / maxOutcomes) * 100, 8);
+                const successPct =
+                  totalOutcomes > 0 ? (mod.successCount / totalOutcomes) * 100 : 0;
+                const errorPct =
+                  totalOutcomes > 0 ? (mod.errorCount / totalOutcomes) * 100 : 0;
 
                 return (
                   <article
@@ -106,34 +105,22 @@ export function ModuleBreakdown({ byModule, loading, className }: ModuleBreakdow
                         </div>
                       </div>
                     </div>
-                    <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                      <div
-                        className="flex h-full min-w-[8%]"
-                        style={{ width: `${widthPct}%` }}
-                      >
-                        {mod.successCount > 0 && (
-                          <div
-                            className="h-full bg-emerald-500 dark:bg-emerald-400"
-                            style={{
-                              width:
-                                totalOutcomes > 0
-                                  ? `${(mod.successCount / totalOutcomes) * 100}%`
-                                  : '0%',
-                            }}
-                          />
-                        )}
-                        {mod.errorCount > 0 && (
-                          <div
-                            className="h-full bg-red-500 dark:bg-red-400"
-                            style={{
-                              width:
-                                totalOutcomes > 0
-                                  ? `${(mod.errorCount / totalOutcomes) * 100}%`
-                                  : '0%',
-                            }}
-                          />
-                        )}
-                      </div>
+                    <div
+                      className="flex h-1.5 w-full overflow-hidden rounded-full bg-muted"
+                      title={`${mod.successCount} exitosos · ${mod.errorCount} fallidos`}
+                    >
+                      {mod.successCount > 0 && (
+                        <div
+                          className="h-full bg-emerald-500 dark:bg-emerald-400"
+                          style={{ width: `${successPct}%` }}
+                        />
+                      )}
+                      {mod.errorCount > 0 && (
+                        <div
+                          className="h-full bg-red-500 dark:bg-red-400"
+                          style={{ width: `${errorPct}%` }}
+                        />
+                      )}
                     </div>
                   </article>
                 );

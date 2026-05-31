@@ -22,7 +22,7 @@ import (
 
 var reportHeaders = []string{
 
-	"url", "linkVisita", "visitar", "host", "ambiente", "codGen", "fechaEmi",
+	"url", "nombreArchivo", "linkVisita", "visitar", "host", "ambiente", "codGen", "fechaEmi",
 
 	"estado", "estadoRaw", "descripcionEstado", "tipoDte", "tipoDteNorm",
 
@@ -171,8 +171,7 @@ func writeResultsSheet(file *excelize.File, sheet string, results []Result) {
 		}
 
 		if r.LinkVisita != "" {
-
-			visitarCell, _ := excelize.CoordinatesToCellName(3, row+2)
+			visitarCell, _ := excelize.CoordinatesToCellName(headerColumn("visitar"), row+2)
 
 			file.SetCellHyperLink(name, visitarCell, r.LinkVisita, "External")
 
@@ -276,7 +275,7 @@ func resultRow(r Result) []any {
 
 	return []any{
 
-		r.URL, r.LinkVisita, valueOr(r.Visitar, "Abrir"), r.Host, r.Ambiente, r.CodGen, r.FechaEmi,
+		r.URL, r.NombreArchivo, r.LinkVisita, valueOr(r.Visitar, "Abrir"), r.Host, r.Ambiente, r.CodGen, r.FechaEmi,
 
 		r.Estado, r.EstadoRaw, r.DescripcionEstado, r.TipoDte, r.TipoDteNorm,
 

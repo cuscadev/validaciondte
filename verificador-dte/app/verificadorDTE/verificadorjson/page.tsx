@@ -24,6 +24,7 @@ import {
 import { toast } from 'sonner'
 
 type Resultado = {
+  nombreArchivo?: string
   // básicos de consulta
   url: string
   host?: string
@@ -205,6 +206,7 @@ export default function Page() {
   }
   // columnas de la tabla (incluye emisor/receptor)
   const columnas = useMemo(() => ([
+    { key: 'nombreArchivo', label: 'Archivo' },
     // Identificación / estado
     { key: 'codGen', label: 'Código Generación' },
     { key: 'fechaEmi', label: 'Fecha Emi.' },
@@ -249,7 +251,7 @@ export default function Page() {
     return data.filter(r => {
       const direccion = [r.receptorDepartamento, r.receptorMunicipio, r.receptorComplemento].filter(Boolean).join(' ')
       const campos = [
-        r.codGen, r.fechaEmi, r.estado, r.descripcionEstado, r.tipoDte, r.numeroControl, r.montoTotal,
+        r.nombreArchivo, r.codGen, r.fechaEmi, r.estado, r.descripcionEstado, r.tipoDte, r.numeroControl, r.montoTotal,
         r.linkVisita, r.url,
         r.emisorNit, r.emisorNrc, r.emisorNombre, r.emisorNombreComercial, r.emisorCodActividad, r.emisorDescActividad, r.emisorTelefono, r.emisorCorreo,
         r.receptorNit, r.receptorNrc, r.receptorNombre, r.receptorNombreComercial, r.receptorCodActividad, r.receptorDescActividad, r.receptorTelefono, r.receptorCorreo, direccion
@@ -333,7 +335,7 @@ export default function Page() {
               excel: {
                 href: downloadHref,
                 download: filename,
-                label: 'Descargar Excel completo',
+                label: 'EXCEL',
               },
               csv: {
                 onClick: () =>

@@ -54,19 +54,20 @@ export default function UploadTableExportBar({
         <Button
           type="button"
           variant="outline"
-          size="icon"
-          className={cn('size-9 shrink-0', className)}
-          aria-label="Exportar"
-          title="Exportar"
+          size="sm"
+          className={cn('h-9 shrink-0 gap-1.5 px-3', className)}
+          aria-label="Exportar a"
+          title="Exportar a"
         >
-          <Download className="size-4" aria-hidden />
+          <Download className="size-4 shrink-0" aria-hidden />
+          <span>Exportar a</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[10rem]">
         {hasExcel && (
           <DropdownMenuItem onClick={handleExcel}>
             <FileSpreadsheet className="size-4 text-emerald-600" aria-hidden />
-            {excel?.label ?? 'Excel'}
+            {excel?.label ?? 'EXCEL'}
           </DropdownMenuItem>
         )}
         {csv.onClick && (

@@ -535,7 +535,7 @@ export default function ComprasJsonPage() {
               export={{
                 excel: {
                   onClick: () => exportExcel(data),
-                  label: 'Descargar Excel completo',
+                  label: 'EXCEL',
                 },
                 csv: {
                   onClick: () =>

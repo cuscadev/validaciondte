@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 export type DteResultRow = {
+  nombreArchivo?: string;
   url?: string;
   host?: string;
   ambiente?: string;
@@ -43,6 +44,7 @@ export type DteResultRow = {
 };
 
 export const DTE_RESULT_COLUMNS = [
+  { key: 'nombreArchivo', label: 'Archivo' },
   { key: 'codGen', label: 'Código Generación' },
   { key: 'estado', label: 'Estado' },
   { key: 'descripcionEstado', label: 'Descripción Estado' },
@@ -85,6 +87,7 @@ export function estadoPill(v?: string) {
 
 export function dteResultSearchFields(r: DteResultRow): string[] {
   return [
+    r.nombreArchivo,
     r.codGen,
     r.estado,
     r.descripcionEstado,

@@ -1,9 +1,7 @@
 package procesarjson
 
 import (
-	"bufio"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -22,8 +20,9 @@ type Service struct {
 }
 
 type jsonRow struct {
-	CodGen   string
-	FechaYMD string
+	CodGen        string
+	FechaYMD      string
+	NombreArchivo string
 }
 
 func NewService(cfg config.Config) *Service {
@@ -56,17 +55,17 @@ func (s *Service) ProcessFiles(c *fiber.Ctx) (shared.ProcessResponse, error) {
 			continue
 		}
 
-		items := robustJSONParse(data)
+		items := shared.ParseJSONFileItems(data)
 		extracted := jsonItemsToRows(items, extrasByKey)
 		if len(extracted) == 0 {
-			parseErrors = append(parseErrors, shared.Result{
-				Visitar:      "Abrir",
-				Estado:       "ERROR",
-				TipoDteNorm:  "SIN_TIPO",
-				Relacionados: []shared.RelatedDocument{},
-				Error:        "No se encontraron campos identificacion.codigoGeneracion / identificacion.fecEmi validos en el JSON.",
-			})
+			parseErrors = append(parseErrors, shared.FileParseErrorResult(
+				header.Filename,
+				shared.ClassifyJSONFileParseError(data, items, len(extracted)),
+			))
 			continue
+		}
+		for i := range extracted {
+			extracted[i].NombreArchivo = header.Filename
 		}
 		rows = append(rows, extracted...)
 	}
@@ -79,12 +78,15 @@ func (s *Service) ProcessFiles(c *fiber.Ctx) (shared.ProcessResponse, error) {
 		return shared.ProcessResponse{}, errors.New("no se encontraron filas validas")
 	}
 
-	links := make([]string, 0, len(rows))
+	links := make([]shared.LinkEntry, 0, len(rows))
 	for _, row := range rows {
-		links = append(links, shared.BuildConsultaURL(row.CodGen, row.FechaYMD, "01"))
+		links = append(links, shared.LinkEntry{
+			URL:           shared.BuildConsultaURL(row.CodGen, row.FechaYMD, "01"),
+			NombreArchivo: row.NombreArchivo,
+		})
 	}
 
-	results := shared.ProcessBatchWithOptions(c.Context(), links, shared.BatchOptionsFromConfig(s.cfg, s.cfg.Concurrency))
+	results := shared.ProcessLinkEntriesWithOptions(c.Context(), links, shared.BatchOptionsFromConfig(s.cfg, s.cfg.Concurrency))
 	for idx := range results {
 		key := shared.ResultLookupKey(results[idx].CodGen, results[idx].FechaEmi)
 		if extra, ok := extrasByKey[key]; ok {
@@ -246,45 +248,11 @@ func resolveProcessItemDate(item dto.ProcessItem) (string, bool) {
 	return "", false
 }
 
-func robustJSONParse(data []byte) []map[string]any {
-	var raw any
-	if err := json.Unmarshal(data, &raw); err == nil {
-		switch typed := raw.(type) {
-		case []any:
-			out := make([]map[string]any, 0, len(typed))
-			for _, item := range typed {
-				if obj, ok := item.(map[string]any); ok {
-					out = append(out, obj)
-				}
-			}
-			return out
-		case map[string]any:
-			return []map[string]any{typed}
-		}
-	}
-
-	out := []map[string]any{}
-	scanner := bufio.NewScanner(strings.NewReader(string(data)))
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" {
-			continue
-		}
-		var obj map[string]any
-		if err := json.Unmarshal([]byte(line), &obj); err == nil {
-			out = append(out, obj)
-		}
-	}
-	return out
-}
-
 func jsonItemsToRows(items []map[string]any, extrasByKey map[string]shared.Result) []jsonRow {
 	rows := []jsonRow{}
 	for _, item := range items {
-		ident := jsonAsMap(item["identificacion"])
-		codGen := strings.ToUpper(strings.TrimSpace(jsonAsString(ident["codigoGeneracion"])))
-		fechaYMD := shared.NormalizeJSONDate(jsonAsString(ident["fecEmi"]))
-		if !shared.IsUUID(codGen) || fechaYMD == "" {
+		codGen, fechaYMD, ok := shared.ExtractConsultaFields(item)
+		if !ok {
 			continue
 		}
 
@@ -307,24 +275,4 @@ func dedupeJSONRows(rows []jsonRow) []jsonRow {
 		out = append(out, row)
 	}
 	return out
-}
-
-func jsonAsMap(value any) map[string]any {
-	if typed, ok := value.(map[string]any); ok {
-		return typed
-	}
-	return map[string]any{}
-}
-
-func jsonAsString(value any) string {
-	switch typed := value.(type) {
-	case string:
-		return typed
-	case float64:
-		return fmt.Sprintf("%.0f", typed)
-	case nil:
-		return ""
-	default:
-		return fmt.Sprint(typed)
-	}
 }

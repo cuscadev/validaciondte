@@ -635,7 +635,7 @@ export default function SujetosExcluidosPage() {
               export={{
                 excel: {
                   onClick: () => exportExcel(data),
-                  label: 'Descargar Excel completo',
+                  label: 'EXCEL',
                 },
                 csv: {
                   onClick: () =>

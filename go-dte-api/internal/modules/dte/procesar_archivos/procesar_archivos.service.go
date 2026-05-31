@@ -32,37 +32,27 @@ func (s *Service) ProcessCodFecha(c *fiber.Ctx) (shared.ProcessResponse, error) 
 		return shared.ProcessResponse{}, errors.New("no se proporcionaron archivos")
 	}
 
-	seen := map[string]bool{}
-	var links []string
-
-	for _, header := range files {
-		opened, err := header.Open()
+	entries, fileErrors := collectCodFechaEntries(files)
+	if len(entries) == 0 && len(fileErrors) > 0 {
+		resp, err := buildResponse(fileErrors, true)
 		if err != nil {
-			continue
+			return shared.ProcessResponse{}, err
 		}
-		data, readErr := io.ReadAll(opened)
-		_ = opened.Close()
-		if readErr != nil {
-			continue
-		}
-
-		for _, row := range shared.ParseCodFechaFromFile(header.Filename, data) {
-			key := row.CodGen + "|" + row.FechaYMD
-			if seen[key] {
-				continue
-			}
-			seen[key] = true
-			links = append(links, shared.BuildConsultaURL(row.CodGen, row.FechaYMD, "01"))
-		}
+		resp.Filename = fmt.Sprintf("verificacion_cod_fecha_%d.xlsx", time.Now().UnixMilli())
+		return resp, nil
 	}
-
-	if len(links) == 0 {
+	if len(entries) == 0 {
 		return shared.ProcessResponse{}, errors.New(
 			"no se encontraron filas validas. Se espera CSV/XLSX con columnas: codGen,fecha (yyyy-MM-dd o dd/MM/yyyy)",
 		)
 	}
 
-	results := shared.ProcessBatchWithOptions(c.Context(), links, shared.BatchOptionsFromConfig(s.cfg, s.cfg.Concurrency))
+	results := shared.ProcessLinkEntriesWithOptions(
+		c.Context(),
+		entries,
+		shared.BatchOptionsFromConfig(s.cfg, s.cfg.Concurrency),
+	)
+	results = append(fileErrors, results...)
 	resp, err := buildResponse(results, true)
 	if err != nil {
 		return shared.ProcessResponse{}, err
@@ -82,36 +72,114 @@ func (s *Service) Process(c *fiber.Ctx) (shared.ProcessResponse, error) {
 		return shared.ProcessResponse{}, errors.New("no se proporcionaron archivos")
 	}
 
+	entries, fileErrors := collectLinkEntries(files)
+	if len(entries) == 0 && len(fileErrors) > 0 {
+		return buildResponse(fileErrors, true)
+	}
+	if len(entries) == 0 {
+		return shared.ProcessResponse{}, errors.New("no se encontraron URLs validas en los archivos")
+	}
+
+	results := shared.ProcessLinkEntriesWithOptions(
+		c.Context(),
+		entries,
+		shared.BatchOptionsFromConfig(s.cfg, s.cfg.Concurrency),
+	)
+	results = append(fileErrors, results...)
+	return buildResponse(results, true)
+}
+
+func collectCodFechaEntries(files []*multipart.FileHeader) ([]shared.LinkEntry, []shared.Result) {
 	seen := map[string]bool{}
-	var links []string
+	entries := []shared.LinkEntry{}
+	fileErrors := []shared.Result{}
 
 	for _, header := range files {
-		opened, err := header.Open()
-		if err != nil {
-			continue
-		}
-		data, readErr := io.ReadAll(opened)
-		_ = opened.Close()
-		if readErr != nil {
+		data, ok := readUploadFile(header)
+		if !ok {
+			fileErrors = append(fileErrors, shared.FileParseErrorResult(
+				header.Filename,
+				"No se pudo leer el archivo.",
+			))
 			continue
 		}
 
-		for _, link := range shared.ParseLinksFromFile(header.Filename, data) {
+		rows := shared.ParseCodFechaFromFile(header.Filename, data)
+		if len(rows) == 0 {
+			fileErrors = append(fileErrors, shared.FileParseErrorResult(
+				header.Filename,
+				"No se encontraron filas validas. Se espera codGen y fecha (yyyy-MM-dd o dd/MM/yyyy).",
+			))
+			continue
+		}
+
+		for _, row := range rows {
+			key := row.CodGen + "|" + row.FechaYMD
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+			entries = append(entries, shared.LinkEntry{
+				URL:           shared.BuildConsultaURL(row.CodGen, row.FechaYMD, "01"),
+				NombreArchivo: row.NombreArchivo,
+			})
+		}
+	}
+
+	return entries, fileErrors
+}
+
+func collectLinkEntries(files []*multipart.FileHeader) ([]shared.LinkEntry, []shared.Result) {
+	seen := map[string]bool{}
+	entries := []shared.LinkEntry{}
+	fileErrors := []shared.Result{}
+
+	for _, header := range files {
+		data, ok := readUploadFile(header)
+		if !ok {
+			fileErrors = append(fileErrors, shared.FileParseErrorResult(
+				header.Filename,
+				"No se pudo leer el archivo.",
+			))
+			continue
+		}
+
+		links := shared.ParseLinksFromFile(header.Filename, data)
+		if len(links) == 0 {
+			fileErrors = append(fileErrors, shared.FileParseErrorResult(
+				header.Filename,
+				"No se encontraron URLs validas de consulta DTE en el archivo.",
+			))
+			continue
+		}
+
+		for _, link := range links {
 			sanitized := shared.SanitizarURL(link)
 			if sanitized == "" || seen[sanitized] {
 				continue
 			}
 			seen[sanitized] = true
-			links = append(links, sanitized)
+			entries = append(entries, shared.LinkEntry{
+				URL:           sanitized,
+				NombreArchivo: header.Filename,
+			})
 		}
 	}
 
-	if len(links) == 0 {
-		return shared.ProcessResponse{}, errors.New("no se encontraron URLs validas en los archivos")
-	}
+	return entries, fileErrors
+}
 
-	results := shared.ProcessBatchWithOptions(c.Context(), links, shared.BatchOptionsFromConfig(s.cfg, s.cfg.Concurrency))
-	return buildResponse(results, true)
+func readUploadFile(header *multipart.FileHeader) ([]byte, bool) {
+	opened, err := header.Open()
+	if err != nil {
+		return nil, false
+	}
+	data, readErr := io.ReadAll(opened)
+	_ = opened.Close()
+	if readErr != nil {
+		return nil, false
+	}
+	return data, true
 }
 
 func buildResponse(results []shared.Result, includeExcel bool) (shared.ProcessResponse, error) {

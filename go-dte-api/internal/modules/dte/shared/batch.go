@@ -75,24 +75,25 @@ func (r *ScrapeRuntime) Close() {
 	}
 }
 
-func ProcessBatchWithOptions(parent context.Context, links []string, opts BatchOptions) []Result {
+func ProcessLinkEntriesWithOptions(parent context.Context, entries []LinkEntry, opts BatchOptions) []Result {
 	cfg := config.Load()
 	if runtimeOrNil() == nil {
 		_ = InitScrapeRuntime(context.Background(), cfg)
 	}
 	if runtime := runtimeOrNil(); runtime != nil {
-		return runtime.processBatch(parent, links, opts)
+		return runtime.processLinkEntries(parent, entries, opts)
 	}
 	runtime, err := NewScrapeRuntime(parent, cfg)
 	if err != nil {
-		results := make([]Result, len(links))
-		for i, link := range links {
-			results[i] = baseErrorResult(link, err)
+		results := make([]Result, len(entries))
+		for i, entry := range entries {
+			results[i] = baseErrorResult(entry.URL, err)
+			results[i].NombreArchivo = entry.NombreArchivo
 		}
 		return results
 	}
 	defer runtime.Close()
-	return runtime.processBatch(parent, links, opts)
+	return runtime.processLinkEntries(parent, entries, opts)
 }
 
 type pendingWork struct {
@@ -100,10 +101,18 @@ type pendingWork struct {
 	callbacks []func(Result)
 }
 
-func (r *ScrapeRuntime) processBatch(parent context.Context, links []string, opts BatchOptions) []Result {
-	if len(links) == 0 {
+func (r *ScrapeRuntime) processLinkEntries(parent context.Context, entries []LinkEntry, opts BatchOptions) []Result {
+	if len(entries) == 0 {
 		return nil
 	}
+
+	links := make([]string, len(entries))
+	fileNames := make([]string, len(entries))
+	for i, entry := range entries {
+		links[i] = entry.URL
+		fileNames[i] = entry.NombreArchivo
+	}
+
 	concurrency := opts.Concurrency
 	if concurrency < 1 {
 		concurrency = r.cfg.Concurrency
@@ -121,7 +130,7 @@ func (r *ScrapeRuntime) processBatch(parent context.Context, links []string, opt
 	var wg sync.WaitGroup
 	pending := map[string]*pendingWork{}
 	var pendingMu sync.Mutex
-	limiter := newRateLimiter(r.cfg.MinIntervalMs)
+	limiter := newRateLimiter(r.cfg.EffectiveMinIntervalMs())
 
 	reportProgress := func() {
 		if opts.OnProgress == nil {
@@ -195,6 +204,7 @@ func (r *ScrapeRuntime) processBatch(parent context.Context, links []string, opt
 		submit(url, func(res Result) {
 			for origIdx, mapped := range plan.origToUnique {
 				if mapped == uIdx {
+					res.NombreArchivo = fileNames[origIdx]
 					results[origIdx] = res
 					progressMu.Lock()
 					completed++
@@ -222,7 +232,6 @@ func (r *ScrapeRuntime) processBatch(parent context.Context, links []string, opt
 
 	wg.Wait()
 	close(jobs)
-	_ = completed
 
 	return results
 }
@@ -237,4 +246,15 @@ func (r *ScrapeRuntime) scrapeOne(parent context.Context, url string) Result {
 		return r.cache.Consult(item.scraper, parent, url, scrapeTimeout)
 	}
 	return consultWithRetry(item.scraper, parent, url, scrapeTimeout)
+}
+
+func FileParseErrorResult(filename, message string) Result {
+	return Result{
+		NombreArchivo: filename,
+		Visitar:       "Abrir",
+		Estado:        "ERROR",
+		TipoDteNorm:   "SIN_TIPO",
+		Relacionados:  []RelatedDocument{},
+		Error:         message,
+	}
 }

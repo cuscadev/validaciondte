@@ -22,13 +22,14 @@ export default function UploadTableFilterButton({
     <Button
       type="button"
       variant="outline"
-      size="icon"
-      className={cn('relative size-9 shrink-0', className)}
+      size="sm"
+      className={cn('relative h-9 shrink-0 gap-1.5 px-3', className)}
       onClick={onClick}
-      aria-label="Filtros"
-      title="Filtros"
+      aria-label="Filtrar"
+      title="Filtrar"
     >
-      <Filter className="size-4" aria-hidden />
+      <Filter className="size-4 shrink-0" aria-hidden />
+      <span>Filtrar</span>
       {hasActive && (
         <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
           {activeCount > 9 ? '9+' : activeCount}

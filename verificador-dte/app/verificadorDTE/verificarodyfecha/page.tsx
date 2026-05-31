@@ -44,6 +44,7 @@ const FORMAT_HELP = (
 )
 
 type Resultado = {
+  nombreArchivo?: string
   url: string
   host: string
   ambiente: string
@@ -167,6 +168,7 @@ export default function VerificarPorCodigoYFechaPage() {
   }
 
   const columnas = useMemo(() => ([
+    { key: 'nombreArchivo', label: 'Archivo' },
     { key: 'codGen', label: 'Código Generación' },
     { key: 'fechaEmi', label: 'Fecha Emi.' },
     { key: 'estado', label: 'Estado' },
@@ -184,7 +186,7 @@ export default function VerificarPorCodigoYFechaPage() {
     if (!q) return data
     return data.filter(r => {
       const campos = [
-        r.codGen, r.fechaEmi, r.estado, r.descripcionEstado, r.tipoDte,
+        r.nombreArchivo, r.codGen, r.fechaEmi, r.estado, r.descripcionEstado, r.tipoDte,
         r.numeroControl, r.montoTotal, r.linkVisita, r.url
       ]
       return campos.some(v => (v || '').toLowerCase().includes(q))
@@ -264,7 +266,7 @@ export default function VerificarPorCodigoYFechaPage() {
               excel: {
                 href: downloadHref,
                 download: filename,
-                label: 'Descargar Excel completo',
+                label: 'EXCEL',
               },
               csv: {
                 onClick: () =>

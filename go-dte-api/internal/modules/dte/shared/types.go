@@ -18,6 +18,7 @@ type Observation struct {
 
 type Result struct {
 	OK                      bool              `json:"ok,omitempty"`
+	NombreArchivo           string            `json:"nombreArchivo,omitempty"`
 	URL                     string            `json:"url,omitempty"`
 	LinkVisita              string            `json:"linkVisita,omitempty"`
 	Visitar                 string            `json:"visitar,omitempty"`
