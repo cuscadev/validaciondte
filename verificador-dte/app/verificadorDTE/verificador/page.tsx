@@ -1,16 +1,46 @@
 'use client'
 
 import PlanGate from '@/components/PlanGate'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import UploadFormSection from '@/components/upload/UploadFormSection'
+import UploadFormAccordion from '@/components/upload/UploadFormAccordion'
+import UploadResultsReveal from '@/components/upload/UploadResultsReveal'
+import UploadTableExportBar from '@/components/upload/UploadTableExportBar'
 import {
-  Card, CardContent, CardDescription, CardHeader, CardTitle,
-} from '@/components/ui/card'
+  buildExportFilename,
+  exportPdfByProfile,
+  exportRowsToCsv,
+} from '@/lib/upload-table-export'
+import UploadTableHints from '@/components/upload/UploadTableHints'
+import HelpTooltip from '@/components/upload/HelpTooltip'
+import UploadTemplateDownloadButton from '@/components/upload/UploadTemplateDownloadButton'
+import { useUploadResultsReveal } from '@/components/upload/useUploadResultsReveal'
+import { useEffect, useMemo, useState } from 'react'
+import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { recordProcessingLog } from '@/lib/client-processing-log'
 import { summarizeFiles, summarizeResults } from '@/lib/processing-log'
-import { Moon, Sun, FileUp, Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search } from 'lucide-react'
+import { summarizeDteUploadResults } from '@/lib/upload-dte-stats'
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search } from 'lucide-react'
+import { toast } from 'sonner'
+
+const FORMAT_HELP = (
+  <div className="space-y-2">
+    <p>
+      Usa la plantilla para evitar errores. El archivo debe contener enlaces completos de consulta
+      pública de Hacienda (consultaPublica con ambiente, codGen y fechaEmi).
+    </p>
+    <ul className="list-disc space-y-1 pl-4 text-xs opacity-90">
+      <li><strong>Columna enlace:</strong> URL completa de admin.factura.gob.sv o webapp.dtes.mh.gob.sv.</li>
+      <li><strong>Archivos:</strong> Acepta .csv, .txt, .xlsx, .xls y .xlsm.</li>
+      <li>Puedes poner varios enlaces en filas distintas o en celdas del Excel.</li>
+    </ul>
+    <p className="text-xs opacity-90">
+      Descarga la plantilla verde para ver el formato correcto de los enlaces.
+    </p>
+  </div>
+)
 
 type Resultado = {
   url: string
@@ -48,10 +78,8 @@ type Resultado = {
 }
 
 export default function HomePage() {
-  const inputRef = useRef<HTMLInputElement>(null)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [loading, setLoading] = useState(false)
-  const [msg, setMsg] = useState('')
-  const [dark, setDark] = useState(false)
   const [data, setData] = useState<Resultado[]>([])
   const [downloadHref, setDownloadHref] = useState<string | null>(null)
   const [filename, setFilename] = useState('resultados_dtes.xlsx')
@@ -60,26 +88,25 @@ export default function HomePage() {
   const [search, setSearch] = useState('')
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
-
-  const toggleTheme = () => {
-    setDark((d) => !d)
-    document.documentElement.classList.toggle('dark')
-  }
+  const {
+    resultsVisible,
+    accordionApiRef,
+    resetResultsVisibility,
+    onResultsReveal,
+  } = useUploadResultsReveal()
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const files = inputRef.current?.files
-    if (!files || files.length === 0) {
-      setMsg('Selecciona uno o más archivos CSV o Excel')
+    if (selectedFiles.length === 0) {
+      toast.warning('Selecciona uno o más archivos CSV o Excel')
       return
     }
 
     setLoading(true)
-    setMsg('Procesando…')
+    resetResultsVisibility()
     setData([])
     setDownloadHref(null)
     setCurrentPage(1)
-    const selectedFiles = Array.from(files)
     const startedAt = new Date()
     const started = performance.now()
 
@@ -100,6 +127,9 @@ export default function HomePage() {
         filename?: string
       }
       setData(json.resultados || [])
+      accordionApiRef.current?.setProcessingSummary(
+        summarizeDteUploadResults(json.resultados || [])
+      )
       setFilename(json.filename || 'resultados_dtes.xlsx')
 
       setDownloadHref(
@@ -109,7 +139,7 @@ export default function HomePage() {
           : null)
       )
 
-      setMsg('✅ Procesamiento finalizado. Revisa la tabla y descarga el Excel.')
+      toast.success('Procesamiento finalizado. Revisa la tabla y descarga el Excel.')
       await recordProcessingLog({
         routeKey: 'verificador',
         moduleName: 'Verificador Links CSV',
@@ -120,7 +150,7 @@ export default function HomePage() {
         ...summarizeResults(json.resultados || []),
       })
     } catch (e: any) {
-      setMsg(`❌ ${e?.message || 'Error inesperado'}`)
+      toast.error(e?.message || 'Error inesperado')
       await recordProcessingLog({
         routeKey: 'verificador',
         moduleName: 'Verificador Links CSV',
@@ -204,82 +234,49 @@ export default function HomePage() {
   return (
     <PlanGate routeKey="verificador">
     <main className="w-full max-w-full dark:bg-background">
-      {/* Toggle theme */}
-      <div className="absolute top-4 right-4">
-        <Button variant="outline" onClick={toggleTheme}>
-          {dark ? <Sun className="w-4 h-4 mr-2" /> : <Moon className="w-4 h-4 mr-2" />}
-          {dark ? 'Claro' : 'Oscuro'}
-        </Button>
-      </div>
-
       <Card className="w-full max-w-full overflow-hidden border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-950">
-        <CardHeader className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/80 dark:border-white/10 dark:bg-zinc-950/90 dark:supports-[backdrop-filter]:bg-zinc-950/80">
-          <CardTitle className="text-2xl text-slate-950 dark:text-white">🧾 Verificador de DTE</CardTitle>
-          <CardDescription className="text-slate-600 dark:text-zinc-300">
-            Sube uno o varios archivos CSV o Excel con enlaces de Hacienda. Verás una tabla con los resultados y podrás descargar el Excel.
-          </CardDescription>
-        </CardHeader>
+        <CardContent className="space-y-6 pt-6">
+          <form onSubmit={onSubmit} className="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10">
+            <UploadFormAccordion
+              accordionApiRef={accordionApiRef}
+              onResultsReveal={onResultsReveal}
+              hasResults={resultsVisible && data.length > 0}
+              collapseWhenResults
+            >
+            <UploadFormSection
+              label="Archivos CSV o Excel"
+              briefHint="CSV o Excel con enlaces MH"
+              helpContent={
+                <>
+                  <p>
+                    Sube uno o varios archivos CSV o Excel con enlaces de Hacienda. Veras una tabla con los resultados y podras descargar el Excel.
+                  </p>
+                  <p className="mt-2 text-xs opacity-90">Acepta .csv, .txt, .xlsx, .xls y .xlsm</p>
+                </>
+              }
+              helpTooltip={<HelpTooltip content={FORMAT_HELP} side="top" />}
+              labelActions={
+                <UploadTemplateDownloadButton href="/api/procesar/plantilla" />
+              }
+              files={selectedFiles}
+              onFilesChange={setSelectedFiles}
+              loading={loading}
+              accept={{
+                'text/csv': ['.csv', '.txt'],
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx', '.xlsm'],
+                'application/vnd.ms-excel': ['.xls'],
+              }}
+              sidePanel={
+                <UploadTableHints>
+                  Revisa el estado de cada DTE, usa el buscador para ubicar códigos o números de control y abre el enlace de la columna Visitar cuando necesites validar el documento en Hacienda.
+                </UploadTableHints>
+              }
+            />
 
-        <CardContent className="space-y-6">
-          {/* Formulario */}
-          <form onSubmit={onSubmit} className="space-y-5 rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-black">
-            <div className="grid gap-4 sm:grid-cols-[1fr_auto] items-end">
-              <div className="space-y-2">
-                <Label htmlFor="file">Archivos CSV o Excel</Label>
-                <Input id="file" ref={inputRef} type="file" accept=".csv,.txt,.xlsx,.xls,.xlsm" multiple />
-              </div>
-
-              <div className="flex gap-3">
-                <Button type="submit" disabled={loading} className="w-full bg-yellow-400 font-bold text-black hover:bg-yellow-300 sm:w-auto">
-                  {loading ? (
-                    <>
-                      <Loader2 className="animate-spin w-4 h-4 mr-2" />
-                      Procesando…
-                    </>
-                  ) : (
-                    <>
-                      <FileUp className="w-4 h-4 mr-2" />
-                      Procesar
-                    </>
-                  )}
-                </Button>
-
-                {downloadHref && (
-                  <a
-                    href={downloadHref}
-                    download={filename}
-                    className="inline-flex items-center justify-center rounded-md border border-yellow-400 bg-yellow-400 px-4 py-2 text-sm font-bold text-black hover:bg-yellow-300"
-                  >
-                    Descargar Excel
-                  </a>
-                )}
-              </div>
-            </div>
-
-            {msg && (
-              <div
-                className={`text-sm rounded-md p-3 ${
-                  msg.startsWith('✅')
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200'
-                    : msg.startsWith('Procesando')
-                    ? 'bg-yellow-100 text-yellow-900 dark:bg-yellow-400/15 dark:text-yellow-200'
-                    : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200'
-                }`}
-              >
-                {msg}
-              </div>
-            )}
-
-           
+            </UploadFormAccordion>
           </form>
 
-          <section className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 shadow-sm dark:border-white/10 dark:bg-black dark:text-white">
-            <h2 className="font-semibold text-amber-600 dark:text-yellow-300">Indicaciones para revisar la tabla</h2>
-            <p className="mt-1 text-slate-600 dark:text-zinc-300">
-              Revisa el estado de cada DTE, usa el buscador para ubicar códigos o números de control y abre el enlace de la columna Visitar cuando necesites validar el documento en Hacienda.
-            </p>
-          </section>
-
+          <UploadResultsReveal visible={resultsVisible && data.length > 0}>
           {/* Barra de herramientas de tabla */}
           <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -291,6 +288,28 @@ export default function HomePage() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+              <UploadTableExportBar
+                excel={{
+                  href: downloadHref,
+                  download: filename,
+                  label: 'Descargar Excel completo',
+                }}
+                csv={{
+                  onClick: () =>
+                    exportRowsToCsv(
+                      data as Record<string, unknown>[],
+                      buildExportFilename('resultados_dtes', 'csv')
+                    ),
+                }}
+                pdf={{
+                  onClick: () =>
+                    exportPdfByProfile(
+                      data as Record<string, unknown>[],
+                      'verificador',
+                      buildExportFilename('resultados_dtes', 'pdf')
+                    ),
+                }}
+              />
               {/* Search */}
               <div className="relative">
                 <Input
@@ -425,6 +444,7 @@ export default function HomePage() {
               </div>
             </div>
           </div>
+          </UploadResultsReveal>
         </CardContent>
       </Card>
     </main>

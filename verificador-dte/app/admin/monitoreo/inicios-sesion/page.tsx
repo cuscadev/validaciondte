@@ -3,7 +3,6 @@
 import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { auth } from '@/lib/firebase';
-import { QUERY_CACHE_MS } from '@/components/QueryProvider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -64,8 +63,6 @@ export default function LoginLogsPage() {
       if (!res.ok) throw new Error(data.error || 'No se pudieron cargar los logs de login');
       return data.logs || [];
     },
-    staleTime: QUERY_CACHE_MS,
-    gcTime: QUERY_CACHE_MS,
   });
 
   const updateFilter = (key: keyof typeof filters, value: string) => {

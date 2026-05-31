@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
+import AppBreadcrumb from '@/components/navigation/AppBreadcrumb'
 import { Menu, PanelLeftClose } from 'lucide-react'
 import { BrandLoader } from '@/components/ui/brand-loader'
 import { usePathname, useRouter } from 'next/navigation'
@@ -11,6 +12,7 @@ import { signOut } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
 import { useOrganizationMe } from '@/hooks/useOrganizationMe'
 import { Button } from '@/components/ui/button'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { AuthProvider, useAuth } from '@/components/AuthProvider'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { isAccountUsable } from '@/lib/firestoreUser'
@@ -243,6 +245,7 @@ function ProtectedAppShellContent({ children }: { children: React.ReactNode }) {
 
   return (
     <ThemeProvider>
+      <TooltipProvider skipDelayDuration={300}>
       <div className="relative flex h-screen overflow-hidden">
         <aside
           className={[
@@ -275,7 +278,7 @@ function ProtectedAppShellContent({ children }: { children: React.ReactNode }) {
 
         <main
           className={[
-            'relative flex-1 h-screen overflow-y-auto',
+            'relative flex-1 h-screen overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable]',
             'transition-[margin] duration-300 ease-in-out',
             sidebarOpen ? 'md:ml-64' : 'md:ml-[72px]',
           ].join(' ')}
@@ -285,7 +288,7 @@ function ProtectedAppShellContent({ children }: { children: React.ReactNode }) {
               <button
                 type="button"
                 onClick={() => setMobileSidebarOpen((value) => !value)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-md border text-sm hover:bg-muted md:hidden"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border text-sm hover:bg-muted md:hidden"
                 aria-label={mobileSidebarOpen ? t('hideMenu') : t('showMenu')}
                 title={mobileSidebarOpen ? t('hideMenu') : t('showMenu')}
               >
@@ -298,7 +301,7 @@ function ProtectedAppShellContent({ children }: { children: React.ReactNode }) {
               <button
                 type="button"
                 onClick={() => setSidebarOpen((value) => !value)}
-                className="hidden h-10 w-10 items-center justify-center rounded-md border text-sm hover:bg-muted md:inline-flex"
+                className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-md border text-sm hover:bg-muted md:inline-flex"
                 aria-label={sidebarOpen ? t('hideMenu') : t('showMenu')}
                 title={sidebarOpen ? t('hideMenu') : t('showMenu')}
               >
@@ -308,7 +311,8 @@ function ProtectedAppShellContent({ children }: { children: React.ReactNode }) {
                   <Menu className="w-4 h-4" />
                 )}
               </button>
-              <div className="ml-auto flex items-center gap-2">
+              <AppBreadcrumb />
+              <div className="ml-auto flex shrink-0 items-center gap-2">
                 <LanguageSwitcher />
                 <Navbar onToggleSidebar={toggleSidebar} />
               </div>
@@ -318,6 +322,7 @@ function ProtectedAppShellContent({ children }: { children: React.ReactNode }) {
           <div className="p-4">{children}</div>
         </main>
       </div>
+      </TooltipProvider>
     </ThemeProvider>
   )
 }

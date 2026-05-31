@@ -28,6 +28,10 @@ import {
 } from '@/lib/org-display';
 import { auth } from '@/lib/firebase';
 import { QUERY_CACHE_MS } from '@/components/QueryProvider';
+import {
+  invalidateGetQueries,
+  useGetQuery,
+} from '@/lib/tanstack-query';
 
 type UserFormState = Partial<AppUser> & { password?: string };
 
@@ -39,6 +43,18 @@ type ClientApiRow = {
   displayName?: string;
   organizationId: string;
   organization: OrgDirectoryRow['organization'];
+};
+
+const ORGANIZATIONS_QUERY_KEY = ['admin', 'organizations'] as const;
+
+type AdminOrganizationsResponse = {
+  clients: ClientApiRow[];
+};
+
+type AdminOrganizationDetailResponse = {
+  organization: OrgMembersDetail['organization'];
+  owner: OrgMembersDetail['owner'];
+  collaborators: OrgMembersDetail['collaborators'];
 };
 
 const SEGMENT_FILTERS: { id: OrgSegmentFilter; label: string }[] = [
@@ -57,17 +73,43 @@ export default function UsersAdminPage() {
   const [orgSegmentFilter, setOrgSegmentFilter] = useState<OrgSegmentFilter>('all');
   const [modalOpen, setModalOpen] = useState(false);
   const [users, setUsers] = useState<AppUser[]>([]);
-  const [orgClients, setOrgClients] = useState<ClientApiRow[]>([]);
-  const [orgsLoading, setOrgsLoading] = useState(false);
   const [error, setError] = useState('');
   const [checkingRole, setCheckingRole] = useState(true);
   const [form, setForm] = useState<UserFormState>({});
   const [editMode, setEditMode] = useState<string | null>(null);
   const [expandedOrgId, setExpandedOrgId] = useState<string | null>(null);
-  const [expandingOrgId, setExpandingOrgId] = useState<string | null>(null);
-  const [orgDetailsCache, setOrgDetailsCache] = useState<Record<string, OrgMembersDetail>>({});
   const router = useRouter();
   const queryClient = useQueryClient();
+
+  const orgsQuery = useGetQuery<AdminOrganizationsResponse, ClientApiRow[]>({
+    queryKey: ORGANIZATIONS_QUERY_KEY,
+    path: '/api/admin/organizations',
+    enabled: !checkingRole,
+    overrides: {
+      select: (data) => data.clients ?? [],
+    },
+  });
+
+  const orgDetailQuery = useGetQuery<
+    AdminOrganizationDetailResponse,
+    OrgMembersDetail
+  >({
+    queryKey: ['admin', 'organizations', expandedOrgId],
+    path: `/api/admin/organizations/${expandedOrgId}`,
+    enabled: !checkingRole && expandedOrgId !== null,
+    overrides: {
+      select: (data): OrgMembersDetail => ({
+        organization: data.organization,
+        owner: data.owner,
+        collaborators: data.collaborators ?? [],
+      }),
+    },
+  });
+
+  const orgClients = orgsQuery.data ?? [];
+  const orgsLoading = orgsQuery.isLoading;
+  const expandingOrgId = orgDetailQuery.isFetching && !orgDetailQuery.data ? expandedOrgId : null;
+  const expandedDetail = orgDetailQuery.data ?? null;
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -75,31 +117,13 @@ export default function UsersAdminPage() {
         queryKey: ['users'],
         queryFn: getAllUsers,
         staleTime: QUERY_CACHE_MS,
-        gcTime: QUERY_CACHE_MS,
+        gcTime: QUERY_CACHE_MS * 4,
       });
       setUsers(data);
     } catch {
       // Contadores del header; no bloquear la vista principal
     }
   }, [queryClient]);
-
-  const fetchOrganizations = useCallback(async () => {
-    setOrgsLoading(true);
-    setError('');
-    try {
-      const token = await auth.currentUser?.getIdToken();
-      const res = await fetch('/api/admin/organizations', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error al cargar organizaciones');
-      setOrgClients(data.clients ?? []);
-    } catch (err) {
-      setError(getErrorMessage(err, 'No se pudieron cargar las organizaciones.'));
-    } finally {
-      setOrgsLoading(false);
-    }
-  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -112,7 +136,7 @@ export default function UsersAdminPage() {
         queryKey: ['users', user.uid],
         queryFn: () => getUser(user.uid),
         staleTime: QUERY_CACHE_MS,
-        gcTime: QUERY_CACHE_MS,
+        gcTime: QUERY_CACHE_MS * 4,
       });
       if (!appUser || appUser.role !== 'superadmin') {
         router.push('/');
@@ -120,38 +144,24 @@ export default function UsersAdminPage() {
       }
 
       setCheckingRole(false);
-      await Promise.all([fetchUsers(), fetchOrganizations()]);
+      await fetchUsers();
     });
     return () => unsubscribe();
-  }, [fetchOrganizations, fetchUsers, queryClient, router]);
+  }, [fetchUsers, queryClient, router]);
 
-  async function fetchOrgDetail(organizationId: string): Promise<OrgMembersDetail> {
-    const token = await auth.currentUser?.getIdToken();
-    const res = await fetch(`/api/admin/organizations/${organizationId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Error al cargar detalle');
-    return {
-      organization: data.organization,
-      owner: data.owner,
-      collaborators: data.collaborators ?? [],
-    };
-  }
-
-  async function refreshExpandedOrgDetail(organizationId: string) {
-    setExpandingOrgId(organizationId);
-    try {
-      const detail = await fetchOrgDetail(organizationId);
-      setOrgDetailsCache((prev) => ({ ...prev, [organizationId]: detail }));
-    } catch (err) {
-      setError(getErrorMessage(err, 'No se pudo cargar el detalle de la organización.'));
-    } finally {
-      setExpandingOrgId(null);
+  useEffect(() => {
+    if (orgsQuery.error) {
+      setError(getErrorMessage(orgsQuery.error, 'No se pudieron cargar las organizaciones.'));
     }
-  }
+  }, [orgsQuery.error]);
 
-  async function toggleOrg(organizationId: string) {
+  useEffect(() => {
+    if (orgDetailQuery.error) {
+      setError(getErrorMessage(orgDetailQuery.error, 'No se pudo cargar el detalle de la organización.'));
+    }
+  }, [orgDetailQuery.error]);
+
+  function toggleOrg(organizationId: string) {
     if (expandedOrgId === organizationId) {
       setExpandedOrgId(null);
       return;
@@ -159,12 +169,6 @@ export default function UsersAdminPage() {
 
     setExpandedOrgId(organizationId);
     setError('');
-
-    if (orgDetailsCache[organizationId]) {
-      return;
-    }
-
-    await refreshExpandedOrgDetail(organizationId);
   }
 
   async function handleEditMember(uid: string) {
@@ -175,7 +179,7 @@ export default function UsersAdminPage() {
           queryKey: ['users', uid],
           queryFn: () => getUser(uid),
           staleTime: QUERY_CACHE_MS,
-          gcTime: QUERY_CACHE_MS,
+          gcTime: QUERY_CACHE_MS * 4,
         });
       } catch {
         setError('No se pudo cargar el usuario para editar.');
@@ -257,13 +261,12 @@ export default function UsersAdminPage() {
     setEditMode(null);
     await queryClient.invalidateQueries({ queryKey: ['users'] });
     await queryClient.invalidateQueries({ queryKey: ['users', userData.uid] });
-    await Promise.all([fetchUsers(), fetchOrganizations()]);
+    await invalidateGetQueries(queryClient, ORGANIZATIONS_QUERY_KEY);
     if (expandedOrgId) {
-      await refreshExpandedOrgDetail(expandedOrgId);
+      await invalidateGetQueries(queryClient, ['admin', 'organizations', expandedOrgId]);
     }
+    await fetchUsers();
   }
-
-  const expandedDetail = expandedOrgId ? orgDetailsCache[expandedOrgId] ?? null : null;
 
   const orgDirectoryRows: OrgDirectoryRow[] = useMemo(
     () =>

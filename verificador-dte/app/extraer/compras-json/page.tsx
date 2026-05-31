@@ -1,22 +1,31 @@
 'use client'
 
 import PlanGate from '@/components/PlanGate'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import UploadFormSection from '@/components/upload/UploadFormSection'
+import UploadFormAccordion from '@/components/upload/UploadFormAccordion'
+import UploadResultsReveal from '@/components/upload/UploadResultsReveal'
+import UploadTableExportBar from '@/components/upload/UploadTableExportBar'
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+  buildExportFilename,
+  exportPdfByProfile,
+  exportRowsToCsv,
+} from '@/lib/upload-table-export'
+import { useUploadResultsReveal } from '@/components/upload/useUploadResultsReveal'
+import { useEffect, useMemo, useState } from 'react'
+import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { recordProcessingLog } from '@/lib/client-processing-log'
 import { summarizeFiles } from '@/lib/processing-log'
+import { summarizeDteUploadResults } from '@/lib/upload-dte-stats'
 import {
-  FileUp,
-  Loader2,
+  extractEmisor,
+  extractIdentificacion,
+  extractResumenMontos,
+  extractSelloFromJson,
+} from '@/lib/dte-json-fields'
+import {
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -24,6 +33,7 @@ import {
   Search,
 } from 'lucide-react'
 import * as XLSX from 'xlsx-js-style'
+import { toast } from 'sonner'
 
 type CompraResultado = {
   Generacion: string
@@ -47,20 +57,20 @@ type CompraResultado = {
 
 type ColumnKey = keyof CompraResultado
 
-type TributoDte = {
-  codigo?: string
-  valor?: number
-}
-
 export default function ComprasJsonPage() {
-  const inputRef = useRef<HTMLInputElement>(null)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
 
   const [loading, setLoading] = useState(false)
-  const [msg, setMsg] = useState('')
   const [data, setData] = useState<CompraResultado[]>([])
   const [search, setSearch] = useState('')
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
+  const {
+    resultsVisible,
+    accordionApiRef,
+    resetResultsVisibility,
+    onResultsReveal,
+  } = useUploadResultsReveal()
 
   const fmt = (value: number) =>
     Number(value || 0).toLocaleString('es-SV', {
@@ -68,11 +78,6 @@ export default function ComprasJsonPage() {
       currency: 'USD',
       minimumFractionDigits: 2,
     })
-
-  const toNumber = (value: unknown) => {
-    const n = Number(value ?? 0)
-    return Number.isFinite(n) ? n : 0
-  }
 
   const formatDate = (date?: string) => {
     if (!date || !date.includes('-')) return ''
@@ -95,68 +100,32 @@ export default function ComprasJsonPage() {
 
   const procesarArchivo = async (file: File): Promise<CompraResultado> => {
     try {
-      const obj = JSON.parse(await file.text())
+      const obj = JSON.parse(await file.text()) as Record<string, unknown>
 
-      const identificacion = obj?.identificacion || {}
-      const emisor = obj?.emisor || {}
-      const resumen = obj?.resumen || {}
+      const identificacion = extractIdentificacion(obj)
+      const emisor = extractEmisor(obj)
+      const montos = extractResumenMontos(obj)
+      const selloRecibido = extractSelloFromJson(obj)
 
-      const tipoDte = String(identificacion?.tipoDte || '')
-      const fechaISO = String(identificacion?.fecEmi || '')
-
-      const exenta = toNumber(resumen?.totalExenta)
-      const gravada = toNumber(resumen?.totalGravada)
-
-      const ivaTributo = Array.isArray(resumen?.tributos)
-        ? toNumber(
-            resumen.tributos.find(
-              (t: TributoDte) => String(t?.codigo) === '20'
-            )?.valor
-          )
-        : 0
-
-      const ivaDesdeResumen =
-        toNumber(resumen?.totalIva) ||
-        toNumber(resumen?.ivaPerci1) ||
-        ivaTributo
-
-      const iva =
-        ivaDesdeResumen > 0
-          ? ivaDesdeResumen
-          : Number((gravada * 0.13).toFixed(2))
-
-      const percepcion =
-        gravada > 100 ? Number((gravada * 0.01).toFixed(2)) : 0
-
-      const selloRecibido =
-        obj?.selloRecibido ||
-        obj?.selloRecepcion ||
-        obj?.SelloRecibido ||
-        obj?.SelloRecepcion ||
-        obj?.respuestaHacienda?.selloRecibido ||
-        obj?.respuestaHacienda?.selloRecepcion ||
-        obj?.respuestaHacienda?.SelloRecibido ||
-        obj?.respuestaHacienda?.SelloRecepcion ||
-        obj?.responseHacienda?.selloRecibido ||
-        obj?.responseHacienda?.selloRecepcion ||
-        ''
+      const tipoDte = identificacion.tipoDte
+      const fechaISO = identificacion.fechaISO
 
       return {
-        Generacion: String(identificacion?.codigoGeneracion || ''),
-        NumeroControl: String(identificacion?.numeroControl || ''),
+        Generacion: identificacion.generacion,
+        NumeroControl: identificacion.numeroControl,
         Fecha: formatDate(fechaISO),
         FechaISO: fechaISO,
-        NIT: String(emisor?.nit || ''),
-        NRC: String(emisor?.nrc || ''),
-        Contribuyente: String(emisor?.nombre || '').toUpperCase(),
+        NIT: emisor.nit,
+        NRC: emisor.nrc,
+        Contribuyente: emisor.nombre,
         TipoDte: tipoDte,
         TipoDocumento: tipoDocumento(tipoDte),
-        Exenta: exenta,
-        MontoGravado: gravada,
-        IVA: iva,
-        Percepcion: percepcion,
-        TotalPagar: toNumber(resumen?.totalPagar),
-        SelloRecibido: String(selloRecibido),
+        Exenta: montos.exenta,
+        MontoGravado: montos.gravada,
+        IVA: montos.iva,
+        Percepcion: montos.percepcion,
+        TotalPagar: montos.totalPagar,
+        SelloRecibido: selloRecibido,
         Archivo: file.name,
         Error: '',
       }
@@ -185,7 +154,7 @@ export default function ComprasJsonPage() {
 
   const exportExcel = (rows: CompraResultado[]) => {
     if (!rows.length) {
-      setMsg('❌ No hay datos para exportar.')
+      toast.error('No hay datos para exportar.')
       return
     }
 
@@ -193,7 +162,7 @@ export default function ComprasJsonPage() {
     const errores = rows.filter((r) => r.Error)
 
     if (!validRows.length && errores.length) {
-      setMsg('❌ No hay registros válidos para exportar.')
+      toast.error('No hay registros válidos para exportar.')
       return
     }
 
@@ -296,19 +265,15 @@ export default function ComprasJsonPage() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    const files = inputRef.current?.files
-
-    if (!files || files.length === 0) {
-      setMsg('Selecciona uno o más archivos .json')
+    if (selectedFiles.length === 0) {
+      toast.warning('Selecciona uno o más archivos .json')
       return
     }
 
     setLoading(true)
-    setMsg('Procesando…')
+    resetResultsVisibility()
     setData([])
     setCurrentPage(1)
-
-    const selectedFiles = Array.from(files)
     const startedAt = new Date()
     const started = performance.now()
 
@@ -324,14 +289,17 @@ export default function ComprasJsonPage() {
       })
 
       setData(resultados)
+      accordionApiRef.current?.setProcessingSummary(
+        summarizeDteUploadResults(resultados)
+      )
 
       const successCount = resultados.filter((r) => !r.Error).length
       const errorCount = resultados.filter((r) => r.Error).length
 
-      setMsg(
+      toast.success(
         errorCount > 0
-          ? `✅ Procesamiento finalizado con ${errorCount} error(es).`
-          : '✅ Procesamiento finalizado.'
+          ? `Procesamiento finalizado con ${errorCount} error(es).`
+          : 'Procesamiento finalizado.'
       )
 
       await recordProcessingLog({
@@ -354,7 +322,7 @@ export default function ComprasJsonPage() {
       const message =
         error instanceof Error ? error.message : 'Error inesperado'
 
-      setMsg(`❌ ${message}`)
+      toast.error(message)
 
       await recordProcessingLog({
         routeKey: 'compras-json',
@@ -497,80 +465,31 @@ export default function ComprasJsonPage() {
     <PlanGate routeKey="compras-json">
       <main className="w-full max-w-full dark:bg-background">
         <Card className="w-full max-w-full overflow-hidden border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-950">
-          <CardHeader className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/80 dark:border-white/10 dark:bg-zinc-950/90 dark:supports-[backdrop-filter]:bg-zinc-950/80">
-            <CardTitle className="text-2xl text-slate-950 dark:text-white">
-               Procesador de Compras JSON
-            </CardTitle>
-
-            <CardDescription className="text-slate-600 dark:text-zinc-300">
-              Sube documentos DTE en formato JSON para generar el libro de
-              compras, resumen diario y resumen por proveedor.
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 pt-6">
             <form
               onSubmit={onSubmit}
-              className="space-y-5 rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-black"
+              className="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10"
             >
-              <div className="grid gap-4 sm:grid-cols-[1fr_auto] items-end">
-                <div className="space-y-2">
-                  <Label htmlFor="file">Archivos JSON</Label>
-                  <Input
-                    id="file"
-                    ref={inputRef}
-                    type="file"
-                    accept=".json,application/json"
-                    multiple
-                  />
-                </div>
+              <UploadFormAccordion
+                accordionApiRef={accordionApiRef}
+                onResultsReveal={onResultsReveal}
+                hasResults={resultsVisible && data.length > 0}
+                collapseWhenResults
+              >
+              <UploadFormSection
+                label="Archivos JSON"
+                briefHint="DTE en JSON"
+                helpContent="Sube documentos DTE en formato JSON para generar el libro de compras, resumen diario y resumen por proveedor."
+                files={selectedFiles}
+                onFilesChange={setSelectedFiles}
+                loading={loading}
+                accept={{ 'application/json': ['.json'] }}
+              />
 
-                <div className="flex gap-3">
-                  <Button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-yellow-400 font-bold text-black hover:bg-yellow-300 sm:w-auto"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="animate-spin w-4 h-4 mr-2" />
-                        Procesando…
-                      </>
-                    ) : (
-                      <>
-                        <FileUp className="w-4 h-4 mr-2" />
-                        Procesar
-                      </>
-                    )}
-                  </Button>
-
-                  {data.length > 0 && (
-                    <Button
-                      type="button"
-                      onClick={() => exportExcel(filtered)}
-                      className="w-full bg-yellow-400 font-bold text-black hover:bg-yellow-300 sm:w-auto"
-                    >
-                      Descargar Excel
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-              {msg && (
-                <div
-                  className={`text-sm rounded-md p-3 ${
-                    msg.startsWith('')
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200'
-                      : msg.startsWith('Procesando')
-                        ? 'bg-yellow-100 text-yellow-900 dark:bg-yellow-400/15 dark:text-yellow-200'
-                        : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200'
-                  }`}
-                >
-                  {msg}
-                </div>
-              )}
+              </UploadFormAccordion>
             </form>
 
+            <UploadResultsReveal visible={resultsVisible && data.length > 0}>
             <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-black">
                 <p className="text-xs text-slate-500 dark:text-zinc-400">
@@ -628,6 +547,27 @@ export default function ComprasJsonPage() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+                <UploadTableExportBar
+                  excel={{
+                    onClick: () => exportExcel(data),
+                    label: 'Descargar Excel completo',
+                  }}
+                  csv={{
+                    onClick: () =>
+                      exportRowsToCsv(
+                        data as Record<string, unknown>[],
+                        buildExportFilename('compras_json', 'csv')
+                      ),
+                  }}
+                  pdf={{
+                    onClick: () =>
+                      exportPdfByProfile(
+                        data as Record<string, unknown>[],
+                        'compras',
+                        buildExportFilename('compras_json', 'pdf')
+                      ),
+                  }}
+                />
                 <div className="relative">
                   <Input
                     value={search}
@@ -760,6 +700,7 @@ export default function ComprasJsonPage() {
                 </div>
               </div>
             </div>
+            </UploadResultsReveal>
           </CardContent>
         </Card>
       </main>

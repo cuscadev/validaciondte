@@ -1,22 +1,29 @@
 'use client'
 
 import PlanGate from '@/components/PlanGate'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import UploadFormSection from '@/components/upload/UploadFormSection'
+import UploadFormAccordion from '@/components/upload/UploadFormAccordion'
+import UploadResultsReveal from '@/components/upload/UploadResultsReveal'
+import UploadTableExportBar from '@/components/upload/UploadTableExportBar'
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+  buildExportFilename,
+  exportPdfByProfile,
+  exportRowsToCsv,
+} from '@/lib/upload-table-export'
+import { useUploadResultsReveal } from '@/components/upload/useUploadResultsReveal'
+import { useEffect, useMemo, useState } from 'react'
+import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { recordProcessingLog } from '@/lib/client-processing-log'
 import { summarizeFiles } from '@/lib/processing-log'
 import {
-  FileUp,
-  Loader2,
+  extractIdentificacion,
+  extractSelloFromJson,
+} from '@/lib/dte-json-fields'
+import { summarizeDteUploadResults } from '@/lib/upload-dte-stats'
+import {
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -26,6 +33,7 @@ import {
   ArrowUpDown,
 } from 'lucide-react'
 import * as XLSX from 'xlsx-js-style'
+import { toast } from 'sonner'
 
 type SujetoExcluidoResultado = {
   NumeroControl: string
@@ -51,14 +59,19 @@ type ColumnKey = keyof SujetoExcluidoResultado
 const ROWS_OPTIONS = [10, 20, 50, 100]
 
 export default function SujetosExcluidosPage() {
-  const inputRef = useRef<HTMLInputElement>(null)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
 
   const [loading, setLoading] = useState(false)
-  const [msg, setMsg] = useState('')
   const [data, setData] = useState<SujetoExcluidoResultado[]>([])
   const [search, setSearch] = useState('')
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
+  const {
+    resultsVisible,
+    accordionApiRef,
+    resetResultsVisibility,
+    onResultsReveal,
+  } = useUploadResultsReveal()
   const [filterFrom, setFilterFrom] = useState('')
   const [filterTo, setFilterTo] = useState(() =>
     new Date().toISOString().slice(0, 10)
@@ -99,38 +112,28 @@ export default function SujetosExcluidosPage() {
         ? text.split(',').slice(1).join(',')
         : text
 
-      const obj = JSON.parse(clean)
+      const obj = JSON.parse(clean) as Record<string, unknown>
 
-      const identificacion = obj?.identificacion || {}
-      const sujetoExcluido = obj?.sujetoExcluido || {}
-      const resumen = obj?.resumen || {}
+      const identificacion = extractIdentificacion(obj)
+      const sujetoExcluido = (obj?.sujetoExcluido || {}) as Record<string, unknown>
+      const resumen = (obj?.resumen || {}) as Record<string, unknown>
       const cuerpoDocumento = Array.isArray(obj?.cuerpoDocumento)
         ? obj.cuerpoDocumento
         : []
 
-      const tipoDte = String(identificacion?.tipoDte || '')
+      const tipoDte = identificacion.tipoDte
 
       if (tipoDte !== '14') {
         return null
       }
 
-      const primerDetalle = cuerpoDocumento[0] || {}
-      const fechaISO = String(identificacion?.fecEmi || '')
-
-      const selloRecibido =
-        obj?.selloRecibido ||
-        obj?.selloRecepcion ||
-        obj?.SelloRecibido ||
-        obj?.SelloRecepcion ||
-        obj?.respuestaHacienda?.selloRecibido ||
-        obj?.respuestaHacienda?.selloRecepcion ||
-        obj?.responseHacienda?.selloRecibido ||
-        obj?.responseHacienda?.selloRecepcion ||
-        ''
+      const primerDetalle = (cuerpoDocumento[0] || {}) as Record<string, unknown>
+      const fechaISO = identificacion.fechaISO
+      const selloRecibido = extractSelloFromJson(obj)
 
       return {
-        NumeroControl: String(identificacion?.numeroControl || ''),
-        CodigoGeneracion: String(identificacion?.codigoGeneracion || ''),
+        NumeroControl: identificacion.numeroControl,
+        CodigoGeneracion: identificacion.generacion,
         Fecha: formatDate(fechaISO),
         FechaISO: fechaISO,
         NumDocumento: String(sujetoExcluido?.numDocumento || ''),
@@ -142,7 +145,7 @@ export default function SujetosExcluidosPage() {
         SubTotal: toNumber(resumen?.subTotal || resumen?.subtotal),
         ReteRenta: toNumber(resumen?.reteRenta),
         TotalPagar: toNumber(resumen?.totalPagar),
-        SelloRecibido: String(selloRecibido),
+        SelloRecibido: selloRecibido,
         Archivo: file.name,
         Error: '',
       }
@@ -192,19 +195,15 @@ export default function SujetosExcluidosPage() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    const files = inputRef.current?.files
-
-    if (!files || files.length === 0) {
-      setMsg('Selecciona uno o más archivos .json')
+    if (selectedFiles.length === 0) {
+      toast.warning('Selecciona uno o más archivos .json')
       return
     }
 
     setLoading(true)
-    setMsg('Procesando…')
+    resetResultsVisibility()
     setData([])
     setCurrentPage(1)
-
-    const selectedFiles = Array.from(files)
     const startedAt = new Date()
     const started = performance.now()
 
@@ -224,17 +223,20 @@ export default function SujetosExcluidosPage() {
       })
 
       setData(registros)
+      accordionApiRef.current?.setProcessingSummary(
+        summarizeDteUploadResults(registros)
+      )
 
       const successCount = registros.filter((r) => !r.Error).length
       const errorCount = registros.filter((r) => r.Error).length
       const ignoredCount = resultados.filter((r) => r === null).length
 
-      setMsg(
+      toast.success(
         ignoredCount > 0
-          ? `✅ Procesamiento finalizado. ${ignoredCount} archivo(s) ignorado(s) porque no eran DTE tipo 14.`
+          ? `Procesamiento finalizado. ${ignoredCount} archivo(s) ignorado(s) porque no eran DTE tipo 14.`
           : errorCount > 0
-            ? `✅ Procesamiento finalizado con ${errorCount} error(es).`
-            : '✅ Procesamiento finalizado.'
+            ? `Procesamiento finalizado con ${errorCount} error(es).`
+            : 'Procesamiento finalizado.'
       )
 
       await recordProcessingLog({
@@ -257,7 +259,7 @@ export default function SujetosExcluidosPage() {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Error inesperado'
 
-      setMsg(`❌ ${message}`)
+      toast.error(message)
 
       await recordProcessingLog({
         routeKey: 'sujetos-excluidos',
@@ -381,7 +383,7 @@ export default function SujetosExcluidosPage() {
 
   const exportExcel = (rows: SujetoExcluidoResultado[]) => {
     if (!rows.length) {
-      setMsg('❌ No hay datos para exportar.')
+      toast.error('No hay datos para exportar.')
       return
     }
 
@@ -389,7 +391,7 @@ export default function SujetosExcluidosPage() {
     const errores = rows.filter((r) => r.Error)
 
     if (!validRows.length && errores.length) {
-      setMsg('❌ No hay registros válidos para exportar.')
+      toast.error('No hay registros válidos para exportar.')
       return
     }
 
@@ -521,9 +523,9 @@ export default function SujetosExcluidosPage() {
   }
 
   const clearAll = () => {
+    resetResultsVisibility()
     setData([])
     setSearch('')
-    setMsg('')
     setCurrentPage(1)
     setFilterFrom('')
     setFilterTo(new Date().toISOString().slice(0, 10))
@@ -532,106 +534,57 @@ export default function SujetosExcluidosPage() {
       direction: 'asc',
     })
 
-    if (inputRef.current) {
-      inputRef.current.value = ''
-    }
+    setSelectedFiles([])
   }
 
   return (
     <PlanGate routeKey="sujetos-excluidos">
       <main className="w-full max-w-full dark:bg-background">
         <Card className="w-full max-w-full overflow-hidden border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-950">
-          <CardHeader className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/80 dark:border-white/10 dark:bg-zinc-950/90 dark:supports-[backdrop-filter]:bg-zinc-950/80">
-            <CardTitle className="text-2xl text-slate-950 dark:text-white">
-              Procesador de Sujetos Excluidos JSON
-            </CardTitle>
-
-            <CardDescription className="text-slate-600 dark:text-zinc-300">
-              Sube documentos DTE tipo 14 para generar el detalle, resumen
-              diario y resumen por sujeto excluido.
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 pt-6">
             <form
               onSubmit={onSubmit}
-              className="space-y-5 rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-black"
+              className="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10"
             >
-              <div className="grid items-end gap-4 sm:grid-cols-[1fr_auto]">
-                <div className="space-y-2">
-                  <Label htmlFor="file">Archivos JSON</Label>
-
-                  <Input
-                    id="file"
-                    ref={inputRef}
-                    type="file"
-                    accept=".json,application/json"
-                    multiple
-                  />
-
-                  <p className="text-xs text-muted-foreground">
-                    Solo se procesarán documentos con tipoDte 14.
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-3 sm:flex-row">
+              <UploadFormAccordion
+                accordionApiRef={accordionApiRef}
+                onResultsReveal={onResultsReveal}
+                hasResults={resultsVisible && data.length > 0}
+                collapseWhenResults
+              >
+              <UploadFormSection
+                label="Archivos JSON"
+                briefHint="Solo tipo DTE 14"
+                helpContent={
+                  <>
+                    <p>
+                      Sube documentos DTE tipo 14 para generar el detalle, resumen diario y resumen por sujeto excluido.
+                    </p>
+                    <p className="mt-2 text-xs opacity-90">Solo se procesaran documentos con tipoDte 14.</p>
+                  </>
+                }
+                files={selectedFiles}
+                onFilesChange={setSelectedFiles}
+                loading={loading}
+                accept={{ 'application/json': ['.json'] }}
+              >
+                {data.length > 0 && (
                   <Button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-yellow-400 font-bold text-black hover:bg-yellow-300 sm:w-auto"
+                    type="button"
+                    variant="outline"
+                    onClick={clearAll}
+                    className="w-full sm:w-auto"
                   >
-                    {loading ? (
-                      <>
-                        <Loader2 className="mr-2 size-4 animate-spin" />
-                        Procesando…
-                      </>
-                    ) : (
-                      <>
-                        <FileUp className="mr-2 size-4" />
-                        Procesar
-                      </>
-                    )}
+                    <Trash2 className="mr-2 size-4" />
+                    Limpiar
                   </Button>
+                )}
+              </UploadFormSection>
 
-                  {data.length > 0 && (
-                    <>
-                      <Button
-                        type="button"
-                        onClick={() => exportExcel(sortedData)}
-                        className="w-full bg-yellow-400 font-bold text-black hover:bg-yellow-300 sm:w-auto"
-                      >
-                        Descargar Excel
-                      </Button>
-
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={clearAll}
-                        className="w-full sm:w-auto"
-                      >
-                        <Trash2 className="mr-2 size-4" />
-                        Limpiar
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {msg && (
-                <div
-                  className={`rounded-md p-3 text-sm ${
-                    msg.startsWith('✅')
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200'
-                      : msg.startsWith('Procesando')
-                        ? 'bg-yellow-100 text-yellow-900 dark:bg-yellow-400/15 dark:text-yellow-200'
-                        : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200'
-                  }`}
-                >
-                  {msg}
-                </div>
-              )}
+              </UploadFormAccordion>
             </form>
 
+            <UploadResultsReveal visible={resultsVisible && data.length > 0}>
             <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-black">
                 <p className="text-xs text-slate-500 dark:text-zinc-400">
@@ -729,6 +682,27 @@ export default function SujetosExcluidosPage() {
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <UploadTableExportBar
+                  excel={{
+                    onClick: () => exportExcel(data),
+                    label: 'Descargar Excel completo',
+                  }}
+                  csv={{
+                    onClick: () =>
+                      exportRowsToCsv(
+                        data as Record<string, unknown>[],
+                        buildExportFilename('sujetos_excluidos', 'csv')
+                      ),
+                  }}
+                  pdf={{
+                    onClick: () =>
+                      exportPdfByProfile(
+                        data as Record<string, unknown>[],
+                        'sujetosExcluidos',
+                        buildExportFilename('sujetos_excluidos', 'pdf')
+                      ),
+                  }}
+                />
                 <div className="relative">
                   <Input
                     value={search}
@@ -872,6 +846,7 @@ export default function SujetosExcluidosPage() {
                 </div>
               </div>
             </div>
+            </UploadResultsReveal>
           </CardContent>
         </Card>
       </main>

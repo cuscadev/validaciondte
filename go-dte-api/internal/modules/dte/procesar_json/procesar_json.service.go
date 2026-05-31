@@ -21,29 +21,6 @@ type Service struct {
 	cfg config.Config
 }
 
-type jsonExtra struct {
-	EmisorNit             string `json:"emisorNit,omitempty"`
-	EmisorNrc             string `json:"emisorNrc,omitempty"`
-	EmisorNombre          string `json:"emisorNombre,omitempty"`
-	EmisorCodActividad    string `json:"emisorCodActividad,omitempty"`
-	EmisorDescActividad   string `json:"emisorDescActividad,omitempty"`
-	EmisorNombreComercial string `json:"emisorNombreComercial,omitempty"`
-	EmisorTelefono        string `json:"emisorTelefono,omitempty"`
-	EmisorCorreo          string `json:"emisorCorreo,omitempty"`
-
-	ReceptorNit             string `json:"receptorNit,omitempty"`
-	ReceptorNrc             string `json:"receptorNrc,omitempty"`
-	ReceptorNombre          string `json:"receptorNombre,omitempty"`
-	ReceptorCodActividad    string `json:"receptorCodActividad,omitempty"`
-	ReceptorDescActividad   string `json:"receptorDescActividad,omitempty"`
-	ReceptorDepartamento    string `json:"receptorDepartamento,omitempty"`
-	ReceptorMunicipio       string `json:"receptorMunicipio,omitempty"`
-	ReceptorComplemento     string `json:"receptorComplemento,omitempty"`
-	ReceptorTelefono        string `json:"receptorTelefono,omitempty"`
-	ReceptorCorreo          string `json:"receptorCorreo,omitempty"`
-	ReceptorNombreComercial string `json:"receptorNombreComercial,omitempty"`
-}
-
 type jsonRow struct {
 	CodGen   string
 	FechaYMD string
@@ -65,7 +42,7 @@ func (s *Service) ProcessFiles(c *fiber.Ctx) (shared.ProcessResponse, error) {
 	}
 
 	rows := []jsonRow{}
-	extrasByKey := map[string]jsonExtra{}
+	extrasByKey := map[string]shared.Result{}
 	parseErrors := []shared.Result{}
 
 	for _, header := range files {
@@ -109,8 +86,10 @@ func (s *Service) ProcessFiles(c *fiber.Ctx) (shared.ProcessResponse, error) {
 
 	results := shared.ProcessLinks(c.Context(), links, s.cfg.Concurrency)
 	for idx := range results {
-		key := results[idx].CodGen + "|" + results[idx].FechaEmi
-		applyJSONExtra(&results[idx], extrasByKey[key])
+		key := shared.ResultLookupKey(results[idx].CodGen, results[idx].FechaEmi)
+		if extra, ok := extrasByKey[key]; ok {
+			shared.MergeJSONIntoResult(&results[idx], extra)
+		}
 	}
 
 	results = append(parseErrors, results...)
@@ -236,94 +215,28 @@ func robustJSONParse(data []byte) []map[string]any {
 	return out
 }
 
-func jsonItemsToRows(items []map[string]any, extrasByKey map[string]jsonExtra) []jsonRow {
+func jsonItemsToRows(items []map[string]any, extrasByKey map[string]shared.Result) []jsonRow {
 	rows := []jsonRow{}
 	for _, item := range items {
-		ident := asMap(item["identificacion"])
-		codGen := strings.ToUpper(strings.TrimSpace(asString(ident["codigoGeneracion"])))
-		fechaYMD := normalizeJSONDate(asString(ident["fecEmi"]))
+		ident := jsonAsMap(item["identificacion"])
+		codGen := strings.ToUpper(strings.TrimSpace(jsonAsString(ident["codigoGeneracion"])))
+		fechaYMD := shared.NormalizeJSONDate(jsonAsString(ident["fecEmi"]))
 		if !shared.IsUUID(codGen) || fechaYMD == "" {
 			continue
 		}
 
-		key := codGen + "|" + fechaYMD
-		extrasByKey[key] = extractExtra(item)
+		key := shared.ResultLookupKey(codGen, fechaYMD)
+		extrasByKey[key] = shared.ExtractDTEJSONFields(item)
 		rows = append(rows, jsonRow{CodGen: codGen, FechaYMD: fechaYMD})
 	}
 	return rows
-}
-
-func normalizeJSONDate(raw string) string {
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		return ""
-	}
-	if len(raw) >= 10 {
-		raw = raw[:10]
-	}
-	normalized := shared.NormalizarFecha(raw)
-	if len(normalized) == 10 && normalized[4] == '-' && normalized[7] == '-' {
-		return normalized
-	}
-	return ""
-}
-
-func extractExtra(item map[string]any) jsonExtra {
-	emisor := asMap(item["emisor"])
-	receptor := asMap(item["receptor"])
-	direccion := asMap(receptor["direccion"])
-
-	return jsonExtra{
-		EmisorNit:             asString(emisor["nit"]),
-		EmisorNrc:             asString(emisor["nrc"]),
-		EmisorNombre:          asString(emisor["nombre"]),
-		EmisorCodActividad:    asString(emisor["codActividad"]),
-		EmisorDescActividad:   asString(emisor["descActividad"]),
-		EmisorNombreComercial: asString(emisor["nombreComercial"]),
-		EmisorTelefono:        asString(emisor["telefono"]),
-		EmisorCorreo:          asString(emisor["correo"]),
-
-		ReceptorNit:             asString(receptor["nit"]),
-		ReceptorNrc:             asString(receptor["nrc"]),
-		ReceptorNombre:          asString(receptor["nombre"]),
-		ReceptorCodActividad:    asString(receptor["codActividad"]),
-		ReceptorDescActividad:   asString(receptor["descActividad"]),
-		ReceptorDepartamento:    asString(direccion["departamento"]),
-		ReceptorMunicipio:       asString(direccion["municipio"]),
-		ReceptorComplemento:     asString(direccion["complemento"]),
-		ReceptorTelefono:        asString(receptor["telefono"]),
-		ReceptorCorreo:          asString(receptor["correo"]),
-		ReceptorNombreComercial: asString(receptor["nombreComercial"]),
-	}
-}
-
-func applyJSONExtra(result *shared.Result, extra jsonExtra) {
-	result.EmisorNit = extra.EmisorNit
-	result.EmisorNrc = extra.EmisorNrc
-	result.EmisorNombre = extra.EmisorNombre
-	result.EmisorCodActividad = extra.EmisorCodActividad
-	result.EmisorDescActividad = extra.EmisorDescActividad
-	result.EmisorNombreComercial = extra.EmisorNombreComercial
-	result.EmisorTelefono = extra.EmisorTelefono
-	result.EmisorCorreo = extra.EmisorCorreo
-	result.ReceptorNit = extra.ReceptorNit
-	result.ReceptorNrc = extra.ReceptorNrc
-	result.ReceptorNombre = extra.ReceptorNombre
-	result.ReceptorCodActividad = extra.ReceptorCodActividad
-	result.ReceptorDescActividad = extra.ReceptorDescActividad
-	result.ReceptorDepartamento = extra.ReceptorDepartamento
-	result.ReceptorMunicipio = extra.ReceptorMunicipio
-	result.ReceptorComplemento = extra.ReceptorComplemento
-	result.ReceptorTelefono = extra.ReceptorTelefono
-	result.ReceptorCorreo = extra.ReceptorCorreo
-	result.ReceptorNombreComercial = extra.ReceptorNombreComercial
 }
 
 func dedupeJSONRows(rows []jsonRow) []jsonRow {
 	seen := map[string]bool{}
 	out := []jsonRow{}
 	for _, row := range rows {
-		key := row.CodGen + "|" + row.FechaYMD
+		key := shared.ResultLookupKey(row.CodGen, row.FechaYMD)
 		if seen[key] {
 			continue
 		}
@@ -333,14 +246,14 @@ func dedupeJSONRows(rows []jsonRow) []jsonRow {
 	return out
 }
 
-func asMap(value any) map[string]any {
+func jsonAsMap(value any) map[string]any {
 	if typed, ok := value.(map[string]any); ok {
 		return typed
 	}
 	return map[string]any{}
 }
 
-func asString(value any) string {
+func jsonAsString(value any) string {
 	switch typed := value.(type) {
 	case string:
 		return typed

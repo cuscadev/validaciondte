@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast, Toaster } from 'sonner';
+import { toast } from 'sonner';
 import {
 	MultiFactorError,
 	MultiFactorResolver,

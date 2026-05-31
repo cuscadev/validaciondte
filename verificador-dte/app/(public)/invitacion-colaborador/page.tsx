@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, Suspense, useEffect, useState } from 'react';
+import { FormEvent, Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { BrandLoader } from '@/components/ui/brand-loader';
+import { useGetQuery } from '@/lib/tanstack-query';
 
 type InviteInfo = {
   email: string;
@@ -20,33 +21,27 @@ function CollaboratorInvitationContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token') || '';
-  const [invite, setInvite] = useState<InviteInfo | null>(null);
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
 
-  useEffect(() => {
-    let active = true;
-    async function loadInvite() {
-      try {
-        if (!token) throw new Error('Invitacion invalida');
-        const res = await fetch(`/api/organization/invitations/accept?token=${token}`);
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Invitacion invalida');
-        if (active) setInvite(data);
-      } catch (err) {
-        if (active) setError(err instanceof Error ? err.message : 'Invitacion invalida');
-      } finally {
-        if (active) setLoading(false);
-      }
-    }
-    void loadInvite();
-    return () => {
-      active = false;
-    };
-  }, [token]);
+  const inviteQuery = useGetQuery<InviteInfo>({
+    queryKey: ['organization', 'invitation', token],
+    path: '/api/organization/invitations/accept',
+    params: { token },
+    enabled: Boolean(token),
+    requireAuth: false,
+    oneShot: true,
+  });
+
+  const invite = inviteQuery.data ?? null;
+  const loading = inviteQuery.isLoading;
+  const error =
+    inviteQuery.error instanceof Error
+      ? inviteQuery.error.message
+      : token
+        ? ''
+        : 'Invitacion invalida';
 
   async function acceptInvite(e: FormEvent) {
     e.preventDefault();

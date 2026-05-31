@@ -1,19 +1,29 @@
 'use client'
 
 import PlanGate from '@/components/PlanGate'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import UploadFormSection from '@/components/upload/UploadFormSection'
+import UploadFormAccordion from '@/components/upload/UploadFormAccordion'
+import UploadResultsReveal from '@/components/upload/UploadResultsReveal'
+import UploadTableExportBar from '@/components/upload/UploadTableExportBar'
 import {
-  Card, CardContent, CardDescription, CardHeader, CardTitle,
-} from '@/components/ui/card'
+  buildExportFilename,
+  exportPdfByProfile,
+  exportRowsToCsv,
+} from '@/lib/upload-table-export'
+import UploadTableHints from '@/components/upload/UploadTableHints'
+import { useUploadResultsReveal } from '@/components/upload/useUploadResultsReveal'
+import { useEffect, useMemo, useState } from 'react'
+import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { recordProcessingLog } from '@/lib/client-processing-log'
 import { summarizeFiles, summarizeResults } from '@/lib/processing-log'
+import { summarizeDteUploadResults } from '@/lib/upload-dte-stats'
 import {
-  Moon, Sun, FileUp, Loader2,
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search
 } from 'lucide-react'
+import { toast } from 'sonner'
 
 type Resultado = {
   // básicos de consulta
@@ -77,10 +87,8 @@ function chunkFiles(files: File[], size: number) {
 }
 
 export default function Page() {
-  const inputRef = useRef<HTMLInputElement>(null)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [loading, setLoading] = useState(false)
-  const [msg, setMsg] = useState('')
-  const [dark, setDark] = useState(false)
   const [data, setData] = useState<Resultado[]>([])
   const [downloadHref, setDownloadHref] = useState<string | null>(null)
   const [filename, setFilename] = useState('verificacion_json.xlsx')
@@ -89,26 +97,25 @@ export default function Page() {
   const [search, setSearch] = useState('')
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
-
-  const toggleTheme = () => {
-    setDark((d) => !d)
-    document.documentElement.classList.toggle('dark')
-  }
+  const {
+    resultsVisible,
+    accordionApiRef,
+    resetResultsVisibility,
+    onResultsReveal,
+  } = useUploadResultsReveal()
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const files = inputRef.current?.files
-    if (!files || files.length === 0) {
-      setMsg('Selecciona uno o mas archivos .json')
+    if (selectedFiles.length === 0) {
+      toast.warning('Selecciona uno o mas archivos .json')
       return
     }
 
     setLoading(true)
-    setMsg('Procesando...')
+    resetResultsVisibility()
     setData([])
     setDownloadHref(null)
     setCurrentPage(1)
-    const selectedFiles = Array.from(files)
     const startedAt = new Date()
     const started = performance.now()
     let processedResults: Resultado[] = []
@@ -120,7 +127,6 @@ export default function Page() {
 
       for (let index = 0; index < batches.length; index += 1) {
         const batch = batches[index]
-        setMsg(`Procesando lote ${index + 1} de ${batches.length} (${batch.length} archivo${batch.length === 1 ? '' : 's'})...`)
 
         const fd = new FormData()
         batch.forEach((f) => fd.append('files', f))
@@ -137,7 +143,6 @@ export default function Page() {
         setData([...allResults])
       }
 
-      setMsg('Generando Excel final...')
       const exportRes = await fetch('/api/verificararchjson/export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -156,6 +161,9 @@ export default function Page() {
       }
 
       setData(allResults)
+      accordionApiRef.current?.setProcessingSummary(
+        summarizeDteUploadResults(allResults)
+      )
       setFilename(exportJson.filename || 'verificacion_json.xlsx')
 
       if (exportJson.downloadUrl) {
@@ -165,11 +173,13 @@ export default function Page() {
         setDownloadHref(href)
       }
 
-      setMsg(`Procesamiento finalizado. Se procesaron ${allResults.length} resultado${allResults.length === 1 ? '' : 's'}. Revisa la tabla y descarga el Excel.`)
+      toast.success(
+        `Procesamiento finalizado. Se procesaron ${allResults.length} resultado${allResults.length === 1 ? '' : 's'}. Revisa la tabla y descarga el Excel.`
+      )
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Error inesperado'
       processingError = message
-      setMsg(`Error: ${message}`)
+      toast.error(message)
     } finally {
       const summary = processedResults.length
         ? summarizeResults(processedResults)
@@ -284,91 +294,43 @@ export default function Page() {
   return (
     <PlanGate routeKey="verificadorjson">
     <main className="w-full max-w-full">
-      {/* Toggle theme */}
-      <div className="absolute top-4 right-4">
-        <Button variant="outline" onClick={toggleTheme}>
-          {dark ? <Sun className="w-4 h-4 mr-2" /> : <Moon className="w-4 h-4 mr-2" />}
-          {dark ? 'Claro' : 'Oscuro'}
-        </Button>
-      </div>
-
       <Card className="w-full max-w-full overflow-hidden border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-950">
-        <CardHeader className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/80 dark:border-white/10 dark:bg-zinc-950/90 dark:supports-[backdrop-filter]:bg-zinc-950/80">
-          <CardTitle className="text-2xl text-slate-950 dark:text-white">🧾 Verificar por JSON (código y fecha)</CardTitle>
-          <CardDescription className="text-slate-600 dark:text-zinc-300">
-            Sube uno o varios <strong>JSON</strong>. Tomaremos <code>codigoGeneracion</code> y <code>fecEmi</code> de cada
-            objeto para consultar estado en Hacienda, y mostraremos también los datos de <em>emisor</em> y <em>receptor</em>.
-          </CardDescription>
-        </CardHeader>
+        <CardContent className="space-y-6 pt-6">
+          <form onSubmit={onSubmit} className="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10">
+            <UploadFormAccordion
+              accordionApiRef={accordionApiRef}
+              onResultsReveal={onResultsReveal}
+              hasResults={resultsVisible && data.length > 0}
+              collapseWhenResults
+            >
+            <UploadFormSection
+              label="Archivos JSON"
+              briefHint="JSON con codigoGeneracion y fecEmi"
+              helpContent={
+                <>
+                  <p>
+                    Sube archivos JSON con codigoGeneracion y fecEmi. Se consultara el estado en Hacienda y se mostraran datos de emisor y receptor.
+                  </p>
+                  <p className="mt-2 text-xs opacity-90">
+                    Deben contener identificacion.codigoGeneracion e identificacion.fecEmi
+                  </p>
+                </>
+              }
+              files={selectedFiles}
+              onFilesChange={setSelectedFiles}
+              loading={loading}
+              accept={{ 'application/json': ['.json'] }}
+              sidePanel={
+                <UploadTableHints>
+                  Verifica el estado del documento y contrasta los datos de emisor y receptor extraídos del JSON. Usa el buscador para encontrar códigos, nombres, NIT/NRC o correos.
+                </UploadTableHints>
+              }
+            />
 
-        <CardContent className="space-y-6">
-          {/* Formulario */}
-          <form onSubmit={onSubmit} className="space-y-5 rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-black">
-            <div className="grid gap-4 sm:grid-cols-[1fr_auto] items-end">
-              <div className="space-y-2">
-                <Label htmlFor="file">Archivos JSON</Label>
-                <Input
-                  id="file"
-                  ref={inputRef}
-                  type="file"
-                  accept=".json,application/json"
-                  multiple
-                />
-                <p className="text-xs text-muted-foreground">
-                  Los JSON deben contener <code>identificacion.codigoGeneracion</code> y <code>identificacion.fecEmi</code>.
-                </p>
-              </div>
-
-              <div className="flex gap-3">
-                <Button type="submit" disabled={loading} className="w-full bg-yellow-400 font-bold text-black hover:bg-yellow-300 sm:w-auto">
-                  {loading ? (
-                    <>
-                      <Loader2 className="animate-spin w-4 h-4 mr-2" />
-                      Procesando…
-                    </>
-                  ) : (
-                    <>
-                      <FileUp className="w-4 h-4 mr-2" />
-                      Procesar
-                    </>
-                  )}
-                </Button>
-
-                {downloadHref && (
-                  <a
-                    href={downloadHref}
-                    download={filename}
-                    className="inline-flex items-center justify-center rounded-md border border-yellow-400 bg-yellow-400 px-4 py-2 text-sm font-bold text-black hover:bg-yellow-300"
-                  >
-                    Descargar Excel
-                  </a>
-                )}
-              </div>
-            </div>
-
-            {msg && (
-              <div
-                className={`text-sm rounded-md p-3 ${
-                  msg.startsWith('✅')
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200'
-                    : msg.startsWith('Procesando')
-                    ? 'bg-yellow-100 text-yellow-900 dark:bg-yellow-400/15 dark:text-yellow-200'
-                    : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200'
-                }`}
-              >
-                {msg}
-              </div>
-            )}
-
+            </UploadFormAccordion>
           </form>
 
-          <section className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 shadow-sm dark:border-white/10 dark:bg-black dark:text-white">
-            <h2 className="font-semibold text-amber-600 dark:text-yellow-300">Indicaciones para revisar la tabla</h2>
-            <p className="mt-1 text-slate-600 dark:text-zinc-300">
-              Verifica el estado del documento y contrasta los datos de emisor y receptor extraídos del JSON. Usa el buscador para encontrar códigos, nombres, NIT/NRC o correos.
-            </p>
-          </section>
-
+          <UploadResultsReveal visible={resultsVisible && data.length > 0}>
           {/* Barra de herramientas de tabla */}
           <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -380,6 +342,28 @@ export default function Page() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+              <UploadTableExportBar
+                excel={{
+                  href: downloadHref,
+                  download: filename,
+                  label: 'Descargar Excel completo',
+                }}
+                csv={{
+                  onClick: () =>
+                    exportRowsToCsv(
+                      data as Record<string, unknown>[],
+                      buildExportFilename('verificacion_json', 'csv')
+                    ),
+                }}
+                pdf={{
+                  onClick: () =>
+                    exportPdfByProfile(
+                      data as Record<string, unknown>[],
+                      'verificador',
+                      buildExportFilename('verificacion_json', 'pdf')
+                    ),
+                }}
+              />
               {/* Search */}
               <div className="relative">
                 <Input
@@ -518,6 +502,7 @@ export default function Page() {
               </div>
             </div>
           </div>
+          </UploadResultsReveal>
         </CardContent>
       </Card>
     </main>

@@ -111,18 +111,18 @@ Ruta: `.agents/skills/<nombre>/SKILL.md`
 
 | Síntoma | Acción |
 |---------|--------|
-| `Can't resolve 'framer-motion'` | `Remove-Item -Recurse node_modules, .next`; `npm install` en la raíz del repo |
-| `Found multiple lockfiles` | Ejecutar npm solo dentro de `verificador-dte`; evitar `C:\Users\casa\Desktop\package-lock.json` ajeno |
+| `Can't resolve 'framer-motion'` | `Remove-Item -Recurse node_modules, .next`; `pnpm install` en `verificador-dte` |
+| `Found multiple lockfiles` | Usar solo `pnpm` dentro de `verificador-dte`; no mezclar con `package-lock.json` |
 | SWC Win32 inválido | Reinstalar deps; Next usará WASM si falla el binario nativo |
 | Fuentes no cargan | Revisar CSP y que `NEXT_PUBLIC_GOOGLE_FONTS_URL` use `fonts.googleapis.com` |
 
 ## Comandos
 
 ```bash
-npm run dev      # Servidor desarrollo (localhost:3000)
-npm run build    # Build producción (+ postbuild: next-sitemap)
-npm run start    # Servidor producción
-npm run lint     # ESLint (ignoreDuringBuilds en next.config)
+pnpm dev       # Servidor desarrollo (localhost:3000)
+pnpm build     # Build producción (+ postbuild: next-sitemap)
+pnpm start     # Servidor producción
+pnpm lint      # ESLint (ignoreDuringBuilds en next.config)
 ```
 
 ## Archivos sensibles — no commitear

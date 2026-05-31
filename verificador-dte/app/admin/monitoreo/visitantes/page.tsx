@@ -4,7 +4,6 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Activity, CalendarDays, MousePointerClick, RefreshCw } from 'lucide-react';
 import { auth } from '@/lib/firebase';
-import { QUERY_CACHE_MS } from '@/components/QueryProvider';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -88,8 +87,6 @@ export default function LandingVisitorsPage() {
 
       return responseData;
     },
-    staleTime: QUERY_CACHE_MS,
-    gcTime: QUERY_CACHE_MS,
   });
 
   const days = data?.days || [];

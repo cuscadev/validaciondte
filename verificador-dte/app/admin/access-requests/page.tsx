@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Toaster, toast } from 'sonner';
+import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -38,7 +38,6 @@ interface AccessRequest {
 
 const PAGE_SIZE = 10;
 const ACCESS_REQUESTS_QUERY_KEY = ['admin', 'access-requests'] as const;
-const ACCESS_REQUESTS_REFRESH_MS = 15 * 1000;
 
 function StatusBadge({ status, t }: { status: string; t: (key: string, options?: Record<string, unknown>) => string }) {
   if (status === 'approved') return <Badge className="bg-green-500 text-white">{t('accessRequests.statusApproved')}</Badge>;
@@ -87,8 +86,6 @@ export default function AccessRequestsPage() {
       data.sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
       return data;
     },
-    refetchInterval: ACCESS_REQUESTS_REFRESH_MS,
-    staleTime: ACCESS_REQUESTS_REFRESH_MS,
   });
 
   // Reset page when filters change
@@ -152,7 +149,6 @@ export default function AccessRequestsPage() {
 
   return (
     <main className="min-h-screen bg-background p-8">
-      <Toaster position="top-right" richColors />
       <Card>
         <CardHeader>
           <CardTitle>{t('accessRequestsTitle')}</CardTitle>

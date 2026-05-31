@@ -3,7 +3,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast, Toaster } from 'sonner';
+import { toast } from 'sonner';
 
 type Item = { numItem: number; codGen: string; fechaEmi: string };
 
@@ -300,7 +300,6 @@ export default function Page() {
 
   return (
     <main className=" w-full max-w-full w-full max-w-[1600px] mx-auto px-4 py-8">
-      <Toaster position="top-right" richColors />
       <h1 className="text-3xl font-bold mb-8 text-center text-gray-900 dark:text-gray-100">
         {t('prrocesardte_title')}
       </h1>

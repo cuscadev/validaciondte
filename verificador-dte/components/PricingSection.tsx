@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import { FadeIn } from '@/components/motion/FadeIn';
 import Link from 'next/link';
 import { ArrowRight, Check, Infinity, Sparkles } from 'lucide-react';
-import { QUERY_CACHE_MS } from '@/components/QueryProvider';
 
 const VERIFICADOR_ROUTES: Record<string, string> = {
   verificador: 'Verificador Links',
@@ -43,8 +42,6 @@ export default function PricingSection() {
 
       return (await res.json()) as Record<string, PlanConfig>;
     },
-    staleTime: QUERY_CACHE_MS,
-    gcTime: QUERY_CACHE_MS,
   });
 
   const visiblePlans = plans

@@ -1,13 +1,11 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { auth } from '@/lib/firebase';
-import { QUERY_CACHE_MS } from '@/components/QueryProvider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useCursorPaginatedGetQuery } from '@/lib/tanstack-query';
 import {
   Activity,
   ChevronLeft,
@@ -111,54 +109,15 @@ export default function ProcessingLogsPage() {
     isFetching,
     isLoading,
     refetch,
-  } = useQuery({
-    queryKey: [
-      'monitoring',
-      'processing-logs',
-      appliedFilters,
-      pageIndex,
-      currentCursor,
-      pageSize,
-    ],
-    queryFn: async () => {
-      const token = await auth.currentUser?.getIdToken();
-
-      if (!token) {
-        throw new Error('No autorizado');
-      }
-
-      const params = new URLSearchParams({
-        limit: String(pageSize),
-      });
-
-      if (currentCursor) {
-        params.set('cursor', currentCursor);
-      }
-
-      Object.entries(appliedFilters).forEach(([key, value]) => {
-        if (value) {
-          params.set(key, value);
-        }
-      });
-
-      const res = await fetch(`/api/processing-logs?${params.toString()}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const responseData = (await res.json()) as ProcessingLogsResponse;
-
-      if (!res.ok) {
-        throw new Error(
-          responseData.error || 'No se pudieron cargar los logs'
-        );
-      }
-
-      return responseData;
-    },
-    staleTime: QUERY_CACHE_MS,
-    gcTime: QUERY_CACHE_MS,
+  } = useCursorPaginatedGetQuery<ProcessingLogsResponse>({
+    queryKeyBase: ['monitoring', 'processing-logs'],
+    path: '/api/processing-logs',
+    pageIndex,
+    cursor: currentCursor,
+    pageSize,
+    filters: appliedFilters,
+    getNextCursor: (response) => response?.nextCursor ?? null,
+    hasMore: (response) => Boolean(response?.hasMore && response?.nextCursor),
   });
 
   const logs = data?.logs || [];

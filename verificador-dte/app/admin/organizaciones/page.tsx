@@ -1,8 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { auth, db } from '@/lib/firebase';
+import {
+  getQueryDefaults,
+  invalidateGetQueries,
+  useGetQuery,
+} from '@/lib/tanstack-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
@@ -25,6 +31,7 @@ type AccessRequest = {
   telefono?: string;
   mensaje?: string;
   status: string;
+  createdAt?: { seconds: number; nanoseconds: number };
 };
 
 type ClientRow = {
@@ -53,49 +60,61 @@ type Collaborator = {
   accountStatus?: string;
 };
 
+const ACCESS_REQUESTS_QUERY_KEY = ['admin', 'access-requests'] as const;
+const ORGANIZATIONS_QUERY_KEY = ['admin', 'organizations'] as const;
+
+async function fetchAccessRequests(): Promise<AccessRequest[]> {
+  const snap = await getDocs(collection(db, 'accessRequests'));
+  const data = snap.docs.map((d) => ({ id: d.id, ...d.data() } as AccessRequest));
+  data.sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
+  return data;
+}
+
+type AdminOrganizationsResponse = {
+  clients: ClientRow[];
+};
+
+type OrganizationCollaboratorsResponse = {
+  collaborators: Collaborator[];
+};
+
 export default function AdminOrganizacionesPage() {
+  const queryClient = useQueryClient();
   const [tab, setTab] = useState<'solicitantes' | 'clientes'>('solicitantes');
-  const [requests, setRequests] = useState<AccessRequest[]>([]);
-  const [clients, setClients] = useState<ClientRow[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [approving, setApproving] = useState<string | null>(null);
   const [detailOrgId, setDetailOrgId] = useState<string | null>(null);
-  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
-  const [detailLoading, setDetailLoading] = useState(false);
 
-  const loadRequests = useCallback(async () => {
-    const snap = await getDocs(collection(db, 'accessRequests'));
-    const data = snap.docs.map((d) => ({ id: d.id, ...d.data() } as AccessRequest));
-    data.sort((a, b) => (b as { createdAt?: { seconds: number } }).createdAt?.seconds ?? 0 -
-      ((a as { createdAt?: { seconds: number } }).createdAt?.seconds ?? 0));
-    setRequests(data);
-  }, []);
+  const requestsQuery = useQuery({
+    ...getQueryDefaults(),
+    queryKey: ACCESS_REQUESTS_QUERY_KEY,
+    queryFn: fetchAccessRequests,
+  });
 
-  const loadClients = useCallback(async () => {
-    const token = await auth.currentUser?.getIdToken();
-    const res = await fetch('/api/admin/organizations', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Error');
-    setClients(data.clients ?? []);
-  }, []);
+  const clientsQuery = useGetQuery<AdminOrganizationsResponse, ClientRow[]>({
+    queryKey: ORGANIZATIONS_QUERY_KEY,
+    path: '/api/admin/organizations',
+    overrides: {
+      select: (data) => data.clients ?? [],
+    },
+  });
 
-  const loadAll = useCallback(async () => {
-    setLoading(true);
-    try {
-      await Promise.all([loadRequests(), loadClients()]);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Error al cargar');
-    } finally {
-      setLoading(false);
-    }
-  }, [loadClients, loadRequests]);
+  const collaboratorsQuery = useGetQuery<
+    OrganizationCollaboratorsResponse,
+    Collaborator[]
+  >({
+    queryKey: ['admin', 'organizations', detailOrgId, 'collaborators'],
+    path: `/api/admin/organizations/${detailOrgId}/collaborators`,
+    enabled: detailOrgId !== null,
+    overrides: {
+      select: (data) => data.collaborators ?? [],
+    },
+  });
 
-  useEffect(() => {
-    loadAll();
-  }, [loadAll]);
+  const requests = requestsQuery.data ?? [];
+  const clients = clientsQuery.data ?? [];
+  const collaborators = collaboratorsQuery.data ?? [];
+  const loading = requestsQuery.isLoading || clientsQuery.isLoading;
 
   const pendingRequests = useMemo(() => {
     const q = search.toLowerCase();
@@ -130,7 +149,10 @@ export default function AdminOrganizacionesPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error');
       toast.success('Solicitud aprobada');
-      await loadAll();
+      await Promise.all([
+        invalidateGetQueries(queryClient, ACCESS_REQUESTS_QUERY_KEY),
+        invalidateGetQueries(queryClient, ORGANIZATIONS_QUERY_KEY),
+      ]);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Error');
     } finally {
@@ -149,29 +171,14 @@ export default function AdminOrganizacionesPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error');
       toast.success('Solicitud rechazada');
-      await loadRequests();
+      await invalidateGetQueries(queryClient, ACCESS_REQUESTS_QUERY_KEY);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Error');
     }
   }
 
-  async function openCollaborators(orgId: string) {
+  function openCollaborators(orgId: string) {
     setDetailOrgId(orgId);
-    setDetailLoading(true);
-    try {
-      const token = await auth.currentUser?.getIdToken();
-      const res = await fetch(`/api/admin/organizations/${orgId}/collaborators`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error');
-      setCollaborators(data.collaborators ?? []);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Error');
-      setCollaborators([]);
-    } finally {
-      setDetailLoading(false);
-    }
   }
 
   async function patchOrg(orgId: string, patch: { maxCollaborators?: number; status?: 'active' | 'suspended' }) {
@@ -185,11 +192,13 @@ export default function AdminOrganizacionesPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error');
       toast.success('Organización actualizada');
-      await loadClients();
+      await invalidateGetQueries(queryClient, ORGANIZATIONS_QUERY_KEY);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Error');
     }
   }
+
+  const detailLoading = collaboratorsQuery.isLoading;
 
   return (
     <main className="min-h-screen bg-slate-50 p-4 text-slate-950 dark:bg-black dark:text-white md:p-6">

@@ -82,8 +82,6 @@ export default function ObligationsCalendar() {
 
       return data.events as CalendarEvent[];
     },
-    staleTime: 1000 * 60 * 2,
-    gcTime: 1000 * 60 * 2,
   });
 
   const calendarEvents = obligationsQuery.data ?? [];

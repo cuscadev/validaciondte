@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { toast } from 'sonner'
 
 const MAX_JSON_FILES = 25
 
@@ -510,7 +511,6 @@ export default function PlantillasPdfPage() {
   const [jsonFiles, setJsonFiles] = useState<File[]>([])
   const [results, setResults] = useState<PdfResult[]>([])
   const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
   const [qrRequest, setQrRequest] = useState<{ id: number; value: string } | null>(null)
 
   const template = useMemo(
@@ -563,12 +563,11 @@ export default function PlantillasPdfPage() {
     setResults([])
 
     if (files.length > MAX_JSON_FILES) {
-      setMessage(`Selecciona máximo ${MAX_JSON_FILES} archivos JSON por proceso.`)
+      toast.warning(`Selecciona máximo ${MAX_JSON_FILES} archivos JSON por proceso.`)
       setJsonFiles(files.slice(0, MAX_JSON_FILES))
       return
     }
 
-    setMessage('')
     setJsonFiles(files)
   }
 
@@ -577,13 +576,12 @@ export default function PlantillasPdfPage() {
     if (!file) return
 
     if (!file.type.startsWith('image/')) {
-      setMessage('El logo debe ser una imagen.')
+      toast.warning('El logo debe ser una imagen.')
       return
     }
 
     setLogoFile(file)
     setLogoMode('upload')
-    setMessage('')
   }
 
   const resolveLogo = async () => {
@@ -598,19 +596,18 @@ export default function PlantillasPdfPage() {
 
   const processFiles = async () => {
     if (!jsonFiles.length) {
-      setMessage('Selecciona uno o varios JSON DTE.')
+      toast.warning('Selecciona uno o varios JSON DTE.')
       return
     }
 
     setLoading(true)
-    setMessage('Generando PDFs en memoria...')
     setResults([])
 
     let logoDataUrl = ''
     try {
       logoDataUrl = await resolveLogo()
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'No se pudo cargar el logo.')
+      toast.error(error instanceof Error ? error.message : 'No se pudo cargar el logo.')
       if (logoMode === 'profile') logoDataUrl = ''
     }
 
@@ -648,11 +645,11 @@ export default function PlantillasPdfPage() {
 
     setResults(nextResults)
     setLoading(false)
-    setMessage(
-      nextResults.some((item) => item.estado === 'ERROR')
-        ? 'Proceso finalizado con errores en algunos archivos.'
-        : 'PDFs generados correctamente. No se guardó ningún archivo en el servidor.'
-    )
+    if (nextResults.some((item) => item.estado === 'ERROR')) {
+      toast.warning('Proceso finalizado con errores en algunos archivos.')
+    } else {
+      toast.success('PDFs generados correctamente. No se guardó ningún archivo en el servidor.')
+    }
   }
 
   const downloadAll = async () => {
@@ -899,17 +896,6 @@ export default function PlantillasPdfPage() {
                 </div>
               </div>
 
-              {message && (
-                <p
-                  className={`mt-4 rounded-md px-3 py-2 text-sm ${
-                    message.includes('error') || message.includes('máximo')
-                      ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200'
-                      : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200'
-                  }`}
-                >
-                  {message}
-                </p>
-              )}
             </section>
 
             <section className="grid gap-3 sm:grid-cols-3">

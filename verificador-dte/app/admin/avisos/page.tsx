@@ -15,6 +15,7 @@ import {
   RefreshCcw,
   Search,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const NOTIFICATION_TYPES = [
   { value: 'general', label: 'General' },
@@ -68,7 +69,6 @@ export default function AvisosAdminPage() {
   });
 
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
   const [userSearch, setUserSearch] = useState('');
   const [markingId, setMarkingId] = useState<string | null>(null);
 
@@ -99,8 +99,6 @@ export default function AvisosAdminPage() {
 
       return data.notifications;
     },
-    staleTime: 1000 * 60 * 2,
-    gcTime: 1000 * 60 * 2,
   });
 
   const usersQuery = useQuery({
@@ -131,8 +129,6 @@ export default function AvisosAdminPage() {
 
       return data.users;
     },
-    staleTime: 1000 * 60 * 2,
-    gcTime: 1000 * 60 * 2,
   });
 
   const notifications = notificationsQuery.data ?? [];
@@ -203,7 +199,6 @@ export default function AvisosAdminPage() {
   };
 
   const markAsRead = async (notificationId: string) => {
-    setMessage('');
     setMarkingId(notificationId);
 
     try {
@@ -226,7 +221,7 @@ export default function AvisosAdminPage() {
 
       await queryClient.invalidateQueries({ queryKey: ['notifications'] });
     } catch (error) {
-      setMessage(
+      toast.error(
         error instanceof Error
           ? error.message
           : 'No se pudo marcar como leída.'
@@ -238,15 +233,14 @@ export default function AvisosAdminPage() {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setMessage('');
 
     if (!form.title.trim() || !form.body.trim()) {
-      setMessage('Título y mensaje son obligatorios.');
+      toast.warning('Título y mensaje son obligatorios.');
       return;
     }
 
     if (form.targetRole !== 'all' && !form.targetUid.trim()) {
-      setMessage('Selecciona un usuario del listado.');
+      toast.warning('Selecciona un usuario del listado.');
       return;
     }
 
@@ -306,9 +300,9 @@ export default function AvisosAdminPage() {
         queryKey: ['notifications'],
       });
 
-      setMessage('Aviso creado correctamente.');
+      toast.success('Aviso creado correctamente.');
     } catch (error) {
-      setMessage(
+      toast.error(
         error instanceof Error ? error.message : 'Error creando el aviso.'
       );
     } finally {
@@ -545,12 +539,6 @@ export default function AvisosAdminPage() {
                       </div>
                     )}
                   </section>
-                )}
-
-                {message && (
-                  <div className="rounded-md bg-rose-50 p-3 text-sm text-rose-700 dark:bg-rose-950/40 dark:text-rose-200">
-                    {message}
-                  </div>
                 )}
 
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

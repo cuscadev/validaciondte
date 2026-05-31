@@ -167,8 +167,26 @@ func NormalizarEstado(text string) string {
 }
 
 func NormalizarTipoDte(text string) string {
-	t := removeAccents(strings.ToUpper(text))
+	trimmed := strings.TrimSpace(text)
+	switch trimmed {
+	case "01":
+		return "FACTURA"
+	case "03":
+		return "COMPROBANTE DE CREDITO FISCAL"
+	case "05":
+		return "NOTA DE CREDITO"
+	case "09":
+		return "COMPROBANTE DE LIQUIDACION"
+	case "14":
+		return "FACTURA SUJETO EXCLUIDO"
+	}
+
+	t := removeAccents(strings.ToUpper(trimmed))
 	switch {
+	case strings.Contains(t, "FACTURA") && strings.Contains(t, "SUJETO") && strings.Contains(t, "EXCLUIDO"):
+		return "FACTURA SUJETO EXCLUIDO"
+	case strings.Contains(t, "LIQUIDACION"):
+		return "COMPROBANTE DE LIQUIDACION"
 	case strings.Contains(t, "FACTURA"):
 		return "FACTURA"
 	case strings.Contains(t, "COMPROBANTE") && strings.Contains(t, "CREDITO") && strings.Contains(t, "FISCAL"):

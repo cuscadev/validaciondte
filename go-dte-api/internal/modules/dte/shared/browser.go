@@ -169,6 +169,8 @@ func MapHTMLResult(html string, base Result) Result {
 		}
 	}
 
+	applyTipoDteTextFallback(html, &detail)
+
 	if detail.CodigoGeneracion == "" {
 		detail.CodigoGeneracion = base.CodGen
 	}
@@ -196,76 +198,6 @@ func MapHTMLResult(html string, base Result) Result {
 	}
 
 	return detail
-}
-
-func pairsFromHTML(html string) map[string]string {
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(html))
-	if err != nil {
-		return map[string]string{}
-	}
-
-	pairs := map[string]string{}
-	add := func(k, v string) {
-		k = strings.TrimSuffix(Clean(k), ":")
-		v = Clean(v)
-		if k == "" || v == "" || strings.Contains(strings.ToLower(v), "realizar busqueda") || strings.Contains(strings.ToLower(v), "realizar búsqueda") {
-			return
-		}
-		pairs[k] = v
-		pairs[normalizeLabel(k)] = v
-	}
-
-	doc.Find("tr").Each(func(_ int, tr *goquery.Selection) {
-		cells := tr.ChildrenFiltered("td, th")
-		if cells.Length() >= 2 {
-			add(cells.Eq(0).Text(), cells.Eq(1).Text())
-		}
-	})
-
-	return pairs
-}
-
-func mapDetail(pairs map[string]string) Result {
-	get := func(names ...string) string {
-		for _, name := range names {
-			if value := pairs[name]; value != "" {
-				return value
-			}
-			if value := pairs[normalizeLabel(name)]; value != "" {
-				return value
-			}
-		}
-		return ""
-	}
-
-	estadoRaw := get("Estado del DTE", "Estado del documento", "Estado del Documento", "Estado")
-	tipoDte := get("Tipo de DTE", "Tipo DTE", "Tipo de Dte", "Tipo Dte")
-	documentoAjustado := get("Documento ajustado", "Documento Ajustado", "Ajuste")
-
-	return Result{
-		Estado:                 NormalizarEstado(estadoRaw),
-		EstadoRaw:              estadoRaw,
-		TipoDte:                tipoDte,
-		TipoDteNorm:            NormalizarTipoDte(tipoDte),
-		DescripcionEstado:      get("Descripcion del DTE", "Descripción del DTE", "Descripcion del Estado", "Descripción del Estado", "Descripcion", "Descripción"),
-		FechaHoraGeneracion:    get("Fecha y Hora de Generación", "Fecha y Hora de Generacion", "Fecha de Generación", "Fecha de Generacion"),
-		FechaHoraTransmision:   get("Fecha y Hora de Transmisión", "Fecha y Hora de Transmision", "Fecha de Transmisión", "Fecha de Transmision"),
-		FechaHoraProcesamiento: get("Fecha y Hora de Procesamiento", "Fecha de Procesamiento"),
-		CodigoGeneracion:       get("Código de Generación", "Codigo de Generacion", "Código Generación", "Codigo Generacion"),
-		SelloRecepcion:         get("Sello de Recepción", "Sello de Recepcion", "Sello"),
-		NumeroControl:          get("Número de Control", "Numero de Control", "N° Control", "No. de Control"),
-		MontoTotal:             get("Monto Total de la Operación", "Monto Total de la Operacion", "Monto Total", "Total a pagar"),
-		IvaOperaciones:         get("IVA de las operaciones", "IVA de las Operaciones"),
-		IvaPercibido:           get("IVA percibido", "IVA Percibido"),
-		IvaRetenido:            get("IVA retenido", "IVA Retenido"),
-		RetencionRenta:         get("Retención renta", "Retencion renta"),
-		TotalNoAfectos:         get("Total valores no afectos", "Total Valores no Afectos", "Valores no afectos"),
-		TotalPagarOperacion:    get("Total a pagar/Total de operación", "Total a pagar/Total de operacion", "Total a pagar / Total de operación", "Total de operación", "Total de Operación"),
-		OtrosTributos:          get("Otros tributos", "Otros Tributos"),
-		DocumentoAjustado:      documentoAjustado,
-		Ajustado:               strings.Contains(strings.ToLower(documentoAjustado), "ajustad"),
-		Error:                  "",
-	}
 }
 
 func extractRelated(html string) []RelatedDocument {

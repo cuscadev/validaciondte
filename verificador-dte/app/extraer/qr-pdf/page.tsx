@@ -1,22 +1,26 @@
 'use client'
 
 import PlanGate from '@/components/PlanGate'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import UploadFormSection from '@/components/upload/UploadFormSection'
+import UploadFormAccordion from '@/components/upload/UploadFormAccordion'
+import UploadResultsReveal from '@/components/upload/UploadResultsReveal'
+import UploadTableExportBar from '@/components/upload/UploadTableExportBar'
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+  buildExportFilename,
+  exportPdfByProfile,
+  exportRowsToCsv,
+  exportRowsToExcel,
+} from '@/lib/upload-table-export'
+import { useUploadResultsReveal } from '@/components/upload/useUploadResultsReveal'
+import { useEffect, useMemo, useState } from 'react'
+import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { recordProcessingLog } from '@/lib/client-processing-log'
 import { summarizeFiles } from '@/lib/processing-log'
+import { summarizeDteUploadResults } from '@/lib/upload-dte-stats'
 import {
-  FileUp,
-  Loader2,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -25,6 +29,7 @@ import {
 } from 'lucide-react'
 import jsQR from 'jsqr'
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs'
+import { toast } from 'sonner'
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
 
@@ -45,15 +50,20 @@ type ColumnKey = keyof QrPdfResultado
 const MAX_FILES = 100
 
 export default function QrPdfPage() {
-  const inputRef = useRef<HTMLInputElement>(null)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
 
   const [loading, setLoading] = useState(false)
-  const [msg, setMsg] = useState('')
   const [progress, setProgress] = useState('')
   const [data, setData] = useState<QrPdfResultado[]>([])
   const [search, setSearch] = useState('')
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
+  const {
+    resultsVisible,
+    accordionApiRef,
+    resetResultsVisibility,
+    onResultsReveal,
+  } = useUploadResultsReveal()
 
   const normalizarUrl = (raw: string) => {
     const match = raw.match(/https?:\/\/[^\s"'<>]+/i)
@@ -183,83 +193,24 @@ export default function QrPdfPage() {
     }
   }
 
-  const csvValue = (value: unknown) => {
-    const text = String(value ?? '')
-    return `"${text.replace(/"/g, '""')}"`
-  }
-
-  const descargarCsv = (rows: QrPdfResultado[]) => {
-    if (!rows.length) {
-      setMsg('No hay datos para descargar.')
-      return
-    }
-
-    const headers: ColumnKey[] = [
-      'Archivo',
-      'Ambiente',
-      'CodigoGeneracion',
-      'FechaEmision',
-      'HostOriginal',
-      'UrlOriginal',
-      'UrlNormalizada',
-      'Estado',
-      'Error',
-    ]
-
-    const csv = [
-      headers.join(','),
-      ...rows.map((row) =>
-        headers
-          .map((header) => csvValue(row[header]))
-          .join(',')
-      ),
-    ].join('\n')
-
-    const blob = new Blob([`\uFEFF${csv}`], {
-      type: 'text/csv;charset=utf-8;',
-    })
-
-    const url = URL.createObjectURL(blob)
-
-    const a = document.createElement('a')
-
-    a.href = url
-
-    a.download = `qr_pdf_${new Date()
-      .toISOString()
-      .slice(0, 10)}.csv`
-
-    document.body.appendChild(a)
-
-    a.click()
-
-    document.body.removeChild(a)
-
-    URL.revokeObjectURL(url)
-  }
-
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    const files = inputRef.current?.files
-
-    if (!files || files.length === 0) {
-      setMsg('Selecciona uno o más archivos PDF.')
+    if (selectedFiles.length === 0) {
+      toast.warning('Selecciona uno o más archivos PDF.')
       return
     }
 
-    const selectedFiles = Array.from(files)
-
     if (selectedFiles.length > MAX_FILES) {
-      setMsg(
+      toast.warning(
         `Solo puedes procesar máximo ${MAX_FILES} archivos PDF por lote.`
       )
       return
     }
 
     setLoading(true)
-    setMsg('Procesando…')
     setProgress('')
+    resetResultsVisibility()
     setData([])
     setCurrentPage(1)
 
@@ -283,6 +234,9 @@ export default function QrPdfPage() {
       }
 
       setData(resultados)
+      accordionApiRef.current?.setProcessingSummary(
+        summarizeDteUploadResults(resultados)
+      )
 
       const successCount = resultados.filter(
         (r) => r.Estado === 'PROCESADO'
@@ -292,7 +246,7 @@ export default function QrPdfPage() {
         (r) => r.Estado === 'ERROR'
       ).length
 
-      setMsg(
+      toast.success(
         errorCount > 0
           ? `Procesamiento finalizado con ${errorCount} error(es).`
           : 'Procesamiento finalizado.'
@@ -323,7 +277,7 @@ export default function QrPdfPage() {
           ? error.message
           : 'Error inesperado'
 
-      setMsg(message)
+      toast.error(message)
 
       await recordProcessingLog({
         routeKey: 'qr-pdf',
@@ -519,71 +473,27 @@ export default function QrPdfPage() {
     <PlanGate routeKey="qr-pdf">
       <main className="w-full max-w-full dark:bg-background">
         <Card className="w-full max-w-full overflow-hidden border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-950">
-          <CardHeader className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/80 dark:border-white/10 dark:bg-zinc-950/90 dark:supports-[backdrop-filter]:bg-zinc-950/80">
-            <CardTitle className="text-2xl text-slate-950 dark:text-white">
-              Extractor QR desde PDF
-            </CardTitle>
-
-            <CardDescription className="text-slate-600 dark:text-zinc-300">
-              Sube archivos PDF que contengan
-              código QR de Hacienda para extraer
-              código de generación, fecha de
-              emisión y enlace normalizado.
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 pt-6">
             <form
               onSubmit={onSubmit}
-              className="space-y-5 rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-black"
+              className="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10"
             >
-              <div className="grid gap-4 sm:grid-cols-[1fr_auto] items-end">
-                <div className="space-y-2">
-                  <Label htmlFor="file">
-                    Archivos PDF
-                  </Label>
-
-                  <Input
-                    id="file"
-                    ref={inputRef}
-                    type="file"
-                    accept=".pdf,application/pdf"
-                    multiple
-                  />
-                </div>
-
-                <div className="flex gap-3">
-                  <Button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-yellow-400 font-bold text-black hover:bg-yellow-300 sm:w-auto"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="animate-spin w-4 h-4 mr-2" />
-                        Procesando…
-                      </>
-                    ) : (
-                      <>
-                        <FileUp className="w-4 h-4 mr-2" />
-                        Extraer
-                      </>
-                    )}
-                  </Button>
-
-                  {data.length > 0 && (
-                    <Button
-                      type="button"
-                      onClick={() =>
-                        descargarCsv(filtered)
-                      }
-                      className="w-full bg-yellow-400 font-bold text-black hover:bg-yellow-300 sm:w-auto"
-                    >
-                      Descargar CSV
-                    </Button>
-                  )}
-                </div>
-              </div>
+              <UploadFormAccordion
+                accordionApiRef={accordionApiRef}
+                onResultsReveal={onResultsReveal}
+                hasResults={resultsVisible && data.length > 0}
+                collapseWhenResults
+              >
+              <UploadFormSection
+                label="Archivos PDF"
+                briefHint="PDF con QR MH"
+                helpContent="Sube archivos PDF con codigo QR de Hacienda para extraer codigo de generacion, fecha de emision y enlace normalizado."
+                files={selectedFiles}
+                onFilesChange={setSelectedFiles}
+                loading={loading}
+                submitLabel="Extraer"
+                accept={{ 'application/pdf': ['.pdf'] }}
+              />
 
               {progress && (
                 <div className="rounded-md bg-yellow-100 p-3 text-sm text-yellow-900 dark:bg-yellow-400/15 dark:text-yellow-200">
@@ -591,23 +501,10 @@ export default function QrPdfPage() {
                 </div>
               )}
 
-              {msg && (
-                <div
-                  className={`text-sm rounded-md p-3 ${
-                    msg.includes('finalizado')
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200'
-                      : msg.startsWith(
-                            'Procesando'
-                          )
-                        ? 'bg-yellow-100 text-yellow-900 dark:bg-yellow-400/15 dark:text-yellow-200'
-                        : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200'
-                  }`}
-                >
-                  {msg}
-                </div>
-              )}
+              </UploadFormAccordion>
             </form>
 
+            <UploadResultsReveal visible={resultsVisible && data.length > 0}>
             <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-black">
                 <p className="text-xs text-slate-500 dark:text-zinc-400">
@@ -678,6 +575,31 @@ export default function QrPdfPage() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+                <UploadTableExportBar
+                  excel={{
+                    onClick: () =>
+                      exportRowsToExcel(
+                        data as Record<string, unknown>[],
+                        buildExportFilename('qr_pdf', 'xlsx'),
+                        'QR PDF'
+                      ),
+                  }}
+                  csv={{
+                    onClick: () =>
+                      exportRowsToCsv(
+                        data as Record<string, unknown>[],
+                        buildExportFilename('qr_pdf', 'csv')
+                      ),
+                  }}
+                  pdf={{
+                    onClick: () =>
+                      exportPdfByProfile(
+                        data as Record<string, unknown>[],
+                        'qrPdf',
+                        buildExportFilename('qr_pdf', 'pdf')
+                      ),
+                  }}
+                />
                 <div className="relative">
                   <Input
                     value={search}
@@ -869,6 +791,7 @@ export default function QrPdfPage() {
                 </div>
               </div>
             </div>
+            </UploadResultsReveal>
           </CardContent>
         </Card>
       </main>

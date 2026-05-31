@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Search } from 'lucide-react';
+import { toast } from 'sonner';
 
 type LoteItem = {
   version?: number;
@@ -42,7 +43,6 @@ export default function ConsultaLotePage() {
   const [environment, setEnvironment] = useState<'test' | 'production'>('test');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
   const [data, setData] = useState<LoteResponse | null>(null);
 
   const rows = useMemo(() => {
@@ -73,12 +73,11 @@ export default function ConsultaLotePage() {
     const lote = codigoLote.trim();
 
     if (!lote) {
-      setMessage('Ingresa el codigo de lote.');
+      toast.warning('Ingresa el codigo de lote.');
       return;
     }
 
     setLoading(true);
-    setMessage('');
     setData(null);
 
     try {
@@ -95,9 +94,9 @@ export default function ConsultaLotePage() {
       if (!res.ok) throw new Error(payload.error || 'No se pudo consultar el lote.');
 
       setData(payload);
-      setMessage('Consulta completada.');
+      toast.success('Consulta completada.');
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'No se pudo consultar el lote.');
+      toast.error(error instanceof Error ? error.message : 'No se pudo consultar el lote.');
     } finally {
       setLoading(false);
     }
@@ -142,11 +141,6 @@ export default function ConsultaLotePage() {
               </Button>
             </form>
 
-            {message && (
-              <div className="mt-4 rounded-md border bg-muted/40 p-3 text-sm">
-                {message}
-              </div>
-            )}
           </CardContent>
         </Card>
 

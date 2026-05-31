@@ -4,7 +4,7 @@
 import PlanGate from '@/components/PlanGate';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast, Toaster } from 'sonner';
+import { toast } from 'sonner';
 
 type Item = { numItem: number; codGen: string; fechaEmi: string };
 
@@ -295,7 +295,6 @@ export default function Page() {
   return (
     <PlanGate routeKey="verificacion_individual">
     <main className="w-full max-w-full">
-      <Toaster position="top-right" richColors />
       <header className="mb-6 rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-950">
         <p className="mb-2 text-xs font-semibold uppercase tracking-[0.28em] text-amber-600 dark:text-yellow-300">
           Consulta individual

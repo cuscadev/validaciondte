@@ -32,6 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { toast } from 'sonner';
 
 type Scan = {
   id?: string;
@@ -114,7 +115,6 @@ export default function EscaneosMobilePage() {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [clearingId, setClearingId] = useState<string | null>(null);
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
-  const [message, setMessage] = useState('');
 
   const folders = session?.folders || [];
   const totalScans = useMemo(
@@ -126,7 +126,6 @@ export default function EscaneosMobilePage() {
     if (!firebaseUser) return;
 
     setCreating(true);
-    setMessage('');
 
     try {
       const token = await firebaseUser.getIdToken();
@@ -140,7 +139,7 @@ export default function EscaneosMobilePage() {
 
       setSession(data.session);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Error creando sesión.');
+      toast.error(error instanceof Error ? error.message : 'Error creando sesión.');
     } finally {
       setCreating(false);
       setSessionLoading(false);
@@ -167,7 +166,7 @@ export default function EscaneosMobilePage() {
         setSession({ id: snap.id, ...(snap.data() as Omit<ScanSession, 'id'>) });
       },
       (error) => {
-        setMessage(error.message || 'No se pudo escuchar la sesión en tiempo real.');
+        toast.error(error.message || 'No se pudo escuchar la sesión en tiempo real.');
       }
     );
 
@@ -178,7 +177,6 @@ export default function EscaneosMobilePage() {
     if (!firebaseUser || !session?.id) return;
 
     setCreatingFolder(true);
-    setMessage('');
 
     try {
       const token = await firebaseUser.getIdToken();
@@ -198,7 +196,7 @@ export default function EscaneosMobilePage() {
 
       setFolderName('');
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Error creando carpeta.');
+      toast.error(error instanceof Error ? error.message : 'Error creando carpeta.');
     } finally {
       setCreatingFolder(false);
     }
@@ -208,7 +206,6 @@ export default function EscaneosMobilePage() {
     if (!firebaseUser || !session?.id) return;
 
     setClearingId(all ? 'all' : folderId || null);
-    setMessage('');
 
     try {
       const token = await firebaseUser.getIdToken();
@@ -224,7 +221,7 @@ export default function EscaneosMobilePage() {
 
       if (!res.ok) throw new Error(data?.error || 'No se pudo limpiar.');
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Error limpiando.');
+      toast.error(error instanceof Error ? error.message : 'Error limpiando.');
     } finally {
       setClearingId(null);
     }
@@ -234,7 +231,6 @@ export default function EscaneosMobilePage() {
     if (!firebaseUser || !session?.id) return;
 
     setProcessingId(folderId);
-    setMessage('');
 
     try {
       const token = await firebaseUser.getIdToken();
@@ -254,9 +250,9 @@ export default function EscaneosMobilePage() {
         downloadExcel(data.excelBase64, data.filename || 'escaneos_mobile.xlsx');
       }
 
-      setMessage('Carpeta procesada correctamente.');
+      toast.success('Carpeta procesada correctamente.');
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Error procesando carpeta.');
+      toast.error(error instanceof Error ? error.message : 'Error procesando carpeta.');
     } finally {
       setProcessingId(null);
     }
@@ -332,12 +328,6 @@ export default function EscaneosMobilePage() {
               </Button>
             </div>
           </section>
-
-          {message ? (
-            <div className="rounded-md border border-yellow-400/30 bg-yellow-50 px-4 py-3 text-sm text-yellow-900 dark:bg-yellow-400/10 dark:text-yellow-100">
-              {message}
-            </div>
-          ) : null}
 
           <div className="overflow-hidden rounded-md border border-slate-200 dark:border-white/10">
             <Table>

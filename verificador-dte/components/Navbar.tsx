@@ -1,23 +1,11 @@
 'use client';
 
-import { Sun, Moon, User, Bell, CheckCheck } from "lucide-react";
+import { Sun, Moon, Bell, CheckCheck } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-import { useTranslation } from 'react-i18next';
-import { signOut } from 'firebase/auth';
-import { auth } from '../lib/firebase';
 import { useRouter } from 'next/navigation';
 import { useNotifications } from '@/hooks/useNotifications';
 import { AppNotification } from '@/lib/notifications';
-import Image from 'next/image';
-import { useAuth } from '@/components/AuthProvider';
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
+import UserAvatarMenu from '@/components/nav/UserAvatarMenu';
 
 function timeAgo(createdAt?: { seconds: number }) {
   if (!createdAt) return '';
@@ -29,16 +17,11 @@ function timeAgo(createdAt?: { seconds: number }) {
 }
 
 export default function Navbar({ onToggleSidebar }: { onToggleSidebar: () => void }) {
-  const { t } = useTranslation();
   const [darkMode, setDarkMode] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
   const bellRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { notifications, unread, markRead, markAllRead } = useNotifications();
-  const { firebaseUser, appUser } = useAuth();
-
-  const userEmail = firebaseUser?.email ?? null;
-  const userPhotoURL = appUser?.photoURL ?? null;
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -60,11 +43,6 @@ export default function Navbar({ onToggleSidebar }: { onToggleSidebar: () => voi
     setDarkMode(next);
     document.documentElement.classList.toggle("dark", next);
     localStorage.setItem("theme", next ? "dark" : "light");
-  };
-
-  const handleLogout = async () => {
-    await signOut(auth);
-    router.push('/login');
   };
 
   const handleNotifClick = (notif: AppNotification) => {
@@ -149,39 +127,7 @@ export default function Navbar({ onToggleSidebar }: { onToggleSidebar: () => voi
         )}
       </div>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button className="ml-4 rounded-full bg-zinc-200 dark:bg-zinc-800 h-10 w-10 overflow-hidden flex items-center justify-center">
-            {userPhotoURL ? (
-              <Image
-                src={userPhotoURL}
-                alt={t('common.profile', 'Perfil')}
-                width={40}
-                height={40}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <User className="w-5 h-5 text-zinc-700 dark:text-zinc-200" />
-            )}
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuLabel>
-            {t('common.account', 'Cuenta')}
-            {userEmail && (
-              <div className="text-xs font-normal text-zinc-500 truncate max-w-[180px]">{userEmail}</div>
-            )}
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => router.push('/profile')} className="cursor-pointer">
-            {t('common.profile', 'Perfil')}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
-            {t('common.logout', 'Cerrar sesión')}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <UserAvatarMenu />
     </>
   );
 }

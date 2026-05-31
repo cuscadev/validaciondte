@@ -1,20 +1,49 @@
 'use client'
 
 import PlanGate from '@/components/PlanGate'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import UploadFormSection from '@/components/upload/UploadFormSection'
+import UploadFormAccordion from '@/components/upload/UploadFormAccordion'
+import UploadResultsReveal from '@/components/upload/UploadResultsReveal'
+import UploadTableExportBar from '@/components/upload/UploadTableExportBar'
 import {
-  Card, CardContent, CardDescription, CardHeader, CardTitle,
-} from '@/components/ui/card'
+  buildExportFilename,
+  exportPdfByProfile,
+  exportRowsToCsv,
+} from '@/lib/upload-table-export'
+import UploadTableHints from '@/components/upload/UploadTableHints'
+import HelpTooltip from '@/components/upload/HelpTooltip'
+import UploadTemplateDownloadButton from '@/components/upload/UploadTemplateDownloadButton'
+import { useUploadResultsReveal } from '@/components/upload/useUploadResultsReveal'
+import { useEffect, useMemo, useState } from 'react'
+import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { recordProcessingLog } from '@/lib/client-processing-log'
 import { summarizeFiles, summarizeResults } from '@/lib/processing-log'
+import { summarizeDteUploadResults } from '@/lib/upload-dte-stats'
 import {
-  Moon, Sun, FileUp, Loader2,
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search,
-  Download, FileSpreadsheet, Info
 } from 'lucide-react'
+import { toast } from 'sonner'
+
+const FORMAT_HELP = (
+  <div className="space-y-2">
+    <p>
+      Usa la plantilla para evitar errores. La primera hoja debe tener dos columnas:
+      <strong> codGen</strong> en la columna A y <strong>fecha</strong> en la columna B.
+    </p>
+    <ul className="list-disc space-y-1 pl-4 text-xs opacity-90">
+      <li><strong>Columna A:</strong> Codigo de generacion UUID.</li>
+      <li><strong>Columna B:</strong> Fecha en yyyy-MM-dd o dd/MM/yyyy.</li>
+      <li><strong>Archivos:</strong> Acepta .xlsx, .xls, .csv y .txt.</li>
+    </ul>
+    <p className="text-xs opacity-90">
+      Ejemplo: A = 12345678-1234-1234-1234-123456789ABC, B = 2026-01-15 o 15/01/2026.
+      Puedes incluir encabezados; si la primera fila dice codGen y fecha, el sistema la omitira automaticamente.
+    </p>
+  </div>
+)
 
 type Resultado = {
   url: string
@@ -46,10 +75,8 @@ type Resultado = {
 }
 
 export default function VerificarPorCodigoYFechaPage() {
-  const inputRef = useRef<HTMLInputElement>(null)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [loading, setLoading] = useState(false)
-  const [msg, setMsg] = useState('')
-  const [dark, setDark] = useState(false)
   const [data, setData] = useState<Resultado[]>([])
   const [downloadHref, setDownloadHref] = useState<string | null>(null)
   const [filename, setFilename] = useState('resultados_dtes.xlsx')
@@ -58,26 +85,25 @@ export default function VerificarPorCodigoYFechaPage() {
   const [search, setSearch] = useState('')
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
-
-  const toggleTheme = () => {
-    setDark((d) => !d)
-    document.documentElement.classList.toggle('dark')
-  }
+  const {
+    resultsVisible,
+    accordionApiRef,
+    resetResultsVisibility,
+    onResultsReveal,
+  } = useUploadResultsReveal()
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const files = inputRef.current?.files
-    if (!files || files.length === 0) {
-      setMsg('Selecciona uno o más archivos .xlsx / .csv / .txt')
+    if (selectedFiles.length === 0) {
+      toast.warning('Selecciona uno o más archivos .xlsx / .csv / .txt')
       return
     }
 
     setLoading(true)
-    setMsg('Procesando…')
+    resetResultsVisibility()
     setData([])
     setDownloadHref(null)
     setCurrentPage(1)
-    const selectedFiles = Array.from(files)
     const startedAt = new Date()
     const started = performance.now()
 
@@ -99,6 +125,9 @@ export default function VerificarPorCodigoYFechaPage() {
       }
 
       setData(json.resultados || [])
+      accordionApiRef.current?.setProcessingSummary(
+        summarizeDteUploadResults(json.resultados || [])
+      )
       setFilename(json.filename || 'resultados_dtes.xlsx')
 
       if (json.downloadUrl) {
@@ -108,7 +137,7 @@ export default function VerificarPorCodigoYFechaPage() {
         setDownloadHref(href)
       }
 
-      setMsg('✅ Procesamiento finalizado. Revisa la tabla y descarga el Excel.')
+      toast.success('Procesamiento finalizado. Revisa la tabla y descarga el Excel.')
       await recordProcessingLog({
         routeKey: 'verificarodyfecha',
         moduleName: 'Verificar por Codigo y Fecha',
@@ -119,7 +148,7 @@ export default function VerificarPorCodigoYFechaPage() {
         ...summarizeResults(json.resultados || []),
       })
     } catch (e: any) {
-      setMsg(`❌ ${e?.message || 'Error inesperado'}`)
+      toast.error(e?.message || 'Error inesperado')
       await recordProcessingLog({
         routeKey: 'verificarodyfecha',
         moduleName: 'Verificar por Codigo y Fecha',
@@ -198,138 +227,41 @@ export default function VerificarPorCodigoYFechaPage() {
   return (
     <PlanGate routeKey="verificarodyfecha">
     <main className="w-full max-w-full">
-      {/* Toggle theme */}
-      <div className="absolute top-4 right-4">
-        <Button variant="outline" onClick={toggleTheme}>
-          {dark ? <Sun className="w-4 h-4 mr-2" /> : <Moon className="w-4 h-4 mr-2" />}
-          {dark ? 'Claro' : 'Oscuro'}
-        </Button>
-      </div>
-
       <Card className="w-full max-w-full overflow-hidden border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-950">
-        <CardHeader className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/80 dark:border-white/10 dark:bg-zinc-950/90 dark:supports-[backdrop-filter]:bg-zinc-950/80">
-          <CardTitle className="text-2xl text-slate-950 dark:text-white">🧾 Verificar por Código y Fecha</CardTitle>
-          <CardDescription className="text-slate-600 dark:text-zinc-300">
-            Sube uno o varios archivos <b>Excel/CSV/TXT</b> con <b>Columna A = codGen</b> y <b>Columna B = fecha</b>.
-            Verás los resultados y podrás descargar el Excel consolidado.
-          </CardDescription>
-        </CardHeader>
+        <CardContent className="space-y-6 pt-6">
+          <form onSubmit={onSubmit} className="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10">
+            <UploadFormAccordion
+              accordionApiRef={accordionApiRef}
+              onResultsReveal={onResultsReveal}
+              hasResults={resultsVisible && data.length > 0}
+              collapseWhenResults
+            >
+            <UploadFormSection
+              label="Archivos (.xlsx, .csv, .txt)"
+              briefHint="Columna A = codGen, B = fecha"
+              helpContent="Sube archivos Excel, CSV o TXT con columna A = codGen y columna B = fecha. Veras los resultados y podras descargar el Excel consolidado."
+              helpTooltip={<HelpTooltip content={FORMAT_HELP} side="top" />}
+              labelActions={
+                <UploadTemplateDownloadButton href="/api/verificarcodyfecha" />
+              }
+              files={selectedFiles}
+              onFilesChange={setSelectedFiles}
+              loading={loading}
+              accept={{
+                'text/csv': ['.csv', '.txt'],
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+              }}
+              sidePanel={
+                <UploadTableHints>
+                  Confirma que cada fila tenga código y fecha válidos, revisa el estado devuelto por Hacienda y filtra por código, fecha o estado para localizar resultados específicos.
+                </UploadTableHints>
+              }
+            />
 
-        <CardContent className="space-y-6">
-          <section className="grid gap-4 rounded-lg border border-yellow-400/30 bg-yellow-50 p-4 text-slate-950 dark:border-yellow-400/25 dark:bg-yellow-400/10 dark:text-white lg:grid-cols-[1fr_auto]">
-            <div className="flex gap-3">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-yellow-400 text-black">
-                <FileSpreadsheet className="size-5" />
-              </div>
-              <div>
-                <h2 className="font-semibold">Formato requerido para subir el archivo</h2>
-                <p className="mt-1 text-sm text-slate-700 dark:text-zinc-300">
-                  Usa la plantilla para evitar errores. La primera hoja debe tener dos columnas:
-                  <b> codGen</b> en la columna A y <b> fecha</b> en la columna B.
-                </p>
-                <div className="mt-3 grid gap-2 text-sm md:grid-cols-3">
-                  <div className="rounded-md border border-yellow-400/30 bg-white/70 p-3 dark:bg-black/30">
-                    <div className="font-medium">Columna A</div>
-                    <div className="mt-1 text-xs text-slate-600 dark:text-zinc-400">Codigo de generacion UUID.</div>
-                  </div>
-                  <div className="rounded-md border border-yellow-400/30 bg-white/70 p-3 dark:bg-black/30">
-                    <div className="font-medium">Columna B</div>
-                    <div className="mt-1 text-xs text-slate-600 dark:text-zinc-400">Fecha en yyyy-MM-dd o dd/MM/yyyy.</div>
-                  </div>
-                  <div className="rounded-md border border-yellow-400/30 bg-white/70 p-3 dark:bg-black/30">
-                    <div className="font-medium">Archivos</div>
-                    <div className="mt-1 text-xs text-slate-600 dark:text-zinc-400">Acepta .xlsx, .xls, .csv y .txt.</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-start">
-              <Button asChild className="bg-yellow-400 font-bold text-black hover:bg-yellow-300">
-                <a href="/api/verificarcodyfecha" download>
-                  <Download className="mr-2 size-4" />
-                  Descargar plantilla
-                </a>
-              </Button>
-            </div>
-          </section>
-
-          {/* Formulario */}
-          <form onSubmit={onSubmit} className="space-y-5 rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-black">
-            <div className="grid gap-4 sm:grid-cols-[1fr_auto] items-end">
-              <div className="space-y-2">
-                <Label htmlFor="file">Archivos (.xlsx, .csv, .txt)</Label>
-                <Input id="file" ref={inputRef} type="file" accept=".xlsx,.csv,.txt" multiple />
-              </div>
-
-              <div className="flex gap-3">
-                <Button type="submit" disabled={loading} className="w-full bg-yellow-400 font-bold text-black hover:bg-yellow-300 sm:w-auto">
-                  {loading ? (
-                    <>
-                      <Loader2 className="animate-spin w-4 h-4 mr-2" />
-                      Procesando…
-                    </>
-                  ) : (
-                    <>
-                      <FileUp className="w-4 h-4 mr-2" />
-                      Procesar
-                    </>
-                  )}
-                </Button>
-
-                {downloadHref && (
-                  <a
-                    href={downloadHref}
-                    download={filename}
-                    className="inline-flex items-center justify-center rounded-md border border-yellow-400 bg-yellow-400 px-4 py-2 text-sm font-bold text-black hover:bg-yellow-300"
-                  >
-                    Descargar Excel
-                  </a>
-                )}
-              </div>
-            </div>
-
-            {msg && (
-              <div
-                className={`text-sm rounded-md p-3 ${
-                  msg.startsWith('✅')
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200'
-                    : msg.startsWith('Procesando')
-                    ? 'bg-yellow-100 text-yellow-900 dark:bg-yellow-400/15 dark:text-yellow-200'
-                    : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200'
-                }`}
-              >
-                {msg}
-              </div>
-            )}
-
-            <div className="text-xs text-muted-foreground">
-              Ejemplo de filas válidas:
-              <div className="mt-1 rounded-md bg-slate-100 px-3 py-1 text-slate-700 dark:bg-zinc-900 dark:text-zinc-200">
-                <div><b>A:</b> xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxx</div>
-                <div><b>B:</b> xxxx-xx-xx</div>
-              </div>
-            </div>
-            <div className="flex gap-2 rounded-md bg-slate-100 p-3 text-xs text-slate-700 dark:bg-zinc-900 dark:text-zinc-200">
-              <Info className="mt-0.5 size-4 shrink-0 text-yellow-600 dark:text-yellow-300" />
-              <div>
-                <div className="font-medium">Ejemplo recomendado</div>
-                <div className="mt-1"><b>A:</b> 12345678-1234-1234-1234-123456789ABC</div>
-                <div><b>B:</b> 2026-01-15 o 15/01/2026</div>
-                <div className="mt-1 text-slate-500 dark:text-zinc-400">
-                  Puedes incluir encabezados. Si la primera fila dice codGen y fecha, el sistema la omitira automaticamente.
-                </div>
-              </div>
-            </div>
+            </UploadFormAccordion>
           </form>
 
-          <section className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 shadow-sm dark:border-white/10 dark:bg-black dark:text-white">
-            <h2 className="font-semibold text-amber-600 dark:text-yellow-300">Indicaciones para revisar la tabla</h2>
-            <p className="mt-1 text-slate-600 dark:text-zinc-300">
-              Confirma que cada fila tenga código y fecha válidos, revisa el estado devuelto por Hacienda y filtra por código, fecha o estado para localizar resultados específicos.
-            </p>
-          </section>
-
-          {/* Barra de herramientas de tabla */}
+          <UploadResultsReveal visible={resultsVisible && data.length > 0}>
           <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span className="hidden sm:inline">Resultados:</span>
@@ -340,7 +272,28 @@ export default function VerificarPorCodigoYFechaPage() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-              {/* Search */}
+              <UploadTableExportBar
+                excel={{
+                  href: downloadHref,
+                  download: filename,
+                  label: 'Descargar Excel completo',
+                }}
+                csv={{
+                  onClick: () =>
+                    exportRowsToCsv(
+                      data as Record<string, unknown>[],
+                      buildExportFilename('resultados_dtes', 'csv')
+                    ),
+                }}
+                pdf={{
+                  onClick: () =>
+                    exportPdfByProfile(
+                      data as Record<string, unknown>[],
+                      'verificador',
+                      buildExportFilename('resultados_dtes', 'pdf')
+                    ),
+                }}
+              />
               <div className="relative">
                 <Input
                   value={search}
@@ -351,7 +304,6 @@ export default function VerificarPorCodigoYFechaPage() {
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               </div>
 
-              {/* Rows per page */}
               <div className="flex items-center gap-2">
                 <Label htmlFor="rpp" className="text-sm">Filas</Label>
                 <select
@@ -366,7 +318,6 @@ export default function VerificarPorCodigoYFechaPage() {
             </div>
           </div>
 
-          {/* Tabla */}
           <div className="overflow-hidden rounded-md border border-slate-200 dark:border-white/10">
             <div className="max-h-[60vh] overflow-auto">
               <table className="w-full text-sm">
@@ -432,7 +383,6 @@ export default function VerificarPorCodigoYFechaPage() {
               </table>
             </div>
 
-            {/* Paginador */}
             <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-black sm:flex-row">
               <span className="text-sm text-muted-foreground">
                 Página <span className="font-medium text-foreground">{currentPage}</span> de {totalPages}
@@ -474,6 +424,7 @@ export default function VerificarPorCodigoYFechaPage() {
               </div>
             </div>
           </div>
+          </UploadResultsReveal>
         </CardContent>
       </Card>
     </main>

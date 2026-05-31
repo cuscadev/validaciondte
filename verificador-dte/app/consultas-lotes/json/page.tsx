@@ -1,14 +1,25 @@
 'use client';
 
 import PlanGate from '@/components/PlanGate';
+import UploadFormSection from '@/components/upload/UploadFormSection'
+import UploadFormAccordion from '@/components/upload/UploadFormAccordion'
+import UploadResultsReveal from '@/components/upload/UploadResultsReveal'
+import { useUploadResultsReveal } from '@/components/upload/useUploadResultsReveal'
 import { auth } from '@/lib/firebase';
-import { useMemo, useRef, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import UploadTableExportBar from '@/components/upload/UploadTableExportBar'
+import {
+  buildExportFilename,
+  exportPdfByProfile,
+  exportRowsToCsv,
+  exportRowsToExcel,
+} from '@/lib/upload-table-export';
+import { useMemo, useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { FileUp, Loader2, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
+import { toast } from 'sonner';
 
 type LoteItem = {
   version?: number;
@@ -76,20 +87,26 @@ function rowsFromResults(results: LoteResult[]) {
 }
 
 export default function ConsultaLotesJSONPage() {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [environment, setEnvironment] = useState<'test' | 'production'>('test');
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
   const [search, setSearch] = useState('');
   const [results, setResults] = useState<LoteResult[]>([]);
+  const {
+    resultsVisible,
+    accordionApiRef,
+    resetResultsVisibility,
+    onResultsReveal,
+  } = useUploadResultsReveal();
+
+  const allRows = useMemo(() => rowsFromResults(results), [results]);
 
   const rows = useMemo(() => {
-    const all = rowsFromResults(results);
     const q = search.trim().toLowerCase();
 
-    if (!q) return all;
+    if (!q) return allRows;
 
-    return all.filter((item) =>
+    return allRows.filter((item) =>
       [
         item.codigoLote,
         item.estado,
@@ -103,7 +120,7 @@ export default function ConsultaLotesJSONPage() {
         .filter((value) => value !== undefined && value !== null)
         .some((value) => String(value).toLowerCase().includes(q))
     );
-  }, [results, search]);
+  }, [allRows, search]);
 
   const totals = useMemo(() => {
     return {
@@ -116,15 +133,15 @@ export default function ConsultaLotesJSONPage() {
 
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    const files = Array.from(inputRef.current?.files || []);
+    const files = selectedFiles;
 
     if (!files.length) {
-      setMessage('Selecciona uno o mas archivos JSON.');
+      toast.warning('Selecciona uno o mas archivos JSON.');
       return;
     }
 
     setLoading(true);
-    setMessage('Leyendo codigos de lote...');
+    resetResultsVisibility();
     setResults([]);
 
     try {
@@ -135,7 +152,6 @@ export default function ConsultaLotesJSONPage() {
       fd.set('environment', environment);
       files.forEach((file) => fd.append('files', file));
 
-      setMessage('Enviando JSON a la API Go para consultar Hacienda...');
       const res = await fetch('/api/hacienda/consulta-dte-lote-json', {
         method: 'POST',
         headers: {
@@ -151,9 +167,14 @@ export default function ConsultaLotesJSONPage() {
 
       const resultados = payload.resultados || [];
       setResults(resultados);
-      setMessage(`Consulta finalizada. ${resultados.length} codigo${resultados.length === 1 ? '' : 's'} consultado${resultados.length === 1 ? '' : 's'} por la API Go.`);
+      accordionApiRef.current?.setProcessingSummary(
+        summarizeDteUploadResults(resultados)
+      );
+      toast.success(
+        `Consulta finalizada. ${resultados.length} codigo${resultados.length === 1 ? '' : 's'} consultado${resultados.length === 1 ? '' : 's'} por la API Go.`
+      );
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Error inesperado');
+      toast.error(error instanceof Error ? error.message : 'Error inesperado');
     } finally {
       setLoading(false);
     }
@@ -163,15 +184,15 @@ export default function ConsultaLotesJSONPage() {
     <PlanGate routeKey="consulta_lote">
       <main className="space-y-5">
         <Card>
-          <CardHeader>
-            <CardTitle>Consulta de lotes por JSON</CardTitle>
-            <CardDescription>
-              Sube JSON que contengan codigoLote o identificacion.codigoGeneracion. La API Go extrae el codigo y consulta Hacienda usando el ambiente seleccionado.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={onSubmit} className="grid gap-4 md:grid-cols-[180px_1fr_auto] md:items-end">
-              <div className="space-y-2">
+          <CardContent className="space-y-4 pt-6">
+            <form onSubmit={onSubmit} className="overflow-hidden rounded-lg border border-border">
+              <UploadFormAccordion
+                accordionApiRef={accordionApiRef}
+                onResultsReveal={onResultsReveal}
+                hasResults={resultsVisible && results.length > 0}
+                collapseWhenResults
+              >
+              <div className="max-w-xs space-y-2">
                 <Label htmlFor="ambiente">Ambiente</Label>
                 <select
                   id="ambiente"
@@ -184,36 +205,33 @@ export default function ConsultaLotesJSONPage() {
                 </select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="files">Archivos JSON</Label>
-                <Input
-                  id="files"
-                  ref={inputRef}
-                  type="file"
-                  accept=".json,application/json"
-                  multiple
-                />
-                <p className="text-xs text-muted-foreground">
-                  Si no viene codigoLote, Go usa identificacion.codigoGeneracion como codigo para consultadtelote.
-                </p>
-              </div>
+              <UploadFormSection
+                label="Archivos JSON"
+                briefHint="JSON con codigoLote"
+                helpContent={
+                  <>
+                    <p>
+                      Sube JSON que contengan codigoLote o identificacion.codigoGeneracion. La API Go extrae el codigo y consulta Hacienda usando el ambiente seleccionado.
+                    </p>
+                    <p className="mt-2 text-xs opacity-90">
+                      Si no viene codigoLote, Go usa identificacion.codigoGeneracion como codigo para consultadtelote.
+                    </p>
+                  </>
+                }
+                files={selectedFiles}
+                onFilesChange={setSelectedFiles}
+                loading={loading}
+                submitLabel="Consultar"
+                submitClassName="w-full sm:w-auto"
+                accept={{ 'application/json': ['.json'] }}
+              />
 
-              <Button type="submit" disabled={loading}>
-                {loading ? <Loader2 className="mr-2 size-4 animate-spin" /> : <FileUp className="mr-2 size-4" />}
-                Consultar
-              </Button>
+              </UploadFormAccordion>
             </form>
-
-            {message && (
-              <div className="mt-4 rounded-md border bg-muted/40 p-3 text-sm">
-                {message}
-              </div>
-            )}
           </CardContent>
         </Card>
 
-        {!!results.length && (
-          <>
+        <UploadResultsReveal visible={resultsVisible && results.length > 0}>
             <section className="grid gap-3 md:grid-cols-4">
               <Card>
                 <CardHeader className="pb-2"><CardTitle className="text-sm">Lotes</CardTitle></CardHeader>
@@ -237,7 +255,33 @@ export default function ConsultaLotesJSONPage() {
               <CardHeader>
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <CardTitle>Resultados Hacienda</CardTitle>
-                  <div className="relative w-full md:w-80">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <UploadTableExportBar
+                      excel={{
+                        onClick: () =>
+                          exportRowsToExcel(
+                            allRows as Record<string, unknown>[],
+                            buildExportFilename('consultas_lotes', 'xlsx'),
+                            'Consultas lotes'
+                          ),
+                      }}
+                      csv={{
+                        onClick: () =>
+                          exportRowsToCsv(
+                            allRows as Record<string, unknown>[],
+                            buildExportFilename('consultas_lotes', 'csv')
+                          ),
+                      }}
+                      pdf={{
+                        onClick: () =>
+                          exportPdfByProfile(
+                            allRows as Record<string, unknown>[],
+                            'consultasLotes',
+                            buildExportFilename('consultas_lotes', 'pdf')
+                          ),
+                      }}
+                    />
+                    <div className="relative w-full md:w-80">
                     <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       value={search}
@@ -246,6 +290,7 @@ export default function ConsultaLotesJSONPage() {
                       className="pl-9"
                     />
                   </div>
+                </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -289,8 +334,7 @@ export default function ConsultaLotesJSONPage() {
                 </div>
               </CardContent>
             </Card>
-          </>
-        )}
+        </UploadResultsReveal>
       </main>
     </PlanGate>
   );

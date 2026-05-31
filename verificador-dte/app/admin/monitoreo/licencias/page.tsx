@@ -1,15 +1,15 @@
 'use client';
 
 import { type ChangeEvent, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { auth } from '@/lib/firebase';
-import { QUERY_CACHE_MS } from '@/components/QueryProvider';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { invalidateGetQueries, useGetQuery } from '@/lib/tanstack-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Ban, MoreHorizontal, Pencil, Trash2, Unlock } from 'lucide-react';
+import { toast } from 'sonner';
 
 type DesktopLicense = {
   id: string;
@@ -20,6 +20,12 @@ type DesktopLicense = {
   expiresAt?: string;
   allowedDevices?: string[];
 };
+
+type DesktopLicensesResponse = {
+  licenses?: DesktopLicense[];
+};
+
+const LICENSES_QUERY_KEY = ['desktop-licenses'] as const;
 
 const DEFAULT_FORM = {
   licenseKey: '',
@@ -32,30 +38,26 @@ const DEFAULT_FORM = {
 };
 
 export default function DesktopLicensesPage() {
+  const queryClient = useQueryClient();
   const [filter, setFilter] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(DEFAULT_FORM);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
 
-  const { data: licenses = [], isFetching, error, refetch } = useQuery({
-    queryKey: ['desktop-licenses', filter],
-    queryFn: async () => {
-      const token = await auth.currentUser?.getIdToken();
-      if (!token) throw new Error('No autorizado');
-      const params = new URLSearchParams();
-      if (filter) params.set('q', filter);
-      const res = await fetch(`/api/desktop/licenses?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json() as { licenses?: DesktopLicense[]; error?: string };
-      if (!res.ok) throw new Error(data.error || 'No se pudieron cargar las licencias');
-      return data.licenses || [];
+  const { data: licenses = [], isFetching, error } = useGetQuery<
+    DesktopLicensesResponse,
+    DesktopLicense[]
+  >({
+    queryKey: [...LICENSES_QUERY_KEY, filter],
+    path: '/api/desktop/licenses',
+    params: { q: filter || undefined },
+    overrides: {
+      select: (data) => data.licenses ?? [],
     },
-    staleTime: QUERY_CACHE_MS,
-    gcTime: QUERY_CACHE_MS,
   });
+
+  const refreshLicenses = () => invalidateGetQueries(queryClient, LICENSES_QUERY_KEY);
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const target = event.target;
@@ -69,12 +71,11 @@ export default function DesktopLicensesPage() {
 
   const handleSaveLicense = async () => {
     if (!form.licenseKey.trim()) {
-      setMessage('La clave de licencia es obligatoria');
+      toast.warning('La clave de licencia es obligatoria');
       return;
     }
 
     setSaving(true);
-    setMessage('');
 
     try {
       const token = await auth.currentUser?.getIdToken();
@@ -110,10 +111,14 @@ export default function DesktopLicensesPage() {
         setForm((current) => ({ ...current, generatedPassword: data.generatedPassword || '' }));
       }
       setEditingId(null);
-      setMessage(data.passwordSent ? 'Licencia guardada y contraseña enviada por correo.' : 'Licencia guardada correctamente');
-      refetch();
+      toast.success(
+        data.passwordSent
+          ? 'Licencia guardada y contraseña enviada por correo.'
+          : 'Licencia guardada correctamente'
+      );
+      await refreshLicenses();
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Error guardando la licencia');
+      toast.error(err instanceof Error ? err.message : 'Error guardando la licencia');
     } finally {
       setSaving(false);
     }
@@ -148,7 +153,7 @@ export default function DesktopLicensesPage() {
         throw new Error(data.error || 'No se pudo actualizar la licencia');
       }
 
-      refetch();
+      await refreshLicenses();
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Error actualizando licencia');
     }
@@ -175,7 +180,7 @@ export default function DesktopLicensesPage() {
         throw new Error(data.error || 'No se pudo eliminar la licencia');
       }
 
-      refetch();
+      await refreshLicenses();
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Error eliminando licencia');
     }
@@ -194,10 +199,9 @@ export default function DesktopLicensesPage() {
             <Button onClick={() => {
               setEditingId(null);
               setForm(DEFAULT_FORM);
-              setMessage('');
               setShowModal(true);
             }}>Nueva licencia</Button>
-            <Button onClick={() => refetch()} disabled={isFetching}>
+            <Button onClick={() => refreshLicenses()} disabled={isFetching}>
               {isFetching ? 'Cargando...' : 'Actualizar'}
             </Button>
           </div>
@@ -207,7 +211,6 @@ export default function DesktopLicensesPage() {
         setShowModal(false);
         setEditingId(null);
         setForm(DEFAULT_FORM);
-        setMessage('');
       }}>
         <div className="space-y-4">
           <div className="space-y-1">
@@ -271,13 +274,11 @@ export default function DesktopLicensesPage() {
               </div>
             )}
           </div>
-          {message && <p className="text-sm text-red-600">{message}</p>}
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => {
               setShowModal(false);
               setEditingId(null);
               setForm(DEFAULT_FORM);
-              setMessage('');
             }} disabled={saving}>Cancelar</Button>
             {!form.generatedPassword && (
               <Button onClick={handleSaveLicense} disabled={saving}>{saving ? 'Guardando...' : 'Guardar licencia'}</Button>
@@ -291,7 +292,7 @@ export default function DesktopLicensesPage() {
           <Input value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="Buscar por licencia o correo" />
           <div className="flex gap-2">
             <Button type="button" onClick={() => setFilter('')}>Limpiar</Button>
-            <Button type="button" onClick={() => refetch()} disabled={isFetching}>Buscar</Button>
+            <Button type="button" onClick={() => refreshLicenses()} disabled={isFetching}>Buscar</Button>
           </div>
         </div>
       </section>

@@ -7,6 +7,7 @@ import ProtectedAppShell from '@/components/ProtectedAppShell'
 import QueryProvider from '@/components/QueryProvider'
 import { ViewTransitionShell } from '@/components/ViewTransitionShell'
 import { isPublicPath } from '@/lib/publicRoutes'
+import { Toaster } from 'sonner'
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -15,6 +16,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <QueryProvider>
       <I18nProvider>
+        <Toaster position="top-center" richColors closeButton />
         {isPublicRoute ? (
           <ThemeProvider>{children}</ThemeProvider>
         ) : (

@@ -1,22 +1,30 @@
 'use client'
 
 import PlanGate from '@/components/PlanGate'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import UploadFormSection from '@/components/upload/UploadFormSection'
+import UploadFormAccordion from '@/components/upload/UploadFormAccordion'
+import UploadResultsReveal from '@/components/upload/UploadResultsReveal'
+import UploadTableExportBar from '@/components/upload/UploadTableExportBar'
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+  buildExportFilename,
+  exportPdfByProfile,
+  exportRowsToCsv,
+} from '@/lib/upload-table-export'
+import { useUploadResultsReveal } from '@/components/upload/useUploadResultsReveal'
+import { useEffect, useMemo, useState } from 'react'
+import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { recordProcessingLog } from '@/lib/client-processing-log'
 import { summarizeFiles } from '@/lib/processing-log'
 import {
-  FileUp,
-  Loader2,
+  extractIdentificacion,
+  extractReceptor,
+  extractSelloFromJson,
+} from '@/lib/dte-json-fields'
+import { summarizeDteUploadResults } from '@/lib/upload-dte-stats'
+import {
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -25,6 +33,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import * as XLSX from 'xlsx-js-style'
+import { toast } from 'sonner'
 
 type LiquidacionResultado = {
   Generacion: string
@@ -52,10 +61,9 @@ type AnyRow = Record<string, string | number | Date | null | undefined>
 const ROWS_OPTIONS = [10, 20, 50, 100]
 
 export default function LiquidacionJsonPage() {
-  const inputRef = useRef<HTMLInputElement>(null)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
 
   const [loading, setLoading] = useState(false)
-  const [msg, setMsg] = useState('')
   const [data, setData] = useState<LiquidacionResultado[]>([])
   const [emitters, setEmitters] = useState<AnyRow[]>([])
   const [receivers, setReceivers] = useState<AnyRow[]>([])
@@ -65,6 +73,12 @@ export default function LiquidacionJsonPage() {
   const [search, setSearch] = useState('')
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
+  const {
+    resultsVisible,
+    accordionApiRef,
+    resetResultsVisibility,
+    onResultsReveal,
+  } = useUploadResultsReveal()
   const [filterFrom, setFilterFrom] = useState('')
   const [filterTo, setFilterTo] = useState(() =>
     new Date().toISOString().slice(0, 10)
@@ -111,25 +125,21 @@ export default function LiquidacionJsonPage() {
 
   const procesarArchivo = async (file: File) => {
     try {
-      const obj = JSON.parse(await file.text())
+      const obj = JSON.parse(await file.text()) as Record<string, unknown>
 
-      const id = obj?.identificacion || {}
-      const tipoDte = String(id?.tipoDte || '')
+      const identificacion = extractIdentificacion(obj)
+      const tipoDte = identificacion.tipoDte
 
       if (tipoDte !== '09') {
         return null
       }
 
-      const em = obj?.emisor || {}
-      const rc = obj?.receptor || {}
-      const c = obj?.cuerpoDocumento || {}
+      const em = (obj?.emisor || {}) as Record<string, unknown>
+      const rc = extractReceptor(obj)
+      const c = (obj?.cuerpoDocumento || {}) as Record<string, unknown>
 
-      const sello =
-        safe(obj?.selloRecibido) ||
-        safe(obj?.responseMH?.selloRecibido) ||
-        safe(obj?.respuestaHacienda?.selloRecibido)
-
-      const fechaISO = safe(id?.fecEmi)
+      const sello = extractSelloFromJson(obj)
+      const fechaISO = identificacion.fechaISO
 
       const mg = toNumber(c?.valorOperaciones)
       const iva = toNumber(c?.iva)
@@ -137,13 +147,13 @@ export default function LiquidacionJsonPage() {
       const total = toNumber(c?.liquidoApagar)
 
       const visible: LiquidacionResultado = {
-        Generacion: safe(id?.codigoGeneracion),
-        NumeroControl: safe(id?.numeroControl),
+        Generacion: identificacion.generacion,
+        NumeroControl: identificacion.numeroControl,
         Fecha: formatDate(fechaISO),
         FechaISO: fechaISO,
-        NIT: safe(rc?.nit),
-        NRC: safe(rc?.nrc),
-        Contribuyente: safe(rc?.nombre).toUpperCase(),
+        NIT: rc.nit,
+        NRC: rc.nrc,
+        Contribuyente: rc.nombre,
         TipoDte: tipoDte,
         TipoDocumento: 'Doc. Liquidación',
         Exenta: 0,
@@ -157,9 +167,9 @@ export default function LiquidacionJsonPage() {
       }
 
       const emisorRow: AnyRow = {
-        NumeroControl: safe(id?.numeroControl),
-        CodigoGeneracion: safe(id?.codigoGeneracion),
-        FechaEmision: safe(id?.fecEmi),
+        NumeroControl: identificacion.numeroControl,
+        CodigoGeneracion: identificacion.generacion,
+        FechaEmision: identificacion.fechaISO,
         Emisor_NIT: safe(em?.nit),
         Emisor_NRC: safe(em?.nrc),
         Emisor_Nombre: safe(em?.nombre),
@@ -174,27 +184,30 @@ export default function LiquidacionJsonPage() {
         Emisor_Direccion: safe(em?.direccion?.complemento),
       }
 
+      const receptorObj = (obj?.receptor || {}) as Record<string, unknown>
+      const receptorDireccion = (receptorObj?.direccion || {}) as Record<string, unknown>
+
       const receptorRow: AnyRow = {
-        NumeroControl: safe(id?.numeroControl),
-        CodigoGeneracion: safe(id?.codigoGeneracion),
-        FechaEmision: safe(id?.fecEmi),
-        Receptor_NIT: safe(rc?.nit),
-        Receptor_NRC: safe(rc?.nrc),
-        Receptor_Nombre: safe(rc?.nombre),
-        Receptor_NombreComercial: safe(rc?.nombreComercial),
-        Receptor_Actividad: `${safe(rc?.codActividad)} - ${safe(
-          rc?.descActividad
+        NumeroControl: identificacion.numeroControl,
+        CodigoGeneracion: identificacion.generacion,
+        FechaEmision: identificacion.fechaISO,
+        Receptor_NIT: safe(receptorObj?.nit),
+        Receptor_NRC: safe(receptorObj?.nrc),
+        Receptor_Nombre: safe(receptorObj?.nombre),
+        Receptor_NombreComercial: safe(receptorObj?.nombreComercial),
+        Receptor_Actividad: `${safe(receptorObj?.codActividad)} - ${safe(
+          receptorObj?.descActividad
         )}`.trim(),
-        Receptor_Telefono: safe(rc?.telefono),
-        Receptor_Correo: safe(rc?.correo),
-        Receptor_Departamento: safe(rc?.direccion?.departamento),
-        Receptor_Municipio: safe(rc?.direccion?.municipio),
-        Receptor_Direccion: safe(rc?.direccion?.complemento),
+        Receptor_Telefono: safe(receptorObj?.telefono),
+        Receptor_Correo: safe(receptorObj?.correo),
+        Receptor_Departamento: safe(receptorDireccion?.departamento),
+        Receptor_Municipio: safe(receptorDireccion?.municipio),
+        Receptor_Direccion: safe(receptorDireccion?.complemento),
       }
 
       const liquidacionRow: AnyRow = {
-        NumeroControl: safe(id?.numeroControl),
-        CodigoGeneracion: safe(id?.codigoGeneracion),
+        NumeroControl: identificacion.numeroControl,
+        CodigoGeneracion: identificacion.generacion,
         Periodo_Inicio: safe(c?.periodoLiquidacionFechaInicio),
         Periodo_Fin: safe(c?.periodoLiquidacionFechaFin),
         ValorOperaciones: toNumber(c?.valorOperaciones),
@@ -215,20 +228,20 @@ export default function LiquidacionJsonPage() {
       }
 
       const resumenRow: AnyRow = {
-        tipoDte: safe(id?.tipoDte),
-        numeroControl: safe(id?.numeroControl),
-        codigoGeneracion: safe(id?.codigoGeneracion),
-        fecEmi: safe(id?.fecEmi),
-        horEmi: safe(id?.horEmi),
+        tipoDte: identificacion.tipoDte,
+        numeroControl: identificacion.numeroControl,
+        codigoGeneracion: identificacion.generacion,
+        fecEmi: identificacion.fechaISO,
+        horEmi: safe((obj?.identificacion as Record<string, unknown>)?.horEmi),
         Emisor_nit: safe(em?.nit),
         Emisor_nrc: safe(em?.nrc),
         Emisor_nombre: safe(em?.nombre),
         Emisor_nombreComercial: safe(em?.nombreComercial),
         Emisor_telefono: safe(em?.telefono),
         Emisor_correo: safe(em?.correo),
-        Receptor_nit: safe(rc?.nit),
-        Receptor_nrc: safe(rc?.nrc),
-        Receptor_nombre: safe(rc?.nombre),
+        Receptor_nit: safe(receptorObj?.nit),
+        Receptor_nrc: safe(receptorObj?.nrc),
+        Receptor_nombre: safe(receptorObj?.nombre),
       }
 
       Object.keys(c || {}).forEach((key) => {
@@ -299,23 +312,19 @@ export default function LiquidacionJsonPage() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    const files = inputRef.current?.files
-
-    if (!files || files.length === 0) {
-      setMsg('Selecciona uno o más archivos .json')
+    if (selectedFiles.length === 0) {
+      toast.warning('Selecciona uno o más archivos .json')
       return
     }
 
     setLoading(true)
-    setMsg('Procesando…')
+    resetResultsVisibility()
     setData([])
     setEmitters([])
     setReceivers([])
     setLiquidaciones([])
     setResumenRows([])
     setCurrentPage(1)
-
-    const selectedFiles = Array.from(files)
     const startedAt = new Date()
     const started = performance.now()
 
@@ -348,6 +357,9 @@ export default function LiquidacionJsonPage() {
       })
 
       setData(visibleRows)
+      accordionApiRef.current?.setProcessingSummary(
+        summarizeDteUploadResults(visibleRows)
+      )
       setEmitters(emisorRows)
       setReceivers(receptorRows)
       setLiquidaciones(liquidacionRows)
@@ -356,12 +368,12 @@ export default function LiquidacionJsonPage() {
       const successCount = visibleRows.filter((r) => !r.Error).length
       const errorCount = visibleRows.filter((r) => r.Error).length
 
-      setMsg(
+      toast.success(
         ignoredCount > 0
-          ? `✅ Procesamiento finalizado. ${ignoredCount} archivo(s) ignorado(s) porque no eran DTE tipo 09.`
+          ? `Procesamiento finalizado. ${ignoredCount} archivo(s) ignorado(s) porque no eran DTE tipo 09.`
           : errorCount > 0
-            ? `✅ Procesamiento finalizado con ${errorCount} error(es).`
-            : '✅ Procesamiento finalizado.'
+            ? `Procesamiento finalizado con ${errorCount} error(es).`
+            : 'Procesamiento finalizado.'
       )
 
       await recordProcessingLog({
@@ -384,7 +396,7 @@ export default function LiquidacionJsonPage() {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Error inesperado'
 
-      setMsg(`❌ ${message}`)
+      toast.error(message)
 
       await recordProcessingLog({
         routeKey: 'liquidacion-json',
@@ -543,7 +555,7 @@ export default function LiquidacionJsonPage() {
 
   const exportExcel = () => {
     if (!data.length) {
-      setMsg('❌ No hay datos para exportar.')
+      toast.error('No hay datos para exportar.')
       return
     }
 
@@ -590,117 +602,68 @@ export default function LiquidacionJsonPage() {
   }
 
   const clearAll = () => {
+    resetResultsVisibility()
     setData([])
     setEmitters([])
     setReceivers([])
     setLiquidaciones([])
     setResumenRows([])
     setSearch('')
-    setMsg('')
     setCurrentPage(1)
     setFilterFrom('')
     setFilterTo(new Date().toISOString().slice(0, 10))
 
-    if (inputRef.current) {
-      inputRef.current.value = ''
-    }
+    setSelectedFiles([])
   }
 
   return (
     <PlanGate routeKey="liquidacion-json">
       <main className="w-full max-w-full dark:bg-background">
         <Card className="w-full max-w-full overflow-hidden border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-950">
-          <CardHeader className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/80 dark:border-white/10 dark:bg-zinc-950/90 dark:supports-[backdrop-filter]:bg-zinc-950/80">
-            <CardTitle className="text-2xl text-slate-950 dark:text-white">
-              Procesador de Liquidación JSON
-            </CardTitle>
-
-            <CardDescription className="text-slate-600 dark:text-zinc-300">
-              Sube documentos DTE tipo 09 para generar liquidación, emisor,
-              receptor y detalle en Excel.
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 pt-6">
             <form
               onSubmit={onSubmit}
-              className="space-y-5 rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-black"
+              className="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10"
             >
-              <div className="grid items-end gap-4 sm:grid-cols-[1fr_auto]">
-                <div className="space-y-2">
-                  <Label htmlFor="file">Archivos JSON</Label>
-
-                  <Input
-                    id="file"
-                    ref={inputRef}
-                    type="file"
-                    accept=".json,application/json"
-                    multiple
-                  />
-
-                  <p className="text-xs text-muted-foreground">
-                    Solo se procesarán documentos con tipoDte 09.
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-3 sm:flex-row">
+              <UploadFormAccordion
+                accordionApiRef={accordionApiRef}
+                onResultsReveal={onResultsReveal}
+                hasResults={resultsVisible && data.length > 0}
+                collapseWhenResults
+              >
+              <UploadFormSection
+                label="Archivos JSON"
+                briefHint="Solo tipo DTE 09"
+                helpContent={
+                  <>
+                    <p>
+                      Sube documentos DTE tipo 09 para generar liquidacion, emisor, receptor y detalle en Excel.
+                    </p>
+                    <p className="mt-2 text-xs opacity-90">Solo se procesaran documentos con tipoDte 09.</p>
+                  </>
+                }
+                files={selectedFiles}
+                onFilesChange={setSelectedFiles}
+                loading={loading}
+                accept={{ 'application/json': ['.json'] }}
+              >
+                {data.length > 0 && (
                   <Button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-yellow-400 font-bold text-black hover:bg-yellow-300 sm:w-auto"
+                    type="button"
+                    variant="outline"
+                    onClick={clearAll}
+                    className="w-full sm:w-auto"
                   >
-                    {loading ? (
-                      <>
-                        <Loader2 className="mr-2 size-4 animate-spin" />
-                        Procesando…
-                      </>
-                    ) : (
-                      <>
-                        <FileUp className="mr-2 size-4" />
-                        Procesar
-                      </>
-                    )}
+                    <Trash2 className="mr-2 size-4" />
+                    Limpiar
                   </Button>
+                )}
+              </UploadFormSection>
 
-                  {data.length > 0 && (
-                    <>
-                      <Button
-                        type="button"
-                        onClick={exportExcel}
-                        className="w-full bg-yellow-400 font-bold text-black hover:bg-yellow-300 sm:w-auto"
-                      >
-                        Descargar Excel
-                      </Button>
-
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={clearAll}
-                        className="w-full sm:w-auto"
-                      >
-                        <Trash2 className="mr-2 size-4" />
-                        Limpiar
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {msg && (
-                <div
-                  className={`rounded-md p-3 text-sm ${
-                    msg.startsWith('✅')
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200'
-                      : msg.startsWith('Procesando')
-                        ? 'bg-yellow-100 text-yellow-900 dark:bg-yellow-400/15 dark:text-yellow-200'
-                        : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200'
-                  }`}
-                >
-                  {msg}
-                </div>
-              )}
+              </UploadFormAccordion>
             </form>
 
+            <UploadResultsReveal visible={resultsVisible && data.length > 0}>
             <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-black">
                 <p className="text-xs text-slate-500 dark:text-zinc-400">
@@ -796,6 +759,27 @@ export default function LiquidacionJsonPage() {
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <UploadTableExportBar
+                  excel={{
+                    onClick: exportExcel,
+                    label: 'Descargar Excel completo',
+                  }}
+                  csv={{
+                    onClick: () =>
+                      exportRowsToCsv(
+                        data as Record<string, unknown>[],
+                        buildExportFilename('liquidacion_json', 'csv')
+                      ),
+                  }}
+                  pdf={{
+                    onClick: () =>
+                      exportPdfByProfile(
+                        data as Record<string, unknown>[],
+                        'liquidacion',
+                        buildExportFilename('liquidacion_json', 'pdf')
+                      ),
+                  }}
+                />
                 <div className="relative">
                   <Input
                     value={search}
@@ -927,6 +911,7 @@ export default function LiquidacionJsonPage() {
                 </div>
               </div>
             </div>
+            </UploadResultsReveal>
           </CardContent>
         </Card>
       </main>

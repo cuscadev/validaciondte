@@ -8,6 +8,7 @@ import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import ObligationsCalendar from '@/components/obligations/ObligationsCalendar';
+import { toast } from 'sonner';
 
 const TAX_CALENDAR_URL =
   'https://www.mh.gob.sv/wp-content/uploads/2025/12/Calendario-Tributario-2026.pdf';
@@ -50,7 +51,6 @@ export default function AdminObligacionPage() {
 
   const [selectedUids, setSelectedUids] = useState<string[]>([]);
   const [search, setSearch] = useState('');
-  const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
 
   const usersQuery = useQuery({
@@ -130,20 +130,19 @@ export default function AdminObligacionPage() {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setMessage('');
 
     if (!form.title.trim()) {
-      setMessage('El título es obligatorio.');
+      toast.warning('El título es obligatorio.');
       return;
     }
 
     if (!form.dueDate) {
-      setMessage('La fecha de vencimiento es obligatoria.');
+      toast.warning('La fecha de vencimiento es obligatoria.');
       return;
     }
 
     if (form.targetMode === 'selected' && selectedUids.length === 0) {
-      setMessage('Selecciona al menos un cliente.');
+      toast.warning('Selecciona al menos un cliente.');
       return;
     }
 
@@ -206,12 +205,12 @@ export default function AdminObligacionPage() {
 
       setSelectedUids([]);
       setSearch('');
-      setMessage('Obligación creada correctamente.');
+      toast.success('Obligación creada correctamente.');
 
       await queryClient.invalidateQueries({ queryKey: ['admin-obligations'] });
       await queryClient.invalidateQueries({ queryKey: ['tributario-calendar'] });
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Error creando obligación.');
+      toast.error(error instanceof Error ? error.message : 'Error creando obligación.');
     } finally {
       setSaving(false);
     }
@@ -369,12 +368,6 @@ export default function AdminObligacionPage() {
                     );
                   })}
                 </div>
-              </div>
-            )}
-
-            {message && (
-              <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-sm dark:border-white/10 dark:bg-black">
-                {message}
               </div>
             )}
 

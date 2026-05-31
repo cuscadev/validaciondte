@@ -26,7 +26,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-import { toast, Toaster } from 'sonner';
+import { toast } from 'sonner';
 
 const PLAN_LABELS: Record<string, string> = {
 	free: 'Free',
@@ -180,8 +180,6 @@ export default function RegisterPage() {
 
 	return (
 		<main className="relative min-h-screen overflow-x-hidden bg-slate-50 text-slate-950 dark:bg-black dark:text-white">
-			<Toaster position="top-right" richColors />
-
 			<div className="fixed left-0 top-0 z-30 w-full">
 				<PublicNavbar />
 			</div>

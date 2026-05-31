@@ -1,88 +1,98 @@
 // app/consultarjson/page.tsx
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useEffect, useMemo, useState } from 'react'
+import UploadFormSection from '@/components/upload/UploadFormSection'
+import UploadFormAccordion from '@/components/upload/UploadFormAccordion'
+import UploadResultsReveal from '@/components/upload/UploadResultsReveal'
+import UploadTableExportBar from '@/components/upload/UploadTableExportBar'
+import {
+  buildExportFilename,
+  exportPdfByProfile,
+  exportRowsToCsv,
+  exportRowsToExcel,
+} from '@/lib/upload-table-export'
+import { useUploadResultsReveal } from '@/components/upload/useUploadResultsReveal'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useTranslation } from 'react-i18next'
-import { toast, Toaster } from 'sonner'
-import { Loader2, FileUp, Moon, Sun, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Search, ExternalLink } from 'lucide-react'
+import { toast } from 'sonner'
+import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Search, ExternalLink } from 'lucide-react'
+import { formatMontoDisplay } from '@/lib/dte-result-normalize'
+import { summarizeDteUploadResults } from '@/lib/upload-dte-stats'
 
 type Resultado = {
   ambiente: string
   codGen: string
   fechaEmi: string
   url: string
+  linkVisita?: string
   estado: 'EMITIDO' | 'ANULADO' | 'RECHAZADO' | 'NO ENCONTRADO' | 'ERROR'
   descripcionEstado?: string
   error?: string
 
   tipoDte?: string
   numeroControl?: string
+  selloRecepcion?: string
   emisorNit?: string
   emisorNrc?: string
   emisorNombre?: string
   receptorNit?: string
   receptorNrc?: string
   receptorNombre?: string
-  montoTotalOperacion?: number
-  totalPagar?: number
-  iva?: number
+  montoTotal?: string
+  totalPagarOperacion?: string
+  ivaOperaciones?: string
 }
 
 export default function ConsultarJsonPage() {
   const { t } = useTranslation();
-  const inputRef = useRef<HTMLInputElement>(null)
-  const [dark, setDark] = useState(false)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [loading, setLoading] = useState(false)
-  const [msg, setMsg] = useState('') // Solo para compatibilidad visual, pero se usará toast
   const [data, setData] = useState<Resultado[]>([])
 
   // UIX
   const [search, setSearch] = useState('')
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
+  const {
+    resultsVisible,
+    accordionApiRef,
+    resetResultsVisibility,
+    onResultsReveal,
+  } = useUploadResultsReveal()
   
-  const toggleTheme = () => {
-    setDark(d => !d)
-    document.documentElement.classList.toggle('dark')
-  }
-
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const files = inputRef.current?.files
-    if (!files || files.length === 0) {
-      toast.error(t('consultarjson_selecciona_archivos'))
-      setMsg(t('consultarjson_selecciona_archivos'))
+    if (selectedFiles.length === 0) {
+      toast.warning(t('consultarjson_selecciona_archivos'))
       return
     }
     setLoading(true)
-    toast.loading(t('consultarjson_procesando'))
-    setMsg(t('consultarjson_procesando'))
+    resetResultsVisibility()
     setData([])
     setCurrentPage(1)
 
     try {
       const fd = new FormData()
-      Array.from(files).forEach(f => fd.append('files', f))
+      selectedFiles.forEach(f => fd.append('files', f))
 
       const res = await fetch('/api/verificararchjson', { method: 'POST', body: fd })
       if (!res.ok) {
         const err = await res.text()
-        toast.error(err || t('consultarjson_error'))
-        setMsg(err || t('consultarjson_error'))
         throw new Error(err || t('consultarjson_error'))
       }
 
       const json = await res.json() as { resultados: Resultado[] }
       setData(json.resultados || [])
+      accordionApiRef.current?.setProcessingSummary(
+        summarizeDteUploadResults(json.resultados || [])
+      )
       toast.success(t('consultarjson_completada'))
-      setMsg(t('consultarjson_completada'))
-    } catch (e: any) {
-      toast.error(e?.message || t('consultarjson_error'))
-      setMsg(` ${e?.message || t('consultarjson_error')}`)
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : t('consultarjson_error'))
     } finally {
       setLoading(false)
     }
@@ -119,45 +129,33 @@ export default function ConsultarJsonPage() {
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-muted px-4 py-12 dark:bg-background">
-      {/* Tema */}
-      <Toaster position="top-right" richColors />
-      <div className="absolute top-4 right-4">
-        <Button variant="outline" onClick={toggleTheme}>
-          {dark ? <Sun className="w-4 h-4 mr-2" /> : <Moon className="w-4 h-4 mr-2" />}
-          {dark ? t('consultarjson_claro') : t('consultarjson_oscuro')}
-        </Button>
-      </div>
 
       <Card className="w-full max-w-7xl shadow-xl border-border/60">
-        <CardHeader className="sticky top-0 z-10 bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60 rounded-t-xl">
-          <CardTitle className="text-2xl">{t('consultarjson_title')}</CardTitle>
-          <CardDescription>{t('consultarjson_desc')}</CardDescription>
-        </CardHeader>
+        <CardContent className="space-y-6 pt-6">
+          <form onSubmit={onSubmit} className="overflow-hidden rounded-md border border-border/60">
+            <UploadFormAccordion
+              accordionApiRef={accordionApiRef}
+              onResultsReveal={onResultsReveal}
+              hasResults={resultsVisible && data.length > 0}
+              collapseWhenResults
+            >
+            <UploadFormSection
+              label={t('consultarjson_archivos')}
+              briefHint="JSON de DTE"
+              helpContent={t('consultarjson_desc')}
+              files={selectedFiles}
+              onFilesChange={setSelectedFiles}
+              loading={loading}
+              submitLabel={t('consultarjson_verificar')}
+              loadingLabel={t('consultarjson_verificando')}
+              submitClassName="w-full sm:w-auto"
+              accept={{ 'application/json': ['.json'] }}
+            />
 
-        <CardContent className="space-y-6">
-          <form onSubmit={onSubmit} className="space-y-5 rounded-md border p-4 bg-background/50">
-            <div className="grid gap-4 sm:grid-cols-[1fr_auto] items-end">
-              <div className="space-y-2">
-                <Label htmlFor="file">{t('consultarjson_archivos')}</Label>
-                <Input id="file" ref={inputRef} type="file" accept=".json" multiple />
-              </div>
-              <Button type="submit" disabled={loading} className="w-full sm:w-auto">
-                {loading ? (<><Loader2 className="animate-spin w-4 h-4 mr-2" />{t('consultarjson_verificando')}</>) : (<><FileUp className="w-4 h-4 mr-2" />{t('consultarjson_verificar')}</>)}
-              </Button>
-            </div>
-
-            {/* msg visual fallback, pero ahora se usa Sonner */}
-            {msg && (
-              <div className={`text-sm rounded-md p-3 ${
-                msg.startsWith('✅') ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200'
-                : msg.startsWith(t('consultarjson_procesando')) ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200'
-                : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200'
-              }`}>
-                {msg}
-              </div>
-            )}
+            </UploadFormAccordion>
           </form>
 
+          <UploadResultsReveal visible={resultsVisible && data.length > 0}>
           {/* Toolbar */}
           <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
             <div className="text-sm text-muted-foreground">
@@ -165,6 +163,31 @@ export default function ConsultarJsonPage() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+              <UploadTableExportBar
+                excel={{
+                  onClick: () =>
+                    exportRowsToExcel(
+                      data as Record<string, unknown>[],
+                      buildExportFilename('consultar_json', 'xlsx'),
+                      'Consultar JSON'
+                    ),
+                }}
+                csv={{
+                  onClick: () =>
+                    exportRowsToCsv(
+                      data as Record<string, unknown>[],
+                      buildExportFilename('consultar_json', 'csv')
+                    ),
+                }}
+                pdf={{
+                  onClick: () =>
+                    exportPdfByProfile(
+                      data as Record<string, unknown>[],
+                      'consultarjson',
+                      buildExportFilename('consultar_json', 'pdf')
+                    ),
+                }}
+              />
               <div className="relative">
                 <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('consultarjson_buscar_placeholder')} className="pl-8 w-[280px]" />
                 <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -229,12 +252,12 @@ export default function ConsultarJsonPage() {
                           <div className="text-xs text-muted-foreground">NIT {r.receptorNit || '-'} · NRC {r.receptorNrc || '-'}</div>
                         </div>
                       </td>
-                      <td className="p-2 whitespace-nowrap">{r.montoTotalOperacion?.toFixed(2) ?? '-'}</td>
-                      <td className="p-2 whitespace-nowrap">{r.totalPagar?.toFixed(2) ?? '-'}</td>
-                      <td className="p-2 whitespace-nowrap">{r.iva?.toFixed(2) ?? '-'}</td>
+                      <td className="p-2 whitespace-nowrap">{formatMontoDisplay(r.montoTotal)}</td>
+                      <td className="p-2 whitespace-nowrap">{formatMontoDisplay(r.totalPagarOperacion)}</td>
+                      <td className="p-2 whitespace-nowrap">{formatMontoDisplay(r.ivaOperaciones)}</td>
                       <td className="p-2">
-                        {r.url ? (
-                          <a href={r.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-600 underline text-xs">
+                        {(r.linkVisita || r.url) ? (
+                          <a href={r.linkVisita || r.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-600 underline text-xs">
                             {t('consultarjson_ver')} <ExternalLink className="w-3 h-3" />
                           </a>
                         ) : '-'}
@@ -258,6 +281,7 @@ export default function ConsultarJsonPage() {
               </div>
             </div>
           </div>
+          </UploadResultsReveal>
         </CardContent>
       </Card>
     </main>

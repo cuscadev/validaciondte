@@ -285,10 +285,10 @@ export default function Sidebar({
   };
 
   return (
-    <aside
+    <div
       className={[
-        'flex h-screen flex-col border-r border-white/10 bg-black text-white transition-[width,padding] duration-300',
-        collapsed ? 'w-[72px] p-3' : 'w-64 p-4',
+        'flex h-full w-full flex-col bg-black text-white transition-[padding] duration-300',
+        collapsed ? 'p-3' : 'p-4',
       ].join(' ')}
     >
       <div className="mb-6 flex items-center justify-center border-b border-white/10 pb-5">
@@ -421,6 +421,6 @@ export default function Sidebar({
           );
         })}
       </nav>
-    </aside>
+    </div>
   );
 }
