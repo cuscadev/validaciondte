@@ -46,6 +46,17 @@ export function canManageOrgUsers(user: Pick<AppUser, 'role' | 'orgRole'> | null
   return isOrgAdmin(user);
 }
 
+/** Id efectivo de organización (titular/superadmin sin campo → uid del usuario). */
+export function resolveOrganizationId(
+  user: Pick<AppUser, 'uid' | 'role' | 'organizationId'> | null | undefined
+): string | null {
+  if (!user) return null;
+  const explicit = user.organizationId?.trim();
+  if (explicit) return explicit;
+  if (user.role === 'cliente' || user.role === 'superadmin') return user.uid;
+  return null;
+}
+
 export function isAccountUsable(user: Pick<AppUser, 'accountStatus' | 'disabled'> | null | undefined) {
   if (!user) return false;
   if (user.disabled) return false;

@@ -21,6 +21,7 @@ import {
   Bell,
   Palette,
   Smartphone,
+  Mail,
 } from 'lucide-react';
 
 import { useAuth } from '@/components/AuthProvider';
@@ -341,6 +342,11 @@ export default function Sidebar({
       href: '/tributario',
       label: 'Tributario',
       icon: CalendarDays,
+    },
+    {
+      href: '/integraciones/gmail',
+      label: 'Importar desde Gmail',
+      icon: Mail,
     },
     {
       href: '/configuraciones',

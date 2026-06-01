@@ -10,7 +10,8 @@
     "start": "next start",
     "lint": "next lint",
     "setup:check": "pnpm exec tsx scripts/check-env.ts",
-    "setup:admin": "pnpm exec tsx scripts/check-env.ts && pnpm exec tsx scripts/create-admin.ts"
+    "setup:admin": "pnpm exec tsx scripts/check-env.ts && pnpm exec tsx scripts/create-admin.ts",
+    "test:gmail": "pnpm exec tsx --test lib/gmail/parse-dte-import.test.ts lib/gmail/link-documents.test.ts"
   },
   "dependencies": {
     "@fullcalendar/common": "^5.11.5",
@@ -29,6 +30,7 @@
     "@radix-ui/react-switch": "^1.2.5",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@react-pdf/renderer": "^4.5.1",
+    "@supabase/supabase-js": "^2.106.2",
     "@tanstack/react-query": "^5.100.9",
     "@types/nodemailer": "^8.0.0",
     "@types/three": "^0.184.1",

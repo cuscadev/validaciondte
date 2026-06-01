@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 
 import { auth } from '@/lib/firebase';
+import { setSessionCookie as writeSessionCookie } from '@/lib/session-cookie';
 
 import PublicNavbar from '@/components/PublicNavbar';
 
@@ -30,7 +31,7 @@ import { Label } from '@/components/ui/label';
 
 const DASHBOARD_PATH = '/dashboard';
 
-async function setSessionCookie() {
+async function applySessionCookie() {
 	const user = auth.currentUser;
 
 	if (!user) {
@@ -41,7 +42,7 @@ async function setSessionCookie() {
 
 	const token = await user.getIdToken(true);
 
-	document.cookie = `__session=${token}; path=/; max-age=3600; SameSite=Strict`;
+	writeSessionCookie(token);
 
 	sessionStorage.setItem('was-authenticated', 'true');
 }
@@ -99,7 +100,7 @@ export default function TotpVerifyPage() {
 				return;
 			}
 
-			await setSessionCookie();
+			await applySessionCookie();
 
 			sessionStorage.removeItem('totp-uid');
 

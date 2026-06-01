@@ -12,6 +12,7 @@ import { AppUser } from '@/lib/firestoreUser';
 import { QUERY_CACHE_MS } from '@/components/QueryProvider';
 import { mergeAppUserIfChanged } from '@/lib/profile-equals';
 import { isPublicPath } from '@/lib/publicRoutes';
+import { clearSessionCookie, setSessionCookie } from '@/lib/session-cookie';
 
 interface AuthContextValue {
   firebaseUser: User | null;
@@ -78,7 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // Refresh __session cookie for middleware
         const token = await user.getIdToken();
-        document.cookie = `__session=${token}; path=/; max-age=3600; SameSite=Strict`;
+        setSessionCookie(token);
         wasAuthenticatedRef.current = true;
 
         // Load Firestore profile (cached after first call)
@@ -114,7 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           pathname: window.location.pathname,
           wasAuthenticated: wasAuthenticatedRef.current,
         });
-        document.cookie = '__session=; path=/; max-age=0; SameSite=Strict';
+        clearSessionCookie();
         setFirebaseUser(null);
         setAppUser(null);
         haciendaAuthUidRef.current = null;
@@ -147,7 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (!freshProfile || freshProfile.disabled) {
           await signOut(auth);
-          document.cookie = '__session=; path=/; max-age=0; SameSite=Strict';
+          clearSessionCookie();
           router.replace('/login');
           return;
         }
@@ -156,7 +157,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const authTime = new Date(tokenResult.authTime);
         if (forceLogoutAt && forceLogoutAt > authTime) {
           await signOut(auth);
-          document.cookie = '__session=; path=/; max-age=0; SameSite=Strict';
+          clearSessionCookie();
           router.replace('/login');
           return;
         }

@@ -4,6 +4,7 @@ import {
   type AppUser,
   canManageOrgUsers,
   isOrgAdmin,
+  resolveOrganizationId,
   type UserRole,
 } from '@/lib/firestoreUser';
 import { getOrganization } from '@/lib/organization-admin';
@@ -46,15 +47,20 @@ export async function requireAuth(req: NextRequest) {
 export async function requireOrgAdmin(req: NextRequest) {
   const user = await requireAuth(req);
   if (!canManageOrgUsers(user)) throw new Error('No autorizado');
-  if (!user.organizationId) throw new Error('Sin organización asignada');
-  return user;
+  const organizationId = resolveOrganizationId(user);
+  if (!organizationId) throw new Error('Sin organización asignada');
+  return { ...user, organizationId };
 }
 
 export async function requireOrgMember(req: NextRequest) {
   const user = await requireAuth(req);
-  if (user.role === 'superadmin') return user;
-  if (!user.organizationId) throw new Error('Sin organización asignada');
-  return user;
+  if (user.role === 'superadmin') {
+    const organizationId = resolveOrganizationId(user);
+    return organizationId ? { ...user, organizationId } : user;
+  }
+  const organizationId = resolveOrganizationId(user);
+  if (!organizationId) throw new Error('Sin organización asignada');
+  return { ...user, organizationId };
 }
 
 export async function getAuthUserRole(uid: string): Promise<UserRole | ''> {

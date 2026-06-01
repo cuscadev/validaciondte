@@ -42,7 +42,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
+import { consumeVerifyBatch } from '@/lib/gmail/verification-bridge';
 
 type Item = { numItem: number; codGen: string; fechaEmi: string };
 
@@ -64,6 +64,19 @@ export default function Page() {
   const [progressDone, setProgressDone] = useState(0);
   const [progressTotal, setProgressTotal] = useState(0);
   const { resultsVisible, resetResultsVisibility, onResultsReveal } = useUploadResultsReveal();
+
+  useEffect(() => {
+    const batch = consumeVerifyBatch();
+    if (!batch.length) return;
+    setItems(
+      batch.slice(0, MAX_ITEMS).map((row, index) => ({
+        numItem: index + 1,
+        codGen: row.codGen,
+        fechaEmi: row.fechaEmi,
+      }))
+    );
+    toast.success(`Se cargaron ${Math.min(batch.length, MAX_ITEMS)} DTE desde Gmail.`);
+  }, []);
 
   const puedeAgregar = items.length < MAX_ITEMS;
 

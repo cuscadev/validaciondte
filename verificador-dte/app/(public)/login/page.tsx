@@ -25,6 +25,7 @@ import { getUser } from '@/lib/firestoreUser';
 import { userNeedsOnboardingPath } from '@/lib/onboarding-gate';
 import PublicNavbar from '@/components/PublicNavbar';
 import { QUERY_CACHE_MS } from '@/components/QueryProvider';
+import { clearSessionCookie, setSessionCookie } from '@/lib/session-cookie';
 
 const DASHBOARD_PATH = '/dashboard';
 const ONBOARDING_PATH = '/onboarding';
@@ -73,11 +74,11 @@ function getLoginErrorMessage(err: unknown, fallback: string) {
 	return err instanceof Error ? err.message : fallback;
 }
 
-async function setSessionCookie(
+async function applySessionCookie(
 	user: Awaited<ReturnType<typeof signInWithEmailAndPassword>>['user']
 ) {
 	const token = await user.getIdToken(true);
-	document.cookie = `__session=${token}; path=/; max-age=3600; SameSite=Strict`;
+	setSessionCookie(token);
 	sessionStorage.setItem('was-authenticated', 'true');
 }
 
@@ -168,7 +169,7 @@ export default function LoginPage() {
 
 			if (!appUser) {
 				await signOut(auth);
-				document.cookie = '__session=; path=/; max-age=0; SameSite=Strict';
+				clearSessionCookie();
 
 				throw new Error(
 					'No encontramos tu perfil de usuario. Contacta al administrador.'
@@ -177,7 +178,7 @@ export default function LoginPage() {
 
 			if (appUser.disabled) {
 				await signOut(auth);
-				document.cookie = '__session=; path=/; max-age=0; SameSite=Strict';
+				clearSessionCookie();
 				await recordLoginLog({
 					email: normalizedEmail,
 					success: false,
@@ -187,7 +188,7 @@ export default function LoginPage() {
 			}
 
 			if (appUser?.totpEnabled) {
-				document.cookie = '__session=; path=/; max-age=0; SameSite=Strict';
+				clearSessionCookie();
 				sessionStorage.setItem('totp-uid', cred.user.uid);
 				const token = await cred.user.getIdToken();
 				await recordLoginLog({
@@ -203,7 +204,7 @@ export default function LoginPage() {
 
 				router.replace('/totp-verify');
 			} else {
-				await setSessionCookie(cred.user);
+				await applySessionCookie(cred.user);
 				const token = await cred.user.getIdToken();
 				await recordLoginLog({
 					email: normalizedEmail,
