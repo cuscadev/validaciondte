@@ -4,14 +4,31 @@ let adminClient: SupabaseClient | null = null;
 let cachedUrl = '';
 let cachedKey = '';
 
+export const GENERIC_SERVICE_ERROR_MESSAGE =
+  'No se pudo completar la solicitud. Intenta nuevamente en unos momentos.';
+
+export function getPublicServiceErrorMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || '');
+
+  if (message === 'No autorizado') return message;
+  if (message.includes('Sin organizacion')) return 'Sin organizacion.';
+
+  return GENERIC_SERVICE_ERROR_MESSAGE;
+}
+
 export function getSupabaseAdmin(): SupabaseClient {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 
   if (!url || !serviceKey) {
-    throw new Error(
-      'Supabase no configurado: define NEXT_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY.'
+    console.error(
+      '[supabase:init] Missing Supabase config values',
+      {
+        hasUrl: Boolean(url),
+        hasServiceRoleKey: Boolean(serviceKey),
+      }
     );
+    throw new Error(GENERIC_SERVICE_ERROR_MESSAGE);
   }
 
   if (adminClient && cachedUrl === url && cachedKey === serviceKey) {

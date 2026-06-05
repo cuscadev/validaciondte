@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getSyncJob, listDocuments } from '@/lib/gmail/db';
 import { requireOrgAdmin } from '@/lib/server-auth';
+import { getPublicServiceErrorMessage } from '@/lib/supabase-admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -29,7 +30,8 @@ export async function GET(req: NextRequest, context: Params) {
 
     return NextResponse.json({ job, documents, total });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Error';
+    const message = getPublicServiceErrorMessage(error);
+    console.error('[gmail/sync/job]', error);
     const status = message === 'No autorizado' ? 401 : 500;
     return NextResponse.json({ error: message }, { status });
   }

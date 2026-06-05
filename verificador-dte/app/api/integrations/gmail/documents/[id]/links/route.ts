@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getLinkedDocuments } from '@/lib/gmail/db';
 import { requireOrgMember } from '@/lib/server-auth';
+import { getPublicServiceErrorMessage } from '@/lib/supabase-admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -20,7 +21,8 @@ export async function GET(req: NextRequest, context: RouteContext) {
 
     return NextResponse.json({ links, documents });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Error';
+    const message = getPublicServiceErrorMessage(error);
+    console.error('[gmail/documents/links]', error);
     const status = message === 'No autorizado' ? 401 : 500;
     return NextResponse.json({ error: message }, { status });
   }

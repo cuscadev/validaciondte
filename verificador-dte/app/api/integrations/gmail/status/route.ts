@@ -4,6 +4,7 @@ import { getActiveConnection, getLastSyncJob, revokeConnection } from '@/lib/gma
 import { decryptSecret } from '@/lib/gmail/token-crypto';
 import { revokeRefreshToken } from '@/lib/gmail/oauth';
 import { requireOrgAdmin } from '@/lib/server-auth';
+import { getPublicServiceErrorMessage } from '@/lib/supabase-admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -36,8 +37,8 @@ export async function GET(req: NextRequest) {
         : null,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Error';
-    console.error('[gmail/status]', message, error);
+    const message = getPublicServiceErrorMessage(error);
+    console.error('[gmail/status]', error);
     const status = message === 'No autorizado' ? 401 : 500;
     return NextResponse.json({ error: message }, { status });
   }
@@ -63,8 +64,8 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Error';
-    console.error('[gmail/status]', message, error);
+    const message = getPublicServiceErrorMessage(error);
+    console.error('[gmail/status]', error);
     const status = message === 'No autorizado' ? 401 : 500;
     return NextResponse.json({ error: message }, { status });
   }

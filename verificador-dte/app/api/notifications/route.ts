@@ -160,7 +160,7 @@ export async function GET(req: NextRequest) {
     console.error('Error obteniendo notificaciones:', error);
 
     return NextResponse.json(
-      { error: error.message || 'Error interno' },
+      { error: 'No se pudieron cargar las notificaciones.' },
       { status: 500 }
     );
   }

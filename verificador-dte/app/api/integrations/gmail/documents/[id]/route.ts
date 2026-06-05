@@ -6,6 +6,7 @@ import {
 } from '@/lib/gmail/db';
 import { buildHaciendaPublicUrl } from '@/lib/gmail/hacienda-url';
 import { requireOrgMember } from '@/lib/server-auth';
+import { getPublicServiceErrorMessage } from '@/lib/supabase-admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -41,7 +42,8 @@ export async function GET(req: NextRequest, context: RouteContext) {
 
     return NextResponse.json({ document, jsonUrl, haciendaUrl });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Error';
+    const message = getPublicServiceErrorMessage(error);
+    console.error('[gmail/documents/id]', error);
     const status = message === 'No autorizado' ? 401 : 500;
     return NextResponse.json({ error: message }, { status });
   }
