@@ -61,7 +61,7 @@ export default function Page() {
   const [search, setSearch] = useState('');
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
-  const [enrichCreditNotes, setEnrichCreditNotes] = useState(false);
+  const [enrichCreditNotes, setEnrichCreditNotes] = useState(true);
   const [progressDone, setProgressDone] = useState(0);
   const [progressTotal, setProgressTotal] = useState(0);
   const { resultsVisible, resetResultsVisibility, onResultsReveal } = useUploadResultsReveal();
@@ -392,6 +392,7 @@ export default function Page() {
                 checked={enrichCreditNotes}
                 onCheckedChange={setEnrichCreditNotes}
                 aria-label="Verificar notas de crédito relacionadas"
+                disabled
               />
               Verificar notas de crédito relacionadas
             </label>

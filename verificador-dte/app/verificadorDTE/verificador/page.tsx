@@ -17,6 +17,7 @@ import UploadTemplateDownloadButton from '@/components/upload/UploadTemplateDown
 import { useUploadResultsReveal } from '@/components/upload/useUploadResultsReveal'
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
 import { recordProcessingLog } from '@/lib/client-processing-log'
 import { summarizeFiles, summarizeResults } from '@/lib/processing-log'
 import { summarizeDteUploadResults } from '@/lib/upload-dte-stats'
@@ -91,6 +92,7 @@ export default function HomePage() {
   const [data, setData] = useState<Resultado[]>([])
   const [downloadHref, setDownloadHref] = useState<string | null>(null)
   const [filename, setFilename] = useState('resultados_dtes.xlsx')
+  const [enrichCreditNotes, setEnrichCreditNotes] = useState(true)
 
   // 🔎 UIX: búsqueda & paginación
   const [search, setSearch] = useState('')
@@ -121,6 +123,7 @@ export default function HomePage() {
     try {
       const fd = new FormData()
       selectedFiles.forEach((f) => fd.append('files', f))
+      fd.append('enrichCreditNotes', String(enrichCreditNotes))
 
       const res = await fetch('/api/procesar', { method: 'POST', body: fd })
       if (!res.ok) {
@@ -290,7 +293,17 @@ export default function HomePage() {
                   Revisa el estado de cada DTE, usa el buscador para ubicar códigos o números de control y abre el enlace de la columna Visitar cuando necesites validar el documento en Hacienda.
                 </UploadTableHints>
               }
-            />
+            >
+              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Switch
+                  checked={enrichCreditNotes}
+                  onCheckedChange={setEnrichCreditNotes}
+                  aria-label="Verificar notas de credito relacionadas"
+                  disabled
+                />
+                Verificar notas de credito relacionadas
+              </label>
+            </UploadFormSection>
 
             </UploadFormAccordion>
           </form>

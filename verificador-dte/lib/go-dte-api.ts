@@ -96,7 +96,7 @@ export async function processDteViaGo(
       ambiente: options?.ambiente ?? '01',
       concurrencia: options?.concurrencia ?? DEFAULT_CONCURRENCY,
       includeExcel: options?.includeExcel ?? false,
-      enrichCreditNotes: options?.enrichCreditNotes ?? false,
+      enrichCreditNotes: true,
       async: options?.async ?? false,
     }),
   });

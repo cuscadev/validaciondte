@@ -16,6 +16,7 @@ import {
 import { useUploadResultsReveal } from '@/components/upload/useUploadResultsReveal'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, ExternalLink } from 'lucide-react'
@@ -64,6 +65,7 @@ export default function ConsultarJsonPage() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<Resultado[]>([])
+  const [enrichCreditNotes, setEnrichCreditNotes] = useState(true)
 
   // UIX
   const [search, setSearch] = useState('')
@@ -92,6 +94,7 @@ export default function ConsultarJsonPage() {
     try {
       const fd = new FormData()
       selectedFiles.forEach(f => fd.append('files', f))
+      fd.append('enrichCreditNotes', String(enrichCreditNotes))
 
       const res = await fetch('/api/verificararchjson', { method: 'POST', body: fd })
       if (!res.ok) {
@@ -190,7 +193,17 @@ export default function ConsultarJsonPage() {
               loadingLabel={t('consultarjson_verificando')}
               submitClassName="w-full sm:w-auto"
               accept={{ 'application/json': ['.json'] }}
-            />
+            >
+              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Switch
+                  checked={enrichCreditNotes}
+                  onCheckedChange={setEnrichCreditNotes}
+                  aria-label="Verificar notas de credito relacionadas"
+                  disabled
+                />
+                Verificar notas de credito relacionadas
+              </label>
+            </UploadFormSection>
 
             </UploadFormAccordion>
           </form>

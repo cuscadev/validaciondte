@@ -196,7 +196,7 @@ export async function POST(req: NextRequest, context: Params) {
     if (filas.length) {
       const goResp = await consultCodFechaViaGo(
         filas.map((f) => ({ codGen: f.codGen, fechaYmd: f.fechaYmd })),
-        { concurrencia: DEFAULT_CONCURRENCY, enrichCreditNotes: false },
+        { concurrencia: DEFAULT_CONCURRENCY, enrichCreditNotes: true },
       );
       consultados = goResp.resultados;
     }

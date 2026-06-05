@@ -47,11 +47,9 @@ func (s *Service) ProcessCodFecha(c *fiber.Ctx) (shared.ProcessResponse, error) 
 		)
 	}
 
-	results := shared.ProcessLinkEntriesWithOptions(
-		c.Context(),
-		entries,
-		shared.BatchOptionsFromConfig(s.cfg, s.cfg.Concurrency),
-	)
+	opts := shared.BatchOptionsFromConfig(s.cfg, s.cfg.Concurrency)
+	opts.EnrichCreditNotes = true
+	results := shared.ProcessLinkEntriesWithOptions(c.Context(), entries, opts)
 	results = append(fileErrors, results...)
 	resp, err := buildResponse(results, true)
 	if err != nil {
@@ -80,11 +78,9 @@ func (s *Service) Process(c *fiber.Ctx) (shared.ProcessResponse, error) {
 		return shared.ProcessResponse{}, errors.New("no se encontraron URLs validas en los archivos")
 	}
 
-	results := shared.ProcessLinkEntriesWithOptions(
-		c.Context(),
-		entries,
-		shared.BatchOptionsFromConfig(s.cfg, s.cfg.Concurrency),
-	)
+	opts := shared.BatchOptionsFromConfig(s.cfg, s.cfg.Concurrency)
+	opts.EnrichCreditNotes = true
+	results := shared.ProcessLinkEntriesWithOptions(c.Context(), entries, opts)
 	results = append(fileErrors, results...)
 	return buildResponse(results, true)
 }

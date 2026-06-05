@@ -204,6 +204,7 @@ export async function POST(req: NextRequest, context: Params) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
     activeIdentity = identity;
+    await req.json().catch(() => ({}));
 
     const { batchId } = await context.params;
     batchRef = adminDb.collection('mobileScanBatches').doc(batchId);
@@ -254,7 +255,7 @@ export async function POST(req: NextRequest, context: Params) {
     if (filas.length) {
       const goResp = await consultCodFechaViaGo(
         filas.map((f) => ({ codGen: f.codGen, fechaYmd: f.fechaYmd })),
-        { concurrencia: DEFAULT_CONCURRENCY, enrichCreditNotes: false },
+        { concurrencia: DEFAULT_CONCURRENCY, enrichCreditNotes: true },
       );
       consultados = goResp.resultados;
     }

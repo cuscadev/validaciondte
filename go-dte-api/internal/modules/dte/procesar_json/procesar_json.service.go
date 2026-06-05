@@ -86,7 +86,9 @@ func (s *Service) ProcessFiles(c *fiber.Ctx) (shared.ProcessResponse, error) {
 		})
 	}
 
-	results := shared.ProcessLinkEntriesWithOptions(c.Context(), links, shared.BatchOptionsFromConfig(s.cfg, s.cfg.Concurrency))
+	opts := shared.BatchOptionsFromConfig(s.cfg, s.cfg.Concurrency)
+	opts.EnrichCreditNotes = true
+	results := shared.ProcessLinkEntriesWithOptions(c.Context(), links, opts)
 	for idx := range results {
 		key := shared.ResultLookupKey(results[idx].CodGen, results[idx].FechaEmi)
 		if extra, ok := extrasByKey[key]; ok {
@@ -150,7 +152,7 @@ func (s *Service) Process(ctx context.Context, req dto.ProcessJSONRequest) (shar
 		links = append(links, shared.BuildConsultaURL(item.codGen, item.fechaYMD, ambiente))
 	}
 
-	enrichNC := req.EnrichCreditNotes
+	enrichNC := true
 	if shouldAsyncBatch(s.cfg, req.Async, len(links)) {
 		jobID, err := shared.EnqueueBatchJob(shared.BatchJobPayload{
 			Links:             links,

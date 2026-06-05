@@ -15,6 +15,7 @@ import UploadTableHints from '@/components/upload/UploadTableHints'
 import { useUploadResultsReveal } from '@/components/upload/useUploadResultsReveal'
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
 import { recordProcessingLog } from '@/lib/client-processing-log'
 import { summarizeFiles, summarizeResults } from '@/lib/processing-log'
 import { summarizeDteUploadResults } from '@/lib/upload-dte-stats'
@@ -49,6 +50,14 @@ type Resultado = {
   totalPagarOperacion?: string
   otrosTributos?: string
   documentoAjustado?: string
+  relacionadosTexto?: string
+  tieneNotaCredito?: boolean
+  notaCreditoCodigoGeneracion?: string
+  notaCreditoFechaGeneracion?: string
+  notaCreditoFechaEmi?: string
+  notaCreditoSelloRecepcion?: string
+  notaCreditoEstado?: string
+  notaCreditoLinkVisita?: string
   error?: string
   linkVisita?: string
   visitar?: string
@@ -91,6 +100,7 @@ export default function Page() {
   const [data, setData] = useState<Resultado[]>([])
   const [downloadHref, setDownloadHref] = useState<string | null>(null)
   const [filename, setFilename] = useState('verificacion_json.xlsx')
+  const [enrichCreditNotes, setEnrichCreditNotes] = useState(true)
 
   // búsqueda & paginación
   const [search, setSearch] = useState('')
@@ -129,6 +139,7 @@ export default function Page() {
 
         const fd = new FormData()
         batch.forEach((f) => fd.append('files', f))
+        fd.append('enrichCreditNotes', String(enrichCreditNotes))
 
         const res = await fetch('/api/verificararchjson', { method: 'POST', body: fd })
         if (!res.ok) {
@@ -238,6 +249,14 @@ export default function Page() {
 
     // Totales / error
     { key: 'montoTotal', label: 'Monto Total' },
+    { key: 'tieneNotaCredito', label: 'Tiene NC' },
+    { key: 'notaCreditoCodigoGeneracion', label: 'Codigo NC' },
+    { key: 'notaCreditoFechaGeneracion', label: 'Fecha NC' },
+    { key: 'notaCreditoFechaEmi', label: 'Fecha Emi NC' },
+    { key: 'notaCreditoSelloRecepcion', label: 'Sello NC' },
+    { key: 'notaCreditoEstado', label: 'Estado NC' },
+    { key: 'notaCreditoLinkVisita', label: 'Abrir NC' },
+    { key: 'relacionadosTexto', label: 'Docs. Relacionados' },
     { key: 'error', label: 'Error' },
 
     // Link
@@ -252,7 +271,9 @@ export default function Page() {
       const direccion = [r.receptorDepartamento, r.receptorMunicipio, r.receptorComplemento].filter(Boolean).join(' ')
       const campos = [
         r.nombreArchivo, r.codGen, r.fechaEmi, r.estado, r.descripcionEstado, r.tipoDte, r.numeroControl, r.montoTotal,
-        r.linkVisita, r.url,
+        r.linkVisita, r.url, r.relacionadosTexto, r.notaCreditoEstado,
+        r.notaCreditoCodigoGeneracion, r.notaCreditoFechaGeneracion,
+        r.notaCreditoFechaEmi, r.notaCreditoSelloRecepcion,
         r.emisorNit, r.emisorNrc, r.emisorNombre, r.emisorNombreComercial, r.emisorCodActividad, r.emisorDescActividad, r.emisorTelefono, r.emisorCorreo,
         r.receptorNit, r.receptorNrc, r.receptorNombre, r.receptorNombreComercial, r.receptorCodActividad, r.receptorDescActividad, r.receptorTelefono, r.receptorCorreo, direccion
       ]
@@ -323,7 +344,17 @@ export default function Page() {
                   Verifica el estado del documento y contrasta los datos de emisor y receptor extraídos del JSON. Usa el buscador para encontrar códigos, nombres, NIT/NRC o correos.
                 </UploadTableHints>
               }
-            />
+            >
+              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Switch
+                  checked={enrichCreditNotes}
+                  onCheckedChange={setEnrichCreditNotes}
+                  aria-label="Verificar notas de credito relacionadas"
+                  disabled
+                />
+                Verificar notas de credito relacionadas
+              </label>
+            </UploadFormSection>
 
             </UploadFormAccordion>
           </form>
@@ -409,15 +440,21 @@ export default function Page() {
                       className="hover:bg-muted/40 transition-colors"
                     >
                       {columnas.map(col => {
-                        const isEstado = col.key === 'estado'
+                        const isEstado = col.key === 'estado' || col.key === 'notaCreditoEstado'
                         const isVisitar = col.key === 'visitar'
+                        const isNotaCreditoLink = col.key === 'notaCreditoLinkVisita'
+                        const isBool = col.key === 'tieneNotaCredito'
                         const isDireccion = col.key === 'receptorDireccion'
+                        const isLongText = col.key === 'relacionadosTexto' || col.key === 'descripcionEstado'
                         const v = isDireccion
                           ? [r.receptorDepartamento, r.receptorMunicipio, r.receptorComplemento].filter(Boolean).join(' / ')
                           : (r as Record<string, unknown>)[col.key] ?? ''
 
                         return (
-                          <td key={col.key as string} className="p-2 align-top whitespace-nowrap">
+                          <td
+                            key={col.key as string}
+                            className={`p-2 align-top ${isLongText ? 'max-w-xs whitespace-normal break-words' : 'whitespace-nowrap'}`}
+                          >
                             {isEstado ? (
                               <span className={`px-2 py-0.5 rounded-full text-xs ${estadoPill(String(v))}`}>
                                 {String(v || '')}
@@ -436,6 +473,22 @@ export default function Page() {
                               ) : (
                                 ''
                               )
+                            ) : isNotaCreditoLink ? (
+                              r.notaCreditoLinkVisita ? (
+                                <a
+                                  href={r.notaCreditoLinkVisita}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center rounded-md px-2 py-1 border text-xs font-medium hover:bg-primary hover:text-primary-foreground transition-colors"
+                                  title="Abrir nota de credito en Hacienda"
+                                >
+                                  Abrir NC
+                                </a>
+                              ) : (
+                                ''
+                              )
+                            ) : isBool ? (
+                              v === true || v === 'true' ? 'Si' : v === false || v === 'false' ? 'No' : String(v || '')
                             ) : (
                               String(v || '')
                             )}

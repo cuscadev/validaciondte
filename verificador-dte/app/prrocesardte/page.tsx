@@ -4,6 +4,7 @@
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { Switch } from '@/components/ui/switch';
 
 type Item = { numItem: number; codGen: string; fechaEmi: string };
 
@@ -15,6 +16,10 @@ type Resultado = {
   linkVisita?: string;
   codigoGeneracion?: string;
   numeroControl?: string;
+  tieneNotaCredito?: boolean;
+  notaCreditoCodigoGeneracion?: string;
+  notaCreditoEstado?: string;
+  notaCreditoLinkVisita?: string;
   error?: string;
 };
 
@@ -134,6 +139,7 @@ export default function Page() {
   const [loading, setLoading] = useState(false);
   const [resultados, setResultados] = useState<Record<number, Resultado>>({});
   const [ambiente, setAmbiente] = useState<'00' | '01'>('01');
+  const [enrichCreditNotes, setEnrichCreditNotes] = useState(true);
   const [errorGlobal, setErrorGlobal] = useState<string | null>(null);
   const [excelInfo, setExcelInfo] = useState<{ url?: string; base64?: string; name?: string } | null>(null);
 
@@ -248,6 +254,7 @@ export default function Page() {
           concurrencia: 8,
           ambiente,
           includeExcel: true, // Pedir Excel al backend
+          enrichCreditNotes,
         }),
       });
 
@@ -264,6 +271,10 @@ export default function Page() {
           linkVisita: r?.linkVisita,
           codigoGeneracion: r?.codigoGeneracion,
           numeroControl: r?.numeroControl,
+          tieneNotaCredito: r?.tieneNotaCredito,
+          notaCreditoCodigoGeneracion: r?.notaCreditoCodigoGeneracion,
+          notaCreditoEstado: r?.notaCreditoEstado,
+          notaCreditoLinkVisita: r?.notaCreditoLinkVisita,
           error: r?.error,
         };
       });
@@ -408,6 +419,16 @@ export default function Page() {
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
+          <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+            <Switch
+              checked={enrichCreditNotes}
+              onCheckedChange={setEnrichCreditNotes}
+              aria-label="Verificar notas de credito relacionadas"
+              disabled
+            />
+            Verificar notas de credito relacionadas
+          </label>
+
           <button
             type="button"
             onClick={validar}
@@ -443,6 +464,10 @@ export default function Page() {
                 <th className="text-center border px-3 py-2 border-gray-200 dark:border-gray-700">{t('prrocesardte_descripcion')}</th>
                 <th className="text-center border px-3 py-2 border-gray-200 dark:border-gray-700">{t('prrocesardte_codigo')}</th>
                 <th className="text-center border px-3 py-2 border-gray-200 dark:border-gray-700">{t('prrocesardte_control')}</th>
+                <th className="text-center border px-3 py-2 border-gray-200 dark:border-gray-700">Tiene NC</th>
+                <th className="text-center border px-3 py-2 border-gray-200 dark:border-gray-700">Codigo NC</th>
+                <th className="text-center border px-3 py-2 border-gray-200 dark:border-gray-700">Estado NC</th>
+                <th className="text-center border px-3 py-2 border-gray-200 dark:border-gray-700">Abrir NC</th>
                 <th className="text-center border px-3 py-2 border-gray-200 dark:border-gray-700">{t('prrocesardte_abrir')}</th>
               </tr>
             </thead>
@@ -485,6 +510,29 @@ export default function Page() {
                     </td>
                     <td className="border px-2 py-1 border-gray-200 dark:border-gray-700">
                       {r?.numeroControl || '-'}
+                    </td>
+                    <td className="border px-2 py-1 border-gray-200 dark:border-gray-700">
+                      {r?.tieneNotaCredito === true ? 'Si' : r?.tieneNotaCredito === false ? 'No' : '-'}
+                    </td>
+                    <td className="border px-2 py-1 border-gray-200 dark:border-gray-700">
+                      {r?.notaCreditoCodigoGeneracion || '-'}
+                    </td>
+                    <td className="border px-2 py-1 border-gray-200 dark:border-gray-700">
+                      {r?.notaCreditoEstado || '-'}
+                    </td>
+                    <td className="border px-2 py-1 text-center border-gray-200 dark:border-gray-700">
+                      {r?.notaCreditoLinkVisita ? (
+                        <a
+                          href={r.notaCreditoLinkVisita}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-blue-600 dark:text-blue-400 underline"
+                        >
+                          Abrir NC
+                        </a>
+                      ) : (
+                        <span>-</span>
+                      )}
                     </td>
                     <td className="border px-2 py-1 text-center border-gray-200 dark:border-gray-700">
                       {r?.linkVisita ? (

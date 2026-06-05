@@ -16,6 +16,7 @@ import {
 import { useAuth } from '@/components/AuthProvider';
 import { db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import {
   Card,
   CardContent,
@@ -115,6 +116,7 @@ export default function EscaneosMobilePage() {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [clearingId, setClearingId] = useState<string | null>(null);
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
+  const [enrichCreditNotes, setEnrichCreditNotes] = useState(true);
 
   const folders = session?.folders || [];
   const totalScans = useMemo(
@@ -240,7 +242,7 @@ export default function EscaneosMobilePage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ folderId }),
+        body: JSON.stringify({ folderId, enrichCreditNotes }),
       });
       const data = await res.json();
 
@@ -318,14 +320,25 @@ export default function EscaneosMobilePage() {
               <div className="mt-1 text-2xl font-bold">{totalScans}</div>
             </div>
             <div className="flex items-end justify-start md:justify-end">
-              <Button
-                variant="outline"
-                disabled={!session?.id || clearingId === 'all' || folders.length === 0 || !!processingId}
-                onClick={() => clearFolder(undefined, true)}
-              >
-                {clearingId === 'all' ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
-                Limpiar todas
-              </Button>
+              <div className="flex flex-wrap items-center justify-start gap-3 md:justify-end">
+                <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Switch
+                    checked={enrichCreditNotes}
+                    onCheckedChange={setEnrichCreditNotes}
+                    aria-label="Verificar notas de credito relacionadas"
+                    disabled
+                  />
+                  Verificar notas de credito relacionadas
+                </label>
+                <Button
+                  variant="outline"
+                  disabled={!session?.id || clearingId === 'all' || folders.length === 0 || !!processingId}
+                  onClick={() => clearFolder(undefined, true)}
+                >
+                  {clearingId === 'all' ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+                  Limpiar todas
+                </Button>
+              </div>
             </div>
           </section>
 
