@@ -33,7 +33,7 @@ const structuredData = {
 	name: 'Kaiser DTE',
 	applicationCategory: 'BusinessApplication',
 	operatingSystem: 'Web',
-	url: 'https://verificadordte.cuscadev.com',
+	url: 'https://verificadordtev2.cuscadev.com',
 	description:
 		'Plataforma web para verificar, validar y gestionar Documentos Tributarios Electronicos DTE en El Salvador.',
 	offers: {
@@ -48,7 +48,7 @@ const structuredData = {
 	publisher: {
 		'@type': 'Organization',
 		name: 'Kaiser DTE',
-		url: 'https://verificadordte.cuscadev.com',
+		url: 'https://verificadordtev2.cuscadev.com',
 	},
 };
 

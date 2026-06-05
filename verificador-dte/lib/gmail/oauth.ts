@@ -23,7 +23,7 @@ function getOAuthConfig() {
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
   const redirectUri =
     process.env.GOOGLE_OAUTH_REDIRECT_URI?.trim() ||
-    `${process.env.NEXT_PUBLIC_APP_URL || 'https://verificadordte.cuscadev.com'}/api/integrations/gmail/callback`;
+    `${process.env.NEXT_PUBLIC_APP_URL || 'https://verificadordtev2.cuscadev.com'}/api/integrations/gmail/callback`;
 
   if (!clientId || !clientSecret) {
     throw new Error('Google OAuth no configurado (GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET).');

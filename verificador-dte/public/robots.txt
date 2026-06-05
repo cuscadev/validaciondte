@@ -33,7 +33,7 @@ Disallow: /usuarios
 Disallow: /verificadorDTE
 
 # Host
-Host: https://verificadordte.cuscadev.com
+Host: https://verificadordtev2.cuscadev.com
 
 # Sitemaps
-Sitemap: https://verificadordte.cuscadev.com/sitemap.xml
+Sitemap: https://verificadordtev2.cuscadev.com/sitemap.xml

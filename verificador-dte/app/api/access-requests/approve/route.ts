@@ -11,7 +11,7 @@ function getAppBaseUrl() {
   const configured = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL;
   if (configured) return configured.replace(/\/$/, '');
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  return 'https://verificadordte.cuscadev.com';
+  return 'https://verificadordtev2.cuscadev.com';
 }
 
 export async function POST(req: NextRequest) {

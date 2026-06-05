@@ -7,7 +7,7 @@ Documento operativo para asistentes de IA y desarrolladores. Para dominio de pro
 - **Producto:** Kaiser DTE — verificación y gestión de documentos tributarios electrónicos (DTE) en El Salvador.
 - **Repositorio:** `verificador-dte` (Next.js, privado).
 - **Usuarios:** contadores, empresas, equipos de auditoría tributaria.
-- **Producción:** `https://verificadordte.cuscadev.com` (ver `app/layout.tsx` metadata).
+- **Producción:** `https://verificadordtev2.cuscadev.com` (ver `app/layout.tsx` metadata).
 
 ## Stack
 

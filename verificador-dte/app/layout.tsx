@@ -4,7 +4,7 @@ import AppShell from '@/components/AppShell';
 import { getAppFontConfig } from '@/lib/fonts/app-font';
 
 export const metadata: Metadata = {
-	metadataBase: new URL('https://verificadordte.cuscadev.com'),
+	metadataBase: new URL('https://verificadordtev2.cuscadev.com'),
 	title: {
 		default: 'Kaiser DTE | Verificación y gestión de DTE en El Salvador',
 		template: '%s | Kaiser DTE',
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
 		title: 'Kaiser DTE | Verificación y gestión de DTE',
 		description:
 			'Verifica y gestiona documentos tributarios electrónicos en El Salvador desde una plataforma segura.',
-		url: 'https://verificadordte.cuscadev.com',
+		url: 'https://verificadordtev2.cuscadev.com',
 		siteName: 'Kaiser DTE',
 		images: [
 			{

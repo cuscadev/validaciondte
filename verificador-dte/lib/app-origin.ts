@@ -36,7 +36,7 @@ export function resolveReturnOrigin(
 export function resolveGmailOAuthRedirectUri(appOrigin: string): string {
   const configured =
     process.env.GOOGLE_OAUTH_REDIRECT_URI?.trim() ||
-    `${process.env.NEXT_PUBLIC_APP_URL || 'https://verificadordte.cuscadev.com'}/api/integrations/gmail/callback`;
+    `${process.env.NEXT_PUBLIC_APP_URL || 'https://verificadordtev2.cuscadev.com'}/api/integrations/gmail/callback`;
 
   if (!isAllowedAppOrigin(appOrigin)) return configured;
 
