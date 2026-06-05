@@ -42,6 +42,7 @@ import {
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { consumeVerifyBatch } from '@/lib/gmail/verification-bridge';
+import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
 
 type Item = { numItem: number; codGen: string; fechaEmi: string };
@@ -50,6 +51,9 @@ const MAX_ITEMS = 10;
 
 export default function Page() {
   const { t } = useTranslation();
+  const { appUser, firebaseUser } = useAuth();
+  const createdBy =
+    appUser?.displayName || appUser?.email || firebaseUser?.displayName || firebaseUser?.email || 'Usuario';
   const [items, setItems] = useState<Item[]>([{ numItem: 1, codGen: '', fechaEmi: '' }]);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<DteResultRow[]>([]);
@@ -418,7 +422,11 @@ export default function Page() {
                   exportPdfByProfile(
                     data as Record<string, unknown>[],
                     'verificador',
-                    buildExportFilename('verificacion_individual', 'pdf')
+                    buildExportFilename('verificacion_individual', 'pdf'),
+                    {
+                      title: 'Reporte de verificacion individual',
+                      createdBy,
+                    }
                   ),
               },
             }}

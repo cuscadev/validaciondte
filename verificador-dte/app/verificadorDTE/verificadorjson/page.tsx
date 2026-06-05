@@ -13,6 +13,7 @@ import {
 } from '@/lib/upload-table-export'
 import UploadTableHints from '@/components/upload/UploadTableHints'
 import { useUploadResultsReveal } from '@/components/upload/useUploadResultsReveal'
+import { useAuth } from '@/components/AuthProvider'
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { recordProcessingLog } from '@/lib/client-processing-log'
@@ -94,6 +95,9 @@ function chunkFiles(files: File[], size: number) {
 }
 
 export default function Page() {
+  const { appUser, firebaseUser } = useAuth()
+  const createdBy =
+    appUser?.displayName || appUser?.email || firebaseUser?.displayName || firebaseUser?.email || 'Usuario'
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<Resultado[]>([])
@@ -367,7 +371,11 @@ export default function Page() {
                   exportPdfByProfile(
                     data as Record<string, unknown>[],
                     'verificador',
-                    buildExportFilename('verificacion_json', 'pdf')
+                    buildExportFilename('verificacion_json', 'pdf'),
+                    {
+                      title: 'Reporte de verificacion JSON',
+                      createdBy,
+                    }
                   ),
               },
             }}

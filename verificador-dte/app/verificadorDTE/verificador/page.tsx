@@ -15,6 +15,7 @@ import UploadTableHints from '@/components/upload/UploadTableHints'
 import HelpTooltip from '@/components/upload/HelpTooltip'
 import UploadTemplateDownloadButton from '@/components/upload/UploadTemplateDownloadButton'
 import { useUploadResultsReveal } from '@/components/upload/useUploadResultsReveal'
+import { useAuth } from '@/components/AuthProvider'
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { recordProcessingLog } from '@/lib/client-processing-log'
@@ -86,6 +87,9 @@ type Resultado = {
 }
 
 export default function HomePage() {
+  const { appUser, firebaseUser } = useAuth()
+  const createdBy =
+    appUser?.displayName || appUser?.email || firebaseUser?.displayName || firebaseUser?.email || 'Usuario'
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<Resultado[]>([])
@@ -316,7 +320,11 @@ export default function HomePage() {
                   exportPdfByProfile(
                     data as Record<string, unknown>[],
                     'verificador',
-                    buildExportFilename('resultados_dtes', 'pdf')
+                    buildExportFilename('resultados_dtes', 'pdf'),
+                    {
+                      title: 'Reporte de verificacion DTE',
+                      createdBy,
+                    }
                   ),
               },
             }}
