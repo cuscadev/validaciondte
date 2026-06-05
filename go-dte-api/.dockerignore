@@ -1,0 +1,17 @@
+.env
+.env.*
+env
+
+.git
+.gitignore
+
+bin/
+dist/
+tmp/
+coverage/
+*.test
+*.out
+
+Dockerfile
+render.yaml
+README.md

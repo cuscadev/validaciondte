@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: go-dte-api
+    runtime: docker
+    rootDir: go-dte-api
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: "8081"
+      - key: GO_DTE_CONCURRENCY
+        value: "8"
+      - key: GO_DTE_RATE_LIMIT_PER_SEC
+        value: "10"
+      - key: HACIENDA_ENV
+        value: "prod"
