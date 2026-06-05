@@ -2,6 +2,8 @@
 import { adminDb } from '@/lib/firebase-admin';
 import { requireAuth } from '@/lib/server-auth';
 import { consultCodFechaViaGo, DEFAULT_CONCURRENCY } from '@/lib/go-dte-api';
+import { recordServerProcessingLog } from '@/lib/server-processing-log';
+import { summarizeResults } from '@/lib/processing-log';
 import {
   buildWorkbook,
   isProbableCodGen,
@@ -121,9 +123,13 @@ export async function POST(req: NextRequest, context: Params) {
   let activeSessionRef: FirebaseFirestore.DocumentReference | null = null;
   let activeFolderId = '';
   let processingStarted = false;
+  let activeIdentity: Awaited<ReturnType<typeof requireAuth>> | null = null;
+  let startedAt = new Date();
+  let scanCount = 0;
 
   try {
     const identity = await requireAuth(req);
+    activeIdentity = identity;
     const { sessionId } = await context.params;
     const { folderId } = await req.json();
     activeFolderId = folderId;
@@ -164,6 +170,8 @@ export async function POST(req: NextRequest, context: Params) {
       return { folder, scans };
     });
     processingStarted = true;
+    startedAt = new Date();
+    scanCount = scans.length;
 
     const filas = [];
     const invalidos = [];
@@ -217,6 +225,25 @@ export async function POST(req: NextRequest, context: Params) {
       updatedAt: new Date(),
     });
 
+    const endedAt = new Date();
+    await recordServerProcessingLog(req, identity, {
+      routeKey: 'escaneos-mobile',
+      moduleName: 'Escaneos Mobile',
+      source: 'mobile-scans',
+      startedAt: startedAt.toISOString(),
+      endedAt: endedAt.toISOString(),
+      durationMs: endedAt.getTime() - startedAt.getTime(),
+      files: {
+        count: 0,
+        totalBytes: 0,
+        extensions: [],
+        mimeTypes: [],
+      },
+      ...summarizeResults(results as Array<{ estado?: string; error?: string }>),
+    }).catch((logError) => {
+      console.error('[api/mobile-scan-sessions/process] Error saving processing log', logError);
+    });
+
     return NextResponse.json({
       success: true,
       results,
@@ -241,6 +268,32 @@ export async function POST(req: NextRequest, context: Params) {
     }
 
     const message = error instanceof Error ? error.message : 'Error interno';
+    if (processingStarted && activeIdentity) {
+      const endedAt = new Date();
+      await recordServerProcessingLog(req, activeIdentity, {
+        routeKey: 'escaneos-mobile',
+        moduleName: 'Escaneos Mobile',
+        source: 'mobile-scans',
+        startedAt: startedAt.toISOString(),
+        endedAt: endedAt.toISOString(),
+        durationMs: endedAt.getTime() - startedAt.getTime(),
+        files: {
+          count: 0,
+          totalBytes: 0,
+          extensions: [],
+          mimeTypes: [],
+        },
+        totalRecords: scanCount,
+        successCount: 0,
+        errorCount: scanCount || 1,
+        statusBreakdown: { ERROR: scanCount || 1 },
+        outcome: 'error',
+        errorMessage: message,
+      }).catch((logError) => {
+        console.error('[api/mobile-scan-sessions/process] Error saving error log', logError);
+      });
+    }
+
     const status = message.includes('procesandose') ? 409 : 500;
 
     return NextResponse.json(
