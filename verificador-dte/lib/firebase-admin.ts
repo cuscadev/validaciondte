@@ -38,16 +38,48 @@ function normalizePrivateKey(value: string) {
   return normalized;
 }
 
+function parseServiceAccountJson(value: string) {
+  const candidates = [value.trim()];
+
+  try {
+    candidates.push(Buffer.from(value.trim(), 'base64').toString('utf8').trim());
+  } catch {
+    // The plain JSON candidate below will report the actual parse error.
+  }
+
+  let lastError: unknown;
+
+  for (const candidate of candidates) {
+    if (!candidate || (!candidate.startsWith('{') && !candidate.endsWith('}'))) {
+      continue;
+    }
+
+    try {
+      return JSON.parse(candidate) as {
+        project_id?: string;
+        client_email?: string;
+        private_key?: string;
+      };
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  if (lastError instanceof Error) {
+    throw lastError;
+  }
+
+  throw new Error(
+    'El valor debe ser el JSON completo de la cuenta de servicio, incluyendo las llaves { } inicial y final.'
+  );
+}
+
 function getServiceAccountCredentials(): FirebaseAdminCredentials {
   const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
 
   if (serviceAccountJson && serviceAccountJson !== '{}') {
     try {
-      const credentials = JSON.parse(serviceAccountJson) as {
-        project_id?: string;
-        client_email?: string;
-        private_key?: string;
-      };
+      const credentials = parseServiceAccountJson(serviceAccountJson);
 
       if (!credentials.project_id || !credentials.client_email || !credentials.private_key) {
         throw new Error('El JSON no contiene project_id, client_email y private_key.');

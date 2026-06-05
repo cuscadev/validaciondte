@@ -1,5 +1,8 @@
 const siteUrl =
-	process.env.NEXT_PUBLIC_APP_URL || 'https://verificadordte.cuscadev.com';
+	process.env.NEXT_PUBLIC_APP_URL &&
+	!process.env.NEXT_PUBLIC_APP_URL.includes('localhost')
+		? process.env.NEXT_PUBLIC_APP_URL
+		: 'https://verificadordte.cuscadev.com';
 
 const indexablePaths = new Set([
 	'/',
