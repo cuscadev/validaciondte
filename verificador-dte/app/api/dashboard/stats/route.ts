@@ -345,7 +345,16 @@ async function fetchUserStats(
     ...(ownerSnap.exists ? [ownerSnap.data()!] : []),
     ...collaborators,
   ];
-  const counts = countUsersByStatus(members);
+  const counts = countUsersByStatus(
+    members.map((member) => {
+      const record = member as Record<string, unknown>;
+      return {
+        accountStatus:
+          typeof record.accountStatus === 'string' ? record.accountStatus : undefined,
+        disabled: record.disabled === true,
+      };
+    })
+  );
 
   return {
     ...counts,

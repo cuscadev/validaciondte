@@ -1,5 +1,4 @@
 import { createHash } from 'crypto';
-import type { OAuth2Client } from 'google-auth-library';
 import { google, gmail_v1 } from 'googleapis';
 
 import { createOAuth2Client, refreshAccessToken } from '@/lib/gmail/oauth';
@@ -175,7 +174,9 @@ export async function downloadAttachment(
   return Buffer.from(data, 'base64url');
 }
 
-export async function fetchGoogleEmailFromOAuth(oauth2: OAuth2Client): Promise<string> {
+export async function fetchGoogleEmailFromOAuth(
+  oauth2: ReturnType<typeof createOAuth2Client>
+): Promise<string> {
   const oauth2api = google.oauth2({ version: 'v2', auth: oauth2 });
   const { data } = await oauth2api.userinfo.get();
   const email = data.email?.trim();

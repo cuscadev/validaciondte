@@ -1,11 +1,13 @@
 const GO_DTE_API_LOCAL = 'http://127.0.0.1:8081';
-const GO_DTE_API_RENDER = 'https://validaciondte.onrender.com';
+const GO_DTE_API_RENDER = 'https://verificador-api-dte.cuscadev.com';
 
 export const DEFAULT_CONCURRENCY = Number(process.env.GO_DTE_DEFAULT_CONCURRENCY ?? 8);
 
 /** URL base del microservicio Go (sin barra final). */
 export function getGoDteApiUrl(): string {
-  const explicit = process.env.GO_DTE_API_URL?.trim();
+  const explicit =
+    process.env.GO_DTE_API_URL?.trim() ||
+    process.env.NEXT_PUBLIC_GO_DTE_API_URL?.trim();
   if (explicit) {
     return explicit.replace(/\/$/, '');
   }
@@ -145,7 +147,7 @@ export async function proxyMultipartToGo(
   return fetch(`${getGoDteApiUrl()}${path}`, {
     method: 'POST',
     headers: { 'content-type': contentType },
-    body,
+    body: new Uint8Array(body),
   });
 }
-
+

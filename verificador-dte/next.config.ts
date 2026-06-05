@@ -1,6 +1,11 @@
 // next.config.ts
 import type { NextConfig } from "next";
 
+const goDteApiUrl =
+  process.env.GO_DTE_API_URL?.trim() ||
+  process.env.NEXT_PUBLIC_GO_DTE_API_URL?.trim() ||
+  'https://verificador-api-dte.cuscadev.com';
+
 const securityHeaders = [
   // Prevent clickjacking
   { key: 'X-Frame-Options', value: 'DENY' },
@@ -21,7 +26,7 @@ const securityHeaders = [
     value: [
       "default-src 'self'",
       // Firebase Auth, Firestore, Storage, Functions
-      "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.cloudfunctions.net wss://*.firebaseio.com https://firebasestorage.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://static.cloudflareinsights.com https://vercel.live https://*.vercel.live",
+      `connect-src 'self' ${goDteApiUrl} https://*.googleapis.com https://*.firebaseio.com https://*.cloudfunctions.net wss://*.firebaseio.com https://firebasestorage.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://static.cloudflareinsights.com https://vercel.live https://*.vercel.live`,
       // Scripts: self + unsafe-inline needed by Next.js dev overlay; nonces are the ideal solution but require more setup
       "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://static.cloudflareinsights.com https://vercel.live https://*.vercel.live",
       "script-src-elem 'self' 'unsafe-inline' https://static.cloudflareinsights.com https://vercel.live https://*.vercel.live",

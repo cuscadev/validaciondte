@@ -135,6 +135,7 @@ export default function LiquidacionJsonPage() {
       }
 
       const em = (obj?.emisor || {}) as Record<string, unknown>
+      const emisorDireccion = (em?.direccion || {}) as Record<string, unknown>
       const rc = extractReceptor(obj)
       const c = (obj?.cuerpoDocumento || {}) as Record<string, unknown>
 
@@ -179,9 +180,9 @@ export default function LiquidacionJsonPage() {
         )}`.trim(),
         Emisor_Telefono: safe(em?.telefono),
         Emisor_Correo: safe(em?.correo),
-        Emisor_Departamento: safe(em?.direccion?.departamento),
-        Emisor_Municipio: safe(em?.direccion?.municipio),
-        Emisor_Direccion: safe(em?.direccion?.complemento),
+        Emisor_Departamento: safe(emisorDireccion?.departamento),
+        Emisor_Municipio: safe(emisorDireccion?.municipio),
+        Emisor_Direccion: safe(emisorDireccion?.complemento),
       }
 
       const receptorObj = (obj?.receptor || {}) as Record<string, unknown>
@@ -245,8 +246,16 @@ export default function LiquidacionJsonPage() {
       }
 
       Object.keys(c || {}).forEach((key) => {
-        resumenRow[key] =
-          c[key] === null || c[key] === undefined ? '' : c[key]
+        const value = c[key]
+        let normalized: string | number | Date | null | undefined = ''
+        if (typeof value === 'string' || typeof value === 'number') {
+          normalized = value
+        } else if (value instanceof Date) {
+          normalized = value
+        } else if (value !== null && value !== undefined) {
+          normalized = typeof value === 'object' ? JSON.stringify(value) : String(value)
+        }
+        resumenRow[key] = normalized
       })
 
       resumenRow.selloRecibido = sello

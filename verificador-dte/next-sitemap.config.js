@@ -1,6 +1,6 @@
 /** @type {import('next-sitemap').IConfig} */
 module.exports = {
-	siteUrl: 'https://verificadordte.cuscadev.com',
+	siteUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://verificadordtev2.cuscadev.com',
 	generateRobotsTxt: true,
 	exclude: [
 		'/admin',

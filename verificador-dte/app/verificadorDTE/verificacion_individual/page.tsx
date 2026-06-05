@@ -43,6 +43,7 @@ import {
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { consumeVerifyBatch } from '@/lib/gmail/verification-bridge';
+import { toast } from 'sonner';
 
 type Item = { numItem: number; codGen: string; fechaEmi: string };
 
