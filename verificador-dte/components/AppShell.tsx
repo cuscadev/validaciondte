@@ -8,6 +8,7 @@ import QueryProvider from '@/components/QueryProvider'
 import { ViewTransitionShell } from '@/components/ViewTransitionShell'
 import { isPublicPath } from '@/lib/publicRoutes'
 import { Toaster } from 'sonner'
+import { NetworkStatusToast } from '@/components/NetworkStatusToast'
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -17,6 +18,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <QueryProvider>
       <I18nProvider>
         <Toaster position="top-center" richColors closeButton />
+        <NetworkStatusToast />
         {isPublicRoute ? (
           <ThemeProvider>{children}</ThemeProvider>
         ) : (

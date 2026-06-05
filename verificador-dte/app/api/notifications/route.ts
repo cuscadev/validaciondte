@@ -117,7 +117,6 @@ export async function GET(req: NextRequest) {
         adminDb
           .collection('notifications')
           .where('targetUid', '==', candidateUid)
-          .orderBy('createdAt', 'desc')
           .get()
       );
     }
@@ -127,7 +126,6 @@ export async function GET(req: NextRequest) {
         adminDb
           .collection('notifications')
           .where('targetRole', 'in', [effectiveRole, 'all'])
-          .orderBy('createdAt', 'desc')
           .get()
       );
     } else {
@@ -135,7 +133,6 @@ export async function GET(req: NextRequest) {
         adminDb
           .collection('notifications')
           .where('targetRole', '==', 'all')
-          .orderBy('createdAt', 'desc')
           .get()
       );
     }

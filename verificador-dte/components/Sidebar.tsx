@@ -311,11 +311,6 @@ export default function Sidebar({
       icon: Home,
     },
     {
-      href: '/notificaciones',
-      label: 'Notificaciones',
-      icon: Bell,
-    },
-    {
       href: '/verificadorDTE',
       label: 'sidebar.verificarDTEs',
       icon: FileText,
@@ -378,6 +373,12 @@ export default function Sidebar({
     icon: ClipboardList,
   };
 
+  const notificationsItem: Item = {
+    href: '/notificaciones',
+    label: 'Notificaciones',
+    icon: Bell,
+  };
+
   const planesItem: Item = {
     href: '/admin/planes',
     label: 'sidebar.planes',
@@ -435,20 +436,21 @@ export default function Sidebar({
         avisosItem,
         obligacionesItem,
         monitoringItem,
+        notificationsItem,
       ];
     }
 
     if (showOrgUsers) {
       return isCliente
-        ? [...baseItems, orgKycItem, orgUsersItem]
-        : [...baseItems, orgUsersItem];
+        ? [...baseItems, orgKycItem, orgUsersItem, notificationsItem]
+        : [...baseItems, orgUsersItem, notificationsItem];
     }
 
     if (isCliente) {
-      return [...baseItems, orgKycItem];
+      return [...baseItems, orgKycItem, notificationsItem];
     }
 
-    return baseItems;
+    return [...baseItems, notificationsItem];
   }, [isSuperadmin, showOrgUsers, isCliente]);
 
   useEffect(() => {
