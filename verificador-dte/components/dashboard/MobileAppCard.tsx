@@ -4,10 +4,8 @@ import { ArrowRight, Download } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { FadeIn } from '@/components/motion/FadeIn';
 import { Card, CardContent } from '@/components/ui/card';
+import { mobileAppDownloadUrl, mobileAppQrUrl } from '@/lib/mobile-app';
 import { cn } from '@/lib/utils';
-
-const mobileAppDownloadUrl =
-  'https://firebasestorage.googleapis.com/v0/b/kaydte-48e8a.firebasestorage.app/o/apk%2Fapplication-0af9fda5-d65b-4692-98b3-4edc93a63a9a.apk?alt=media';
 
 type MobileAppCardProps = {
   variant?: 'default' | 'compact';
@@ -16,7 +14,7 @@ type MobileAppCardProps = {
 
 export function MobileAppCard({ variant = 'default', className }: MobileAppCardProps) {
   const isCompact = variant === 'compact';
-  const qrSize = isCompact ? 128 : 180;
+  const qrSize = isCompact ? 154 : 220;
 
   return (
     <FadeIn delay={0.2} className={cn('h-full', className)}>
@@ -53,18 +51,20 @@ export function MobileAppCard({ variant = 'default', className }: MobileAppCardP
 
           <div
             className={cn(
-              'flex min-h-0 flex-1 items-center justify-center rounded-xl bg-white dark:bg-zinc-900',
-              isCompact ? 'mt-3 p-2' : 'mt-5 p-4'
+              'flex min-h-0 flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white shadow-inner dark:border-white/10 dark:bg-white',
+              isCompact ? 'mt-3 p-3' : 'mt-5 p-5'
             )}
           >
-            <QRCodeCanvas
-              value={mobileAppDownloadUrl}
-              size={qrSize}
-              bgColor="#ffffff"
-              fgColor="#000000"
-              level="H"
-              includeMargin
-            />
+            <div className="rounded-lg bg-white p-3">
+              <QRCodeCanvas
+                value={mobileAppQrUrl}
+                size={qrSize}
+                bgColor="#ffffff"
+                fgColor="#000000"
+                level="M"
+                marginSize={2}
+              />
+            </div>
           </div>
 
           <a

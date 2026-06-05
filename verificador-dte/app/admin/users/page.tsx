@@ -5,14 +5,19 @@ import { useQueryClient } from '@tanstack/react-query';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import {
+  Activity,
   BadgeCheck,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  CheckCircle2,
+  FileText,
+  Percent,
   ShieldCheck,
   UserPlus,
   Users,
+  XCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -38,6 +43,11 @@ import {
   invalidateGetQueries,
   useGetQuery,
 } from '@/lib/tanstack-query';
+import type {
+  DashboardModuleStat,
+  DashboardRecentLog,
+  DashboardStatsTotals,
+} from '@/lib/dashboard-stats';
 
 type UserFormState = Partial<AppUser> & { password?: string };
 
@@ -69,6 +79,35 @@ type AdminOrganizationDetailResponse = {
   collaborators: OrgMembersDetail['collaborators'];
 };
 
+type AdminOrganizationStatsMember = {
+  uid: string;
+  email: string;
+  displayName: string;
+  role: 'cliente' | 'colaborador';
+  orgRole?: string;
+  totals: DashboardStatsTotals;
+  byModule: DashboardModuleStat[];
+  recent: DashboardRecentLog[];
+};
+
+type AdminOrganizationStatsResponse = {
+  period: { from: string; to: string };
+  organization: {
+    id: string;
+    name: string;
+    displayTitle?: string;
+    displaySubtitle?: string | null;
+    collaboratorCount: number;
+    maxCollaborators: number;
+    membershipType: string;
+    status: string;
+  };
+  totals: DashboardStatsTotals;
+  byModule: DashboardModuleStat[];
+  recent: DashboardRecentLog[];
+  members: AdminOrganizationStatsMember[];
+};
+
 const ORGANIZATIONS_QUERY_KEY = ['admin', 'organizations'] as const;
 const ROLE_FILTERS = [
   { id: 'all', label: 'Todos' },
@@ -95,6 +134,7 @@ export default function UsersAdminPage() {
   const [form, setForm] = useState<UserFormState>({});
   const [editMode, setEditMode] = useState<string | null>(null);
   const [delegateUser, setDelegateUser] = useState<UserTableRow | null>(null);
+  const [statsUser, setStatsUser] = useState<UserTableRow | null>(null);
   const [delegateLimit, setDelegateLimit] = useState('');
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -130,6 +170,14 @@ export default function UsersAdminPage() {
     orgClients.forEach((client) => map.set(client.uid, client));
     return map;
   }, [orgClients]);
+  const statsOrgId = statsUser?.organizationId || statsUser?.uid || null;
+  const orgStatsQuery = useGetQuery<AdminOrganizationStatsResponse>({
+    queryKey: ['admin', 'organizations', statsOrgId, 'stats'],
+    path: statsOrgId
+      ? `/api/admin/organizations/${statsOrgId}/stats`
+      : '/api/admin/organizations/_/stats',
+    enabled: !checkingRole && statsOrgId !== null,
+  });
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -180,6 +228,12 @@ export default function UsersAdminPage() {
       setError(getErrorMessage(orgDetailQuery.error, 'No se pudo cargar el detalle del cliente.'));
     }
   }, [orgDetailQuery.error]);
+
+  useEffect(() => {
+    if (orgStatsQuery.error) {
+      setError(getErrorMessage(orgStatsQuery.error, 'No se pudieron cargar las estadisticas del cliente.'));
+    }
+  }, [orgStatsQuery.error]);
 
   function openCreateModal() {
     setForm({});
@@ -306,6 +360,11 @@ export default function UsersAdminPage() {
     if (row.role !== 'cliente') return;
     setDelegateUser(row);
     setDelegateLimit(String(row.maxCollaborators ?? 0));
+  }
+
+  function openClientStats(row: UserTableRow) {
+    if (row.role !== 'cliente') return;
+    setStatsUser(row);
   }
 
   function handleEditDetailMember(uid: string) {
@@ -498,6 +557,7 @@ export default function UsersAdminPage() {
             onEdit={openEditModal}
             onDelete={handleDelete}
             onViewDetails={openDelegateLimit}
+            onViewStats={openClientStats}
             onForceLogout={(uid) => handleSessionAction(uid, 'forceLogout')}
             onToggleBlock={(row) => handleSessionAction(row.uid, row.disabled ? 'unblock' : 'block')}
           />
@@ -613,6 +673,18 @@ export default function UsersAdminPage() {
           />
         </div>
       </Modal>
+
+      <Modal
+        open={statsUser !== null}
+        onClose={() => setStatsUser(null)}
+        className="max-h-[90vh] w-[min(96vw,76rem)] overflow-y-auto"
+      >
+        <ClientStatsPanel
+          client={statsUser}
+          data={orgStatsQuery.data ?? null}
+          loading={orgStatsQuery.isFetching && !orgStatsQuery.data}
+        />
+      </Modal>
     </main>
   );
 }
@@ -633,4 +705,243 @@ function StatCard({
       <p className="mt-1 text-sm font-bold">{value}</p>
     </div>
   );
+}
+
+function ClientStatsPanel({
+  client,
+  data,
+  loading,
+}: {
+  client: UserTableRow | null;
+  data: AdminOrganizationStatsResponse | null;
+  loading: boolean;
+}) {
+  const totals = data?.totals ?? {
+    processes: 0,
+    records: 0,
+    successCount: 0,
+    errorCount: 0,
+    successRate: 0,
+  };
+  const errorRate = getErrorRate(totals);
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-600 dark:text-yellow-300">
+            Estadisticas
+          </p>
+          <h2 className="mt-2 text-2xl font-bold">
+            {data?.organization.displayTitle || client?.displayName || client?.email || 'Cliente'}
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Metricas de DTE procesados por la organizacion y sus colaboradores.
+          </p>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-white/10 dark:bg-black">
+          <p className="font-semibold">Ultimos 30 dias</p>
+          <p className="text-xs text-muted-foreground">
+            {data ? `${formatDate(data.period.from)} - ${formatDate(data.period.to)}` : 'Cargando periodo'}
+          </p>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-8 text-center text-sm text-muted-foreground dark:border-white/10 dark:bg-black">
+          Cargando estadisticas...
+        </div>
+      ) : (
+        <>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <StatsMetricCard icon={Activity} label="Procesos" value={totals.processes} />
+            <StatsMetricCard icon={FileText} label="DTE procesados" value={totals.records} />
+            <StatsMetricCard icon={CheckCircle2} label="Exitosos" value={totals.successCount} />
+            <StatsMetricCard icon={XCircle} label="Fallidos" value={totals.errorCount} />
+            <StatsMetricCard icon={Percent} label="Tasa error" value={`${errorRate}%`} />
+          </div>
+
+          <section className="rounded-lg border border-slate-200 bg-white dark:border-white/10 dark:bg-zinc-950">
+            <div className="border-b border-slate-200 px-4 py-3 dark:border-white/10">
+              <h3 className="font-bold">Actividad por usuario</h3>
+              <p className="text-sm text-muted-foreground">
+                Titular y colaboradores asociados a este cliente.
+              </p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[760px] text-sm">
+                <thead className="bg-slate-100 text-slate-950 dark:bg-zinc-900 dark:text-zinc-100">
+                  <tr>
+                    <th className="px-4 py-3 text-left">Usuario</th>
+                    <th className="px-4 py-3 text-left">Rol</th>
+                    <th className="px-4 py-3 text-right">Procesos</th>
+                    <th className="px-4 py-3 text-right">DTE</th>
+                    <th className="px-4 py-3 text-right">Exitosos</th>
+                    <th className="px-4 py-3 text-right">Fallidos</th>
+                    <th className="px-4 py-3 text-right">Error</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 dark:divide-white/10">
+                  {data?.members.length ? (
+                    data.members.map((member) => (
+                      <tr key={member.uid} className="hover:bg-slate-50 dark:hover:bg-black">
+                        <td className="px-4 py-3">
+                          <div className="font-semibold">{member.displayName || member.email}</div>
+                          <div className="text-xs text-muted-foreground">{member.email}</div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold capitalize dark:bg-zinc-900">
+                            {member.role === 'cliente' ? 'Cliente' : member.orgRole === 'administrador' ? 'Delegado admin' : 'Colaborador'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right font-semibold">{member.totals.processes}</td>
+                        <td className="px-4 py-3 text-right">{member.totals.records}</td>
+                        <td className="px-4 py-3 text-right text-emerald-600 dark:text-emerald-300">
+                          {member.totals.successCount}
+                        </td>
+                        <td className="px-4 py-3 text-right text-red-600 dark:text-red-300">
+                          {member.totals.errorCount}
+                        </td>
+                        <td className="px-4 py-3 text-right">{getErrorRate(member.totals)}%</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                        Sin actividad registrada en este periodo.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
+            <section className="rounded-lg border border-slate-200 bg-white dark:border-white/10 dark:bg-zinc-950">
+              <div className="border-b border-slate-200 px-4 py-3 dark:border-white/10">
+                <h3 className="font-bold">DTE por opcion de validacion</h3>
+                <p className="text-sm text-muted-foreground">Modulos mas utilizados por toda la organizacion.</p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[620px] text-sm">
+                  <thead className="bg-slate-100 text-slate-950 dark:bg-zinc-900 dark:text-zinc-100">
+                    <tr>
+                      <th className="px-4 py-3 text-left">Modulo</th>
+                      <th className="px-4 py-3 text-right">Procesos</th>
+                      <th className="px-4 py-3 text-right">DTE</th>
+                      <th className="px-4 py-3 text-right">Exitosos</th>
+                      <th className="px-4 py-3 text-right">Fallidos</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 dark:divide-white/10">
+                    {data?.byModule.length ? (
+                      data.byModule.map((module) => (
+                        <tr key={module.routeKey || module.moduleName}>
+                          <td className="px-4 py-3 font-semibold">{module.moduleName}</td>
+                          <td className="px-4 py-3 text-right">{module.count}</td>
+                          <td className="px-4 py-3 text-right">{module.records}</td>
+                          <td className="px-4 py-3 text-right text-emerald-600 dark:text-emerald-300">
+                            {module.successCount}
+                          </td>
+                          <td className="px-4 py-3 text-right text-red-600 dark:text-red-300">
+                            {module.errorCount}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                          Sin modulos procesados todavia.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-black">
+              <h3 className="font-bold">Procesos recientes</h3>
+              <div className="mt-3 space-y-3">
+                {data?.recent.length ? (
+                  data.recent.map((log) => (
+                    <div key={log.id} className="rounded-lg border border-slate-200 bg-white p-3 text-sm dark:border-white/10 dark:bg-zinc-950">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="font-semibold">{log.moduleName}</p>
+                        <span className={getOutcomeClass(log.outcome)}>{getOutcomeLabel(log.outcome)}</span>
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">{formatDateTime(log.createdAt)}</p>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        {log.totalRecords} DTE, {log.successCount} exitosos, {log.errorCount} fallidos
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="rounded-lg border border-dashed border-slate-300 p-5 text-center text-sm text-muted-foreground dark:border-white/15">
+                    Sin procesos recientes.
+                  </div>
+                )}
+              </div>
+            </section>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function StatsMetricCard({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: number | string;
+}) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-black">
+      <Icon className="mb-3 size-5 text-amber-600 dark:text-yellow-300" />
+      <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
+      <p className="mt-1 text-2xl font-extrabold">{value}</p>
+    </div>
+  );
+}
+
+function getErrorRate(totals: Pick<DashboardStatsTotals, 'successCount' | 'errorCount'>) {
+  const total = totals.successCount + totals.errorCount;
+  return total > 0 ? Math.round((totals.errorCount / total) * 100) : 0;
+}
+
+function formatDate(value: string) {
+  return new Date(value).toLocaleDateString('es-SV', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function formatDateTime(value: string | null) {
+  if (!value) return 'Sin fecha';
+  return new Date(value).toLocaleString('es-SV', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function getOutcomeLabel(outcome: DashboardRecentLog['outcome']) {
+  if (outcome === 'error') return 'Fallido';
+  if (outcome === 'partial') return 'Parcial';
+  return 'Exitoso';
+}
+
+function getOutcomeClass(outcome: DashboardRecentLog['outcome']) {
+  const base = 'rounded-full px-2 py-1 text-xs font-semibold';
+  if (outcome === 'error') return `${base} bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-200`;
+  if (outcome === 'partial') return `${base} bg-amber-100 text-amber-800 dark:bg-yellow-400/15 dark:text-yellow-200`;
+  return `${base} bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200`;
 }

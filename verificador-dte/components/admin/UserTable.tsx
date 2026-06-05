@@ -1,6 +1,6 @@
 import * as React from "react";
 import Image from "next/image";
-import { Ban, Eye, LogOut, MoreHorizontal, Pencil, Trash2, Unlock } from "lucide-react";
+import { Ban, BarChart3, Eye, LogOut, MoreHorizontal, Pencil, Trash2, Unlock } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -31,6 +31,7 @@ interface UserTableProps {
   onEdit: (row: UserTableRow) => void;
   onDelete: (uid: string) => void;
   onViewDetails: (row: UserTableRow) => void;
+  onViewStats?: (row: UserTableRow) => void;
   onForceLogout: (uid: string) => void;
   onToggleBlock: (row: UserTableRow) => void;
 }
@@ -40,7 +41,7 @@ function getInitials(label: string) {
   return parts.slice(0, 2).map((part) => part[0]?.toUpperCase() ?? "").join("") || "?";
 }
 
-export function UserTable({ rows, onEdit, onDelete, onViewDetails, onForceLogout, onToggleBlock }: UserTableProps) {
+export function UserTable({ rows, onEdit, onDelete, onViewDetails, onViewStats, onForceLogout, onToggleBlock }: UserTableProps) {
   return (
     <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-950">
       <table className="w-full table-fixed text-sm">
@@ -136,10 +137,16 @@ export function UserTable({ rows, onEdit, onDelete, onViewDetails, onForceLogout
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-56">
                         {row.role === "cliente" && (
-                          <DropdownMenuItem onClick={() => onViewDetails(row)}>
-                            <Eye className="size-4" />
-                            Configurar delegados
-                          </DropdownMenuItem>
+                          <>
+                            <DropdownMenuItem onClick={() => onViewStats?.(row)}>
+                              <BarChart3 className="size-4" />
+                              Estadisticas
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onViewDetails(row)}>
+                              <Eye className="size-4" />
+                              Configurar delegados
+                            </DropdownMenuItem>
+                          </>
                         )}
                         <DropdownMenuItem onClick={() => onEdit(row)}>
                           <Pencil className="size-4" />
