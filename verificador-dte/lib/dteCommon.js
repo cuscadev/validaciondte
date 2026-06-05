@@ -21,7 +21,10 @@ export function normalizarEstado(t) {
 }
 
 export function normalizarTipoDte(t) {
-  t = (t || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toUpperCase();
+  t = (t || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toUpperCase().trim();
+  if (t === '01') return 'FACTURA';
+  if (t === '03') return 'COMPROBANTE DE CRÉDITO FISCAL';
+  if (t === '05') return 'NOTA DE CRÉDITO';
   if (t.includes('FACTURA')) return 'FACTURA';
   if (t.includes('COMPROBANTE') && t.includes('CREDITO') && t.includes('FISCAL')) return 'COMPROBANTE DE CRÉDITO FISCAL';
   if (t.includes('NOTA') && t.includes('CREDITO')) return 'NOTA DE CRÉDITO';
@@ -324,30 +327,34 @@ export function buildReportSummarySheet(resultados, wsAll, options = {}) {
 
 export function buildWorkbook(resultados, options = {}) {
   const wb = XLSX.utils.book_new();
+  const normalizedResults = resultados.map((row) => ({
+    ...row,
+    tipoDteNorm: normalizarTipoDte(row?.tipoDteNorm || row?.tipoDte || row?.tipo || row?.TipoDte),
+  }));
 
-  const wsAll = XLSX.utils.json_to_sheet(resultados);
+  const wsAll = XLSX.utils.json_to_sheet(normalizedResults);
   applyHyperlinks(wsAll);
   prepareReportSheet(wsAll);
-  XLSX.utils.book_append_sheet(wb, buildReportSummarySheet(resultados, wsAll, options), sheetNameSafe('Resumen'));
+  XLSX.utils.book_append_sheet(wb, buildReportSummarySheet(normalizedResults, wsAll, options), sheetNameSafe('Resumen'));
   XLSX.utils.book_append_sheet(wb, wsAll, sheetNameSafe('Todos'));
 
   const tipos = ['FACTURA', 'COMPROBANTE DE CRÉDITO FISCAL', 'NOTA DE CRÉDITO'];
   for (const t of tipos) {
-    const rows = resultados.filter((r) => r?.tipoDteNorm === t);
+    const rows = normalizedResults.filter((r) => r?.tipoDteNorm === t);
     const ws = XLSX.utils.json_to_sheet(rows);
     applyHyperlinks(ws);
     prepareReportSheet(ws);
     XLSX.utils.book_append_sheet(wb, ws, sheetNameSafe(t));
   }
 
-  const rechaz = resultados.filter((r) => r?.estado === 'RECHAZADO' || r?.estado === 'INVALIDADO');
+  const rechaz = normalizedResults.filter((r) => r?.estado === 'RECHAZADO' || r?.estado === 'INVALIDADO');
   const wsR = XLSX.utils.json_to_sheet(rechaz);
   applyHyperlinks(wsR);
   prepareReportSheet(wsR);
   XLSX.utils.book_append_sheet(wb, wsR, sheetNameSafe('Rechazados'));
 
   const relAll = [];
-  for (const r of resultados) {
+  for (const r of normalizedResults) {
     const parent = r.codGen || r.codigoGeneracion || '';
     const tipoPadre = r.tipoDte || '';
     if (Array.isArray(r.relacionados) && r.relacionados.length) {
