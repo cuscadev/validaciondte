@@ -21,6 +21,9 @@ export interface UserTableRow {
   photoURL?: string;
   cliente?: string;
   disabled?: boolean;
+  organizationId?: string;
+  collaboratorCount?: number;
+  maxCollaborators?: number;
 }
 
 interface UserTableProps {
@@ -46,7 +49,8 @@ export function UserTable({ rows, onEdit, onDelete, onViewDetails, onForceLogout
           <col className="w-[21%]" />
           <col className="w-[12%]" />
           <col className="w-[12%]" />
-          <col className="w-[13%]" />
+          <col className="w-[10%]" />
+          <col className="w-[10%]" />
           <col className="w-[12%]" />
         </colgroup>
         <thead className="bg-slate-100 text-slate-950 dark:bg-zinc-900 dark:text-zinc-100">
@@ -56,13 +60,14 @@ export function UserTable({ rows, onEdit, onDelete, onViewDetails, onForceLogout
             <th className="px-4 py-3 text-left font-semibold">Rol</th>
             <th className="px-4 py-3 text-left font-semibold">Membresia</th>
             <th className="px-4 py-3 text-left font-semibold">Expira</th>
+            <th className="px-4 py-3 text-left font-semibold">Delegados</th>
             <th className="px-4 py-3 text-center font-semibold">Acciones</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-200 dark:divide-white/10">
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={6} className="py-10 text-center text-muted-foreground">
+              <td colSpan={7} className="py-10 text-center text-muted-foreground">
                 Sin usuarios
               </td>
             </tr>
@@ -116,6 +121,11 @@ export function UserTable({ rows, onEdit, onDelete, onViewDetails, onForceLogout
                   </span>
                 </td>
                 <td className="px-4 py-3 text-slate-600 dark:text-zinc-300">{row.membershipExpiresAt}</td>
+                <td className="px-4 py-3 text-slate-600 dark:text-zinc-300">
+                  {row.role === "cliente"
+                    ? `${row.collaboratorCount ?? 0} / ${row.maxCollaborators ?? 0}`
+                    : "—"}
+                </td>
                 <td className="px-4 py-3">
                   <div className="flex justify-center">
                     <DropdownMenu>
@@ -128,7 +138,7 @@ export function UserTable({ rows, onEdit, onDelete, onViewDetails, onForceLogout
                         {row.role === "cliente" && (
                           <DropdownMenuItem onClick={() => onViewDetails(row)}>
                             <Eye className="size-4" />
-                            Ver detalles
+                            Configurar delegados
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuItem onClick={() => onEdit(row)}>

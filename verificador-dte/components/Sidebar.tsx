@@ -373,12 +373,6 @@ export default function Sidebar({
     icon: ClipboardList,
   };
 
-  const organizacionesItem: Item = {
-    href: '/admin/organizaciones',
-    label: 'Organizaciones',
-    icon: ClipboardList,
-  };
-
   const planesItem: Item = {
     href: '/admin/planes',
     label: 'sidebar.planes',
@@ -432,7 +426,6 @@ export default function Sidebar({
       return [
         ...baseItems,
         adminItem,
-        organizacionesItem,
         planesItem,
         avisosItem,
         obligacionesItem,

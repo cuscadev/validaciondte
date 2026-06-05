@@ -62,7 +62,7 @@ middleware.ts        # JWT Firebase en cookie __session
 5. **Roles globales** (`lib/firestoreUser.ts`): `superadmin` | `cliente` | `colaborador`. Helpers: `isOrgAdmin`, `canManageOrgUsers`, `isAccountUsable`.
 6. **Organizaciones** (`organizations/{orgId}`, `lib/organization-admin.ts`, `lib/organization-types.ts`): dominio de correo único, KYC en `kyc`, cupos `maxCollaborators` / `collaboratorCount`. Colaboradores: `orgRole` `administrador` | `miembro`.
 7. **Onboarding:** cliente sin `kyc.kycCompleted` → redirect `/onboarding` desde [`components/ProtectedAppShell.tsx`](components/ProtectedAppShell.tsx). API: `POST /api/organization/onboarding`.
-8. **Gestión usuarios org:** `/usuarios` + `GET|POST /api/organization/users`. Superadmin: `/admin/organizaciones`.
+8. **Gestión usuarios org:** `/usuarios` + `GET|POST /api/organization/users`. Superadmin: `/admin/users`.
 9. **Membresía:** `free` | `premium` | `pro` — rutas, `queryLimit` y `maxCollaborators` en `config/plans`.
 10. **MFA:** TOTP (`app/api/totp/*`, páginas `mfa-login`, `totp-verify`).
 11. **Desktop / móvil:** APIs bajo `app/api/desktop/*` con JWT (`JWT_SECRET`).

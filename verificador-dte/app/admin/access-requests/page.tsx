@@ -60,7 +60,7 @@ function getInitials(name: string) {
 export default function AccessRequestsPage() {
   const router = useRouter();
   useEffect(() => {
-    router.replace('/admin/organizaciones');
+    router.replace('/admin/users');
   }, [router]);
 
   const queryClient = useQueryClient();

@@ -66,8 +66,8 @@ La consulta automatizada usa **Playwright**. En Vercel/serverless se usa Chromiu
 |------|---------|
 | `/admin/users` | Gestión usuarios |
 | `/admin/planes` | Planes, precios y cupos de colaboradores |
-| `/admin/organizaciones` | Solicitudes de acceso + clientes y colaboradores |
-| `/admin/access-requests` | Redirige a `/admin/organizaciones` |
+| `/admin/users` | Usuarios, roles, clientes, colaboradores y cupos delegados |
+| `/admin/access-requests` | Redirige a `/admin/users` |
 | `/onboarding` | Wizard KYC obligatorio (cliente) |
 | `/usuarios` | Gestión de colaboradores (cliente / admin org) |
 | `/admin/obligacion` | Obligaciones tributarias |

@@ -158,7 +158,7 @@ const ROUTE_MAP: Record<string, RouteEntry> = {
   '/admin/organizaciones': {
     segments: [
       { label: 'Admin', href: '/admin/users' },
-      { label: 'Organizaciones' },
+      { label: 'Usuarios' },
     ],
   },
   '/admin/avisos': {

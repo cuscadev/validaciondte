@@ -5,14 +5,15 @@ import { useQueryClient } from '@tanstack/react-query';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { BadgeCheck, ShieldCheck, UserPlus, Users } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { UserForm } from '@/components/admin/UserForm';
-import {
-  OrgDirectoryAccordion,
-  type OrgDirectoryRow,
-} from '@/components/admin/OrgDirectoryAccordion';
-import type { OrgMembersDetail } from '@/components/admin/OrgMembersPanel';
+import { UserTable, type UserTableRow } from '@/components/admin/UserTable';
 import { UserTableSearch } from '@/components/admin/UserTableExtras';
+import {
+  OrgMembersPanel,
+  type OrgMembersDetail,
+} from '@/components/admin/OrgMembersPanel';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,10 +23,6 @@ import {
   getAllUsers,
   getUser,
 } from '@/lib/firestoreUser';
-import {
-  getOrgDirectorySegmentFromDisplay,
-  type OrgDirectorySegment,
-} from '@/lib/org-display';
 import { auth } from '@/lib/firebase';
 import { QUERY_CACHE_MS } from '@/components/QueryProvider';
 import {
@@ -35,17 +32,23 @@ import {
 
 type UserFormState = Partial<AppUser> & { password?: string };
 
-type OrgSegmentFilter = 'all' | OrgDirectorySegment;
-
 type ClientApiRow = {
   uid: string;
   email: string;
   displayName?: string;
   organizationId: string;
-  organization: OrgDirectoryRow['organization'];
+  organization: {
+    name: string;
+    displayTitle?: string;
+    displaySubtitle?: string | null;
+    allowedEmailDomain: string;
+    membershipType: string;
+    maxCollaborators: number;
+    collaboratorCount: number;
+    status: string;
+    kycCompleted: boolean;
+  } | null;
 };
-
-const ORGANIZATIONS_QUERY_KEY = ['admin', 'organizations'] as const;
 
 type AdminOrganizationsResponse = {
   clients: ClientApiRow[];
@@ -57,12 +60,15 @@ type AdminOrganizationDetailResponse = {
   collaborators: OrgMembersDetail['collaborators'];
 };
 
-const SEGMENT_FILTERS: { id: OrgSegmentFilter; label: string }[] = [
-  { id: 'all', label: 'Todas' },
-  { id: 'juridica', label: 'Jurídicas' },
-  { id: 'natural', label: 'Naturales' },
-  { id: 'natural_with_group', label: 'Natural con grupo' },
-];
+const ORGANIZATIONS_QUERY_KEY = ['admin', 'organizations'] as const;
+const ROLE_FILTERS = [
+  { id: 'all', label: 'Todos' },
+  { id: 'superadmin', label: 'Superadmin' },
+  { id: 'cliente', label: 'Clientes' },
+  { id: 'colaborador', label: 'Colaboradores' },
+] as const;
+
+type RoleFilter = (typeof ROLE_FILTERS)[number]['id'];
 
 function getErrorMessage(err: unknown, fallback: string) {
   return err instanceof Error ? err.message : fallback;
@@ -70,14 +76,15 @@ function getErrorMessage(err: unknown, fallback: string) {
 
 export default function UsersAdminPage() {
   const [search, setSearch] = useState('');
-  const [orgSegmentFilter, setOrgSegmentFilter] = useState<OrgSegmentFilter>('all');
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
   const [modalOpen, setModalOpen] = useState(false);
   const [users, setUsers] = useState<AppUser[]>([]);
   const [error, setError] = useState('');
   const [checkingRole, setCheckingRole] = useState(true);
   const [form, setForm] = useState<UserFormState>({});
   const [editMode, setEditMode] = useState<string | null>(null);
-  const [expandedOrgId, setExpandedOrgId] = useState<string | null>(null);
+  const [delegateUser, setDelegateUser] = useState<UserTableRow | null>(null);
+  const [delegateLimit, setDelegateLimit] = useState('');
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -90,13 +97,15 @@ export default function UsersAdminPage() {
     },
   });
 
+  const orgClients = orgsQuery.data ?? [];
+  const detailOrgId = delegateUser?.organizationId || delegateUser?.uid || null;
   const orgDetailQuery = useGetQuery<
     AdminOrganizationDetailResponse,
     OrgMembersDetail
   >({
-    queryKey: ['admin', 'organizations', expandedOrgId],
-    path: `/api/admin/organizations/${expandedOrgId}`,
-    enabled: !checkingRole && expandedOrgId !== null,
+    queryKey: ['admin', 'organizations', detailOrgId],
+    path: `/api/admin/organizations/${detailOrgId}`,
+    enabled: !checkingRole && detailOrgId !== null,
     overrides: {
       select: (data): OrgMembersDetail => ({
         organization: data.organization,
@@ -105,11 +114,11 @@ export default function UsersAdminPage() {
       }),
     },
   });
-
-  const orgClients = orgsQuery.data ?? [];
-  const orgsLoading = orgsQuery.isLoading;
-  const expandingOrgId = orgDetailQuery.isFetching && !orgDetailQuery.data ? expandedOrgId : null;
-  const expandedDetail = orgDetailQuery.data ?? null;
+  const orgByOwnerUid = useMemo(() => {
+    const map = new Map<string, ClientApiRow>();
+    orgClients.forEach((client) => map.set(client.uid, client));
+    return map;
+  }, [orgClients]);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -120,8 +129,8 @@ export default function UsersAdminPage() {
         gcTime: QUERY_CACHE_MS * 4,
       });
       setUsers(data);
-    } catch {
-      // Contadores del header; no bloquear la vista principal
+    } catch (err) {
+      setError(getErrorMessage(err, 'No se pudieron cargar los usuarios.'));
     }
   }, [queryClient]);
 
@@ -151,55 +160,34 @@ export default function UsersAdminPage() {
 
   useEffect(() => {
     if (orgsQuery.error) {
-      setError(getErrorMessage(orgsQuery.error, 'No se pudieron cargar las organizaciones.'));
+      setError(getErrorMessage(orgsQuery.error, 'No se pudieron cargar los cupos de clientes.'));
     }
   }, [orgsQuery.error]);
 
   useEffect(() => {
     if (orgDetailQuery.error) {
-      setError(getErrorMessage(orgDetailQuery.error, 'No se pudo cargar el detalle de la organización.'));
+      setError(getErrorMessage(orgDetailQuery.error, 'No se pudo cargar el detalle del cliente.'));
     }
   }, [orgDetailQuery.error]);
 
-  function toggleOrg(organizationId: string) {
-    if (expandedOrgId === organizationId) {
-      setExpandedOrgId(null);
-      return;
-    }
-
-    setExpandedOrgId(organizationId);
-    setError('');
+  function openCreateModal() {
+    setForm({});
+    setEditMode(null);
+    setModalOpen(true);
   }
 
-  async function handleEditMember(uid: string) {
-    let user = users.find((u) => u.uid === uid);
-    if (!user) {
-      try {
-        user = await queryClient.fetchQuery({
-          queryKey: ['users', uid],
-          queryFn: () => getUser(uid),
-          staleTime: QUERY_CACHE_MS,
-          gcTime: QUERY_CACHE_MS * 4,
-        });
-      } catch {
-        setError('No se pudo cargar el usuario para editar.');
-        return;
-      }
-    }
-    if (!user) {
-      setError('Usuario no encontrado.');
-      return;
-    }
+  function openEditModal(row: UserTableRow) {
+    const user = users.find((u) => u.uid === row.uid);
     setForm({
-      uid: user.uid,
-      email: user.email,
-      role: user.role,
+      uid: row.uid,
+      email: row.email,
+      role: row.role as UserRole,
       membership: {
-        type: user.membership?.type ?? '',
-        expiresAt: user.membership?.expiresAt ?? '',
+        type: (user?.membership?.type ?? row.membershipType ?? 'free') as MembershipType,
+        expiresAt: user?.membership?.expiresAt ?? row.membershipExpiresAt ?? '',
       },
     });
-    setEditMode(user.uid);
+    setEditMode(row.uid);
     setModalOpen(true);
   }
 
@@ -259,76 +247,135 @@ export default function UsersAdminPage() {
 
     setForm({});
     setEditMode(null);
+    setModalOpen(false);
     await queryClient.invalidateQueries({ queryKey: ['users'] });
     await queryClient.invalidateQueries({ queryKey: ['users', userData.uid] });
     await invalidateGetQueries(queryClient, ORGANIZATIONS_QUERY_KEY);
-    if (expandedOrgId) {
-      await invalidateGetQueries(queryClient, ['admin', 'organizations', expandedOrgId]);
-    }
     await fetchUsers();
+    toast.success('Usuario guardado');
   }
 
-  const orgDirectoryRows: OrgDirectoryRow[] = useMemo(
+  async function handleDelete(uid: string) {
+    if (!confirm('Eliminar este usuario?')) return;
+    const token = await auth.currentUser?.getIdToken();
+    const res = await fetch('/api/users/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ uid }),
+    });
+    const data = await res.json().catch(() => ({})) as { error?: string };
+    if (!res.ok) {
+      toast.error(data.error || 'No se pudo eliminar');
+      return;
+    }
+    await queryClient.invalidateQueries({ queryKey: ['users'] });
+    await invalidateGetQueries(queryClient, ORGANIZATIONS_QUERY_KEY);
+    await fetchUsers();
+    toast.success('Usuario eliminado');
+  }
+
+  async function handleSessionAction(uid: string, action: 'forceLogout' | 'block' | 'unblock') {
+    const token = await auth.currentUser?.getIdToken();
+    const res = await fetch('/api/users/session-control', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ uid, action }),
+    });
+    const data = await res.json().catch(() => ({})) as { error?: string };
+    if (!res.ok) {
+      toast.error(data.error || 'No se pudo actualizar el usuario');
+      return;
+    }
+    await queryClient.invalidateQueries({ queryKey: ['users'] });
+    await fetchUsers();
+    toast.success('Usuario actualizado');
+  }
+
+  function openDelegateLimit(row: UserTableRow) {
+    if (row.role !== 'cliente') return;
+    setDelegateUser(row);
+    setDelegateLimit(String(row.maxCollaborators ?? 0));
+  }
+
+  function handleEditDetailMember(uid: string) {
+    const row = tableRows.find((item) => item.uid === uid);
+    if (!row) {
+      toast.error('No se encontro el usuario para editar.');
+      return;
+    }
+    setDelegateUser(null);
+    openEditModal(row);
+  }
+
+  async function saveDelegateLimit() {
+    if (!delegateUser) return;
+    const orgId = delegateUser.organizationId || delegateUser.uid;
+    const maxCollaborators = Math.max(0, Number(delegateLimit) || 0);
+    const token = await auth.currentUser?.getIdToken();
+    const res = await fetch(`/api/admin/organizations/${orgId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ maxCollaborators }),
+    });
+    const data = await res.json().catch(() => ({})) as { error?: string };
+    if (!res.ok) {
+      toast.error(data.error || 'No se pudo actualizar el cupo');
+      return;
+    }
+    await invalidateGetQueries(queryClient, ORGANIZATIONS_QUERY_KEY);
+    await invalidateGetQueries(queryClient, ['admin', 'organizations', orgId]);
+    setDelegateUser(null);
+    setDelegateLimit('');
+    toast.success('Cupo de delegados actualizado');
+  }
+
+  const tableRows: UserTableRow[] = useMemo(
     () =>
-      orgClients.map((c) => ({
-        organizationId: c.organizationId,
-        ownerUid: c.uid,
-        ownerEmail: c.email,
-        ownerDisplayName: c.displayName,
-        organization: c.organization,
-      })),
-    [orgClients]
+      users.map((user) => {
+        const org = user.role === 'cliente' ? orgByOwnerUid.get(user.uid) : null;
+        return {
+          uid: user.uid,
+          email: user.email,
+          role: user.role,
+          membershipType: user.membership?.type ?? 'free',
+          membershipExpiresAt: user.membership?.expiresAt ?? '',
+          displayName: user.displayName || user.cliente,
+          photoURL: user.photoURL,
+          cliente: user.cliente,
+          disabled: Boolean(user.disabled),
+          organizationId: user.organizationId || org?.organizationId || user.uid,
+          collaboratorCount: org?.organization?.collaboratorCount,
+          maxCollaborators: org?.organization?.maxCollaborators,
+        };
+      }),
+    [orgByOwnerUid, users]
   );
 
-  const segmentCounts = useMemo(() => {
-    const counts: Record<OrgDirectorySegment, number> = {
-      juridica: 0,
-      natural: 0,
-      natural_with_group: 0,
-    };
-    for (const row of orgDirectoryRows) {
-      const org = row.organization;
-      if (!org) continue;
-      const segment = getOrgDirectorySegmentFromDisplay({
-        personType: org.personType,
-        groupName: org.groupName,
-        legalName: org.legalName,
-      });
-      counts[segment]++;
-    }
-    return counts;
-  }, [orgDirectoryRows]);
-
-  const filteredOrgs = useMemo(() => {
-    const q = search.toLowerCase();
-    return orgDirectoryRows.filter((row) => {
-      const org = row.organization;
-      if (orgSegmentFilter !== 'all') {
-        if (!org) return false;
-        const segment = getOrgDirectorySegmentFromDisplay({
-          personType: org.personType,
-          groupName: org.groupName,
-          legalName: org.legalName,
-        });
-        if (segment !== orgSegmentFilter) return false;
-      }
-
+  const filteredRows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return tableRows.filter((row) => {
+      if (roleFilter !== 'all' && row.role !== roleFilter) return false;
       if (!q) return true;
-
-      return (
-        (org?.displayTitle?.toLowerCase().includes(q) ?? false) ||
-        (org?.displaySubtitle?.toLowerCase().includes(q) ?? false) ||
-        (org?.name?.toLowerCase().includes(q) ?? false) ||
-        (org?.allowedEmailDomain?.toLowerCase().includes(q) ?? false) ||
-        row.ownerEmail.toLowerCase().includes(q) ||
-        (row.ownerDisplayName?.toLowerCase().includes(q) ?? false)
-      );
+      return [
+        row.email,
+        row.displayName,
+        row.uid,
+        row.role,
+        row.membershipType,
+        row.cliente,
+      ].some((value) => String(value || '').toLowerCase().includes(q));
     });
-  }, [orgDirectoryRows, orgSegmentFilter, search]);
+  }, [roleFilter, search, tableRows]);
 
-  const totalClients = users.filter((user) => user.role === 'cliente').length;
-  const totalEmployees = users.filter((user) => user.role === 'colaborador').length;
-  const totalAdmins = users.filter((user) => user.role === 'superadmin').length;
+  const totals = useMemo(
+    () => ({
+      all: users.length,
+      cliente: users.filter((user) => user.role === 'cliente').length,
+      colaborador: users.filter((user) => user.role === 'colaborador').length,
+      superadmin: users.filter((user) => user.role === 'superadmin').length,
+    }),
+    [users]
+  );
 
   if (checkingRole) {
     return <div className="p-8 text-muted-foreground">Verificando permisos...</div>;
@@ -336,7 +383,7 @@ export default function UsersAdminPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950 dark:bg-black dark:text-white">
-      <div className="mx-auto flex w-full max-w-[92rem] flex-col gap-4 p-0">
+      <div className="flex w-full flex-col gap-4 p-0">
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-950">
           <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
@@ -345,29 +392,17 @@ export default function UsersAdminPage() {
                 Gestion de usuarios
               </p>
               <h1 className="text-3xl font-extrabold tracking-tight md:text-5xl">
-                Usuarios, roles y membresias
+                Usuarios, roles y cupos delegados
               </h1>
               <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600 md:text-base dark:text-zinc-300">
-                Busca por organizacion, filtra por tipo y revisa titular y delegados en el detalle.
+                Administra superadmins, clientes y colaboradores desde una sola vista.
               </p>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[34rem]">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-black">
-                <BadgeCheck className="mb-3 size-5 text-amber-600 dark:text-yellow-300" />
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-500">Clientes</p>
-                <p className="mt-1 text-sm font-bold">{totalClients}</p>
-              </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-black">
-                <Users className="mb-3 size-5 text-amber-600 dark:text-yellow-300" />
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-500">Colaboradores</p>
-                <p className="mt-1 text-sm font-bold">{totalEmployees}</p>
-              </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-black">
-                <ShieldCheck className="mb-3 size-5 text-amber-600 dark:text-yellow-300" />
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-500">Admins</p>
-                <p className="mt-1 text-sm font-bold">{totalAdmins}</p>
-              </div>
+              <StatCard icon={BadgeCheck} label="Clientes" value={totals.cliente} />
+              <StatCard icon={Users} label="Colaboradores" value={totals.colaborador} />
+              <StatCard icon={ShieldCheck} label="Superadmins" value={totals.superadmin} />
             </div>
           </div>
         </section>
@@ -375,99 +410,142 @@ export default function UsersAdminPage() {
         <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-zinc-950">
           <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <h2 className="text-xl font-bold">Organizaciones</h2>
+              <h2 className="text-xl font-bold">Todos los usuarios</h2>
               <p className="mt-1 text-sm text-slate-600 dark:text-zinc-300">
-                {filteredOrgs.length} resultado{filteredOrgs.length === 1 ? '' : 's'} encontrado
-                {filteredOrgs.length === 1 ? '' : 's'}.
+                {filteredRows.length} de {totals.all} usuario{totals.all === 1 ? '' : 's'}.
               </p>
             </div>
 
-            <Button
-              className="bg-yellow-400 font-bold text-black hover:bg-yellow-300"
-              onClick={() => {
-                setForm({});
-                setEditMode(null);
-                setModalOpen(true);
-              }}
-            >
+            <Button className="bg-yellow-400 font-bold text-black hover:bg-yellow-300" onClick={openCreateModal}>
               <UserPlus className="size-4" />
               Crear usuario
             </Button>
           </div>
 
-          <Modal
-            open={modalOpen || !!editMode}
-            onClose={() => {
-              setModalOpen(false);
-              setForm({});
-              setEditMode(null);
-            }}
-          >
-            <UserForm
-              form={form}
-              editMode={editMode}
-              onChange={handleFormChange}
-              onMembershipTypeChange={handleMembershipTypeChange}
-              onMembershipExpiresChange={handleMembershipExpiresChange}
-              onSubmit={(e) => {
-                handleFormSubmit(e);
-                setModalOpen(false);
-              }}
-              onCancel={() => {
-                setModalOpen(false);
-                setForm({});
-                setEditMode(null);
-              }}
-            />
-          </Modal>
-
           <div className="mb-4 flex flex-col gap-3">
             <UserTableSearch
               value={search}
               onChange={setSearch}
-              placeholder="Buscar organización, titular o dominio..."
+              placeholder="Buscar por nombre, correo, UID, rol o membresia..."
             />
             <div className="flex flex-wrap gap-2">
-              {SEGMENT_FILTERS.map((filter) => {
-                const count =
-                  filter.id === 'all'
-                    ? orgDirectoryRows.length
-                    : segmentCounts[filter.id as OrgDirectorySegment];
-                return (
-                  <Button
-                    key={filter.id}
-                    type="button"
-                    size="sm"
-                    variant={orgSegmentFilter === filter.id ? 'default' : 'outline'}
-                    onClick={() => setOrgSegmentFilter(filter.id)}
-                  >
-                    {filter.label} ({count})
-                  </Button>
-                );
-              })}
+              {ROLE_FILTERS.map((filter) => (
+                <Button
+                  key={filter.id}
+                  type="button"
+                  size="sm"
+                  variant={roleFilter === filter.id ? 'default' : 'outline'}
+                  onClick={() => setRoleFilter(filter.id)}
+                >
+                  {filter.label} ({filter.id === 'all' ? totals.all : totals[filter.id]})
+                </Button>
+              ))}
             </div>
           </div>
 
-          {orgsLoading ? (
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-6 text-muted-foreground dark:border-white/10 dark:bg-black">
-              Cargando...
-            </div>
-          ) : error ? (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
+          {error ? (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
               {error}
             </div>
-          ) : (
-            <OrgDirectoryAccordion
-              rows={filteredOrgs}
-              expandedOrgId={expandedOrgId}
-              expandingOrgId={expandingOrgId}
-              expandedDetail={expandedDetail}
-              onToggle={toggleOrg}
-              onEditMember={handleEditMember}
-            />
-          )}
+          ) : null}
+
+          <UserTable
+            rows={filteredRows}
+            onEdit={openEditModal}
+            onDelete={handleDelete}
+            onViewDetails={openDelegateLimit}
+            onForceLogout={(uid) => handleSessionAction(uid, 'forceLogout')}
+            onToggleBlock={(row) => handleSessionAction(row.uid, row.disabled ? 'unblock' : 'block')}
+          />
         </section>
       </div>
+
+      <Modal
+        open={modalOpen || !!editMode}
+        onClose={() => {
+          setModalOpen(false);
+          setForm({});
+          setEditMode(null);
+        }}
+      >
+        <UserForm
+          form={form}
+          editMode={editMode}
+          onChange={handleFormChange}
+          onMembershipTypeChange={handleMembershipTypeChange}
+          onMembershipExpiresChange={handleMembershipExpiresChange}
+          onSubmit={handleFormSubmit}
+          onCancel={() => {
+            setModalOpen(false);
+            setForm({});
+            setEditMode(null);
+          }}
+        />
+      </Modal>
+
+      <Modal
+        open={delegateUser !== null}
+        onClose={() => setDelegateUser(null)}
+        className="max-h-[90vh] w-[min(96vw,72rem)] overflow-y-auto"
+      >
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-xl font-bold">Detalle del cliente</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Revisa sus colaboradores y configura cuantas personas delegadas puede tener.
+            </p>
+          </div>
+
+          <div className="grid gap-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm dark:border-white/10 dark:bg-black md:grid-cols-[minmax(0,1fr)_18rem] md:items-end">
+            <div>
+              <p className="font-semibold">{delegateUser?.displayName || delegateUser?.email}</p>
+              <p className="text-muted-foreground">{delegateUser?.email}</p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Uso actual: {delegateUser?.collaboratorCount ?? 0} / {delegateUser?.maxCollaborators ?? 0}
+              </p>
+            </div>
+            <div className="grid gap-2">
+              <label className="grid gap-1 text-sm font-medium">
+                Maximo de personas delegadas
+                <input
+                  type="number"
+                  min={0}
+                  value={delegateLimit}
+                  onChange={(event) => setDelegateLimit(event.target.value)}
+                  className="w-full rounded-md border border-slate-200 bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-yellow-400/40 dark:border-white/10"
+                />
+              </label>
+              <Button type="button" className="bg-yellow-400 font-bold text-black hover:bg-yellow-300" onClick={saveDelegateLimit}>
+                Guardar cupo
+              </Button>
+            </div>
+          </div>
+
+          <OrgMembersPanel
+            loading={orgDetailQuery.isFetching && !orgDetailQuery.data}
+            detail={orgDetailQuery.data ?? null}
+            onEditMember={handleEditDetailMember}
+          />
+        </div>
+      </Modal>
     </main>
+  );
+}
+
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: number;
+}) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-black">
+      <Icon className="mb-3 size-5 text-amber-600 dark:text-yellow-300" />
+      <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-500">{label}</p>
+      <p className="mt-1 text-sm font-bold">{value}</p>
+    </div>
   );
 }

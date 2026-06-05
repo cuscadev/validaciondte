@@ -195,7 +195,7 @@ export default function DashboardPage() {
 
     <main className="min-h-[calc(100vh-5rem)] bg-slate-50 text-slate-950 dark:bg-black dark:text-white">
 
-      <div className="flex w-full max-w-[92rem] flex-col gap-4 p-0">
+      <div className="flex w-full max-w-none flex-col gap-4 p-0">
 
         {isError && (
 
@@ -225,7 +225,7 @@ export default function DashboardPage() {
 
 
 
-        <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(15rem,17%)] lg:grid-rows-[auto_auto] lg:items-stretch">
+        <section className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_minmax(15rem,17rem)] 2xl:grid-rows-[auto_auto] 2xl:items-stretch">
 
           <ActivityPeriodChart
 
@@ -241,7 +241,7 @@ export default function DashboardPage() {
 
             isRefetching={isRefetching}
 
-            className="order-1 h-full min-h-[18rem] lg:order-none lg:col-start-1 lg:row-start-1 lg:min-h-[20rem]"
+            className="order-1 h-full min-h-[18rem] 2xl:order-none 2xl:col-start-1 2xl:row-start-1 2xl:min-h-[20rem]"
 
           />
 
@@ -281,7 +281,7 @@ export default function DashboardPage() {
 
             }}
 
-            className="order-3 min-h-[20rem] lg:order-none lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:min-h-0"
+            className="order-3 min-h-[20rem] 2xl:order-none 2xl:col-start-2 2xl:row-start-1 2xl:row-span-2 2xl:min-h-0"
 
           />
 
@@ -293,7 +293,7 @@ export default function DashboardPage() {
 
             loading={showStatsSkeleton}
 
-            className="order-2 lg:order-none lg:col-start-1 lg:row-start-2"
+            className="order-2 2xl:order-none 2xl:col-start-1 2xl:row-start-2"
 
           />
 
