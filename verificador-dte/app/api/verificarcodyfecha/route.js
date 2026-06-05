@@ -52,14 +52,21 @@ export async function POST(req) {
 
   const token = process.env.BLOB_READ_WRITE_TOKEN;
   if (token && excelBase64) {
-    const excelBuffer = Buffer.from(excelBase64, 'base64');
-    const contentTypeExcel = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-    const { url } = await put(filename || `verificacion_cod_fecha_${Date.now()}.xlsx`, excelBuffer, {
-      access: 'public',
-      contentType: contentTypeExcel,
-      token,
-    });
-    return NextResponse.json({ ...payloadBase, downloadUrl: url });
+    try {
+      const excelBuffer = Buffer.from(excelBase64, 'base64');
+      const contentTypeExcel = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      const { url } = await put(filename || `verificacion_cod_fecha_${Date.now()}.xlsx`, excelBuffer, {
+        access: 'public',
+        contentType: contentTypeExcel,
+        token,
+      });
+      return NextResponse.json({ ...payloadBase, downloadUrl: url });
+    } catch (error) {
+      console.warn(
+        'Vercel Blob upload failed for verificarcodyfecha; returning API excelBase64 instead.',
+        error
+      );
+    }
   }
 
   if (excelBase64) {

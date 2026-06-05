@@ -27,12 +27,19 @@ export async function POST(req: NextRequest) {
 
     const token = process.env.BLOB_READ_WRITE_TOKEN;
     if (token) {
-      const { url } = await put(filename, excelBuffer, {
-        access: 'public',
-        contentType,
-        token,
-      });
-      return NextResponse.json({ filename, downloadUrl: url });
+      try {
+        const { url } = await put(filename, excelBuffer, {
+          access: 'public',
+          contentType,
+          token,
+        });
+        return NextResponse.json({ filename, downloadUrl: url });
+      } catch (error) {
+        console.warn(
+          'Vercel Blob upload failed for verificararchjson export; returning base64 instead.',
+          error
+        );
+      }
     }
 
     const excelBase64 = Buffer.from(excelBuffer).toString('base64');
