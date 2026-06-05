@@ -4,7 +4,16 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { BadgeCheck, ShieldCheck, UserPlus, Users } from 'lucide-react';
+import {
+  BadgeCheck,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  ShieldCheck,
+  UserPlus,
+  Users,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 import { UserForm } from '@/components/admin/UserForm';
@@ -77,6 +86,8 @@ function getErrorMessage(err: unknown, fallback: string) {
 export default function UsersAdminPage() {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [users, setUsers] = useState<AppUser[]>([]);
   const [error, setError] = useState('');
@@ -367,6 +378,23 @@ export default function UsersAdminPage() {
     });
   }, [roleFilter, search, tableRows]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / rowsPerPage));
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [roleFilter, rowsPerPage, search]);
+
+  const paginatedRows = useMemo(() => {
+    const start = (currentPage - 1) * rowsPerPage;
+    return filteredRows.slice(start, start + rowsPerPage);
+  }, [currentPage, filteredRows, rowsPerPage]);
+
   const totals = useMemo(
     () => ({
       all: users.length,
@@ -423,11 +451,27 @@ export default function UsersAdminPage() {
           </div>
 
           <div className="mb-4 flex flex-col gap-3">
-            <UserTableSearch
-              value={search}
-              onChange={setSearch}
-              placeholder="Buscar por nombre, correo, UID, rol o membresia..."
-            />
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <UserTableSearch
+                value={search}
+                onChange={setSearch}
+                placeholder="Buscar por nombre, correo, UID, rol o membresia..."
+              />
+              <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-zinc-300">
+                Filas
+                <select
+                  value={rowsPerPage}
+                  onChange={(event) => setRowsPerPage(Number(event.target.value))}
+                  className="h-9 rounded-md border border-slate-200 bg-background px-2 text-sm outline-none focus:ring-2 focus:ring-yellow-400/40 dark:border-white/10"
+                >
+                  {[10, 25, 50, 100].map((value) => (
+                    <option key={value} value={value}>
+                      {value}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
             <div className="flex flex-wrap gap-2">
               {ROLE_FILTERS.map((filter) => (
                 <Button
@@ -450,13 +494,54 @@ export default function UsersAdminPage() {
           ) : null}
 
           <UserTable
-            rows={filteredRows}
+            rows={paginatedRows}
             onEdit={openEditModal}
             onDelete={handleDelete}
             onViewDetails={openDelegateLimit}
             onForceLogout={(uid) => handleSessionAction(uid, 'forceLogout')}
             onToggleBlock={(row) => handleSessionAction(row.uid, row.disabled ? 'unblock' : 'block')}
           />
+
+          <div className="mt-0 flex flex-col items-center justify-between gap-3 rounded-b-lg border-x border-b border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-black sm:flex-row">
+            <span className="text-sm text-muted-foreground">
+              Pagina <span className="font-medium text-foreground">{currentPage}</span> de {totalPages}
+            </span>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronsLeft className="size-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="size-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight className="size-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronsRight className="size-4" />
+              </Button>
+            </div>
+          </div>
         </section>
       </div>
 
