@@ -56,6 +56,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const mode = searchParams.get('mode');
     const targetRole = searchParams.get('role');
+    const scope = searchParams.get('scope');
 
     if (role === 'superadmin' && mode === 'users') {
       let usersQuery: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> =
@@ -91,7 +92,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ users });
     }
 
-    if (role === 'superadmin') {
+    if (role === 'superadmin' && scope !== 'me') {
       const notificationsSnap = await adminDb
         .collection('notifications')
         .orderBy('createdAt', 'desc')

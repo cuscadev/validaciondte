@@ -11,6 +11,9 @@ const ROUTE_MAP: Record<string, RouteEntry> = {
   '/dashboard': {
     segments: [{ label: 'Inicio' }],
   },
+  '/notificaciones': {
+    segments: [{ label: 'Notificaciones' }],
+  },
   '/consultarjson': {
     segments: [{ label: 'Consultar JSON' }],
   },

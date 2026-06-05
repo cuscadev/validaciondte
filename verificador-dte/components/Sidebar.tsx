@@ -311,6 +311,11 @@ export default function Sidebar({
       icon: Home,
     },
     {
+      href: '/notificaciones',
+      label: 'Notificaciones',
+      icon: Bell,
+    },
+    {
       href: '/verificadorDTE',
       label: 'sidebar.verificarDTEs',
       icon: FileText,

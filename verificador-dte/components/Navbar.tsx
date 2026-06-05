@@ -123,6 +123,18 @@ export default function Navbar({ onToggleSidebar }: { onToggleSidebar: () => voi
                 })}
               </ul>
             )}
+            <div className="border-t px-3 py-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setBellOpen(false);
+                  router.push('/notificaciones');
+                }}
+                className="w-full rounded-md px-3 py-2 text-center text-sm font-semibold text-primary transition hover:bg-muted"
+              >
+                Ver mas
+              </button>
+            </div>
           </div>
         )}
       </div>
