@@ -10,8 +10,8 @@ services:
       - key: PORT
         value: "8081"
       - key: GO_DTE_CONCURRENCY
-        value: "8"
+        value: "5"
       - key: GO_DTE_RATE_LIMIT_PER_SEC
-        value: "10"
+        value: "2"
       - key: HACIENDA_ENV
         value: "prod"
