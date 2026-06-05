@@ -16,7 +16,6 @@ import {
 import { useAuth } from '@/components/AuthProvider';
 import { db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
 import {
   Card,
   CardContent,
@@ -116,7 +115,6 @@ export default function EscaneosMobilePage() {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [clearingId, setClearingId] = useState<string | null>(null);
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
-  const [enrichCreditNotes, setEnrichCreditNotes] = useState(true);
 
   const folders = session?.folders || [];
   const totalScans = useMemo(
@@ -242,7 +240,7 @@ export default function EscaneosMobilePage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ folderId, enrichCreditNotes }),
+        body: JSON.stringify({ folderId, enrichCreditNotes: true }),
       });
       const data = await res.json();
 
@@ -321,15 +319,6 @@ export default function EscaneosMobilePage() {
             </div>
             <div className="flex items-end justify-start md:justify-end">
               <div className="flex flex-wrap items-center justify-start gap-3 md:justify-end">
-                <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Switch
-                    checked={enrichCreditNotes}
-                    onCheckedChange={setEnrichCreditNotes}
-                    aria-label="Verificar notas de credito relacionadas"
-                    disabled
-                  />
-                  Verificar notas de credito relacionadas
-                </label>
                 <Button
                   variant="outline"
                   disabled={!session?.id || clearingId === 'all' || folders.length === 0 || !!processingId}

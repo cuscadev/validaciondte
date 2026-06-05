@@ -120,11 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setAppUser(null);
         haciendaAuthUidRef.current = null;
         if (!isPublicPath(window.location.pathname)) {
-          if (wasAuthenticatedRef.current) {
-            // Session expired — AppShell will show the modal
-          } else {
-            router.replace('/login');
-          }
+          router.replace('/login');
         }
       }
       setAuthChecked(true);

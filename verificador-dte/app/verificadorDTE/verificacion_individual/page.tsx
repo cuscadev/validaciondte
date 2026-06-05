@@ -30,7 +30,6 @@ import {
 import { recordProcessingLog } from '@/lib/client-processing-log';
 import { DEFAULT_CONCURRENCY, pollDteJob } from '@/lib/go-dte-api';
 import { summarizeResults } from '@/lib/processing-log';
-import { Switch } from '@/components/ui/switch';
 import {
   ChevronLeft,
   ChevronRight,
@@ -61,7 +60,6 @@ export default function Page() {
   const [search, setSearch] = useState('');
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
-  const [enrichCreditNotes, setEnrichCreditNotes] = useState(true);
   const [progressDone, setProgressDone] = useState(0);
   const [progressTotal, setProgressTotal] = useState(0);
   const { resultsVisible, resetResultsVisibility, onResultsReveal } = useUploadResultsReveal();
@@ -188,7 +186,7 @@ export default function Page() {
           concurrencia: DEFAULT_CONCURRENCY,
           ambiente,
           includeExcel: true,
-          enrichCreditNotes,
+          enrichCreditNotes: true,
           async: items.length > 10,
         }),
       });
@@ -387,15 +385,6 @@ export default function Page() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3 border-t border-slate-200 px-4 py-3 dark:border-white/10">
-            <label className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Switch
-                checked={enrichCreditNotes}
-                onCheckedChange={setEnrichCreditNotes}
-                aria-label="Verificar notas de crédito relacionadas"
-                disabled
-              />
-              Verificar notas de crédito relacionadas
-            </label>
             <Button type="button" onClick={() => void validar()} disabled={loading || items.length === 0}>
               {loading ? t('prrocesardte_validando') : t('prrocesardte_validar')}
             </Button>

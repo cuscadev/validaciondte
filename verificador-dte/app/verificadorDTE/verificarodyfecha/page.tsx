@@ -17,7 +17,6 @@ import UploadTemplateDownloadButton from '@/components/upload/UploadTemplateDown
 import { useUploadResultsReveal } from '@/components/upload/useUploadResultsReveal'
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
 import { recordProcessingLog } from '@/lib/client-processing-log'
 import { summarizeFiles, summarizeResults } from '@/lib/processing-log'
 import { summarizeDteUploadResults } from '@/lib/upload-dte-stats'
@@ -88,7 +87,6 @@ export default function VerificarPorCodigoYFechaPage() {
   const [data, setData] = useState<Resultado[]>([])
   const [downloadHref, setDownloadHref] = useState<string | null>(null)
   const [filename, setFilename] = useState('resultados_dtes.xlsx')
-  const [enrichCreditNotes, setEnrichCreditNotes] = useState(true)
 
   // búsqueda & paginación
   const [search, setSearch] = useState('')
@@ -119,7 +117,6 @@ export default function VerificarPorCodigoYFechaPage() {
     try {
       const fd = new FormData()
       selectedFiles.forEach((f) => fd.append('files', f))
-      fd.append('enrichCreditNotes', String(enrichCreditNotes))
 
       const res = await fetch('/api/verificarcodyfecha', { method: 'POST', body: fd })
       if (!res.ok) {
@@ -275,17 +272,7 @@ export default function VerificarPorCodigoYFechaPage() {
                   Confirma que cada fila tenga código y fecha válidos, revisa el estado devuelto por Hacienda y filtra por código, fecha o estado para localizar resultados específicos.
                 </UploadTableHints>
               }
-            >
-              <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Switch
-                  checked={enrichCreditNotes}
-                  onCheckedChange={setEnrichCreditNotes}
-                  aria-label="Verificar notas de credito relacionadas"
-                  disabled
-                />
-                Verificar notas de credito relacionadas
-              </label>
-            </UploadFormSection>
+            />
 
             </UploadFormAccordion>
           </form>

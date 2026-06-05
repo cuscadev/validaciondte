@@ -39,7 +39,6 @@ function OnboardingOnlyLayout({ children }: { children: React.ReactNode }) {
 function ProtectedAppShellContent({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
-  const [sessionExpired, setSessionExpired] = useState(false)
   const [orgGate, setOrgGate] = useState<'loading' | 'ok' | 'onboarding' | 'blocked'>('loading')
   const router = useRouter()
   const pathname = usePathname()
@@ -78,15 +77,9 @@ function ProtectedAppShellContent({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!authChecked) return
     if (!isAuthenticated) {
-      if (document.cookie.includes('__session') === false && sessionStorage.getItem('was-authenticated') === 'true') {
-        setSessionExpired(true)
-      } else if (!document.cookie.includes('__session')) {
-        router.replace('/login')
-      }
+      router.replace('/login')
       return
     }
-
-    sessionStorage.setItem('was-authenticated', 'true')
 
     if (!isAccountUsable(appUser)) {
       setOrgGate('blocked')
@@ -153,8 +146,6 @@ function ProtectedAppShellContent({ children }: { children: React.ReactNode }) {
   ])
 
   const handleSessionExpiredRedirect = async () => {
-    setSessionExpired(false)
-    sessionStorage.removeItem('was-authenticated')
     await signOut(auth).catch(() => {})
     router.replace('/login')
   }
@@ -182,7 +173,7 @@ function ProtectedAppShellContent({ children }: { children: React.ReactNode }) {
   }
 
   if (!authChecked) return null
-  if (!isAuthenticated && !sessionExpired) return null
+  if (!isAuthenticated) return null
 
   if (orgGate === 'blocked' || (appUser && !isAccountUsable(appUser))) {
     return (
@@ -218,25 +209,6 @@ function ProtectedAppShellContent({ children }: { children: React.ReactNode }) {
 
   if (pathname === '/onboarding') {
     return <OnboardingOnlyLayout>{children}</OnboardingOnlyLayout>
-  }
-
-  if (sessionExpired) {
-    return (
-      <ThemeProvider>
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-background rounded-xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center space-y-4 border">
-            <div className="text-4xl">!</div>
-            <h2 className="text-xl font-semibold">{t('sessionExpiredTitle') || 'Sesion expirada'}</h2>
-            <p className="text-sm text-muted-foreground">
-              {t('sessionExpiredDescription') || 'Tu sesion ha expirado por inactividad. Por favor inicia sesion de nuevo.'}
-            </p>
-            <Button className="w-full" onClick={handleSessionExpiredRedirect}>
-              {t('sessionExpiredAction') || 'Ir al inicio de sesion'}
-            </Button>
-          </div>
-        </div>
-      </ThemeProvider>
-    )
   }
 
   return (

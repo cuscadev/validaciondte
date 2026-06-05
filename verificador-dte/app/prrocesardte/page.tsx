@@ -4,7 +4,6 @@
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Switch } from '@/components/ui/switch';
 
 type Item = { numItem: number; codGen: string; fechaEmi: string };
 
@@ -139,7 +138,6 @@ export default function Page() {
   const [loading, setLoading] = useState(false);
   const [resultados, setResultados] = useState<Record<number, Resultado>>({});
   const [ambiente, setAmbiente] = useState<'00' | '01'>('01');
-  const [enrichCreditNotes, setEnrichCreditNotes] = useState(true);
   const [errorGlobal, setErrorGlobal] = useState<string | null>(null);
   const [excelInfo, setExcelInfo] = useState<{ url?: string; base64?: string; name?: string } | null>(null);
 
@@ -254,7 +252,7 @@ export default function Page() {
           concurrencia: 8,
           ambiente,
           includeExcel: true, // Pedir Excel al backend
-          enrichCreditNotes,
+          enrichCreditNotes: true,
         }),
       });
 
@@ -419,16 +417,6 @@ export default function Page() {
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
-          <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-            <Switch
-              checked={enrichCreditNotes}
-              onCheckedChange={setEnrichCreditNotes}
-              aria-label="Verificar notas de credito relacionadas"
-              disabled
-            />
-            Verificar notas de credito relacionadas
-          </label>
-
           <button
             type="button"
             onClick={validar}

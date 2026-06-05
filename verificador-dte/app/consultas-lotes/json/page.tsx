@@ -26,6 +26,7 @@ type LoteItem = {
   ambiente?: string;
   versionApp?: number;
   estado?: string;
+  codigoLote?: string;
   codigoGeneracion?: string;
   selloRecibido?: string | null;
   fhProcesamiento?: string;
@@ -34,12 +35,18 @@ type LoteItem = {
   descripcionMsg?: string;
   observaciones?: unknown[];
   index?: number;
+  error?: string;
 };
 
 type LoteResponse = {
   procesados?: LoteItem[];
   rechazados?: LoteItem[];
   error?: string;
+  estado?: string;
+  codigoLote?: string;
+  codigoMsg?: string;
+  descripcionMsg?: string;
+  observaciones?: unknown[];
 };
 
 type LoteResult = {
@@ -56,19 +63,48 @@ function estadoClass(estado?: string) {
   return 'bg-slate-500 text-white';
 }
 
+function isLoteItem(value: LoteResponse | undefined): value is LoteItem {
+  return Boolean(
+    value &&
+      !Array.isArray(value) &&
+      (
+        'estado' in value ||
+        'codigoMsg' in value ||
+        'descripcionMsg' in value ||
+        'codigoLote' in value
+      )
+  );
+}
+
+function rowsFromResponse(response: LoteResponse | undefined, codigoLote: string) {
+  const procesados = (response?.procesados || []).map((item) => ({
+    ...item,
+    estado: item.estado || 'PROCESADO',
+    codigoLote: item.codigoLote || codigoLote,
+  }));
+  const rechazados = (response?.rechazados || []).map((item) => ({
+    ...item,
+    estado: item.estado || 'RECHAZADO',
+    codigoLote: item.codigoLote || codigoLote,
+  }));
+
+  if (procesados.length || rechazados.length) return [...procesados, ...rechazados];
+
+  if (isLoteItem(response)) {
+    return [{
+      ...response,
+      estado: response.estado || (response.error ? 'ERROR' : 'PROCESADO'),
+      codigoLote: response.codigoLote || codigoLote,
+    }];
+  }
+
+  return [];
+}
+
 function rowsFromResults(results: LoteResult[]) {
   return results.flatMap((result) => {
-    const procesados = (result.response?.procesados || []).map((item) => ({
+    const responseRows = rowsFromResponse(result.response, result.codigoLote).map((item) => ({
       ...item,
-      estado: item.estado || 'PROCESADO',
-      codigoLote: result.codigoLote,
-      loteStatus: result.status,
-      loteError: result.error || '',
-    }));
-    const rechazados = (result.response?.rechazados || []).map((item) => ({
-      ...item,
-      estado: item.estado || 'RECHAZADO',
-      codigoLote: result.codigoLote,
       loteStatus: result.status,
       loteError: result.error || '',
     }));
@@ -82,7 +118,7 @@ function rowsFromResults(results: LoteResult[]) {
         } as LoteItem & { codigoLote: string; loteStatus: string; loteError: string }]
       : [];
 
-    return [...procesados, ...rechazados, ...errorRows];
+    return [...responseRows, ...errorRows];
   });
 }
 
@@ -125,11 +161,11 @@ export default function ConsultaLotesJSONPage() {
   const totals = useMemo(() => {
     return {
       lotes: results.length,
-      procesados: results.reduce((acc, item) => acc + (item.response?.procesados?.length || 0), 0),
-      rechazados: results.reduce((acc, item) => acc + (item.response?.rechazados?.length || 0), 0),
+      procesados: allRows.filter((item) => item.estado === 'PROCESADO').length,
+      rechazados: allRows.filter((item) => item.estado === 'RECHAZADO').length,
       errores: results.filter((item) => item.status === 'error').length,
     };
-  }, [results]);
+  }, [allRows, results]);
 
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -167,6 +203,7 @@ export default function ConsultaLotesJSONPage() {
 
       const resultados = payload.resultados || [];
       setResults(resultados);
+      onResultsReveal();
       accordionApiRef.current?.setProcessingSummary(
         summarizeDteUploadResults(resultados)
       );

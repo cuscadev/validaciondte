@@ -15,7 +15,6 @@ import UploadTableHints from '@/components/upload/UploadTableHints'
 import { useUploadResultsReveal } from '@/components/upload/useUploadResultsReveal'
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
 import { recordProcessingLog } from '@/lib/client-processing-log'
 import { summarizeFiles, summarizeResults } from '@/lib/processing-log'
 import { summarizeDteUploadResults } from '@/lib/upload-dte-stats'
@@ -100,7 +99,6 @@ export default function Page() {
   const [data, setData] = useState<Resultado[]>([])
   const [downloadHref, setDownloadHref] = useState<string | null>(null)
   const [filename, setFilename] = useState('verificacion_json.xlsx')
-  const [enrichCreditNotes, setEnrichCreditNotes] = useState(true)
 
   // búsqueda & paginación
   const [search, setSearch] = useState('')
@@ -139,7 +137,6 @@ export default function Page() {
 
         const fd = new FormData()
         batch.forEach((f) => fd.append('files', f))
-        fd.append('enrichCreditNotes', String(enrichCreditNotes))
 
         const res = await fetch('/api/verificararchjson', { method: 'POST', body: fd })
         if (!res.ok) {
@@ -344,17 +341,7 @@ export default function Page() {
                   Verifica el estado del documento y contrasta los datos de emisor y receptor extraídos del JSON. Usa el buscador para encontrar códigos, nombres, NIT/NRC o correos.
                 </UploadTableHints>
               }
-            >
-              <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Switch
-                  checked={enrichCreditNotes}
-                  onCheckedChange={setEnrichCreditNotes}
-                  aria-label="Verificar notas de credito relacionadas"
-                  disabled
-                />
-                Verificar notas de credito relacionadas
-              </label>
-            </UploadFormSection>
+            />
 
             </UploadFormAccordion>
           </form>

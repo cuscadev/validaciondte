@@ -18,6 +18,7 @@ type LoteItem = {
   ambiente?: string;
   versionApp?: number;
   estado?: string;
+  codigoLote?: string;
   codigoGeneracion?: string;
   selloRecibido?: string | null;
   fhProcesamiento?: string;
@@ -26,12 +27,18 @@ type LoteItem = {
   descripcionMsg?: string;
   observaciones?: unknown[];
   index?: number;
+  error?: string;
 };
 
 type LoteResponse = {
   procesados?: LoteItem[];
   rechazados?: LoteItem[];
   error?: string;
+  estado?: string;
+  codigoLote?: string;
+  codigoMsg?: string;
+  descripcionMsg?: string;
+  observaciones?: unknown[];
 };
 
 function estadoClass(estado?: string) {
@@ -43,21 +50,61 @@ function estadoClass(estado?: string) {
 const emptyFiles = { count: 0, totalBytes: 0, extensions: [], mimeTypes: [] };
 
 function summarizeLoteResults(payload: LoteResponse) {
-  const procesados = payload.procesados?.length || 0;
-  const rechazados = payload.rechazados?.length || 0;
+  const rows = rowsFromLoteResponse(payload);
+  const procesados = rows.filter((item) => item.estado === 'PROCESADO').length;
+  const rechazados = rows.filter((item) => item.estado === 'RECHAZADO').length;
+  const errores = rows.filter((item) => item.estado === 'ERROR').length;
   const outcome: ProcessingOutcome =
-    rechazados === 0 ? 'success' : procesados === 0 ? 'error' : 'partial';
+    rechazados === 0 && errores === 0 ? 'success' : procesados === 0 ? 'error' : 'partial';
 
   return {
-    totalRecords: procesados + rechazados,
+    totalRecords: rows.length,
     successCount: procesados,
-    errorCount: rechazados,
+    errorCount: rechazados + errores,
     statusBreakdown: {
       PROCESADO: procesados,
       RECHAZADO: rechazados,
+      ERROR: errores,
     },
     outcome,
   };
+}
+
+function isLoteItem(value: LoteResponse | null | undefined): value is LoteItem {
+  return Boolean(
+    value &&
+      !Array.isArray(value) &&
+      (
+        'estado' in value ||
+        'codigoMsg' in value ||
+        'descripcionMsg' in value ||
+        'codigoLote' in value
+      )
+  );
+}
+
+function rowsFromLoteResponse(payload: LoteResponse | null) {
+  const procesados = (payload?.procesados || []).map((item) => ({
+    ...item,
+    estado: item.estado || 'PROCESADO',
+  }));
+  const rechazados = (payload?.rechazados || []).map((item) => ({
+    ...item,
+    estado: item.estado || 'RECHAZADO',
+  }));
+
+  if (procesados.length || rechazados.length) {
+    return [...procesados, ...rechazados];
+  }
+
+  if (isLoteItem(payload)) {
+    return [{
+      ...payload,
+      estado: payload.estado || (payload.error ? 'ERROR' : 'PROCESADO'),
+    }];
+  }
+
+  return [];
 }
 
 export default function ConsultaLotePage() {
@@ -68,9 +115,7 @@ export default function ConsultaLotePage() {
   const [data, setData] = useState<LoteResponse | null>(null);
 
   const rows = useMemo(() => {
-    const procesados = (data?.procesados || []).map((item) => ({ ...item, estado: item.estado || 'PROCESADO' }));
-    const rechazados = (data?.rechazados || []).map((item) => ({ ...item, estado: item.estado || 'RECHAZADO' }));
-    const all = [...procesados, ...rechazados];
+    const all = rowsFromLoteResponse(data);
     const q = search.trim().toLowerCase();
 
     if (!q) return all;
@@ -78,6 +123,7 @@ export default function ConsultaLotePage() {
     return all.filter((item) =>
       [
         item.estado,
+        item.codigoLote,
         item.codigoGeneracion,
         item.selloRecibido,
         item.codigoMsg,
@@ -197,7 +243,7 @@ export default function ConsultaLotePage() {
                   <CardTitle className="text-sm">Procesados</CardTitle>
                 </CardHeader>
                 <CardContent className="text-2xl font-semibold text-emerald-600">
-                  {data.procesados?.length || 0}
+                  {rowsFromLoteResponse(data).filter((item) => item.estado === 'PROCESADO').length}
                 </CardContent>
               </Card>
               <Card>
@@ -205,7 +251,7 @@ export default function ConsultaLotePage() {
                   <CardTitle className="text-sm">Rechazados</CardTitle>
                 </CardHeader>
                 <CardContent className="text-2xl font-semibold text-red-600">
-                  {data.rechazados?.length || 0}
+                  {rowsFromLoteResponse(data).filter((item) => item.estado === 'RECHAZADO').length}
                 </CardContent>
               </Card>
               <Card>
@@ -213,7 +259,7 @@ export default function ConsultaLotePage() {
                   <CardTitle className="text-sm">Total</CardTitle>
                 </CardHeader>
                 <CardContent className="text-2xl font-semibold">
-                  {(data.procesados?.length || 0) + (data.rechazados?.length || 0)}
+                  {rowsFromLoteResponse(data).length}
                 </CardContent>
               </Card>
             </section>
@@ -240,6 +286,7 @@ export default function ConsultaLotePage() {
                       <tr>
                         <th className="px-3 py-2 text-left">Index</th>
                         <th className="px-3 py-2 text-left">Estado</th>
+                        <th className="px-3 py-2 text-left">Lote</th>
                         <th className="px-3 py-2 text-left">Codigo generacion</th>
                         <th className="px-3 py-2 text-left">Sello recibido</th>
                         <th className="px-3 py-2 text-left">Fecha procesamiento</th>
@@ -255,6 +302,7 @@ export default function ConsultaLotePage() {
                           <td className="px-3 py-2">
                             <Badge className={estadoClass(item.estado)}>{item.estado || '-'}</Badge>
                           </td>
+                          <td className="px-3 py-2 font-mono text-xs">{item.codigoLote || codigoLote || '-'}</td>
                           <td className="px-3 py-2 font-mono text-xs">{item.codigoGeneracion || '-'}</td>
                           <td className="px-3 py-2 font-mono text-xs">{item.selloRecibido || '-'}</td>
                           <td className="px-3 py-2">{item.fhProcesamiento || '-'}</td>
@@ -269,7 +317,7 @@ export default function ConsultaLotePage() {
                       ))}
                       {rows.length === 0 && (
                         <tr>
-                          <td colSpan={8} className="px-3 py-8 text-center text-muted-foreground">
+                          <td colSpan={9} className="px-3 py-8 text-center text-muted-foreground">
                             No hay resultados para mostrar.
                           </td>
                         </tr>
