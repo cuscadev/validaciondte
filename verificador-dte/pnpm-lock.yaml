@@ -110,6 +110,9 @@ importers:
       jose:
         specifier: ^6.2.2
         version: 6.2.3
+      jsonwebtoken:
+        specifier: ^9.0.3
+        version: 9.0.3
       jspdf:
         specifier: ^3.0.1
         version: 3.0.4
@@ -216,6 +219,9 @@ importers:
       '@types/csv-parse':
         specifier: ^1.1.12
         version: 1.2.5
+      '@types/jsonwebtoken':
+        specifier: ^9.0.10
+        version: 9.0.10
       '@types/node':
         specifier: ^20.19.11
         version: 20.19.41
