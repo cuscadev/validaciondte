@@ -19,21 +19,12 @@ import { auth } from '@/lib/firebase';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-
-const VERIFICADOR_ROUTES = [
-  { key: 'verificador', label: 'Verificador Links' },
-  { key: 'verificarodyfecha', label: 'Verificar Codigo y Fecha' },
-  { key: 'verificadorjson', label: 'Verificador JSON' },
-  { key: 'verificacion_individual', label: 'Verificacion Individual' },
-];
-
-const EXTRAER_ROUTES = [
-  { key: 'compras-json', label: 'Compras JSON' },
-  { key: 'ventas-json', label: 'Ventas JSON' },
-  { key: 'sujetos-excluidos', label: 'Sujetos Excluidos JSON' },
-  { key: 'liquidacion-json', label: 'Liquidaciones JSON' },
-  { key: 'plantillas-pdf', label: 'Plantillas PDF personalizadas' },
-];
+import {
+  DEFAULT_FREE_ROUTES,
+  DEFAULT_PREMIUM_ROUTES,
+  DEFAULT_PRO_ROUTES,
+  PLAN_ROUTE_GROUPS,
+} from '@/lib/plan-routes';
 
 const PLANS = [
   { id: 'free', label: 'Free', description: 'Acceso inicial para probar la plataforma.' },
@@ -63,7 +54,7 @@ type PlansState = Record<string, PlanConfig>;
 
 const DEFAULT_PLANS: PlansState = {
   free: {
-    allowedRoutes: EXTRAER_ROUTES.map(r => r.key),
+    allowedRoutes: DEFAULT_FREE_ROUTES,
     queryLimit: 10,
     mobileScanFolderLimit: 25,
     maxCollaborators: 2,
@@ -75,7 +66,7 @@ const DEFAULT_PLANS: PlansState = {
     visibleInLanding: true,
   },
   premium: {
-    allowedRoutes: [...VERIFICADOR_ROUTES.map(r => r.key), ...EXTRAER_ROUTES.map(r => r.key)],
+    allowedRoutes: DEFAULT_PREMIUM_ROUTES,
     queryLimit: 100,
     mobileScanFolderLimit: 50,
     maxCollaborators: 10,
@@ -87,7 +78,7 @@ const DEFAULT_PLANS: PlansState = {
     visibleInLanding: true,
   },
   pro: {
-    allowedRoutes: [...VERIFICADOR_ROUTES.map(r => r.key), ...EXTRAER_ROUTES.map(r => r.key)],
+    allowedRoutes: DEFAULT_PRO_ROUTES,
     queryLimit: null,
     mobileScanFolderLimit: 100,
     maxCollaborators: 50,
@@ -389,54 +380,36 @@ export default function PlanesPage() {
                       Herramientas con acceso
                     </p>
                     <div className="grid gap-2">
-                      <div>
-                        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-zinc-500">Verificador</p>
-                        {VERIFICADOR_ROUTES.map(route => {
-                          const checked = cfg.allowedRoutes.includes(route.key);
-                          return (
-                            <label
-                              key={route.key}
-                              className={`flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 text-sm transition ${
-                                checked
-                                  ? 'border-yellow-300 bg-yellow-50 text-slate-950 dark:border-yellow-400/50 dark:bg-yellow-400/10 dark:text-white'
-                                  : 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:text-zinc-300 dark:hover:bg-black'
-                              }`}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={checked}
-                                onChange={() => toggleRoute(plan.id, route.key)}
-                                className="size-4 rounded accent-yellow-400"
-                              />
-                              <span>{route.label}</span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                      <div>
-                        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-zinc-500">Extraer DTEs</p>
-                        {EXTRAER_ROUTES.map(route => {
-                          const checked = cfg.allowedRoutes.includes(route.key);
-                          return (
-                            <label
-                              key={route.key}
-                              className={`flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 text-sm transition ${
-                                checked
-                                  ? 'border-yellow-300 bg-yellow-50 text-slate-950 dark:border-yellow-400/50 dark:bg-yellow-400/10 dark:text-white'
-                                  : 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:text-zinc-300 dark:hover:bg-black'
-                              }`}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={checked}
-                                onChange={() => toggleRoute(plan.id, route.key)}
-                                className="size-4 rounded accent-yellow-400"
-                              />
-                              <span>{route.label}</span>
-                            </label>
-                          );
-                        })}
-                      </div>
+                      {PLAN_ROUTE_GROUPS.map(group => (
+                        <div key={group.key}>
+                          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-zinc-500">
+                            {group.label}
+                          </p>
+                          <div className="grid gap-2">
+                            {group.routes.map(route => {
+                              const checked = cfg.allowedRoutes.includes(route.key);
+                              return (
+                                <label
+                                  key={route.key}
+                                  className={`flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 text-sm transition ${
+                                    checked
+                                      ? 'border-yellow-300 bg-yellow-50 text-slate-950 dark:border-yellow-400/50 dark:bg-yellow-400/10 dark:text-white'
+                                      : 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:text-zinc-300 dark:hover:bg-black'
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={() => toggleRoute(plan.id, route.key)}
+                                    className="size-4 rounded accent-yellow-400"
+                                  />
+                                  <span>{route.label}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </section>
 

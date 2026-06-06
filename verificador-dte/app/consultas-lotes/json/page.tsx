@@ -218,7 +218,7 @@ export default function ConsultaLotesJSONPage() {
   };
 
   return (
-    <PlanGate routeKey="consulta_lote">
+    <PlanGate routeKey="consultas_lotes_json">
       <main className="space-y-5">
             <form onSubmit={onSubmit} className="overflow-hidden rounded-lg border border-border">
               <UploadFormAccordion

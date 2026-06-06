@@ -108,6 +108,9 @@ function rowsFromLoteResponse(payload: LoteResponse | null) {
 }
 
 export default function ConsultaLotePage() {
+  const accessRouteKey = 'consulta_lote_codigo';
+  const logRouteKey = 'consulta_lote_codigo';
+  const moduleName = 'Consulta por Codigo de Lote';
   const [codigoLote, setCodigoLote] = useState('');
   const [environment, setEnvironment] = useState<'test' | 'production'>('test');
   const [search, setSearch] = useState('');
@@ -166,8 +169,8 @@ export default function ConsultaLotePage() {
       setData(payload);
       toast.success('Consulta completada.');
       await recordProcessingLog({
-        routeKey: 'consulta-lote',
-        moduleName: 'Consulta por Codigo',
+        routeKey: logRouteKey,
+        moduleName,
         startedAt: startedAt.toISOString(),
         endedAt: new Date().toISOString(),
         durationMs: Math.round(performance.now() - started),
@@ -178,8 +181,8 @@ export default function ConsultaLotePage() {
       const message = error instanceof Error ? error.message : 'No se pudo consultar el lote.';
       toast.error(message);
       await recordProcessingLog({
-        routeKey: 'consulta-lote',
-        moduleName: 'Consulta por Codigo',
+        routeKey: logRouteKey,
+        moduleName,
         startedAt: startedAt.toISOString(),
         endedAt: new Date().toISOString(),
         durationMs: Math.round(performance.now() - started),
@@ -197,7 +200,7 @@ export default function ConsultaLotePage() {
   };
 
   return (
-    <PlanGate routeKey="consulta_lote">
+    <PlanGate routeKey={accessRouteKey}>
       <main className="space-y-5">
         <section className="space-y-4">
           <header>

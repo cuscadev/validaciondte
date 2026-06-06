@@ -26,6 +26,7 @@ import {
 
 import { useAuth } from '@/components/AuthProvider';
 import { canManageOrgUsers } from '@/lib/firestoreUser';
+import { useCurrentPlanConfig } from '@/hooks/usePlanAccess';
 import {
   Tooltip,
   TooltipContent,
@@ -43,12 +44,14 @@ import { cn } from '@/lib/utils';
 type NavChild = {
   href: string;
   label: string;
+  routeKey?: string;
 };
 
 type Item = {
   href: string;
   label: string;
   icon: LucideIcon;
+  routeKey?: string;
   children?: NavChild[];
 };
 
@@ -234,8 +237,9 @@ export default function Sidebar({
   const [openFlyoutHref, setOpenFlyoutHref] = useState<string | null>(null);
 
   const { appUser } = useAuth();
+  const { allowedRoutes, isSuperadmin: planSuperadmin } = useCurrentPlanConfig();
 
-  const isSuperadmin = appUser?.role === 'superadmin';
+  const isSuperadmin = appUser?.role === 'superadmin' || planSuperadmin;
   const isCliente = appUser?.role === 'cliente';
   const showOrgUsers = canManageOrgUsers(appUser);
 
@@ -243,18 +247,22 @@ export default function Sidebar({
     {
       href: '/verificadorDTE/verificador',
       label: 'sidebar.verificadorLinks',
+      routeKey: 'verificador',
     },
     {
       href: '/verificadorDTE/verificarodyfecha',
       label: 'sidebar.verificadorCodigoFecha',
+      routeKey: 'verificarodyfecha',
     },
     {
       href: '/verificadorDTE/verificadorjson',
       label: 'sidebar.verificadorJSON',
+      routeKey: 'verificadorjson',
     },
     {
       href: '/verificadorDTE/verificacion_individual',
       label: 'sidebar.verificacionIndividual',
+      routeKey: 'verificacion_individual',
     },
   ];
 
@@ -262,22 +270,27 @@ export default function Sidebar({
     {
       href: '/consultas-lotes/codigo-lote',
       label: 'Consulta por codigo de lote',
+      routeKey: 'consulta_lote_codigo',
     },
     {
       href: '/consultas-lotes/excel-codigo-fecha',
       label: 'Excel codigo y fecha',
+      routeKey: 'consultas_lotes_excel_codigo_fecha',
     },
     {
       href: '/consultas-lotes/json',
       label: 'Subir JSON',
+      routeKey: 'consultas_lotes_json',
     },
     {
       href: '/consultas-lotes/individual',
       label: 'Consulta individual',
+      routeKey: 'consultas_lotes_individual',
     },
     {
       href: '/consultas-lotes/qr-pdf',
       label: 'QR PDF',
+      routeKey: 'consultas_lotes_qr_pdf',
     },
   ];
 
@@ -285,22 +298,27 @@ export default function Sidebar({
     {
       href: '/extraer/compras-json',
       label: 'Compras JSON',
+      routeKey: 'compras-json',
     },
     {
       href: '/extraer/ventas-json',
       label: 'Ventas JSON',
+      routeKey: 'ventas-json',
     },
     {
       href: '/extraer/sujetos-excluidos',
       label: 'Sujetos Excluidos JSON',
+      routeKey: 'sujetos-excluidos',
     },
     {
       href: '/extraer/liquidacion-json',
       label: 'Liquidaciones JSON',
+      routeKey: 'liquidacion-json',
     },
     {
       href: '/extraer/qr-pdf',
       label: 'QR PDF',
+      routeKey: 'qr-pdf',
     },
   ];
 
@@ -332,11 +350,13 @@ export default function Sidebar({
       href: '/plantillas-pdf',
       label: 'Plantillas PDF',
       icon: Palette,
+      routeKey: 'plantillas-pdf',
     },
     {
       href: '/escaneos-mobile',
       label: 'Escaneo desde la app',
       icon: Smartphone,
+      routeKey: 'escaneos-mobile',
     },
     {
       href: '/tributario',
@@ -347,6 +367,7 @@ export default function Sidebar({
       href: '/integraciones/gmail',
       label: 'Importar desde Gmail',
       icon: Mail,
+      routeKey: 'integraciones-gmail',
     },
     {
       href: '/configuraciones',
@@ -427,10 +448,32 @@ export default function Sidebar({
     children: monitoringChildren,
   };
 
+  const planFilteredBaseItems = useMemo(() => {
+    if (isSuperadmin) return baseItems;
+
+    const allowed = new Set(allowedRoutes);
+    return baseItems
+      .map((item) => {
+        if (item.children) {
+          const children = item.children.filter((child) => {
+            return !child.routeKey || allowed.has(child.routeKey);
+          });
+          return children.length > 0 ? { ...item, children } : null;
+        }
+
+        if (item.routeKey && !allowed.has(item.routeKey)) {
+          return null;
+        }
+
+        return item;
+      })
+      .filter((item): item is Item => Boolean(item));
+  }, [allowedRoutes, baseItems, isSuperadmin]);
+
   const items = useMemo(() => {
     if (isSuperadmin) {
       return [
-        ...baseItems,
+        ...planFilteredBaseItems,
         adminItem,
         planesItem,
         avisosItem,
@@ -442,16 +485,16 @@ export default function Sidebar({
 
     if (showOrgUsers) {
       return isCliente
-        ? [...baseItems, orgKycItem, orgUsersItem, notificationsItem]
-        : [...baseItems, orgUsersItem, notificationsItem];
+        ? [...planFilteredBaseItems, orgKycItem, orgUsersItem, notificationsItem]
+        : [...planFilteredBaseItems, orgUsersItem, notificationsItem];
     }
 
     if (isCliente) {
-      return [...baseItems, orgKycItem, notificationsItem];
+      return [...planFilteredBaseItems, orgKycItem, notificationsItem];
     }
 
-    return [...baseItems, notificationsItem];
-  }, [isSuperadmin, showOrgUsers, isCliente]);
+    return [...planFilteredBaseItems, notificationsItem];
+  }, [isSuperadmin, showOrgUsers, isCliente, planFilteredBaseItems]);
 
   useEffect(() => {
     setOpenFlyoutHref(null);

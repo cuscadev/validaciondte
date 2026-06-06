@@ -14,6 +14,7 @@ import {
 } from '@/lib/upload-table-export'
 import { useUploadResultsReveal } from '@/components/upload/useUploadResultsReveal'
 import { useEffect, useMemo, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { recordProcessingLog } from '@/lib/client-processing-log'
 import { summarizeFiles } from '@/lib/processing-log'
@@ -47,6 +48,13 @@ type ColumnKey = keyof QrPdfResultado
 const MAX_FILES = 100
 
 export default function QrPdfPage() {
+  const pathname = usePathname()
+  const isConsultasLotes = pathname.startsWith('/consultas-lotes/qr-pdf')
+  const accessRouteKey = isConsultasLotes ? 'consultas_lotes_qr_pdf' : 'qr-pdf'
+  const logRouteKey = accessRouteKey
+  const moduleName = isConsultasLotes
+    ? 'Consultas lotes - QR PDF'
+    : 'Extractor QR desde PDF'
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
 
   const [loading, setLoading] = useState(false)
@@ -250,8 +258,8 @@ export default function QrPdfPage() {
       )
 
       await recordProcessingLog({
-        routeKey: 'qr-pdf',
-        moduleName: 'Extractor QR desde PDF',
+        routeKey: logRouteKey,
+        moduleName,
         startedAt: startedAt.toISOString(),
         endedAt: new Date().toISOString(),
         durationMs: Math.round(
@@ -277,8 +285,8 @@ export default function QrPdfPage() {
       toast.error(message)
 
       await recordProcessingLog({
-        routeKey: 'qr-pdf',
-        moduleName: 'Extractor QR desde PDF',
+        routeKey: logRouteKey,
+        moduleName,
         startedAt: startedAt.toISOString(),
         endedAt: new Date().toISOString(),
         durationMs: Math.round(
@@ -467,7 +475,7 @@ export default function QrPdfPage() {
   }
 
   return (
-    <PlanGate routeKey="qr-pdf">
+    <PlanGate routeKey={accessRouteKey}>
       <main className="w-full max-w-full space-y-6 dark:bg-background">
             <form
               onSubmit={onSubmit}

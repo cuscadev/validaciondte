@@ -16,6 +16,7 @@ import HelpTooltip from '@/components/upload/HelpTooltip'
 import UploadTemplateDownloadButton from '@/components/upload/UploadTemplateDownloadButton'
 import { useUploadResultsReveal } from '@/components/upload/useUploadResultsReveal'
 import { useAuth } from '@/components/AuthProvider'
+import { usePathname } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { recordProcessingLog } from '@/lib/client-processing-log'
@@ -83,6 +84,13 @@ type Resultado = {
 }
 
 export default function VerificarPorCodigoYFechaPage() {
+  const pathname = usePathname()
+  const isConsultasLotes = pathname.startsWith('/consultas-lotes/excel-codigo-fecha')
+  const accessRouteKey = isConsultasLotes ? 'consultas_lotes_excel_codigo_fecha' : 'verificarodyfecha'
+  const logRouteKey = accessRouteKey
+  const moduleName = isConsultasLotes
+    ? 'Consultas lotes - Excel codigo y fecha'
+    : 'Verificar por Codigo y Fecha'
   const { appUser, firebaseUser } = useAuth()
   const createdBy =
     appUser?.displayName || appUser?.email || firebaseUser?.displayName || firebaseUser?.email || 'Usuario'
@@ -150,8 +158,8 @@ export default function VerificarPorCodigoYFechaPage() {
 
       toast.success('Procesamiento finalizado. Revisa la tabla y descarga el Excel.')
       await recordProcessingLog({
-        routeKey: 'verificarodyfecha',
-        moduleName: 'Verificar por Codigo y Fecha',
+        routeKey: logRouteKey,
+        moduleName,
         startedAt: startedAt.toISOString(),
         endedAt: new Date().toISOString(),
         durationMs: Math.round(performance.now() - started),
@@ -161,8 +169,8 @@ export default function VerificarPorCodigoYFechaPage() {
     } catch (e: any) {
       toast.error(e?.message || 'Error inesperado')
       await recordProcessingLog({
-        routeKey: 'verificarodyfecha',
-        moduleName: 'Verificar por Codigo y Fecha',
+        routeKey: logRouteKey,
+        moduleName,
         startedAt: startedAt.toISOString(),
         endedAt: new Date().toISOString(),
         durationMs: Math.round(performance.now() - started),
@@ -247,7 +255,7 @@ export default function VerificarPorCodigoYFechaPage() {
   }
 
   return (
-    <PlanGate routeKey="verificarodyfecha">
+    <PlanGate routeKey={accessRouteKey}>
     <main className="w-full max-w-full space-y-6">
           <form onSubmit={onSubmit} className="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10">
             <UploadFormAccordion

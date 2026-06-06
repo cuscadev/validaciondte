@@ -41,6 +41,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { usePathname } from 'next/navigation';
 import { consumeVerifyBatch } from '@/lib/gmail/verification-bridge';
 import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
@@ -50,6 +51,13 @@ type Item = { numItem: number; codGen: string; fechaEmi: string };
 const MAX_ITEMS = 10;
 
 export default function Page() {
+  const pathname = usePathname();
+  const isConsultasLotes = pathname.startsWith('/consultas-lotes/individual');
+  const accessRouteKey = isConsultasLotes ? 'consultas_lotes_individual' : 'verificacion_individual';
+  const logRouteKey = accessRouteKey;
+  const moduleName = isConsultasLotes
+    ? 'Consultas lotes - Consulta individual'
+    : 'Verificacion Individual';
   const { t } = useTranslation();
   const { appUser, firebaseUser } = useAuth();
   const createdBy =
@@ -217,8 +225,8 @@ export default function Page() {
       onResultsReveal();
       toast.success(t('prrocesardte_validar_ok'));
       await recordProcessingLog({
-        routeKey: 'verificacion_individual',
-        moduleName: 'Verificacion Individual',
+        routeKey: logRouteKey,
+        moduleName,
         startedAt: startedAt.toISOString(),
         endedAt: new Date().toISOString(),
         durationMs: Math.round(performance.now() - started),
@@ -230,8 +238,8 @@ export default function Page() {
       setErrorGlobal(msg);
       toast.error(msg);
       await recordProcessingLog({
-        routeKey: 'verificacion_individual',
-        moduleName: 'Verificacion Individual',
+        routeKey: logRouteKey,
+        moduleName,
         startedAt: startedAt.toISOString(),
         endedAt: new Date().toISOString(),
         durationMs: Math.round(performance.now() - started),
@@ -294,7 +302,7 @@ export default function Page() {
   );
 
   return (
-    <PlanGate routeKey="verificacion_individual">
+    <PlanGate routeKey={accessRouteKey}>
       <main className="w-full max-w-full space-y-6 dark:bg-background">
         <section className="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-white/10">
