@@ -132,26 +132,27 @@ func publicAPIEnvPrefix(ambiente string) string {
 }
 
 type publicAPIResponse struct {
-	EstadoDoc          string   `json:"estadoDoc"`
-	DescripcionEstado  string   `json:"descripcionEstado"`
-	FechaEmi           string   `json:"fechaEmi"`
-	HoraEmi            string   `json:"horaEmi"`
-	FechaProcesado     string   `json:"fechaProcesado"`
-	CodGen             string   `json:"codGen"`
-	SelloVal           string   `json:"selloVal"`
-	Action             string   `json:"action"`
-	TipoDte            string   `json:"tipoDte"`
-	NombDte            string   `json:"nombDte"`
-	Ajustes            []publicAPIAjuste `json:"ajustes"`
-	Observaciones      []string `json:"observaciones"`
-	Documento          *publicAPIDocumento `json:"documento"`
+	EstadoDoc         string              `json:"estadoDoc"`
+	DescripcionEstado string              `json:"descripcionEstado"`
+	FechaEmi          string              `json:"fechaEmi"`
+	HoraEmi           string              `json:"horaEmi"`
+	FechaProcesado    string              `json:"fechaProcesado"`
+	CodGen            string              `json:"codGen"`
+	SelloVal          string              `json:"selloVal"`
+	Action            string              `json:"action"`
+	TipoDte           string              `json:"tipoDte"`
+	NombDte           string              `json:"nombDte"`
+	Ajustes           []publicAPIAjuste   `json:"ajustes"`
+	Observaciones     []string            `json:"observaciones"`
+	OtroEvento        []any               `json:"otroEvento"`
+	Documento         *publicAPIDocumento `json:"documento"`
 }
 
 type publicAPIAjuste struct {
-	TipDteRef            string `json:"tipDteRef"`
-	CodigoGeneracionRef  string `json:"codigoGeneracionRef"`
-	NumValidacionRef     string `json:"numValidacionRef"`
-	FecHorEmi            string `json:"fecHorEmi"`
+	TipDteRef           string `json:"tipDteRef"`
+	CodigoGeneracionRef string `json:"codigoGeneracionRef"`
+	NumValidacionRef    string `json:"numValidacionRef"`
+	FecHorEmi           string `json:"fecHorEmi"`
 }
 
 type publicAPIDocumento struct {
@@ -161,16 +162,28 @@ type publicAPIDocumento struct {
 		HorEmi        string `json:"horEmi"`
 	} `json:"identificacion"`
 	Resumen struct {
-		MontoTotalOperacion *float64 `json:"montoTotalOperacion"`
-		TotalPagar          *float64 `json:"totalPagar"`
-		TotalIva            *float64 `json:"totalIva"`
-		IvaRete             *float64 `json:"ivaRete"`
-		IvaPerci            *float64 `json:"ivaPerci"`
-		ReteRenta           *float64 `json:"reteRenta"`
-		TotalNoGravado      *float64 `json:"totalNoGravado"`
+		MontoTotalOperacion *float64           `json:"montoTotalOperacion"`
+		TotalPagar          *float64           `json:"totalPagar"`
+		SubTotalVentas      *float64           `json:"subTotalVentas"`
+		SubTotal            *float64           `json:"subTotal"`
+		TotalGravada        *float64           `json:"totalGravada"`
+		TotalIva            *float64           `json:"totalIva"`
+		IvaRete             *float64           `json:"ivaRete"`
+		IvaRete1            *float64           `json:"ivaRete1"`
+		IvaPerci            *float64           `json:"ivaPerci"`
+		IvaPerci1           *float64           `json:"ivaPerci1"`
+		ReteRenta           *float64           `json:"reteRenta"`
+		TotalNoGravado      *float64           `json:"totalNoGravado"`
+		Tributos            []publicAPITributo `json:"tributos"`
 	} `json:"resumen"`
 	Emisor   *publicAPIParty `json:"emisor"`
 	Receptor *publicAPIParty `json:"receptor"`
+}
+
+type publicAPITributo struct {
+	Codigo      string   `json:"codigo"`
+	Descripcion string   `json:"descripcion"`
+	Valor       *float64 `json:"valor"`
 }
 
 type publicAPIParty struct {
@@ -220,6 +233,7 @@ func mapPublicAPIResponse(payload publicAPIResponse, base Result) Result {
 	result.FechaEmi = NormalizarFecha(payload.FechaEmi)
 	result.FechaHoraGeneracion = joinDateTime(payload.FechaEmi, payload.HoraEmi)
 	result.FechaHoraProcesamiento = Clean(payload.FechaProcesado)
+	result.FechaHoraTransmision = Clean(payload.FechaProcesado)
 
 	if payload.Documento != nil {
 		result.NumeroControl = Clean(payload.Documento.Identificacion.NumeroControl)
@@ -230,13 +244,28 @@ func mapPublicAPIResponse(payload publicAPIResponse, base Result) Result {
 			)
 		}
 		result.MontoTotal = formatAPIAmount(
-			payload.Documento.Resumen.MontoTotalOperacion,
+			payload.Documento.Resumen.SubTotalVentas,
+			payload.Documento.Resumen.SubTotal,
+			payload.Documento.Resumen.TotalGravada,
 			payload.Documento.Resumen.TotalPagar,
+			payload.Documento.Resumen.MontoTotalOperacion,
 		)
-		result.TotalPagarOperacion = formatAPIAmount(payload.Documento.Resumen.TotalPagar)
-		result.IvaOperaciones = formatAPIAmount(payload.Documento.Resumen.TotalIva)
-		result.IvaRetenido = formatAPIAmount(payload.Documento.Resumen.IvaRete)
-		result.IvaPercibido = formatAPIAmount(payload.Documento.Resumen.IvaPerci)
+		result.TotalPagarOperacion = formatAPIAmount(
+			payload.Documento.Resumen.TotalPagar,
+			payload.Documento.Resumen.MontoTotalOperacion,
+		)
+		result.IvaOperaciones = formatAPIAmount(
+			payload.Documento.Resumen.TotalIva,
+			sumTributos(payload.Documento.Resumen.Tributos),
+		)
+		result.IvaRetenido = formatAPIAmount(
+			payload.Documento.Resumen.IvaRete,
+			payload.Documento.Resumen.IvaRete1,
+		)
+		result.IvaPercibido = formatAPIAmount(
+			payload.Documento.Resumen.IvaPerci,
+			payload.Documento.Resumen.IvaPerci1,
+		)
 		result.RetencionRenta = formatAPIAmount(payload.Documento.Resumen.ReteRenta)
 		result.TotalNoAfectos = formatAPIAmount(payload.Documento.Resumen.TotalNoGravado)
 		mapPublicAPIParty(payload.Documento.Emisor, &result, true)
@@ -260,6 +289,14 @@ func mapPublicAPIResponse(payload publicAPIResponse, base Result) Result {
 	if len(payload.Ajustes) > 0 {
 		result.Ajustado = true
 		result.DocumentoAjustado = payload.Ajustes[0].CodigoGeneracionRef
+	} else {
+		result.DocumentoAjustado = "El documento no ha sido ajustado"
+	}
+
+	if len(payload.OtroEvento) > 0 {
+		result.DocumentoEventoAplicado = "SI"
+	} else {
+		result.DocumentoEventoAplicado = "NO"
 	}
 
 	if !result.OK && result.Error == "" {
@@ -386,4 +423,24 @@ func formatAPIAmount(values ...*float64) string {
 		return strconv.FormatFloat(*value, 'f', -1, 64)
 	}
 	return ""
+}
+
+func sumTributos(items []publicAPITributo) *float64 {
+	if len(items) == 0 {
+		return nil
+	}
+
+	var total float64
+	found := false
+	for _, item := range items {
+		if item.Valor == nil {
+			continue
+		}
+		total += *item.Valor
+		found = true
+	}
+	if !found {
+		return nil
+	}
+	return &total
 }

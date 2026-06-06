@@ -27,6 +27,10 @@ func TestExtractDTEJSONFields(t *testing.T) {
 			"montoTotalOperacion": 100.0,
 			"totalPagar":          113.0,
 			"totalIva":            13.0,
+			"ivaPerci1":           1.0,
+			"ivaRete1":            2.0,
+			"reteRenta":           3.0,
+			"totalNoGravado":      4.0,
 		},
 		"selloRecibido": "SELLO-123",
 		"emisor": map[string]any{
@@ -54,6 +58,18 @@ func TestExtractDTEJSONFields(t *testing.T) {
 	}
 	if got.IvaOperaciones != "13.00" {
 		t.Fatalf("IvaOperaciones = %q", got.IvaOperaciones)
+	}
+	if got.IvaPercibido != "1.00" {
+		t.Fatalf("IvaPercibido = %q", got.IvaPercibido)
+	}
+	if got.IvaRetenido != "2.00" {
+		t.Fatalf("IvaRetenido = %q", got.IvaRetenido)
+	}
+	if got.RetencionRenta != "3.00" {
+		t.Fatalf("RetencionRenta = %q", got.RetencionRenta)
+	}
+	if got.TotalNoAfectos != "4.00" {
+		t.Fatalf("TotalNoAfectos = %q", got.TotalNoAfectos)
 	}
 	if got.EmisorNombre != "EMPRESA SA" {
 		t.Fatalf("EmisorNombre = %q", got.EmisorNombre)

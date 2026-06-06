@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	uuidInTextRegex = regexp.MustCompile(`(?i)"codigoGeneracion"\s*:\s*"([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})"`)
+	uuidInTextRegex   = regexp.MustCompile(`(?i)"codigoGeneracion"\s*:\s*"([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})"`)
 	fecEmiInTextRegex = regexp.MustCompile(`(?i)"(?:fecEmi|fechaEmi|fechaEmision)"\s*:\s*"(\d{4}-\d{2}-\d{2}|\d{2}/\d{2}/\d{4})"`)
 	jwsTokenRegex     = regexp.MustCompile(`(?m)^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$`)
 )
@@ -375,7 +375,11 @@ func ExtractDTEJSONFields(item map[string]any) Result {
 		IvaPercibido:     firstNonEmpty(jsonAsString(resumen["ivaPerci1"]), jsonAsString(resumen["ivaPercibido"])),
 		IvaRetenido:      firstNonEmpty(jsonAsString(resumen["ivaRete1"]), jsonAsString(resumen["ivaRetenido"])),
 		RetencionRenta:   jsonAsString(resumen["reteRenta"]),
-		TotalNoAfectos:   firstNonEmpty(jsonAsString(resumen["totalNoSuj"]), jsonAsString(resumen["totalExenta"])),
+		TotalNoAfectos: firstNonEmpty(
+			jsonAsString(resumen["totalNoGravado"]),
+			jsonAsString(resumen["totalNoSuj"]),
+			jsonAsString(resumen["totalExenta"]),
+		),
 		TotalPagarOperacion: firstNonEmpty(
 			jsonAsString(resumen["totalPagar"]),
 			jsonAsString(resumen["montoTotalOperacion"]),

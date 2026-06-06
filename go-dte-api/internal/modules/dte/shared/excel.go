@@ -1,9 +1,6 @@
 package shared
 
-
-
 import (
-
 	"bytes"
 
 	"encoding/base64"
@@ -12,13 +9,8 @@ import (
 
 	"strings"
 
-
-
 	"github.com/xuri/excelize/v2"
-
 )
-
-
 
 var reportHeaders = []string{
 
@@ -45,10 +37,7 @@ var reportHeaders = []string{
 	"notaCreditoNumeroControl", "notaCreditoMontoTotal", "notaCreditoLinkVisita", "notaCreditoError",
 
 	"relacionadosTexto", "error",
-
 }
-
-
 
 func BuildExcelBase64(results []Result) (string, error) {
 
@@ -56,15 +45,11 @@ func BuildExcelBase64(results []Result) (string, error) {
 
 	defer file.Close()
 
-
-
 	defaultSheet := file.GetSheetName(file.GetActiveSheetIndex())
 
 	file.SetSheetName(defaultSheet, "Resumen")
 
 	writeSummary(file, "Resumen", results)
-
-
 
 	writeResultsSheet(file, "Todos", results)
 
@@ -78,8 +63,6 @@ func BuildExcelBase64(results []Result) (string, error) {
 
 	writeRelatedSheet(file, results)
 
-
-
 	var buf bytes.Buffer
 
 	if err := file.Write(&buf); err != nil {
@@ -91,8 +74,6 @@ func BuildExcelBase64(results []Result) (string, error) {
 	return base64.StdEncoding.EncodeToString(buf.Bytes()), nil
 
 }
-
-
 
 func writeSummary(file *excelize.File, sheet string, results []Result) {
 
@@ -107,8 +88,6 @@ func writeSummary(file *excelize.File, sheet string, results []Result) {
 	file.SetCellValue(sheet, "A6", "Estado")
 
 	file.SetCellValue(sheet, "B6", "Cantidad")
-
-
 
 	counts := map[string]int{}
 
@@ -134,15 +113,11 @@ func writeSummary(file *excelize.File, sheet string, results []Result) {
 
 }
 
-
-
 func writeResultsSheet(file *excelize.File, sheet string, results []Result) {
 
 	name := sheetNameSafe(sheet)
 
 	file.NewSheet(name)
-
-
 
 	for col, header := range reportHeaders {
 
@@ -152,11 +127,7 @@ func writeResultsSheet(file *excelize.File, sheet string, results []Result) {
 
 	}
 
-
-
 	ncLinkCol := headerColumn("notaCreditoLinkVisita")
-
-
 
 	for row, r := range results {
 
@@ -187,13 +158,11 @@ func writeResultsSheet(file *excelize.File, sheet string, results []Result) {
 
 	}
 
-
-
-	file.SetColWidth(name, "A", "AN", 22)
+	if lastCol, err := excelize.ColumnNumberToName(len(reportHeaders)); err == nil {
+		file.SetColWidth(name, "A", lastCol, 22)
+	}
 
 }
-
-
 
 func writeRelatedSheet(file *excelize.File, results []Result) {
 
@@ -224,7 +193,6 @@ func writeRelatedSheet(file *excelize.File, results []Result) {
 				result.LinkVisita,
 
 				"Abrir",
-
 			})
 
 		}
@@ -236,8 +204,6 @@ func writeRelatedSheet(file *excelize.File, results []Result) {
 		return
 
 	}
-
-
 
 	sheet := "Relacionados"
 
@@ -269,8 +235,6 @@ func writeRelatedSheet(file *excelize.File, results []Result) {
 
 }
 
-
-
 func resultRow(r Result) []any {
 
 	return []any{
@@ -298,12 +262,9 @@ func resultRow(r Result) []any {
 		r.NotaCreditoNumeroControl, r.NotaCreditoMontoTotal, r.NotaCreditoLinkVisita, r.NotaCreditoError,
 
 		r.RelacionadosTexto, r.Error,
-
 	}
 
 }
-
-
 
 func headerColumn(name string) int {
 
@@ -320,8 +281,6 @@ func headerColumn(name string) int {
 	return 0
 
 }
-
-
 
 func filterByType(results []Result, typeNorm string) []Result {
 
@@ -341,8 +300,6 @@ func filterByType(results []Result, typeNorm string) []Result {
 
 }
 
-
-
 func filterRejected(results []Result) []Result {
 
 	out := []Result{}
@@ -360,8 +317,6 @@ func filterRejected(results []Result) []Result {
 	return out
 
 }
-
-
 
 func sheetNameSafe(name string) string {
 
@@ -384,5 +339,3 @@ func sheetNameSafe(name string) string {
 	return name
 
 }
-
-
