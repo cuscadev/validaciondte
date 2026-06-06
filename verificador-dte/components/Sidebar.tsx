@@ -243,210 +243,249 @@ export default function Sidebar({
   const isCliente = appUser?.role === 'cliente';
   const showOrgUsers = canManageOrgUsers(appUser);
 
-  const verificadorChildren: NavChild[] = [
-    {
-      href: '/verificadorDTE/verificador',
-      label: 'sidebar.verificadorLinks',
-      routeKey: 'verificador',
-    },
-    {
-      href: '/verificadorDTE/verificarodyfecha',
-      label: 'sidebar.verificadorCodigoFecha',
-      routeKey: 'verificarodyfecha',
-    },
-    {
-      href: '/verificadorDTE/verificadorjson',
-      label: 'sidebar.verificadorJSON',
-      routeKey: 'verificadorjson',
-    },
-    {
-      href: '/verificadorDTE/verificacion_individual',
-      label: 'sidebar.verificacionIndividual',
-      routeKey: 'verificacion_individual',
-    },
-  ];
+  const verificadorChildren = useMemo<NavChild[]>(
+    () => [
+      {
+        href: '/verificadorDTE/verificador',
+        label: 'sidebar.verificadorLinks',
+        routeKey: 'verificador',
+      },
+      {
+        href: '/verificadorDTE/verificarodyfecha',
+        label: 'sidebar.verificadorCodigoFecha',
+        routeKey: 'verificarodyfecha',
+      },
+      {
+        href: '/verificadorDTE/verificadorjson',
+        label: 'sidebar.verificadorJSON',
+        routeKey: 'verificadorjson',
+      },
+      {
+        href: '/verificadorDTE/verificacion_individual',
+        label: 'sidebar.verificacionIndividual',
+        routeKey: 'verificacion_individual',
+      },
+    ],
+    [],
+  );
 
-  const consultasLotesChildren: NavChild[] = [
-    {
-      href: '/consultas-lotes/codigo-lote',
-      label: 'Consulta por codigo de lote',
-      routeKey: 'consulta_lote_codigo',
-    },
-    {
-      href: '/consultas-lotes/excel-codigo-fecha',
-      label: 'Excel codigo y fecha',
-      routeKey: 'consultas_lotes_excel_codigo_fecha',
-    },
-    {
-      href: '/consultas-lotes/json',
-      label: 'Subir JSON',
-      routeKey: 'consultas_lotes_json',
-    },
-    {
-      href: '/consultas-lotes/individual',
-      label: 'Consulta individual',
-      routeKey: 'consultas_lotes_individual',
-    },
-    {
-      href: '/consultas-lotes/qr-pdf',
-      label: 'QR PDF',
-      routeKey: 'consultas_lotes_qr_pdf',
-    },
-  ];
+  const consultasLotesChildren = useMemo<NavChild[]>(
+    () => [
+      {
+        href: '/consultas-lotes/codigo-lote',
+        label: 'Consulta por codigo de lote',
+        routeKey: 'consulta_lote_codigo',
+      },
+      {
+        href: '/consultas-lotes/excel-codigo-fecha',
+        label: 'Excel codigo y fecha',
+        routeKey: 'consultas_lotes_excel_codigo_fecha',
+      },
+      {
+        href: '/consultas-lotes/json',
+        label: 'Subir JSON',
+        routeKey: 'consultas_lotes_json',
+      },
+      {
+        href: '/consultas-lotes/individual',
+        label: 'Consulta individual',
+        routeKey: 'consultas_lotes_individual',
+      },
+      {
+        href: '/consultas-lotes/qr-pdf',
+        label: 'QR PDF',
+        routeKey: 'consultas_lotes_qr_pdf',
+      },
+    ],
+    [],
+  );
 
-  const extraerChildren: NavChild[] = [
-    {
-      href: '/extraer/compras-json',
-      label: 'Compras JSON',
-      routeKey: 'compras-json',
-    },
-    {
-      href: '/extraer/ventas-json',
-      label: 'Ventas JSON',
-      routeKey: 'ventas-json',
-    },
-    {
-      href: '/extraer/sujetos-excluidos',
-      label: 'Sujetos Excluidos JSON',
-      routeKey: 'sujetos-excluidos',
-    },
-    {
-      href: '/extraer/liquidacion-json',
-      label: 'Liquidaciones JSON',
-      routeKey: 'liquidacion-json',
-    },
-    {
-      href: '/extraer/qr-pdf',
-      label: 'QR PDF',
-      routeKey: 'qr-pdf',
-    },
-  ];
+  const extraerChildren = useMemo<NavChild[]>(
+    () => [
+      {
+        href: '/extraer/compras-json',
+        label: 'Compras JSON',
+        routeKey: 'compras-json',
+      },
+      {
+        href: '/extraer/ventas-json',
+        label: 'Ventas JSON',
+        routeKey: 'ventas-json',
+      },
+      {
+        href: '/extraer/sujetos-excluidos',
+        label: 'Sujetos Excluidos JSON',
+        routeKey: 'sujetos-excluidos',
+      },
+      {
+        href: '/extraer/liquidacion-json',
+        label: 'Liquidaciones JSON',
+        routeKey: 'liquidacion-json',
+      },
+      {
+        href: '/extraer/qr-pdf',
+        label: 'QR PDF',
+        routeKey: 'qr-pdf',
+      },
+    ],
+    [],
+  );
 
-  const baseItems: Item[] = [
-    {
-      href: '/dashboard',
-      label: 'sidebar.inicio',
-      icon: Home,
-    },
-    {
-      href: '/verificadorDTE',
-      label: 'sidebar.verificarDTEs',
-      icon: FileText,
-      children: verificadorChildren,
-    },
-    {
-      href: '/consultas-lotes',
-      label: 'Consultas lotes',
+  const baseItems = useMemo<Item[]>(
+    () => [
+      {
+        href: '/dashboard',
+        label: 'sidebar.inicio',
+        icon: Home,
+      },
+      {
+        href: '/verificadorDTE',
+        label: 'sidebar.verificarDTEs',
+        icon: FileText,
+        children: verificadorChildren,
+      },
+      {
+        href: '/consultas-lotes',
+        label: 'Consultas lotes',
+        icon: ClipboardList,
+        children: consultasLotesChildren,
+      },
+      {
+        href: '/extraer',
+        label: 'sidebar.extraer',
+        icon: FileText,
+        children: extraerChildren,
+      },
+      {
+        href: '/plantillas-pdf',
+        label: 'Plantillas PDF',
+        icon: Palette,
+        routeKey: 'plantillas-pdf',
+      },
+      {
+        href: '/escaneos-mobile',
+        label: 'Escaneo desde la app',
+        icon: Smartphone,
+        routeKey: 'escaneos-mobile',
+      },
+      {
+        href: '/tributario',
+        label: 'Tributario',
+        icon: CalendarDays,
+      },
+      {
+        href: '/integraciones/gmail',
+        label: 'Importar desde Gmail',
+        icon: Mail,
+        routeKey: 'integraciones-gmail',
+      },
+      {
+        href: '/configuraciones',
+        label: 'sidebar.configuracion',
+        icon: Settings,
+      },
+    ],
+    [consultasLotesChildren, extraerChildren, verificadorChildren],
+  );
+
+  const adminItem = useMemo<Item>(
+    () => ({
+      href: '/admin/users',
+      label: 'sidebar.usuarios',
+      icon: Users,
+    }),
+    [],
+  );
+
+  const orgUsersItem = useMemo<Item>(
+    () => ({
+      href: '/usuarios',
+      label: 'Usuarios org.',
+      icon: Users,
+    }),
+    [],
+  );
+
+  const orgKycItem = useMemo<Item>(
+    () => ({
+      href: '/organizacion/kyc',
+      label: 'Datos fiscales (KYC)',
       icon: ClipboardList,
-      children: consultasLotesChildren,
-    },
-    {
-      href: '/extraer',
-      label: 'sidebar.extraer',
-      icon: FileText,
-      children: extraerChildren,
-    },
-    {
-      href: '/plantillas-pdf',
-      label: 'Plantillas PDF',
-      icon: Palette,
-      routeKey: 'plantillas-pdf',
-    },
-    {
-      href: '/escaneos-mobile',
-      label: 'Escaneo desde la app',
-      icon: Smartphone,
-      routeKey: 'escaneos-mobile',
-    },
-    {
-      href: '/tributario',
-      label: 'Tributario',
-      icon: CalendarDays,
-    },
-    {
-      href: '/integraciones/gmail',
-      label: 'Importar desde Gmail',
-      icon: Mail,
-      routeKey: 'integraciones-gmail',
-    },
-    {
-      href: '/configuraciones',
-      label: 'sidebar.configuracion',
-      icon: Settings,
-    },
-  ];
+    }),
+    [],
+  );
 
-  const adminItem: Item = {
-    href: '/admin/users',
-    label: 'sidebar.usuarios',
-    icon: Users,
-  };
+  const notificationsItem = useMemo<Item>(
+    () => ({
+      href: '/notificaciones',
+      label: 'Notificaciones',
+      icon: Bell,
+    }),
+    [],
+  );
 
-  const orgUsersItem: Item = {
-    href: '/usuarios',
-    label: 'Usuarios org.',
-    icon: Users,
-  };
+  const planesItem = useMemo<Item>(
+    () => ({
+      href: '/admin/planes',
+      label: 'sidebar.planes',
+      icon: CreditCard,
+    }),
+    [],
+  );
 
-  const orgKycItem: Item = {
-    href: '/organizacion/kyc',
-    label: 'Datos fiscales (KYC)',
-    icon: ClipboardList,
-  };
+  const avisosItem = useMemo<Item>(
+    () => ({
+      href: '/admin/avisos',
+      label: 'Avisos',
+      icon: Bell,
+    }),
+    [],
+  );
 
-  const notificationsItem: Item = {
-    href: '/notificaciones',
-    label: 'Notificaciones',
-    icon: Bell,
-  };
-
-  const planesItem: Item = {
-    href: '/admin/planes',
-    label: 'sidebar.planes',
-    icon: CreditCard,
-  };
-
-  const avisosItem: Item = {
-    href: '/admin/avisos',
-    label: 'Avisos',
-    icon: Bell,
-  };
-
-  const obligacionesItem: Item = {
-    href: '/admin/obligacion',
-    label: 'Obligaciones',
-    icon: CalendarDays,
-  };
-
-  const monitoringChildren: NavChild[] = [
-    {
-      href: '/admin/monitoreo/visitantes',
-      label: 'Visitantes landing',
-    },
-    {
-      href: '/admin/monitoreo/procesamiento',
-      label: 'Procesamiento de archivos',
-    },
-    {
-      href: '/admin/monitoreo/inicios-sesion',
-      label: 'Inicios de sesion',
-    },
-    {
-      href: '/admin/monitoreo/licencias',
-      label: 'sidebar.gestionLicencias',
-    },
-    {
+  const obligacionesItem = useMemo<Item>(
+    () => ({
       href: '/admin/obligacion',
       label: 'Obligaciones',
-    },
-  ];
+      icon: CalendarDays,
+    }),
+    [],
+  );
 
-  const monitoringItem: Item = {
-    href: '/admin/monitoreo',
-    label: 'Monitoreo',
-    icon: Activity,
-    children: monitoringChildren,
-  };
+  const monitoringChildren = useMemo<NavChild[]>(
+    () => [
+      {
+        href: '/admin/monitoreo/visitantes',
+        label: 'Visitantes landing',
+      },
+      {
+        href: '/admin/monitoreo/procesamiento',
+        label: 'Procesamiento de archivos',
+      },
+      {
+        href: '/admin/monitoreo/inicios-sesion',
+        label: 'Inicios de sesion',
+      },
+      {
+        href: '/admin/monitoreo/licencias',
+        label: 'sidebar.gestionLicencias',
+      },
+      {
+        href: '/admin/obligacion',
+        label: 'Obligaciones',
+      },
+    ],
+    [],
+  );
+
+  const monitoringItem = useMemo<Item>(
+    () => ({
+      href: '/admin/monitoreo',
+      label: 'Monitoreo',
+      icon: Activity,
+      children: monitoringChildren,
+    }),
+    [monitoringChildren],
+  );
 
   const planFilteredBaseItems = useMemo(() => {
     if (isSuperadmin) return baseItems;
@@ -513,7 +552,7 @@ export default function Sidebar({
   }, [items, pathname]);
 
   const toggleOpen = (href: string) => {
-    setOpenHref(openHref === href ? null : href);
+    setOpenHref((current) => (current === href ? null : href));
   };
 
   const brandName = t('app.brandName', 'KAYDTE');
