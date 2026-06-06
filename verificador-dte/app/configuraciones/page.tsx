@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { auth } from '@/lib/firebase';
 import { useAuth } from '@/components/AuthProvider';
+import { usePlanAccess } from '@/hooks/usePlanAccess';
 
 // importa sin '@'
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
@@ -66,6 +67,8 @@ export default function ConfiguracionesPage() {
   });
   const { t } = useTranslation();
   const { appUser } = useAuth();
+  const haciendaAccess = usePlanAccess('hacienda-credentials');
+  const canShowHaciendaCard = haciendaAccess.isSuperadmin || haciendaAccess.allowed;
 
   useEffect(() => setMounted(true), []);
 
@@ -88,7 +91,7 @@ export default function ConfiguracionesPage() {
 
   const haciendaQuery = useQuery({
     queryKey: HACIENDA_QUERY_KEY,
-    enabled: mounted && Boolean(appUser),
+    enabled: mounted && Boolean(appUser) && !haciendaAccess.loading && canShowHaciendaCard,
     queryFn: async () => {
       const token = await auth.currentUser?.getIdToken();
       if (!token) throw new Error('No autorizado');
@@ -285,6 +288,7 @@ export default function ConfiguracionesPage() {
         </CardContent>
       </Card>    
 
+      {canShowHaciendaCard && (
       <Card>
         <CardHeader>
           <CardTitle>Ministerio de Hacienda</CardTitle>
@@ -359,6 +363,7 @@ export default function ConfiguracionesPage() {
           </form>
         </CardContent>
       </Card>
+      )}
 
       {appUser?.role === 'superadmin' && (
         <Card>
