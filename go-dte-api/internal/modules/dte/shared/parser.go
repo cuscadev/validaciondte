@@ -279,8 +279,10 @@ func firstQuery(values url.Values, names ...string) string {
 
 func removeAccents(s string) string {
 	replacer := strings.NewReplacer(
-		"Á", "A", "É", "E", "Í", "I", "Ó", "O", "Ú", "U", "Ñ", "N",
-		"á", "a", "é", "e", "í", "i", "ó", "o", "ú", "u", "ñ", "n",
+		"\u00c1", "A", "\u00c9", "E", "\u00cd", "I", "\u00d3", "O", "\u00da", "U", "\u00d1", "N",
+		"\u00e1", "a", "\u00e9", "e", "\u00ed", "i", "\u00f3", "o", "\u00fa", "u", "\u00f1", "n",
+		"Ã¡", "a", "Ã©", "e", "Ã­", "i", "Ã³", "o", "Ãº", "u", "Ã±", "n",
+		"Ã", "A", "Ã‰", "E", "Ã", "I", "Ã“", "O", "Ãš", "U", "Ã‘", "N",
 	)
 	return replacer.Replace(s)
 }

@@ -54,6 +54,18 @@ func pairsFromHTML(html string) map[string]string {
 		}
 	})
 
+	doc.Find(".form-group.row, .row").Each(func(_ int, row *goquery.Selection) {
+		labels := row.Find("label")
+		if labels.Length() < 2 {
+			return
+		}
+		key := labels.Eq(0).Text()
+		if !strings.HasSuffix(Clean(key), ":") {
+			return
+		}
+		add(key, labels.Eq(1).Text())
+	})
+
 	doc.Find("label, span, strong, b, td, th, dt, p, div").Each(func(_ int, s *goquery.Selection) {
 		label := Clean(s.Text())
 		if label == "" || !strings.HasSuffix(label, ":") {
@@ -135,7 +147,7 @@ func mapDetail(pairs map[string]string) Result {
 		TipoDteNorm:            NormalizarTipoDte(tipoDte),
 		DescripcionEstado:      get("Descripcion del DTE", "Descripción del DTE", "Descripcion del Estado", "Descripción del Estado", "Descripcion", "Descripción"),
 		FechaHoraGeneracion:    get("Fecha y Hora de Generación", "Fecha y Hora de Generacion", "Fecha de Generación", "Fecha de Generacion"),
-		FechaHoraTransmision:   get("Fecha y Hora de Transmisión", "Fecha y Hora de Transmision", "Fecha de Transmisión", "Fecha de Transmision"),
+		FechaHoraTransmision:   get("Fecha y Hora de Transmisión", "Fecha y Hora de Transmision", "Fecha y Hora de Transmisi n", "Fecha de Transmisión", "Fecha de Transmision", "Fecha de Transmisi n"),
 		FechaHoraProcesamiento: get("Fecha y Hora de Procesamiento", "Fecha de Procesamiento"),
 		CodigoGeneracion:       get("Código de Generación", "Codigo de Generacion", "Código Generación", "Codigo Generacion"),
 		SelloRecepcion:         get("Sello de Recepción", "Sello de Recepcion", "Sello"),
@@ -144,13 +156,19 @@ func mapDetail(pairs map[string]string) Result {
 		IvaOperaciones:         get("IVA de las operaciones", "IVA de las Operaciones"),
 		IvaPercibido:           get("IVA percibido", "IVA Percibido"),
 		IvaRetenido:            get("IVA retenido", "IVA Retenido"),
-		RetencionRenta:         get("Retención renta", "Retencion renta"),
+		RetencionRenta:         get("Retención renta", "Retencion renta", "Retenci n renta"),
 		TotalNoAfectos:         get("Total valores no afectos", "Total Valores no Afectos", "Valores no afectos"),
-		TotalPagarOperacion:    get("Total a pagar/Total de operación", "Total a pagar/Total de operacion", "Total a pagar / Total de operación", "Total de operación", "Total de Operación"),
+		TotalPagarOperacion:    get("Total a pagar/Total de operación", "Total a pagar/Total de operacion", "Total a pagar / Total de operación", "Total de operaci n", "Total de operación", "Total de Operación", "Total de Operaci n"),
 		OtrosTributos:          get("Otros tributos", "Otros Tributos"),
 		DocumentoAjustado:      documentoAjustado,
-		Ajustado:               strings.Contains(strings.ToLower(documentoAjustado), "ajustad"),
-		Error:                  "",
+		DocumentoEventoAplicado: get(
+			"Documento con Evento aplicado",
+			"Documento con evento aplicado",
+			"Documento con Evento Aplicado",
+			"Evento aplicado",
+		),
+		Ajustado: strings.Contains(strings.ToLower(documentoAjustado), "ajustad"),
+		Error:    "",
 	}
 }
 

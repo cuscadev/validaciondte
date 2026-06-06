@@ -50,10 +50,18 @@ export const DTE_RESULT_COLUMNS = [
   { key: 'descripcionEstado', label: 'Descripción Estado' },
   { key: 'tipoDte', label: 'Tipo DTE' },
   { key: 'fechaHoraGeneracion', label: 'Fecha Generación' },
+  { key: 'fechaHoraTransmision', label: 'Fecha Transmisión' },
   { key: 'numeroControl', label: 'N° Control' },
   { key: 'montoTotal', label: 'Monto Total' },
+  { key: 'ivaOperaciones', label: 'IVA Operaciones' },
+  { key: 'ivaPercibido', label: 'IVA Percibido' },
+  { key: 'ivaRetenido', label: 'IVA Retenido' },
+  { key: 'retencionRenta', label: 'Retención Renta' },
+  { key: 'totalNoAfectos', label: 'Total No Afectos' },
+  { key: 'totalPagarOperacion', label: 'Total Operación' },
   { key: 'ajustado', label: 'Ajustado' },
   { key: 'documentoAjustado', label: 'Doc. Ajustado' },
+  { key: 'documentoEventoAplicado', label: 'Evento Aplicado' },
   { key: 'tieneNotaCredito', label: 'Tiene NC' },
   { key: 'notaCreditoCodigoGeneracion', label: 'Código NC' },
   { key: 'notaCreditoFechaGeneracion', label: 'Fecha NC' },
@@ -95,8 +103,16 @@ export function dteResultSearchFields(r: DteResultRow): string[] {
     r.numeroControl,
     r.montoTotal,
     r.fechaHoraGeneracion,
+    r.fechaHoraTransmision,
+    r.ivaOperaciones,
+    r.ivaPercibido,
+    r.ivaRetenido,
+    r.retencionRenta,
+    r.totalNoAfectos,
+    r.totalPagarOperacion,
     r.observacionesTexto,
     r.documentoAjustado,
+    r.documentoEventoAplicado,
     r.relacionadosTexto,
     r.notaCreditoEstado,
     r.notaCreditoCodigoGeneracion,
@@ -170,6 +186,7 @@ export function isDteResultLongTextColumn(colKey: DteResultColumnKey) {
     colKey === 'relacionadosTexto' ||
     colKey === 'descripcionEstado' ||
     colKey === 'observacionesTexto' ||
-    colKey === 'documentoAjustado'
+    colKey === 'documentoAjustado' ||
+    colKey === 'documentoEventoAplicado'
   );
 }
