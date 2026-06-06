@@ -156,9 +156,13 @@ export async function POST(req: NextRequest) {
       }
 
       scans.push({
-        id: `${Date.now()}-${scans.length}`,
+        id: String(body?.scan?.id || `${Date.now()}-${scans.length}`),
+        clientScanId: String(body?.scan?.clientScanId || body?.scan?.id || ''),
         value,
         scannedAt: String(body?.scan?.scannedAt || new Date().toISOString()),
+        appPlatform: String(body?.scan?.appPlatform || ''),
+        source: 'mobile-app',
+        receivedAt: new Date().toISOString(),
       });
 
       folders[folderIndex] = {
