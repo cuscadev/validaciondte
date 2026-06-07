@@ -15,6 +15,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       environment,
+      token,
       tokenType: token.startsWith('Bearer ') ? 'Bearer' : '',
     });
   } catch (error) {

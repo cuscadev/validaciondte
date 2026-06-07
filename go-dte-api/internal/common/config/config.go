@@ -25,6 +25,11 @@ type Config struct {
 	AsyncBatchThreshold         int
 	HaciendaEnvironment         string
 	HaciendaUserAgent           string
+	HaciendaCertificateHome     string
+	HaciendaRecepcionDteTest    string
+	HaciendaRecepcionDteProd    string
+	HaciendaConsultaDteTest     string
+	HaciendaConsultaDteProd     string
 	HaciendaConsultaDteLoteTest string
 	HaciendaConsultaDteLoteProd string
 }
@@ -38,23 +43,28 @@ func Load() Config {
 	}
 
 	return Config{
-		Port:                          port,
-		Concurrency:                   concurrency,
-		RateLimitPerSec:               getenvInt("GO_DTE_RATE_LIMIT_PER_SEC", 10),
-		BrowserPoolSize:               poolSize,
-		MinIntervalMs:                 getenvInt("GO_DTE_MIN_INTERVAL_MS", 0),
-		ScrapeCacheTTLSeconds:         getenvInt("GO_DTE_SCRAPE_CACHE_TTL", 600),
-		EnrichCreditNotes:             getenvBool("GO_DTE_ENRICH_NC", false),
-		PrewarmBrowsers:               getenvBool("GO_DTE_PREWARM", false),
-		RedisEnabled:                  getenvBool("GO_DTE_REDIS_ENABLED", false),
-		RedisURL:                      getenv("REDIS_URL", ""),
-		RedisTTLSeconds:               getenvInt("GO_DTE_REDIS_TTL", 600),
-		AsyncBatchThreshold:           getenvInt("GO_DTE_ASYNC_THRESHOLD", 10),
-		UseRodScraper:                 getenvBool("GO_DTE_USE_ROD", false),
-		UseBrowser:                    getenvBool("GO_DTE_USE_BROWSER", false),
-		HTTPFastPath:                  getenvBool("GO_DTE_HTTP_FAST_PATH", false),
-		HaciendaEnvironment:           getenv("HACIENDA_ENV", "test"),
-		HaciendaUserAgent:             getenv("HACIENDA_USER_AGENT", "KaiserDTE"),
+		Port:                        port,
+		Concurrency:                 concurrency,
+		RateLimitPerSec:             getenvInt("GO_DTE_RATE_LIMIT_PER_SEC", 10),
+		BrowserPoolSize:             poolSize,
+		MinIntervalMs:               getenvInt("GO_DTE_MIN_INTERVAL_MS", 0),
+		ScrapeCacheTTLSeconds:       getenvInt("GO_DTE_SCRAPE_CACHE_TTL", 600),
+		EnrichCreditNotes:           getenvBool("GO_DTE_ENRICH_NC", false),
+		PrewarmBrowsers:             getenvBool("GO_DTE_PREWARM", false),
+		RedisEnabled:                getenvBool("GO_DTE_REDIS_ENABLED", false),
+		RedisURL:                    getenv("REDIS_URL", ""),
+		RedisTTLSeconds:             getenvInt("GO_DTE_REDIS_TTL", 600),
+		AsyncBatchThreshold:         getenvInt("GO_DTE_ASYNC_THRESHOLD", 10),
+		UseRodScraper:               getenvBool("GO_DTE_USE_ROD", false),
+		UseBrowser:                  getenvBool("GO_DTE_USE_BROWSER", false),
+		HTTPFastPath:                getenvBool("GO_DTE_HTTP_FAST_PATH", false),
+		HaciendaEnvironment:         getenv("HACIENDA_ENV", "test"),
+		HaciendaUserAgent:           getenv("HACIENDA_USER_AGENT", "KaiserDTE"),
+		HaciendaCertificateHome:     getenv("HACIENDA_CERTIFICATE_HOME", getenv("CERTIFICATE_HOME", "")),
+		HaciendaRecepcionDteTest:    getenv("HACIENDA_RECEPCION_DTE_URL_TEST", "https://apitest.dtes.mh.gob.sv/fesv/recepciondte"),
+		HaciendaRecepcionDteProd:    getenv("HACIENDA_RECEPCION_DTE_URL_PROD", "https://api.dtes.mh.gob.sv/fesv/recepciondte"),
+		HaciendaConsultaDteTest:     getenv("HACIENDA_CONSULTA_DTE_URL_TEST", "https://apitest.dtes.mh.gob.sv/fesv/recepcion/consultadte"),
+		HaciendaConsultaDteProd:     getenv("HACIENDA_CONSULTA_DTE_URL_PROD", "https://api.dtes.mh.gob.sv/fesv/recepcion/consultadte"),
 		HaciendaConsultaDteLoteTest: getenv("HACIENDA_CONSULTA_DTE_LOTE_URL_TEST", "https://apitest.dtes.mh.gob.sv/fesv/recepcion/consultadtelote"),
 		HaciendaConsultaDteLoteProd: getenv("HACIENDA_CONSULTA_DTE_LOTE_URL_PROD", "https://api.dtes.mh.gob.sv/fesv/recepcion/consultadtelote"),
 	}

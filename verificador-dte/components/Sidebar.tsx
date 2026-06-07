@@ -22,6 +22,7 @@ import {
   Palette,
   Smartphone,
   Mail,
+  ReceiptText,
 } from 'lucide-react';
 
 import { useAuth } from '@/components/AuthProvider';
@@ -331,6 +332,16 @@ export default function Sidebar({
     [],
   );
 
+  const facturacionChildren = useMemo<NavChild[]>(
+    () => [
+      {
+        href: '/facturacion/prueba-emision',
+        label: 'Prueba de emision',
+      },
+    ],
+    [],
+  );
+
   const baseItems = useMemo<Item[]>(
     () => [
       {
@@ -395,6 +406,16 @@ export default function Sidebar({
       icon: Users,
     }),
     [],
+  );
+
+  const facturacionItem = useMemo<Item>(
+    () => ({
+      href: '/facturacion',
+      label: 'Facturacion',
+      icon: ReceiptText,
+      children: facturacionChildren,
+    }),
+    [facturacionChildren],
   );
 
   const orgUsersItem = useMemo<Item>(
@@ -513,6 +534,7 @@ export default function Sidebar({
     if (isSuperadmin) {
       return [
         ...planFilteredBaseItems,
+        facturacionItem,
         adminItem,
         planesItem,
         avisosItem,
@@ -533,7 +555,21 @@ export default function Sidebar({
     }
 
     return [...planFilteredBaseItems, notificationsItem];
-  }, [isSuperadmin, showOrgUsers, isCliente, planFilteredBaseItems]);
+  }, [
+    isSuperadmin,
+    showOrgUsers,
+    isCliente,
+    planFilteredBaseItems,
+    facturacionItem,
+    adminItem,
+    planesItem,
+    avisosItem,
+    obligacionesItem,
+    monitoringItem,
+    notificationsItem,
+    orgKycItem,
+    orgUsersItem,
+  ]);
 
   useEffect(() => {
     setOpenFlyoutHref(null);
