@@ -11,6 +11,8 @@
     "lint": "next lint",
     "setup:check": "pnpm exec tsx scripts/check-env.ts",
     "setup:admin": "pnpm exec tsx scripts/check-env.ts && pnpm exec tsx scripts/create-admin.ts",
+    "sync:users:postgres": "pnpm exec tsx scripts/sync-firebase-users-to-postgres.ts",
+    "sync:emitters:postgres": "pnpm exec tsx scripts/sync-firebase-emitters-to-postgres.ts",
     "test:gmail": "pnpm exec tsx --test lib/gmail/parse-dte-import.test.ts lib/gmail/link-documents.test.ts"
   },
   "dependencies": {
@@ -63,6 +65,7 @@
     "otplib": "^13.4.0",
     "pdf-parse": "^1.1.1",
     "pdfjs-dist": "^5.7.284",
+    "pg": "^8.21.0",
     "qr-scanner": "^1.4.2",
     "qrcode.react": "^4.2.0",
     "radix-ui": "^1.4.3",
@@ -89,6 +92,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.19.11",
     "@types/pdf-parse": "^1.1.5",
+    "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/xlsx": "^0.0.35",

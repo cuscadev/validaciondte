@@ -251,7 +251,6 @@ export default function FacturacionPruebaEmisionPage() {
                     onChange={(event) => {
                       setNit(event.target.value.replace(/\D/g, ''));
                       setHaciendaReady(false);
-                      setCertificateReady(false);
                     }}
                     placeholder="06141812151015"
                     inputMode="numeric"

@@ -19,7 +19,7 @@ func Register(app *fiber.App, cfg config.Config) {
 	api := app.Group("/api")
 	facturacion := api.Group("/facturacion")
 
-	catalogService := catalogs.NewService()
+	catalogService := catalogs.NewService(cfg)
 	catalogs.Register(facturacion, catalogService)
 	receptors.Register(facturacion, catalogService)
 	items.Register(facturacion, catalogService)

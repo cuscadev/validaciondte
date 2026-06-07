@@ -338,6 +338,10 @@ export default function Sidebar({
         href: '/facturacion/prueba-emision',
         label: 'Prueba de emision',
       },
+      {
+        href: '/facturacion/receptores',
+        label: 'Receptores',
+      },
     ],
     [],
   );
@@ -416,6 +420,21 @@ export default function Sidebar({
       children: facturacionChildren,
     }),
     [facturacionChildren],
+  );
+
+  const facturacionReceptoresItem = useMemo<Item>(
+    () => ({
+      href: '/facturacion',
+      label: 'Facturacion',
+      icon: ReceiptText,
+      children: [
+        {
+          href: '/facturacion/receptores',
+          label: 'Receptores',
+        },
+      ],
+    }),
+    [],
   );
 
   const orgUsersItem = useMemo<Item>(
@@ -546,21 +565,38 @@ export default function Sidebar({
 
     if (showOrgUsers) {
       return isCliente
-        ? [...planFilteredBaseItems, orgKycItem, orgUsersItem, notificationsItem]
-        : [...planFilteredBaseItems, orgUsersItem, notificationsItem];
+        ? [
+            ...planFilteredBaseItems,
+            orgKycItem,
+            facturacionReceptoresItem,
+            orgUsersItem,
+            notificationsItem,
+          ]
+        : [
+            ...planFilteredBaseItems,
+            facturacionReceptoresItem,
+            orgUsersItem,
+            notificationsItem,
+          ];
     }
 
     if (isCliente) {
-      return [...planFilteredBaseItems, orgKycItem, notificationsItem];
+      return [
+        ...planFilteredBaseItems,
+        orgKycItem,
+        facturacionReceptoresItem,
+        notificationsItem,
+      ];
     }
 
-    return [...planFilteredBaseItems, notificationsItem];
+    return [...planFilteredBaseItems, facturacionReceptoresItem, notificationsItem];
   }, [
     isSuperadmin,
     showOrgUsers,
     isCliente,
     planFilteredBaseItems,
     facturacionItem,
+    facturacionReceptoresItem,
     adminItem,
     planesItem,
     avisosItem,

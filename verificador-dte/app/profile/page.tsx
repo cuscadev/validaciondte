@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
@@ -13,8 +13,10 @@ import {
 } from 'firebase/auth';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import {
+	Building2,
 	KeyRound,
 	Loader2,
+	Save,
 	ShieldCheck,
 	ShieldOff,
 	Upload,
@@ -36,11 +38,128 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+	SearchableSelect,
+	type SearchableSelectOption,
+} from '@/components/ui/searchable-select';
 
 const QRCodeSVG = dynamic(
 	() => import('qrcode.react').then((m) => ({ default: m.QRCodeSVG })),
 	{ ssr: false }
 );
+
+type EmitterForm = {
+	nit: string;
+	nrc: string;
+	nombre: string;
+	nombreComercial: string;
+	razonSocial: string;
+	tipoEstablecimientoCodigo: string;
+	codigoActividad: string;
+	descripcionActividad: string;
+	departamentoCodigo: string;
+	municipioCodigo: string;
+	distritoCodigo: string;
+	complementoDireccion: string;
+	telefono: string;
+	correo: string;
+	regimenTributarioCodigo: string;
+	tipoAfiliacionCodigo: string;
+	ambienteCodigo: string;
+	rolEmisor?: string;
+	certificadoPath?: string;
+};
+
+type CatalogRow = {
+	id?: number;
+	codigo: string;
+	nombre?: string;
+	descripcion?: string;
+	departamento_codigo?: string;
+};
+
+type ProfileCatalogs = {
+	departamentos: CatalogRow[];
+	municipios: CatalogRow[];
+	distritos: CatalogRow[];
+	tiposEstablecimiento: CatalogRow[];
+	actividades: CatalogRow[];
+	regimenesTributarios: CatalogRow[];
+	tiposAfiliacion: CatalogRow[];
+};
+
+const emptyEmitterForm: EmitterForm = {
+	nit: '',
+	nrc: '',
+	nombre: '',
+	nombreComercial: '',
+	razonSocial: '',
+	tipoEstablecimientoCodigo: '',
+	codigoActividad: '',
+	descripcionActividad: '',
+	departamentoCodigo: '',
+	municipioCodigo: '',
+	distritoCodigo: '',
+	complementoDireccion: '',
+	telefono: '',
+	correo: '',
+	regimenTributarioCodigo: '',
+	tipoAfiliacionCodigo: '',
+	ambienteCodigo: '00',
+};
+
+const emptyCatalogs: ProfileCatalogs = {
+	departamentos: [],
+	municipios: [],
+	distritos: [],
+	tiposEstablecimiento: [],
+	actividades: [],
+	regimenesTributarios: [],
+	tiposAfiliacion: [],
+};
+
+function emitterToForm(data: Partial<EmitterForm>): EmitterForm {
+	return {
+		...emptyEmitterForm,
+		nit: data.nit || '',
+		nrc: data.nrc || '',
+		nombre: data.nombre || '',
+		nombreComercial: data.nombreComercial || '',
+		razonSocial: data.razonSocial || '',
+		tipoEstablecimientoCodigo: data.tipoEstablecimientoCodigo || '',
+		codigoActividad: data.codigoActividad || '',
+		descripcionActividad: data.descripcionActividad || '',
+		departamentoCodigo: data.departamentoCodigo || '',
+		municipioCodigo: data.municipioCodigo || '',
+		distritoCodigo: data.distritoCodigo || '',
+		complementoDireccion: data.complementoDireccion || '',
+		telefono: data.telefono || '',
+		correo: data.correo || '',
+		regimenTributarioCodigo: data.regimenTributarioCodigo || '',
+		tipoAfiliacionCodigo: data.tipoAfiliacionCodigo || '',
+		ambienteCodigo: data.ambienteCodigo || '00',
+		rolEmisor: data.rolEmisor || '',
+		certificadoPath: data.certificadoPath || '',
+	};
+}
+
+function catalogLabel(row: CatalogRow) {
+	const name = row.nombre || row.descripcion || row.codigo;
+	return `${row.codigo} - ${name}`;
+}
+
+function catalogOptions(rows: CatalogRow[]): SearchableSelectOption[] {
+	return rows.map((row) => ({
+		value: row.codigo,
+		label: catalogLabel(row),
+		description: row.descripcion,
+	}));
+}
+
+const environmentOptions: SearchableSelectOption[] = [
+	{ value: '00', label: '00 - Pruebas' },
+	{ value: '01', label: '01 - Produccion' },
+];
 
 export default function ProfilePage() {
 	const [user, setUser] = useState<AppUser | null>(null);
@@ -55,6 +174,14 @@ export default function ProfilePage() {
 	});
 	const [error, setError] = useState('');
 	const [success, setSuccess] = useState('');
+	const [emitterForm, setEmitterForm] = useState<EmitterForm>(emptyEmitterForm);
+	const [emitterLoading, setEmitterLoading] = useState(false);
+	const [emitterSaving, setEmitterSaving] = useState(false);
+	const [emitterError, setEmitterError] = useState('');
+	const [emitterSuccess, setEmitterSuccess] = useState('');
+	const [hasEmitter, setHasEmitter] = useState(false);
+	const [catalogs, setCatalogs] = useState<ProfileCatalogs>(emptyCatalogs);
+	const [catalogsLoading, setCatalogsLoading] = useState(false);
 
 	const [pwData, setPwData] = useState({
 		current: '',
@@ -75,6 +202,41 @@ export default function ProfilePage() {
 
 	const router = useRouter();
 	const queryClient = useQueryClient();
+	const filteredMunicipios = useMemo(() => {
+		if (!emitterForm.departamentoCodigo) return catalogs.municipios;
+
+		return catalogs.municipios.filter(
+			(row) => row.departamento_codigo === emitterForm.departamentoCodigo
+		);
+	}, [catalogs.municipios, emitterForm.departamentoCodigo]);
+
+	const selectedActividad = useMemo(
+		() =>
+			catalogs.actividades.find(
+				(row) => row.codigo === emitterForm.codigoActividad
+			),
+		[catalogs.actividades, emitterForm.codigoActividad]
+	);
+	const catalogOptionGroups = useMemo(
+		() => ({
+			departamentos: catalogOptions(catalogs.departamentos),
+			municipios: catalogOptions(filteredMunicipios),
+			distritos: catalogOptions(catalogs.distritos),
+			tiposEstablecimiento: catalogOptions(catalogs.tiposEstablecimiento),
+			actividades: catalogOptions(catalogs.actividades),
+			regimenesTributarios: catalogOptions(catalogs.regimenesTributarios),
+			tiposAfiliacion: catalogOptions(catalogs.tiposAfiliacion),
+		}),
+		[
+			catalogs.actividades,
+			catalogs.departamentos,
+			catalogs.distritos,
+			catalogs.regimenesTributarios,
+			catalogs.tiposAfiliacion,
+			catalogs.tiposEstablecimiento,
+			filteredMunicipios,
+		]
+	);
 
 	useEffect(() => {
 		const unsubAuth = onAuthStateChanged(auth, async (authUser) => {
@@ -103,6 +265,52 @@ export default function ProfilePage() {
 				}
 
 				setTotpEnrolled(appUser.totpEnabled ?? false);
+
+				setEmitterLoading(true);
+				setCatalogsLoading(true);
+				setEmitterError('');
+				try {
+					const token = await authUser.getIdToken();
+					const [emitterRes, catalogsRes] = await Promise.all([
+						fetch('/api/profile/emisor', {
+							headers: { Authorization: `Bearer ${token}` },
+						}),
+						fetch('/api/profile/catalogs', {
+							headers: { Authorization: `Bearer ${token}` },
+						}),
+					]);
+
+					const emitterData = (await emitterRes.json()) as {
+						emitter?: Partial<EmitterForm>;
+						error?: string;
+					};
+					const catalogsData = (await catalogsRes.json()) as {
+						catalogs?: ProfileCatalogs;
+						error?: string;
+					};
+
+					if (catalogsRes.ok && catalogsData.catalogs) {
+						setCatalogs({ ...emptyCatalogs, ...catalogsData.catalogs });
+					} else {
+						setEmitterError(catalogsData.error || 'No se pudieron cargar catalogos.');
+					}
+
+					if (emitterRes.ok && emitterData.emitter) {
+						setEmitterForm(emitterToForm(emitterData.emitter));
+						setHasEmitter(true);
+					} else {
+						setHasEmitter(false);
+						setEmitterError(emitterData.error || 'No hay emisor vinculado.');
+					}
+				} catch (err) {
+					setHasEmitter(false);
+					setEmitterError(
+						err instanceof Error ? err.message : 'Error al cargar emisor'
+					);
+				} finally {
+					setEmitterLoading(false);
+					setCatalogsLoading(false);
+				}
 			}
 
 			setLoading(false);
@@ -138,6 +346,82 @@ export default function ProfilePage() {
 	const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const { name, value } = e.target;
 		setFormData((prev) => ({ ...prev, [name]: value }));
+	};
+
+	const handleEmitterChange = (
+		e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+	) => {
+		const { name, value } = e.target;
+		setEmitterField(name as keyof EmitterForm, value);
+	};
+
+	const setEmitterField = (name: keyof EmitterForm, value: string) => {
+		setEmitterForm((prev) => {
+			if (name === 'departamentoCodigo') {
+				return { ...prev, departamentoCodigo: value, municipioCodigo: '' };
+			}
+
+			if (name === 'codigoActividad') {
+				const actividad = catalogs.actividades.find((row) => row.codigo === value);
+				return {
+					...prev,
+					codigoActividad: value,
+					descripcionActividad:
+						actividad?.descripcion || actividad?.nombre || prev.descripcionActividad,
+				};
+			}
+
+			return { ...prev, [name]: value };
+		});
+	};
+
+	const handleEmitterSubmit = async (e: React.FormEvent) => {
+		e.preventDefault();
+
+		setEmitterError('');
+		setEmitterSuccess('');
+
+		const currentUser = auth.currentUser;
+		if (!currentUser) {
+			setEmitterError('No autenticado');
+			return;
+		}
+
+		setEmitterSaving(true);
+
+		try {
+			const token = await currentUser.getIdToken();
+			const res = await fetch('/api/profile/emisor', {
+				method: 'PUT',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${token}`,
+				},
+				body: JSON.stringify(emitterForm),
+			});
+			const data = (await res.json()) as {
+				emitter?: Partial<EmitterForm>;
+				error?: string;
+			};
+
+			if (!res.ok) {
+				throw new Error(data.error || 'No se pudo guardar el emisor');
+			}
+
+			if (data.emitter) {
+				setEmitterForm(emitterToForm(data.emitter));
+				setHasEmitter(true);
+			}
+
+			setEmitterSuccess('Datos de emisor actualizados correctamente');
+			setTimeout(() => setEmitterSuccess(''), 3000);
+		} catch (err) {
+			setEmitterError(
+				err instanceof Error ? err.message : 'Error al guardar el emisor'
+			);
+		} finally {
+			setEmitterSaving(false);
+		}
 	};
 
 	const handlePwChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -668,6 +952,375 @@ export default function ProfilePage() {
 											)}
 										</Button>
 									</form>
+								</CardContent>
+							</Card>
+						</section>
+
+						<section aria-labelledby="emitter-info-title">
+							<Card className="rounded-2xl border border-border bg-card text-card-foreground shadow-xl">
+								<CardHeader className="p-4">
+									<CardTitle
+										id="emitter-info-title"
+										className="flex items-center gap-2 text-foreground"
+									>
+										<Building2 className="size-5 text-amber-600 dark:text-yellow-300" />
+										Datos de emisor
+									</CardTitle>
+
+									<CardDescription className="text-muted-foreground">
+										Estos datos salen de Postgres y se usan para construir el emisor de tus DTE.
+									</CardDescription>
+								</CardHeader>
+
+								<CardContent className="p-4 pt-0">
+									{emitterLoading ? (
+										<div className="flex min-h-40 items-center justify-center rounded-2xl border border-border bg-background">
+											<Loader2 className="size-6 animate-spin text-amber-600 dark:text-yellow-300" />
+										</div>
+									) : !hasEmitter ? (
+										<p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-100">
+											{emitterError || 'Todavia no tienes un emisor vinculado en la base local.'}
+										</p>
+									) : (
+										<form onSubmit={handleEmitterSubmit} className="space-y-4">
+											{catalogsLoading && (
+												<p className="rounded-xl border border-border bg-background px-4 py-3 text-sm text-muted-foreground">
+													Cargando catalogos...
+												</p>
+											)}
+
+											<div className="grid gap-4 md:grid-cols-3">
+												<div className="space-y-2">
+													<Label htmlFor="emitter-nit" className="text-foreground">
+														NIT
+													</Label>
+													<Input
+														id="emitter-nit"
+														name="nit"
+														value={emitterForm.nit}
+														onChange={handleEmitterChange}
+														required
+														className="h-12 rounded-xl border-border bg-background text-foreground"
+													/>
+												</div>
+
+												<div className="space-y-2">
+													<Label htmlFor="emitter-nrc" className="text-foreground">
+														NRC
+													</Label>
+													<Input
+														id="emitter-nrc"
+														name="nrc"
+														value={emitterForm.nrc}
+														onChange={handleEmitterChange}
+														required
+														className="h-12 rounded-xl border-border bg-background text-foreground"
+													/>
+												</div>
+
+												<div className="space-y-2">
+													<Label htmlFor="emitter-role" className="text-foreground">
+														Rol en emisor
+													</Label>
+													<Input
+														id="emitter-role"
+														value={emitterForm.rolEmisor || 'sin rol'}
+														disabled
+														className="h-12 rounded-xl border-border bg-background text-muted-foreground"
+													/>
+												</div>
+
+												<div className="space-y-2 md:col-span-2">
+													<Label htmlFor="emitter-nombre" className="text-foreground">
+														Nombre legal
+													</Label>
+													<Input
+														id="emitter-nombre"
+														name="nombre"
+														value={emitterForm.nombre}
+														onChange={handleEmitterChange}
+														required
+														className="h-12 rounded-xl border-border bg-background text-foreground"
+													/>
+												</div>
+
+												<div className="space-y-2">
+													<Label htmlFor="emitter-comercial" className="text-foreground">
+														Nombre comercial
+													</Label>
+													<Input
+														id="emitter-comercial"
+														name="nombreComercial"
+														value={emitterForm.nombreComercial}
+														onChange={handleEmitterChange}
+														className="h-12 rounded-xl border-border bg-background text-foreground"
+													/>
+												</div>
+
+												<div className="space-y-2 md:col-span-3">
+													<Label htmlFor="emitter-razon" className="text-foreground">
+														Razon social
+													</Label>
+													<Input
+														id="emitter-razon"
+														name="razonSocial"
+														value={emitterForm.razonSocial}
+														onChange={handleEmitterChange}
+														className="h-12 rounded-xl border-border bg-background text-foreground"
+													/>
+												</div>
+											</div>
+
+											<div className="grid gap-4 md:grid-cols-3">
+												<div className="space-y-2">
+													<Label htmlFor="emitter-actividad" className="text-foreground">
+														Codigo actividad
+													</Label>
+													<SearchableSelect
+														id="emitter-actividad"
+														name="codigoActividad"
+														value={emitterForm.codigoActividad}
+														options={catalogOptionGroups.actividades}
+														onValueChange={(nextValue) =>
+															setEmitterField('codigoActividad', nextValue)
+														}
+														placeholder="Seleccionar actividad"
+														searchPlaceholder="Buscar por codigo o actividad"
+														clearable
+													/>
+												</div>
+
+												<div className="space-y-2">
+													<Label htmlFor="emitter-establecimiento" className="text-foreground">
+														Tipo establecimiento
+													</Label>
+													<SearchableSelect
+														id="emitter-establecimiento"
+														name="tipoEstablecimientoCodigo"
+														value={emitterForm.tipoEstablecimientoCodigo}
+														options={catalogOptionGroups.tiposEstablecimiento}
+														onValueChange={(nextValue) =>
+															setEmitterField('tipoEstablecimientoCodigo', nextValue)
+														}
+														placeholder="Seleccionar tipo"
+														searchPlaceholder="Buscar tipo"
+														clearable
+													/>
+												</div>
+
+												<div className="space-y-2">
+													<Label htmlFor="emitter-ambiente" className="text-foreground">
+														Ambiente
+													</Label>
+													<SearchableSelect
+														id="emitter-ambiente"
+														name="ambienteCodigo"
+														value={emitterForm.ambienteCodigo}
+														options={environmentOptions}
+														onValueChange={(nextValue) =>
+															setEmitterField('ambienteCodigo', nextValue)
+														}
+														placeholder="Seleccionar ambiente"
+														searchPlaceholder="Buscar ambiente"
+													/>
+												</div>
+
+												<div className="space-y-2 md:col-span-3">
+													<Label htmlFor="emitter-desc-actividad" className="text-foreground">
+														Descripcion actividad
+													</Label>
+													<Input
+														id="emitter-desc-actividad"
+														name="descripcionActividad"
+														value={emitterForm.descripcionActividad}
+														onChange={handleEmitterChange}
+														className="h-12 rounded-xl border-border bg-background text-foreground"
+													/>
+													{selectedActividad?.descripcion && (
+														<p className="text-xs text-muted-foreground">
+															Descripcion del catalogo: {selectedActividad.descripcion}
+														</p>
+													)}
+												</div>
+											</div>
+
+											<div className="grid gap-4 md:grid-cols-3">
+												<div className="space-y-2">
+													<Label htmlFor="emitter-departamento" className="text-foreground">
+														Departamento
+													</Label>
+													<SearchableSelect
+														id="emitter-departamento"
+														name="departamentoCodigo"
+														value={emitterForm.departamentoCodigo}
+														options={catalogOptionGroups.departamentos}
+														onValueChange={(nextValue) =>
+															setEmitterField('departamentoCodigo', nextValue)
+														}
+														placeholder="Seleccionar departamento"
+														searchPlaceholder="Buscar departamento"
+														clearable
+													/>
+												</div>
+
+												<div className="space-y-2">
+													<Label htmlFor="emitter-municipio" className="text-foreground">
+														Municipio
+													</Label>
+													<SearchableSelect
+														id="emitter-municipio"
+														name="municipioCodigo"
+														value={emitterForm.municipioCodigo}
+														disabled={!emitterForm.departamentoCodigo}
+														options={catalogOptionGroups.municipios}
+														onValueChange={(nextValue) =>
+															setEmitterField('municipioCodigo', nextValue)
+														}
+														placeholder={
+															emitterForm.departamentoCodigo
+																? 'Seleccionar municipio'
+																: 'Selecciona departamento primero'
+														}
+														searchPlaceholder="Buscar municipio"
+														clearable
+													/>
+												</div>
+
+												<div className="space-y-2">
+													<Label htmlFor="emitter-distrito" className="text-foreground">
+														Distrito
+													</Label>
+													<SearchableSelect
+														id="emitter-distrito"
+														name="distritoCodigo"
+														value={emitterForm.distritoCodigo}
+														options={catalogOptionGroups.distritos}
+														onValueChange={(nextValue) =>
+															setEmitterField('distritoCodigo', nextValue)
+														}
+														placeholder="Seleccionar distrito"
+														searchPlaceholder="Buscar distrito"
+														clearable
+													/>
+												</div>
+
+												<div className="space-y-2 md:col-span-3">
+													<Label htmlFor="emitter-direccion" className="text-foreground">
+														Complemento direccion
+													</Label>
+													<textarea
+														id="emitter-direccion"
+														name="complementoDireccion"
+														value={emitterForm.complementoDireccion}
+														onChange={handleEmitterChange}
+														rows={3}
+														className="min-h-24 w-full rounded-xl border border-border bg-background px-3 py-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+													/>
+												</div>
+											</div>
+
+											<div className="grid gap-4 md:grid-cols-2">
+												<div className="space-y-2">
+													<Label htmlFor="emitter-phone" className="text-foreground">
+														Telefono
+													</Label>
+													<Input
+														id="emitter-phone"
+														name="telefono"
+														value={emitterForm.telefono}
+														onChange={handleEmitterChange}
+														className="h-12 rounded-xl border-border bg-background text-foreground"
+													/>
+												</div>
+
+												<div className="space-y-2">
+													<Label htmlFor="emitter-email" className="text-foreground">
+														Correo fiscal
+													</Label>
+													<Input
+														id="emitter-email"
+														name="correo"
+														type="email"
+														value={emitterForm.correo}
+														onChange={handleEmitterChange}
+														className="h-12 rounded-xl border-border bg-background text-foreground"
+													/>
+												</div>
+
+												<div className="space-y-2">
+													<Label htmlFor="emitter-regimen" className="text-foreground">
+														Regimen tributario
+													</Label>
+													<SearchableSelect
+														id="emitter-regimen"
+														name="regimenTributarioCodigo"
+														value={emitterForm.regimenTributarioCodigo}
+														options={catalogOptionGroups.regimenesTributarios}
+														onValueChange={(nextValue) =>
+															setEmitterField('regimenTributarioCodigo', nextValue)
+														}
+														placeholder="Seleccionar regimen"
+														searchPlaceholder="Buscar regimen"
+														clearable
+													/>
+												</div>
+
+												<div className="space-y-2">
+													<Label htmlFor="emitter-afiliacion" className="text-foreground">
+														Tipo afiliacion
+													</Label>
+													<SearchableSelect
+														id="emitter-afiliacion"
+														name="tipoAfiliacionCodigo"
+														value={emitterForm.tipoAfiliacionCodigo}
+														options={catalogOptionGroups.tiposAfiliacion}
+														onValueChange={(nextValue) =>
+															setEmitterField('tipoAfiliacionCodigo', nextValue)
+														}
+														placeholder="Seleccionar afiliacion"
+														searchPlaceholder="Buscar afiliacion"
+														clearable
+													/>
+												</div>
+											</div>
+
+											{emitterForm.certificadoPath && (
+												<p className="rounded-xl border border-border bg-background px-4 py-3 text-xs text-muted-foreground">
+													Certificado asociado: {emitterForm.certificadoPath}
+												</p>
+											)}
+
+											{emitterError && (
+												<p className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-200">
+													{emitterError}
+												</p>
+											)}
+
+											{emitterSuccess && (
+												<p className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-200">
+													{emitterSuccess}
+												</p>
+											)}
+
+											<Button
+												type="submit"
+												disabled={emitterSaving}
+												className="h-12 w-full rounded-xl bg-yellow-400 font-bold text-black hover:bg-yellow-300"
+											>
+												{emitterSaving ? (
+													<>
+														<Loader2 className="mr-2 size-4 animate-spin" />
+														Guardando...
+													</>
+												) : (
+													<>
+														<Save className="mr-2 size-4" />
+														Guardar datos de emisor
+													</>
+												)}
+											</Button>
+										</form>
+									)}
 								</CardContent>
 							</Card>
 						</section>

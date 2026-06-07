@@ -1,8 +1,10 @@
 package config
 
 import (
+	"bufio"
 	"os"
 	"strconv"
+	"strings"
 )
 
 const defaultListenHost = "0.0.0.0"
@@ -19,6 +21,7 @@ type Config struct {
 	UseRodScraper               bool
 	UseBrowser                  bool
 	HTTPFastPath                bool
+	DatabaseURL                 string
 	RedisEnabled                bool
 	RedisURL                    string
 	RedisTTLSeconds             int
@@ -35,6 +38,8 @@ type Config struct {
 }
 
 func Load() Config {
+	loadDotEnv(".env")
+
 	port := getenv("PORT", "8081")
 	concurrency := getenvInt("GO_DTE_CONCURRENCY", 8)
 	poolSize := getenvInt("GO_DTE_BROWSER_POOL", minInt(concurrency, 4))
@@ -58,6 +63,7 @@ func Load() Config {
 		UseRodScraper:               getenvBool("GO_DTE_USE_ROD", false),
 		UseBrowser:                  getenvBool("GO_DTE_USE_BROWSER", false),
 		HTTPFastPath:                getenvBool("GO_DTE_HTTP_FAST_PATH", false),
+		DatabaseURL:                 getenv("DATABASE_URL", ""),
 		HaciendaEnvironment:         getenv("HACIENDA_ENV", "test"),
 		HaciendaUserAgent:           getenv("HACIENDA_USER_AGENT", "KaiserDTE"),
 		HaciendaCertificateHome:     getenv("HACIENDA_CERTIFICATE_HOME", getenv("CERTIFICATE_HOME", "")),
@@ -84,6 +90,30 @@ func (c Config) EffectiveMinIntervalMs() int {
 		return 0
 	}
 	return (1000 + c.RateLimitPerSec - 1) / c.RateLimitPerSec
+}
+
+func loadDotEnv(path string) {
+	file, err := os.Open(path)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") || !strings.Contains(line, "=") {
+			continue
+		}
+
+		parts := strings.SplitN(line, "=", 2)
+		key := strings.TrimSpace(parts[0])
+		value := strings.Trim(strings.TrimSpace(parts[1]), `"`)
+		if key == "" || os.Getenv(key) != "" {
+			continue
+		}
+		_ = os.Setenv(key, value)
+	}
 }
 
 func getenv(key, fallback string) string {
