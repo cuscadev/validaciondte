@@ -6,12 +6,46 @@ import { Timestamp } from 'firebase-admin/firestore';
 import { createOrganizationForOwner } from '@/lib/organization-admin';
 import { generateTemporaryPassword, sendAppMail, temporaryPasswordEmail } from '@/lib/server-mail';
 import { requireSuperadmin } from '@/lib/server-auth';
+import { getPostgresPool } from '@/lib/postgres';
 
 function getAppBaseUrl() {
   const configured = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL;
   if (configured) return configured.replace(/\/$/, '');
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
   return 'https://verificadordtev2.cuscadev.com';
+}
+
+async function upsertLocalUser({
+  uid,
+  email,
+  nombre,
+}: {
+  uid: string;
+  email: string;
+  nombre: string;
+}) {
+  const pool = getPostgresPool();
+  await pool.query(
+    `
+      INSERT INTO usuarios (
+        firebase_uid,
+        email,
+        nombre,
+        rol,
+        activo,
+        updated_at
+      )
+      VALUES ($1, $2, $3, 'cliente', TRUE, CURRENT_TIMESTAMP)
+      ON CONFLICT (firebase_uid)
+      DO UPDATE SET
+        email = EXCLUDED.email,
+        nombre = EXCLUDED.nombre,
+        rol = 'cliente',
+        activo = TRUE,
+        updated_at = CURRENT_TIMESTAMP
+    `,
+    [uid, email, nombre]
+  );
 }
 
 export async function POST(req: NextRequest) {
@@ -95,6 +129,12 @@ export async function POST(req: NextRequest) {
       mustChangePassword: true,
       temporaryPasswordIssuedAt: new Date(),
     }, { merge: true });
+
+    await upsertLocalUser({
+      uid,
+      email,
+      nombre: nombre || email,
+    });
 
     await adminDb.collection('accessRequests').doc(requestId).update({
       status: 'approved',

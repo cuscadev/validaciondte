@@ -104,6 +104,34 @@ async function getLinkedEmitter(uid: string, email: string) {
   return result.rows[0] ?? null;
 }
 
+async function ensureLocalUser(identity: { uid: string; email: string; role: string }) {
+  const pool = getPostgresPool();
+  const role = identity.role === 'superadmin' ? 'superadmin' : identity.role === 'colaborador' ? 'colaborador' : 'cliente';
+  const result = await pool.query<{ id: number }>(
+    `
+      INSERT INTO usuarios (
+        firebase_uid,
+        email,
+        nombre,
+        rol,
+        activo,
+        updated_at
+      )
+      VALUES ($1, $2, $2, $3, TRUE, CURRENT_TIMESTAMP)
+      ON CONFLICT (firebase_uid)
+      DO UPDATE SET
+        email = EXCLUDED.email,
+        rol = EXCLUDED.rol,
+        activo = TRUE,
+        updated_at = CURRENT_TIMESTAMP
+      RETURNING id
+    `,
+    [identity.uid, identity.email, role]
+  );
+
+  return result.rows[0].id;
+}
+
 function canUpdateEmitter(role: string, emitterRole: string) {
   if (role === 'superadmin') return true;
   return emitterRole === 'propietario' || emitterRole === 'editor';
@@ -138,21 +166,6 @@ export async function PUT(req: NextRequest) {
     const identity = await getIdentity(req);
     if (!identity) return json({ error: 'No autorizado' }, { status: 401 });
 
-    const current = await getLinkedEmitter(identity.uid, identity.email);
-    if (!current) {
-      return json(
-        { error: 'No hay emisor vinculado a tu usuario local.' },
-        { status: 404 }
-      );
-    }
-
-    if (!canUpdateEmitter(identity.role, String(current.rolEmisor || ''))) {
-      return json(
-        { error: 'No tienes permiso para modificar este emisor.' },
-        { status: 403 }
-      );
-    }
-
     const body = (await req.json()) as EmitterInput;
     const nit = cleanRequired(body.nit);
     const nrc = cleanRequired(body.nrc);
@@ -166,6 +179,114 @@ export async function PUT(req: NextRequest) {
     }
 
     const pool = getPostgresPool();
+
+    let current = await getLinkedEmitter(identity.uid, identity.email);
+    if (!current) {
+      if (identity.role !== 'cliente' && identity.role !== 'superadmin') {
+        return json(
+          { error: 'No hay emisor vinculado a tu usuario local.' },
+          { status: 404 }
+        );
+      }
+
+      const usuarioId = await ensureLocalUser(identity);
+      const created = await pool.query(
+        `
+          INSERT INTO emisores (
+            nit,
+            nrc,
+            nombre,
+            nombre_comercial,
+            razon_social,
+            tipo_establecimiento_codigo,
+            codigo_actividad,
+            descripcion_actividad,
+            departamento_codigo,
+            municipio_codigo,
+            distrito_codigo,
+            complemento_direccion,
+            telefono,
+            correo,
+            regimen_tributario_codigo,
+            tipo_afiliacion_codigo,
+            usuario_id,
+            activo,
+            ambiente_codigo,
+            updated_at
+          )
+          VALUES (
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+            $11, $12, $13, $14, $15, $16, $17, TRUE, COALESCE($18, '00'), CURRENT_TIMESTAMP
+          )
+          ON CONFLICT (nit)
+          DO UPDATE SET
+            nrc = EXCLUDED.nrc,
+            nombre = EXCLUDED.nombre,
+            nombre_comercial = EXCLUDED.nombre_comercial,
+            razon_social = EXCLUDED.razon_social,
+            tipo_establecimiento_codigo = EXCLUDED.tipo_establecimiento_codigo,
+            codigo_actividad = EXCLUDED.codigo_actividad,
+            descripcion_actividad = EXCLUDED.descripcion_actividad,
+            departamento_codigo = EXCLUDED.departamento_codigo,
+            municipio_codigo = EXCLUDED.municipio_codigo,
+            distrito_codigo = EXCLUDED.distrito_codigo,
+            complemento_direccion = EXCLUDED.complemento_direccion,
+            telefono = EXCLUDED.telefono,
+            correo = EXCLUDED.correo,
+            regimen_tributario_codigo = EXCLUDED.regimen_tributario_codigo,
+            tipo_afiliacion_codigo = EXCLUDED.tipo_afiliacion_codigo,
+            usuario_id = EXCLUDED.usuario_id,
+            activo = TRUE,
+            ambiente_codigo = EXCLUDED.ambiente_codigo,
+            updated_at = CURRENT_TIMESTAMP
+          RETURNING id
+        `,
+        [
+          nit,
+          nrc,
+          nombre,
+          clean(body.nombreComercial),
+          clean(body.razonSocial),
+          clean(body.tipoEstablecimientoCodigo),
+          clean(body.codigoActividad),
+          clean(body.descripcionActividad),
+          clean(body.departamentoCodigo),
+          clean(body.municipioCodigo),
+          clean(body.distritoCodigo),
+          clean(body.complementoDireccion),
+          clean(body.telefono),
+          clean(body.correo),
+          clean(body.regimenTributarioCodigo),
+          clean(body.tipoAfiliacionCodigo),
+          usuarioId,
+          clean(body.ambienteCodigo),
+        ]
+      );
+
+      await pool.query(
+        `
+          INSERT INTO usuario_emisor (usuario_id, emisor_id, rol)
+          VALUES ($1, $2, 'propietario')
+          ON CONFLICT (usuario_id, emisor_id)
+          DO UPDATE SET rol = EXCLUDED.rol
+        `,
+        [usuarioId, created.rows[0].id]
+      );
+
+      current = await getLinkedEmitter(identity.uid, identity.email);
+    }
+
+    if (!current) {
+      return json({ error: 'No se pudo vincular el emisor.' }, { status: 500 });
+    }
+
+    if (!canUpdateEmitter(identity.role, String(current.rolEmisor || ''))) {
+      return json(
+        { error: 'No tienes permiso para modificar este emisor.' },
+        { status: 403 }
+      );
+    }
+
     const updated = await pool.query(
       `
         UPDATE emisores
