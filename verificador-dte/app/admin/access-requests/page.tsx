@@ -2,7 +2,6 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { collection, getDocs } from 'firebase/firestore';
@@ -42,6 +41,7 @@ const ACCESS_REQUESTS_QUERY_KEY = ['admin', 'access-requests'] as const;
 function StatusBadge({ status, t }: { status: string; t: (key: string, options?: Record<string, unknown>) => string }) {
   if (status === 'approved') return <Badge className="bg-green-500 text-white">{t('accessRequests.statusApproved')}</Badge>;
   if (status === 'rejected') return <Badge variant="destructive">{t('accessRequests.statusRejected')}</Badge>;
+  if (status === 'pending_verification') return <Badge variant="outline">{t('accessRequests.statusPendingVerification')}</Badge>;
   return <Badge variant="outline">{t('accessRequests.statusPending')}</Badge>;
 }
 
@@ -58,11 +58,6 @@ function getInitials(name: string) {
 }
 
 export default function AccessRequestsPage() {
-  const router = useRouter();
-  useEffect(() => {
-    router.replace('/admin/users');
-  }, [router]);
-
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -74,6 +69,7 @@ export default function AccessRequestsPage() {
   const statusOptions = [
     { value: 'all', label: t('accessRequests.filterAll') },
     { value: 'pending', label: t('accessRequests.statusPending') },
+    { value: 'pending_verification', label: t('accessRequests.statusPendingVerification') },
     { value: 'approved', label: t('accessRequests.statusApproved') },
     { value: 'rejected', label: t('accessRequests.statusRejected') },
   ];
@@ -95,7 +91,7 @@ export default function AccessRequestsPage() {
     const q = search.toLowerCase();
     return requests.filter(r => {
       const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
-      const matchesSearch = !q || r.nombre.toLowerCase().includes(q) || r.email.toLowerCase().includes(q);
+      const matchesSearch = !q || (r.nombre ?? '').toLowerCase().includes(q) || (r.email ?? '').toLowerCase().includes(q);
       return matchesStatus && matchesSearch;
     });
   }, [requests, search, statusFilter]);

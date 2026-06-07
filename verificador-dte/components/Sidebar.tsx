@@ -22,6 +22,7 @@ import {
   Palette,
   Smartphone,
   Mail,
+  UserCheck,
 } from 'lucide-react';
 
 import { useAuth } from '@/components/AuthProvider';
@@ -397,6 +398,15 @@ export default function Sidebar({
     [],
   );
 
+  const accessRequestsItem = useMemo<Item>(
+    () => ({
+      href: '/admin/access-requests',
+      label: 'sidebar.accessRequests',
+      icon: UserCheck,
+    }),
+    [],
+  );
+
   const orgUsersItem = useMemo<Item>(
     () => ({
       href: '/usuarios',
@@ -513,6 +523,7 @@ export default function Sidebar({
     if (isSuperadmin) {
       return [
         ...planFilteredBaseItems,
+        accessRequestsItem,
         adminItem,
         planesItem,
         avisosItem,
@@ -533,7 +544,21 @@ export default function Sidebar({
     }
 
     return [...planFilteredBaseItems, notificationsItem];
-  }, [isSuperadmin, showOrgUsers, isCliente, planFilteredBaseItems]);
+  }, [
+    isSuperadmin,
+    showOrgUsers,
+    isCliente,
+    planFilteredBaseItems,
+    accessRequestsItem,
+    adminItem,
+    planesItem,
+    avisosItem,
+    obligacionesItem,
+    monitoringItem,
+    notificationsItem,
+    orgKycItem,
+    orgUsersItem,
+  ]);
 
   useEffect(() => {
     setOpenFlyoutHref(null);
