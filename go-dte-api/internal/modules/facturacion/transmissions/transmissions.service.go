@@ -65,6 +65,41 @@ func (s *Service) TransmitDTE(ctx context.Context, req dto.TransmitDTERequest, t
 	return respBody, res.StatusCode, nil
 }
 
+func (s *Service) TransmitLote(ctx context.Context, req dto.TransmitLoteRequest, token string) ([]byte, int, error) {
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return nil, fiber.StatusUnauthorized, errors.New("token de Hacienda requerido")
+	}
+
+	body, err := s.buildLotePayload(req)
+	if err != nil {
+		return nil, fiber.StatusBadRequest, err
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, s.loteURL(req.Environment), bytes.NewReader(body))
+	if err != nil {
+		return nil, fiber.StatusInternalServerError, err
+	}
+
+	httpReq.Header.Set("Authorization", token)
+	httpReq.Header.Set("User-Agent", s.cfg.HaciendaUserAgent)
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Accept", "application/json")
+
+	res, err := s.client.Do(httpReq)
+	if err != nil {
+		return nil, fiber.StatusBadGateway, err
+	}
+	defer res.Body.Close()
+
+	respBody, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, fiber.StatusBadGateway, err
+	}
+
+	return respBody, res.StatusCode, nil
+}
+
 func (s *Service) buildPayload(req dto.TransmitDTERequest) ([]byte, error) {
 	if len(bytes.TrimSpace(req.Payload)) > 0 {
 		if !json.Valid(req.Payload) {
@@ -101,11 +136,80 @@ func (s *Service) buildPayload(req dto.TransmitDTERequest) ([]byte, error) {
 	})
 }
 
+func (s *Service) buildLotePayload(req dto.TransmitLoteRequest) ([]byte, error) {
+	if len(bytes.TrimSpace(req.Payload)) > 0 {
+		if !json.Valid(req.Payload) {
+			return nil, errors.New("payload invalido")
+		}
+		return req.Payload, nil
+	}
+
+	ambiente := strings.TrimSpace(req.Ambiente)
+	if ambiente == "" {
+		ambiente = ambienteFromEnvironment(req.Environment, s.cfg.HaciendaEnvironment)
+	}
+	if req.Version <= 0 {
+		return nil, errors.New("version es requerida")
+	}
+	nitEmisor := strings.TrimSpace(firstNonEmpty(req.NitEmisor, req.NitEmi))
+	if nitEmisor == "" {
+		return nil, errors.New("nitEmisor es requerido")
+	}
+	if len(req.Documentos) < 2 || len(req.Documentos) > 100 {
+		return nil, errors.New("documentos debe contener entre 2 y 100 elementos")
+	}
+
+	documentos := make([]map[string]any, 0, len(req.Documentos))
+	for index, document := range req.Documentos {
+		tipoDTE := strings.TrimSpace(document.TipoDTE)
+		codigoGeneracion := strings.TrimSpace(document.CodigoGeneracion)
+		firma := strings.TrimSpace(document.Documento)
+		if tipoDTE == "" {
+			return nil, errors.New("documentos[" + toString(index) + "].tipoDte es requerido")
+		}
+		if document.Version <= 0 {
+			return nil, errors.New("documentos[" + toString(index) + "].version es requerido")
+		}
+		if codigoGeneracion == "" {
+			return nil, errors.New("documentos[" + toString(index) + "].codigoGeneracion es requerido")
+		}
+		if firma == "" {
+			return nil, errors.New("documentos[" + toString(index) + "].documento firmado es requerido")
+		}
+		documentos = append(documentos, map[string]any{
+			"tipoDte":          tipoDTE,
+			"version":          document.Version,
+			"codigoGeneracion": codigoGeneracion,
+			"documento":        firma,
+		})
+	}
+
+	idEnvio := req.IDEnvio
+	if idEnvio == nil || strings.TrimSpace(toString(idEnvio)) == "" {
+		return nil, errors.New("idEnvio es requerido")
+	}
+
+	return json.Marshal(map[string]any{
+		"ambiente":   ambiente,
+		"idEnvio":    strings.TrimSpace(toString(idEnvio)),
+		"version":    req.Version,
+		"nitEmisor":  nitEmisor,
+		"documentos": documentos,
+	})
+}
+
 func (s *Service) url(environment string) string {
 	if isProduction(environment, s.cfg.HaciendaEnvironment) {
 		return s.cfg.HaciendaRecepcionDteProd
 	}
 	return s.cfg.HaciendaRecepcionDteTest
+}
+
+func (s *Service) loteURL(environment string) string {
+	if isProduction(environment, s.cfg.HaciendaEnvironment) {
+		return s.cfg.HaciendaRecepcionLoteProd
+	}
+	return s.cfg.HaciendaRecepcionLoteTest
 }
 
 func ambienteFromEnvironment(environment string, fallback string) string {

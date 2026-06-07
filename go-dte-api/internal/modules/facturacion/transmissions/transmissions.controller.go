@@ -28,3 +28,18 @@ func (ct *Controller) TransmitDTE(c *fiber.Ctx) error {
 	c.Set("Content-Type", "application/json")
 	return c.Status(status).Send(resp)
 }
+
+func (ct *Controller) TransmitLote(c *fiber.Ctx) error {
+	var req dto.TransmitLoteRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "JSON invalido")
+	}
+
+	resp, status, err := ct.service.TransmitLote(c.Context(), req, c.Get("Authorization"))
+	if err != nil {
+		return fiber.NewError(status, err.Error())
+	}
+
+	c.Set("Content-Type", "application/json")
+	return c.Status(status).Send(resp)
+}

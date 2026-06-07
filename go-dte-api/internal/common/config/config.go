@@ -31,6 +31,8 @@ type Config struct {
 	HaciendaCertificateHome     string
 	HaciendaRecepcionDteTest    string
 	HaciendaRecepcionDteProd    string
+	HaciendaRecepcionLoteTest   string
+	HaciendaRecepcionLoteProd   string
 	HaciendaConsultaDteTest     string
 	HaciendaConsultaDteProd     string
 	HaciendaConsultaDteLoteTest string
@@ -69,6 +71,8 @@ func Load() Config {
 		HaciendaCertificateHome:     getenv("HACIENDA_CERTIFICATE_HOME", getenv("CERTIFICATE_HOME", "")),
 		HaciendaRecepcionDteTest:    getenv("HACIENDA_RECEPCION_DTE_URL_TEST", "https://apitest.dtes.mh.gob.sv/fesv/recepciondte"),
 		HaciendaRecepcionDteProd:    getenv("HACIENDA_RECEPCION_DTE_URL_PROD", "https://api.dtes.mh.gob.sv/fesv/recepciondte"),
+		HaciendaRecepcionLoteTest:   getenv("HACIENDA_RECEPCION_LOTE_URL_TEST", "https://apitest.dtes.mh.gob.sv/fesv/recepcionlote/"),
+		HaciendaRecepcionLoteProd:   getenv("HACIENDA_RECEPCION_LOTE_URL_PROD", "https://api.dtes.mh.gob.sv/fesv/recepcionlote/"),
 		HaciendaConsultaDteTest:     getenv("HACIENDA_CONSULTA_DTE_URL_TEST", "https://apitest.dtes.mh.gob.sv/fesv/recepcion/consultadte"),
 		HaciendaConsultaDteProd:     getenv("HACIENDA_CONSULTA_DTE_URL_PROD", "https://api.dtes.mh.gob.sv/fesv/recepcion/consultadte"),
 		HaciendaConsultaDteLoteTest: getenv("HACIENDA_CONSULTA_DTE_LOTE_URL_TEST", "https://apitest.dtes.mh.gob.sv/fesv/recepcion/consultadtelote"),

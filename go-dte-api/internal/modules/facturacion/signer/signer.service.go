@@ -81,13 +81,96 @@ func (s *Service) Sign(req dto.SignRequest) (string, error) {
 	return signCompactRS512(payload, privateKey)
 }
 
+func (s *Service) SignBatch(req dto.SignBatchRequest) (dto.SignBatchResponse, error) {
+	nit := strings.TrimSpace(req.NIT)
+	password := strings.TrimSpace(req.PasswordPri)
+
+	if nit == "" {
+		return dto.SignBatchResponse{}, errors.New("NIT es requerido")
+	}
+	if !nitRegex.MatchString(nit) {
+		return dto.SignBatchResponse{}, errors.New("formato de NIT no valido")
+	}
+	if password == "" {
+		return dto.SignBatchResponse{}, errors.New("clave privada es requerida")
+	}
+	if len(req.Documentos) == 0 {
+		return dto.SignBatchResponse{}, errors.New("documentos es requerido")
+	}
+
+	cert, err := s.loadCertificate(nit)
+	if err != nil {
+		return dto.SignBatchResponse{}, err
+	}
+	if cert == nil {
+		return dto.SignBatchResponse{}, errors.New("no existe certificado para el NIT: " + nit)
+	}
+	if cert.NIT != "" && cert.NIT != nit {
+		return dto.SignBatchResponse{}, fmt.Errorf("el certificado no corresponde al NIT solicitado. Esperado: %s, Encontrado: %s", nit, cert.NIT)
+	}
+	if !cert.Activo {
+		return dto.SignBatchResponse{}, errors.New("el certificado no esta activo")
+	}
+	if !verifyPrivatePassword(cert, password) {
+		return dto.SignBatchResponse{}, errors.New("passwordPri no valido")
+	}
+
+	privateKey, err := parseRSAPrivateKey([]byte(cert.PrivateKey.Encodied))
+	if err != nil {
+		return dto.SignBatchResponse{}, err
+	}
+
+	out := make([]dto.SignBatchDocumentResponse, 0, len(req.Documentos))
+	allOK := true
+	for index, document := range req.Documentos {
+		item := dto.SignBatchDocumentResponse{
+			ID: document.ID,
+		}
+		if strings.TrimSpace(item.ID) == "" {
+			item.ID = fmt.Sprintf("%d", index+1)
+		}
+		if len(bytes.TrimSpace(document.DTEJSON)) == 0 {
+			item.Error = "dteJson es requerido"
+			allOK = false
+			out = append(out, item)
+			continue
+		}
+
+		payload, err := normalizeJSON(document.DTEJSON)
+		if err != nil {
+			item.Error = "JSON invalido: " + err.Error()
+			allOK = false
+			out = append(out, item)
+			continue
+		}
+
+		firma, err := signCompactRS512(payload, privateKey)
+		if err != nil {
+			item.Error = err.Error()
+			allOK = false
+			out = append(out, item)
+			continue
+		}
+
+		item.Success = true
+		item.Firma = firma
+		item.CodigoGeneracion = extractCodigoGeneracion(document.DTEJSON)
+		out = append(out, item)
+	}
+
+	return dto.SignBatchResponse{
+		Success:    allOK,
+		Documentos: out,
+	}, nil
+}
+
 func (s *Service) loadCertificate(nit string) (*domain.CertificateMH, error) {
 	fmt.Printf("[DEBUG] Buscando certificado para NIT: %s\n", nit)
 	fmt.Printf("[DEBUG] Directorios de búsqueda:\n")
 	for i, dir := range s.certificateDirs() {
 		fmt.Printf("[DEBUG]   %d: %s\n", i, dir)
 	}
-	
+
 	for _, dir := range s.certificateDirs() {
 		for _, name := range certificateFileNames(nit) {
 			path := filepath.Join(dir, name)
@@ -99,7 +182,7 @@ func (s *Service) loadCertificate(nit string) (*domain.CertificateMH, error) {
 			}
 
 			fmt.Printf("[DEBUG] ✓ Archivo encontrado! Tamaño: %d bytes\n", len(data))
-			
+
 			if len(data) == 0 {
 				fmt.Printf("[DEBUG] ⚠️  Advertencia: Archivo vacío!\n")
 				continue
@@ -223,4 +306,20 @@ func normalizeJSON(raw json.RawMessage) ([]byte, error) {
 	// Jackson's default-pretty-printer signs a formatted JSON string. Indented JSON is stable
 	// enough for Hacienda because the JWS payload itself is what is submitted and verified.
 	return json.MarshalIndent(value, "", "  ")
+}
+
+func extractCodigoGeneracion(raw json.RawMessage) string {
+	var body map[string]any
+	if err := json.Unmarshal(raw, &body); err != nil {
+		return ""
+	}
+	identificacion, ok := body["identificacion"].(map[string]any)
+	if !ok {
+		return ""
+	}
+	value, ok := identificacion["codigoGeneracion"].(string)
+	if !ok {
+		return ""
+	}
+	return strings.TrimSpace(value)
 }

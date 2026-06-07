@@ -339,6 +339,10 @@ export default function Sidebar({
         label: 'Facturar consumidor final',
       },
       {
+        href: '/facturacion/envio-lotes',
+        label: 'Envio de lotes',
+      },
+      {
         href: '/facturacion/prueba-emision',
         label: 'Prueba de emision',
       },
@@ -727,13 +731,14 @@ export default function Sidebar({
                 itemLabel={itemLabel}
                 active={active}
                 icon={Icon}
-                children={children}
                 pathname={pathname}
                 onNavigate={onNavigate}
                 t={t}
                 open={openFlyoutHref === href}
                 onOpenChange={(next) => setOpenFlyoutHref(next ? href : null)}
-              />
+              >
+                {children}
+              </SidebarSubmenuFlyout>
             );
           })}
         </CollapsedNavRail>

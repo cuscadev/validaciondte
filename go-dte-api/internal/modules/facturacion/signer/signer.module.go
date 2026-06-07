@@ -11,5 +11,6 @@ func Register(router fiber.Router, cfg config.Config) {
 	controller := NewController(service)
 
 	router.Post("/sign", controller.Sign)
+	router.Post("/sign/batch", controller.SignBatch)
 	router.Post("/firmardocumento", controller.SignCompat)
 }

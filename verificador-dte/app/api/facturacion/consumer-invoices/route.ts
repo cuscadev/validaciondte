@@ -29,6 +29,18 @@ type ResolvedLocation = {
   distrito: string;
 };
 
+type ProcessTiming = {
+  startedAt: string;
+  documentCreatedAt?: string;
+  signedAt?: string;
+  sentToHaciendaAt?: string;
+  receivedFromHaciendaAt?: string;
+  documentCreationMs?: number;
+  signingMs?: number;
+  haciendaMs?: number;
+  totalMs?: number;
+};
+
 function asRecord(value: unknown): JsonRecord {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as JsonRecord)
@@ -340,6 +352,10 @@ function sumItems(items: ReturnType<typeof validateItems>) {
 
 export async function POST(req: NextRequest) {
   let runRef: FirebaseFirestore.DocumentReference | null = null;
+  const requestStartedAtMs = Date.now();
+  const processTiming: ProcessTiming = {
+    startedAt: new Date(requestStartedAtMs).toISOString(),
+  };
 
   try {
     const user = await requireAuth(req);
@@ -422,10 +438,14 @@ export async function POST(req: NextRequest) {
       updatedAt: new Date(),
     });
 
+    const documentStartMs = Date.now();
     const documentResponse = asRecord(await postGo(
       '/api/facturacion/documents/factura-consumidor-final',
       documentRequest
     ));
+    const documentEndMs = Date.now();
+    processTiming.documentCreatedAt = new Date(documentEndMs).toISOString();
+    processTiming.documentCreationMs = documentEndMs - documentStartMs;
 
     const dteJson = documentResponse.dteJson;
     const codigoGeneracion = getString(documentResponse.codigoGeneracion);
@@ -439,6 +459,7 @@ export async function POST(req: NextRequest) {
       codigoGeneracion,
       numeroControl,
       totalPagar,
+      processTiming,
       updatedAt: new Date(),
     }, { merge: true });
 
@@ -449,15 +470,20 @@ export async function POST(req: NextRequest) {
     const passwordPri = String(body.passwordPri || '');
 
     if (passwordPri) {
+      const signStartMs = Date.now();
       signResponse = await postGo('/api/facturacion/sign', {
         nit: emisor.nit,
         passwordPri,
         dteJson,
       });
+      const signEndMs = Date.now();
+      processTiming.signedAt = new Date(signEndMs).toISOString();
+      processTiming.signingMs = signEndMs - signStartMs;
       firma = getString(asRecord(signResponse).firma);
 
       await runRef.set({
         status: 'signed',
+        processTiming,
         signResponse: {
           success: asRecord(signResponse).success,
           firma,
@@ -475,18 +501,32 @@ export async function POST(req: NextRequest) {
       }
 
       const token = await getHaciendaTokenForUser(user.uid, false, environment);
-      haciendaResponse = await postGo('/api/facturacion/transmissions/dte', {
-        environment,
-        ambiente: '00',
-        idEnvio: Date.now(),
-        version: Number(documentResponse.version || asRecord(asRecord(dteJson).identificacion).version || 2),
-        tipoDte: '01',
-        documento: firma,
-      }, {
-        headers: { Authorization: token },
-      });
+      const haciendaStartMs = Date.now();
+      processTiming.sentToHaciendaAt = new Date(haciendaStartMs).toISOString();
+      try {
+        haciendaResponse = await postGo('/api/facturacion/transmissions/dte', {
+          environment,
+          ambiente: '00',
+          idEnvio: Date.now(),
+          version: Number(documentResponse.version || asRecord(asRecord(dteJson).identificacion).version || 2),
+          tipoDte: '01',
+          documento: firma,
+        }, {
+          headers: { Authorization: token },
+        });
+      } catch (error) {
+        const haciendaEndMs = Date.now();
+        processTiming.receivedFromHaciendaAt = new Date(haciendaEndMs).toISOString();
+        processTiming.haciendaMs = haciendaEndMs - haciendaStartMs;
+        throw error;
+      }
+      const haciendaEndMs = Date.now();
+      processTiming.receivedFromHaciendaAt = new Date(haciendaEndMs).toISOString();
+      processTiming.haciendaMs = haciendaEndMs - haciendaStartMs;
       selloRecepcion = extractSello(haciendaResponse);
     }
+
+    processTiming.totalMs = Date.now() - requestStartedAtMs;
 
     const finalPackage = {
       tipoDte: '01',
@@ -497,6 +537,7 @@ export async function POST(req: NextRequest) {
       firma,
       selloRecepcion,
       haciendaResponse,
+      processTiming,
       downloads: {
         json: `/api/facturacion/test-flow/factura/${runRef.id}/json`,
       },
@@ -512,6 +553,7 @@ export async function POST(req: NextRequest) {
       status,
       selloRecepcion,
       haciendaResponse,
+      processTiming,
       finalPackage,
       updatedAt: new Date(),
     }, { merge: true });
@@ -524,17 +566,20 @@ export async function POST(req: NextRequest) {
       numeroControl,
       totalPagar,
       selloRecepcion,
+      processTiming,
       finalPackage,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'No se pudo facturar consumidor final';
+    processTiming.totalMs = Date.now() - requestStartedAtMs;
     if (runRef) {
       await runRef.set({
         status: 'error',
         error: message,
+        processTiming,
         updatedAt: new Date(),
       }, { merge: true }).catch(() => {});
     }
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: message, processTiming }, { status: 500 });
   }
 }

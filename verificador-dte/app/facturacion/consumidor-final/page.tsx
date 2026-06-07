@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, CheckCircle2, Download, Loader2, Plus, ReceiptText, Trash2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Clock3, Download, Loader2, Plus, ReceiptText, Trash2 } from 'lucide-react';
 
 import { useAuth } from '@/components/AuthProvider';
 import { auth } from '@/lib/firebase';
@@ -60,11 +60,25 @@ type InvoiceResponse = {
   totalPagar?: number;
   selloRecepcion?: string;
   finalPackage?: {
+    processTiming?: ProcessTiming;
     downloads?: {
       json?: string;
     };
   };
+  processTiming?: ProcessTiming;
   error?: string;
+};
+
+type ProcessTiming = {
+  startedAt?: string;
+  documentCreatedAt?: string;
+  signedAt?: string;
+  sentToHaciendaAt?: string;
+  receivedFromHaciendaAt?: string;
+  documentCreationMs?: number;
+  signingMs?: number;
+  haciendaMs?: number;
+  totalMs?: number;
 };
 
 const emptyLine: InvoiceLine = {
@@ -90,6 +104,32 @@ function money(value: number) {
   }).format(value || 0);
 }
 
+function formatTime(value?: string) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return new Intl.DateTimeFormat('es-SV', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).format(date);
+}
+
+function formatDuration(ms?: number) {
+  if (typeof ms !== 'number' || !Number.isFinite(ms)) return '-';
+  if (ms < 1000) return `${ms} ms`;
+  const seconds = ms / 1000;
+  if (seconds < 60) return `${seconds.toFixed(seconds >= 10 ? 1 : 2)} s`;
+  const minutes = Math.floor(seconds / 60);
+  const rest = Math.round(seconds % 60);
+  return `${minutes} min ${rest} s`;
+}
+
+function formatMilliseconds(ms?: number) {
+  if (typeof ms !== 'number' || !Number.isFinite(ms)) return '-';
+  return `${ms} ms`;
+}
+
 function lineTotal(line: InvoiceLine) {
   return Math.max(0, Number(line.cantidad || 0) * Number(line.precioUni || 0) - Number(line.montoDescu || 0));
 }
@@ -106,6 +146,8 @@ export default function FacturarConsumidorFinalPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<InvoiceResponse | null>(null);
+  const [processTiming, setProcessTiming] = useState<ProcessTiming | null>(null);
+  const [lastSubmittedTransmitir, setLastSubmittedTransmitir] = useState(false);
   const [error, setError] = useState('');
 
   const canUse = appUser?.role === 'cliente' || appUser?.role === 'superadmin';
@@ -176,6 +218,8 @@ export default function FacturarConsumidorFinalPage() {
     setSubmitting(true);
     setError('');
     setResult(null);
+    setProcessTiming(null);
+    setLastSubmittedTransmitir(transmitir);
 
     try {
       if (!selectedReceptorId) throw new Error('Selecciona un receptor.');
@@ -207,6 +251,7 @@ export default function FacturarConsumidorFinalPage() {
       });
 
       const payload = (await res.json()) as InvoiceResponse;
+      setProcessTiming(payload.processTiming || payload.finalPackage?.processTiming || null);
       if (!res.ok) throw new Error(payload.error || 'No se pudo facturar');
       setResult(payload);
     } catch (err) {
@@ -490,6 +535,10 @@ export default function FacturarConsumidorFinalPage() {
                 </div>
               )}
 
+              {processTiming && (
+                <ProcessTimingCard timing={processTiming} transmitted={lastSubmittedTransmitir} />
+              )}
+
               {result && (
                 <div className="space-y-3 rounded-md border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-100">
                   <div className="flex items-start gap-2">
@@ -504,6 +553,12 @@ export default function FacturarConsumidorFinalPage() {
                     <span>Estado: {result.status || '-'}</span>
                     <span>Sello: {result.selloRecepcion || '-'}</span>
                   </div>
+                  {(result.processTiming || result.finalPackage?.processTiming) && !processTiming && (
+                    <ProcessTimingCard
+                      timing={result.processTiming || result.finalPackage?.processTiming || {}}
+                      transmitted={lastSubmittedTransmitir}
+                    />
+                  )}
                   {result.finalPackage?.downloads?.json && (
                     <Button type="button" variant="outline" className="w-full" onClick={downloadJson}>
                       <Download className="size-4" />
@@ -517,6 +572,56 @@ export default function FacturarConsumidorFinalPage() {
         </aside>
       </div>
     </main>
+  );
+}
+
+function ProcessTimingCard({
+  timing,
+  transmitted,
+}: {
+  timing: ProcessTiming;
+  transmitted: boolean;
+}) {
+  return (
+    <div className="rounded-md border border-slate-200 bg-white p-3 text-sm dark:border-white/10 dark:bg-zinc-950">
+      <div className="mb-3 flex items-center gap-2 font-semibold">
+        <Clock3 className="size-4 text-amber-600 dark:text-yellow-300" />
+        Tiempos de emision
+      </div>
+      <div className="grid gap-2 text-xs">
+        <TimingRow label="Inicio" value={formatTime(timing.startedAt)} />
+        <TimingRow
+          label="Documento"
+          value={`${formatTime(timing.documentCreatedAt)} · ${formatDuration(timing.documentCreationMs)}`}
+        />
+        <TimingRow
+          label="Firma"
+          value={`${formatTime(timing.signedAt)} · ${formatMilliseconds(timing.signingMs)}`}
+        />
+        <TimingRow
+          label="Envio Hacienda"
+          value={transmitted ? formatTime(timing.sentToHaciendaAt) : 'No transmitido'}
+        />
+        <TimingRow
+          label="Respuesta"
+          value={
+            transmitted
+              ? `${formatTime(timing.receivedFromHaciendaAt)} · ${formatDuration(timing.haciendaMs)}`
+              : 'No transmitido'
+          }
+        />
+        <TimingRow label="Total" value={formatDuration(timing.totalMs)} strong />
+      </div>
+    </div>
+  );
+}
+
+function TimingRow({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-muted-foreground">{label}</span>
+      <span className={`text-right ${strong ? 'font-semibold' : 'font-medium'}`}>{value}</span>
+    </div>
   );
 }
 

@@ -12,4 +12,6 @@ func Register(router fiber.Router, cfg config.Config) {
 
 	transmissions := router.Group("/transmissions")
 	transmissions.Post("/dte", controller.TransmitDTE)
+	transmissions.Post("/lote", controller.TransmitLote)
+	transmissions.Get("/debug", controller.DebugEnvironment)
 }

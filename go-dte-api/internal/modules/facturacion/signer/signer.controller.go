@@ -31,6 +31,20 @@ func (ct *Controller) Sign(c *fiber.Ctx) error {
 	})
 }
 
+func (ct *Controller) SignBatch(c *fiber.Ctx) error {
+	var req dto.SignBatchRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "JSON invalido")
+	}
+
+	resp, err := ct.service.SignBatch(req)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+
+	return c.JSON(resp)
+}
+
 func (ct *Controller) SignCompat(c *fiber.Ctx) error {
 	var req dto.SignRequest
 	if err := c.BodyParser(&req); err != nil {
