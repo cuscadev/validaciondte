@@ -335,6 +335,10 @@ export default function Sidebar({
   const facturacionChildren = useMemo<NavChild[]>(
     () => [
       {
+        href: '/facturacion/consumidor-final',
+        label: 'Facturar consumidor final',
+      },
+      {
         href: '/facturacion/prueba-emision',
         label: 'Prueba de emision',
       },
@@ -568,7 +572,7 @@ export default function Sidebar({
         ? [
             ...planFilteredBaseItems,
             orgKycItem,
-            facturacionReceptoresItem,
+            facturacionItem,
             orgUsersItem,
             notificationsItem,
           ]
@@ -584,7 +588,7 @@ export default function Sidebar({
       return [
         ...planFilteredBaseItems,
         orgKycItem,
-        facturacionReceptoresItem,
+        facturacionItem,
         notificationsItem,
       ];
     }

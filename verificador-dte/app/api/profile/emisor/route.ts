@@ -22,6 +22,16 @@ type EmitterInput = {
   regimenTributarioCodigo?: string;
   tipoAfiliacionCodigo?: string;
   ambienteCodigo?: string;
+  // Configuración de facturación
+  metodoPagoDefecto?: string;
+  formaPagoDefecto?: string;
+  plazoCredito?: string;
+  tipoVentaDefecto?: string;
+  monedaDefecto?: string;
+  tasaIva?: number;
+  generadorCodigo?: string;
+  prefijoCorrelativo?: string;
+  tipoRetencionDefecto?: string;
 };
 
 function json(data: unknown, init?: ResponseInit) {
@@ -86,10 +96,20 @@ async function getLinkedEmitter(uid: string, email: string) {
         e.certificado_path AS "certificadoPath",
         e.fecha_vencimiento_cert AS "fechaVencimientoCert",
         e.activo,
-        ue.rol AS "rolEmisor"
+        ue.rol AS "rolEmisor",
+        ec.metodo_pago_defecto AS "metodoPagoDefecto",
+        ec.forma_pago_defecto AS "formaPagoDefecto",
+        ec.plazo_credito_defecto AS "plazoCredito",
+        ec.tipo_venta_defecto AS "tipoVentaDefecto",
+        ec.moneda_defecto AS "monedaDefecto",
+        ec.tasa_iva AS "tasaIva",
+        ec.generador_codigo AS "generadorCodigo",
+        ec.prefijo_correlativo AS "prefijoCorrelativo",
+        ec.tipo_retencion_defecto AS "tipoRetencionDefecto"
       FROM usuarios u
       INNER JOIN usuario_emisor ue ON ue.usuario_id = u.id
       INNER JOIN emisores e ON e.id = ue.emisor_id
+      LEFT JOIN emisor_configuracion ec ON ec.emisor_id = e.id
       WHERE u.activo = TRUE
         AND e.activo = TRUE
         AND (u.firebase_uid = $1 OR lower(u.email) = lower($2))

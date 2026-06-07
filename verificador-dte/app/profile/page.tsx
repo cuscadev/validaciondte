@@ -68,6 +68,16 @@ type EmitterForm = {
 	ambienteCodigo: string;
 	rolEmisor?: string;
 	certificadoPath?: string;
+	// Configuración de facturación
+	metodoPagoDefecto?: string;
+	formaPagoDefecto?: string;
+	plazoCredito?: string;
+	tipoVentaDefecto?: string;
+	monedaDefecto?: string;
+	tasaIva?: number;
+	generadorCodigo?: string;
+	prefijoCorrelativo?: string;
+	tipoRetencionDefecto?: string;
 };
 
 type CatalogRow = {
@@ -86,6 +96,12 @@ type ProfileCatalogs = {
 	actividades: CatalogRow[];
 	regimenesTributarios: CatalogRow[];
 	tiposAfiliacion: CatalogRow[];
+	metodosPago?: CatalogRow[];
+	formasPago?: CatalogRow[];
+	plazosCredito?: CatalogRow[];
+	tiposVenta?: CatalogRow[];
+	monedas?: CatalogRow[];
+	tiposRetencion?: CatalogRow[];
 };
 
 const emptyEmitterForm: EmitterForm = {
@@ -116,6 +132,12 @@ const emptyCatalogs: ProfileCatalogs = {
 	actividades: [],
 	regimenesTributarios: [],
 	tiposAfiliacion: [],
+	metodosPago: [],
+	formasPago: [],
+	plazosCredito: [],
+	tiposVenta: [],
+	monedas: [],
+	tiposRetencion: [],
 };
 
 function emitterToForm(data: Partial<EmitterForm>): EmitterForm {
@@ -140,6 +162,15 @@ function emitterToForm(data: Partial<EmitterForm>): EmitterForm {
 		ambienteCodigo: data.ambienteCodigo || '00',
 		rolEmisor: data.rolEmisor || '',
 		certificadoPath: data.certificadoPath || '',
+		metodoPagoDefecto: data.metodoPagoDefecto || '',
+		formaPagoDefecto: data.formaPagoDefecto || '',
+		plazoCredito: data.plazoCredito || '',
+		tipoVentaDefecto: data.tipoVentaDefecto || '',
+		monedaDefecto: data.monedaDefecto || 'USD',
+		tasaIva: data.tasaIva || 13,
+		generadorCodigo: data.generadorCodigo || '01',
+		prefijoCorrelativo: data.prefijoCorrelativo || '',
+		tipoRetencionDefecto: data.tipoRetencionDefecto || '',
 	};
 }
 
@@ -226,6 +257,12 @@ export default function ProfilePage() {
 			actividades: catalogOptions(catalogs.actividades),
 			regimenesTributarios: catalogOptions(catalogs.regimenesTributarios),
 			tiposAfiliacion: catalogOptions(catalogs.tiposAfiliacion),
+			metodosPago: catalogOptions(catalogs.metodosPago || []),
+			formasPago: catalogOptions(catalogs.formasPago || []),
+			plazosCredito: catalogOptions(catalogs.plazosCredito || []),
+			tiposVenta: catalogOptions(catalogs.tiposVenta || []),
+			monedas: catalogOptions(catalogs.monedas || []),
+			tiposRetencion: catalogOptions(catalogs.tiposRetencion || []),
 		}),
 		[
 			catalogs.actividades,
@@ -234,6 +271,12 @@ export default function ProfilePage() {
 			catalogs.regimenesTributarios,
 			catalogs.tiposAfiliacion,
 			catalogs.tiposEstablecimiento,
+			catalogs.metodosPago,
+			catalogs.formasPago,
+			catalogs.plazosCredito,
+			catalogs.tiposVenta,
+			catalogs.monedas,
+			catalogs.tiposRetencion,
 			filteredMunicipios,
 		]
 	);

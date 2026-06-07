@@ -14,6 +14,12 @@ const allowedCatalogs = {
   tiposAfiliacion: 'cat_022_tipo_afiliacion',
   tiposDocumento: 'cat_003_tipo_documento',
   paises: 'cat_paises',
+  metodosPago: 'cat_026_metodo_pago',
+  formasPago: 'cat_027_forma_pago',
+  plazosCredito: 'cat_028_plazo_credito',
+  tiposVenta: 'cat_016_tipo_venta',
+  monedas: 'cat_004_monedas',
+  tiposRetencion: 'cat_010_tipo_retencion',
 } as const;
 
 async function requireAuth(req: NextRequest) {

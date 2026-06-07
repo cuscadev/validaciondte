@@ -64,21 +64,22 @@ export default function FacturacionPruebaEmisionPage() {
   const [notice, setNotice] = useState('');
 
   const isSuperadmin = appUser?.role === 'superadmin';
+  const canUseFacturacion = isSuperadmin || appUser?.role === 'cliente';
   const normalizedNit = nit.replace(/\D/g, '');
 
   const canAuthenticate = useMemo(
-    () => isSuperadmin && normalizedNit && haciendaPassword.trim() && !authenticating,
-    [authenticating, haciendaPassword, isSuperadmin, normalizedNit],
+    () => canUseFacturacion && normalizedNit && haciendaPassword.trim() && !authenticating,
+    [authenticating, canUseFacturacion, haciendaPassword, normalizedNit],
   );
 
   const canSubmit = useMemo(
     () =>
-      isSuperadmin &&
+      canUseFacturacion &&
       haciendaReady &&
       normalizedNit &&
       passwordPri.trim() &&
       !loading,
-    [haciendaReady, isSuperadmin, loading, normalizedNit, passwordPri],
+    [canUseFacturacion, haciendaReady, loading, normalizedNit, passwordPri],
   );
 
   const authenticateHacienda = async () => {
@@ -191,7 +192,7 @@ export default function FacturacionPruebaEmisionPage() {
 
   if (!authChecked) return null;
 
-  if (!isSuperadmin) {
+  if (!canUseFacturacion) {
     return (
       <main className="min-h-[calc(100vh-5rem)] bg-slate-50 text-slate-950 dark:bg-black dark:text-white">
         <Card className="mx-auto max-w-xl border-amber-300 bg-white dark:border-amber-400/30 dark:bg-zinc-950">
@@ -201,7 +202,7 @@ export default function FacturacionPruebaEmisionPage() {
               Acceso restringido
             </CardTitle>
             <CardDescription>
-              Este flujo temporal de facturacion solo esta disponible para superadmin.
+              Este flujo de facturacion esta disponible para clientes y superadmin.
             </CardDescription>
           </CardHeader>
         </Card>

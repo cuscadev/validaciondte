@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getGoDteApiUrl } from '@/lib/go-dte-api';
 import { adminDb } from '@/lib/firebase-admin';
-import { requireSuperadmin } from '@/lib/server-auth';
+import { requireAuth } from '@/lib/server-auth';
 import { getHaciendaTokenForUser } from '@/lib/hacienda-auth';
 
 type JsonRecord = Record<string, unknown>;
@@ -153,7 +153,11 @@ export async function POST(req: NextRequest) {
   let runRef: FirebaseFirestore.DocumentReference | null = null;
 
   try {
-    const user = await requireSuperadmin(req);
+    const user = await requireAuth(req);
+    if (user.role !== 'cliente' && user.role !== 'superadmin') {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+    }
+
     const body = await req.json().catch(() => ({})) as {
       nit?: string;
       passwordPri?: string;
