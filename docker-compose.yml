@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  facturacion-db:
+    image: postgres:15-alpine
+    container_name: facturacion-db
+    environment:
+      POSTGRES_USER: facturacion
+      POSTGRES_PASSWORD: facturacion123
+      POSTGRES_DB: facturacion
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./scripts/transaccional-tables.sql:/docker-entrypoint-initdb.d/02-transaccional.sql
+      - facturacion-data:/var/lib/postgresql/data
+    networks:
+      - facturacion-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U facturacion -d facturacion"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  facturacion-data:
+
+networks:
+  facturacion-network:
+    driver: bridge
