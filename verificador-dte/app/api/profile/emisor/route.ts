@@ -48,6 +48,13 @@ function cleanRequired(value: unknown) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function cleanLastTwoDigits(value: unknown) {
+  if (typeof value !== 'string') return null;
+  const digits = value.replace(/\D/g, '');
+  if (!digits) return null;
+  return digits.slice(-2).padStart(2, '0');
+}
+
 async function getIdentity(req: NextRequest) {
   const authHeader = req.headers.get('Authorization');
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : '';
@@ -83,7 +90,7 @@ async function getLinkedEmitter(uid: string, email: string) {
         e.razon_social AS "razonSocial",
         e.tipo_establecimiento_codigo AS "tipoEstablecimientoCodigo",
         e.codigo_actividad AS "codigoActividad",
-        e.descripcion_actividad AS "descripcionActividad",
+        COALESCE(NULLIF(BTRIM(e.descripcion_actividad), ''), a.nombre) AS "descripcionActividad",
         e.departamento_codigo AS "departamentoCodigo",
         e.municipio_codigo AS "municipioCodigo",
         e.distrito_codigo AS "distritoCodigo",
@@ -109,6 +116,7 @@ async function getLinkedEmitter(uid: string, email: string) {
       FROM usuarios u
       INNER JOIN usuario_emisor ue ON ue.usuario_id = u.id
       INNER JOIN emisores e ON e.id = ue.emisor_id
+      LEFT JOIN cat_024_codigo_actividad a ON a.codigo = e.codigo_actividad
       LEFT JOIN emisor_configuracion ec ON ec.emisor_id = e.id
       WHERE u.activo = TRUE
         AND e.activo = TRUE
@@ -190,6 +198,8 @@ export async function PUT(req: NextRequest) {
     const nit = cleanRequired(body.nit);
     const nrc = cleanRequired(body.nrc);
     const nombre = cleanRequired(body.nombre);
+    const municipioCodigo = cleanLastTwoDigits(body.municipioCodigo);
+    const distritoCodigo = cleanLastTwoDigits(body.distritoCodigo);
 
     if (!nit || !nrc || !nombre) {
       return json(
@@ -271,8 +281,8 @@ export async function PUT(req: NextRequest) {
           clean(body.codigoActividad),
           clean(body.descripcionActividad),
           clean(body.departamentoCodigo),
-          clean(body.municipioCodigo),
-          clean(body.distritoCodigo),
+          municipioCodigo,
+          distritoCodigo,
           clean(body.complementoDireccion),
           clean(body.telefono),
           clean(body.correo),
@@ -363,8 +373,8 @@ export async function PUT(req: NextRequest) {
         clean(body.codigoActividad),
         clean(body.descripcionActividad),
         clean(body.departamentoCodigo),
-        clean(body.municipioCodigo),
-        clean(body.distritoCodigo),
+        municipioCodigo,
+        distritoCodigo,
         clean(body.complementoDireccion),
         clean(body.telefono),
         clean(body.correo),

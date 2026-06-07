@@ -26,41 +26,70 @@ async function requireAuth(req: NextRequest) {
   const authHeader = req.headers.get('Authorization');
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : '';
 
-  if (!token) return null;
-  return adminAuth.verifyIdToken(token);
+  if (!token) {
+    console.log('[auth] No authorization header');
+    return null;
+  }
+  
+  try {
+    console.log('[auth] Verifying token...');
+    const decoded = await adminAuth.verifyIdToken(token);
+    console.log('[auth] Token verified for user:', decoded.uid);
+    return decoded;
+  } catch (error) {
+    console.error('[auth] Token verification failed:', error instanceof Error ? error.message : String(error));
+    return null;
+  }
 }
 
 async function readCatalog(tableName: string) {
   const pool = getPostgresPool();
-  const result = await pool.query(
-    `
-      SELECT *
-      FROM ${tableName}
-      WHERE COALESCE(activo, TRUE) = TRUE
-      ORDER BY id
-    `
-  );
-
-  return result.rows;
+  try {
+    const result = await pool.query(
+      `
+        SELECT *
+        FROM ${tableName}
+        WHERE COALESCE(a  ctivo, TRUE) = TRUE
+        ORDER BY id
+      `
+    );
+    return result.rows;
+  } catch (error) {
+    console.error(`[catalog] Error reading ${tableName}:`, error);
+    throw error;
+  }
 }
 
 export async function GET(req: NextRequest) {
   try {
+    console.log('[api/profile/catalogs] Starting to load catalogs');
+    
     const identity = await requireAuth(req);
     if (!identity) {
+      console.log('[api/profile/catalogs] No identity found, returning 401');
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
+    
+    console.log('[api/profile/catalogs] Identity verified:', { uid: identity.uid, email: identity.email });
 
     const entries = await Promise.all(
-      Object.entries(allowedCatalogs).map(async ([key, table]) => [
-        key,
-        await readCatalog(table),
-      ])
+      Object.entries(allowedCatalogs).map(async ([key, table]) => {
+        try {
+          console.log(`[api/profile/catalogs] Loading ${key} from ${table}`);
+          const data = await readCatalog(table);
+          console.log(`[api/profile/catalogs] ${key}: ${data.length} rows`);
+          return [key, data];
+        } catch (err) {
+          console.error(`[api/profile/catalogs] Error loading ${key}:`, err);
+          return [key, []];
+        }
+      })
     );
 
+    console.log('[api/profile/catalogs] All catalogs loaded successfully');
     return NextResponse.json({ catalogs: Object.fromEntries(entries) });
   } catch (error) {
-    console.error('[api/profile/catalogs] Error loading catalogs', error);
+    console.error('[api/profile/catalogs] Fatal error loading catalogs', error);
 
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Error interno' },

@@ -23,6 +23,12 @@ type InvoiceItem = {
   tipoItem?: number;
 };
 
+type ResolvedLocation = {
+  departamento: string;
+  municipio: string;
+  distrito: string;
+};
+
 function asRecord(value: unknown): JsonRecord {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as JsonRecord)
@@ -43,6 +49,12 @@ function cleanDigits(value: unknown) {
   return String(value || '').replace(/\D/g, '');
 }
 
+function lastTwoDigits(value: unknown) {
+  const digits = cleanDigits(value);
+  if (!digits) return '';
+  return digits.slice(-2).padStart(2, '0');
+}
+
 function normalizeText(value: unknown) {
   return String(value || '')
     .normalize('NFD')
@@ -51,66 +63,92 @@ function normalizeText(value: unknown) {
     .trim();
 }
 
-const legacyMunicipioByDepartmentAndName: Record<string, Record<string, string>> = {
-  '05': {
-    'ANTIGUO CUSCATLAN': '01',
-    'CIUDAD ARCE': '02',
-    'COLON': '03',
-    'COMASAGUA': '04',
-    'CHILTIUPAN': '05',
-    'HUIZUCAR': '06',
-    'JAYAQUE': '07',
-    'JICALAPA': '08',
-    'LA LIBERTAD': '09',
-    'NUEVO CUSCATLAN': '10',
-    'SAN JUAN OPICO': '11',
-    'QUEZALTEPEQUE': '12',
-    'SACACOYO': '13',
-    'SAN JOSE VILLANUEVA': '14',
-    'SAN MATIAS': '15',
-    'SAN PABLO TACACHICO': '16',
-    'SANTA TECLA': '17',
-    'TALNIQUE': '18',
-    'TAMANIQUE': '19',
-    'TEOTEPEQUE': '20',
-    'TEPECOYO': '21',
-    'ZARAGOZA': '22',
-  },
-  '12': {
-    'SAN MIGUEL': '01',
-    'CAROLINA': '02',
-    'CIUDAD BARRIO': '03',
-    'CIUDAD BARRIOS': '03',
-    'COMACARAN': '04',
-    'CHAPELTIQUE': '05',
-    'CHINAMECA': '06',
-    'CHIRILAGUA': '07',
-    'EL TRANSITO': '08',
-    'LOLOTIQUE': '09',
-    'MONCAGUA': '10',
-    'NUEVA GUADALUPE': '11',
-    'NUEVO EDEN DE SAN JUAN': '12',
-    'NUEVO EDEN DE JUAN DIAZ': '12',
-    'QUELEPA': '13',
-    'SAN ANTONIO': '14',
-    'SAN GERARDO': '15',
-    'SAN JORGE': '16',
-    'SAN LUIS DE LA REINA': '17',
-    'SAN LUIS': '17',
-    'SAN RAFAEL ORIENTE': '18',
-    'SESORI': '19',
-    'ULUAZAPA': '20',
-  },
-};
+function normalizeMunicipioCodigo(value: unknown) {
+  return lastTwoDigits(value);
+}
 
-function normalizeMunicipioCodigo(value: unknown, departamento: unknown, nombre?: unknown) {
-  const municipio = cleanDigits(value);
-  const dep = cleanDigits(departamento);
-  const mapped = legacyMunicipioByDepartmentAndName[dep]?.[normalizeText(nombre)];
-  if (mapped) return mapped;
-  if (!municipio) return '';
-  if (municipio.length > 2) return municipio.slice(-2);
-  return municipio.padStart(2, '0');
+async function resolveEmitterLocation(row: Record<string, unknown>): Promise<ResolvedLocation> {
+  const departamento = getString(row.departamento_codigo);
+  const rawMunicipio = normalizeMunicipioCodigo(
+    row.municipio_codigo
+  );
+  const complemento = normalizeText(row.complemento_direccion);
+  const pool = getPostgresPool();
+
+  let resolvedMunicipio: { id: number; codigo: string; nombre: string } | undefined;
+  const municipio = await pool.query<{ id: number; codigo: string; nombre: string }>(
+    `
+      SELECT id, codigo, nombre
+      FROM cat_006_municipios
+      WHERE codigo = $1
+        AND departamento_codigo = $2
+        AND COALESCE(activo, TRUE) = TRUE
+      LIMIT 1
+    `,
+    [rawMunicipio, departamento]
+  );
+  resolvedMunicipio = municipio.rows[0];
+
+  if (!resolvedMunicipio) {
+    const candidates = await pool.query<{ id: number; codigo: string; nombre: string }>(
+      `
+        SELECT id, codigo, nombre
+        FROM cat_006_municipios
+        WHERE departamento_codigo = $1
+          AND COALESCE(activo, TRUE) = TRUE
+        ORDER BY codigo
+      `,
+      [departamento]
+    );
+    const matched = candidates.rows.find((candidate) =>
+      complemento.includes(normalizeText(candidate.nombre))
+    );
+    if (matched) {
+      resolvedMunicipio = matched;
+    }
+  }
+
+  const rawDistrito = lastTwoDigits(row.distrito_codigo);
+  let distrito = '';
+
+  if (resolvedMunicipio) {
+    const validDistrito = await pool.query<{ codigo: string }>(
+      `
+        SELECT codigo
+        FROM cat_008_distritos
+        WHERE municipio_id = $1
+          AND departamento_codigo = $2
+          AND codigo = $3
+          AND COALESCE(activo, TRUE) = TRUE
+        LIMIT 1
+      `,
+      [resolvedMunicipio.id, departamento, rawDistrito]
+    );
+
+    if (validDistrito.rows[0]) {
+      distrito = validDistrito.rows[0].codigo;
+    } else {
+      const fallbackDistrito = await pool.query<{ codigo: string }>(
+        `
+          SELECT codigo
+          FROM cat_008_distritos
+          WHERE municipio_id = $1
+            AND departamento_codigo = $2
+            AND COALESCE(activo, TRUE) = TRUE
+          ORDER BY codigo
+          LIMIT 1
+        `,
+        [resolvedMunicipio.id, departamento]
+      );
+      distrito = fallbackDistrito.rows[0]?.codigo || '';
+    }
+  }
+
+  return {
+    departamento,
+    municipio: rawMunicipio,
+    distrito,
+  };
 }
 
 function normalizeNrc(value: unknown, required = false) {
@@ -186,11 +224,14 @@ async function getCurrentEmitter(uid: string, email: string) {
         e.correo,
         e.ambiente_codigo,
         m.nombre AS municipio_nombre,
+        a.nombre AS actividad_nombre,
         ue.rol AS rol_emisor
       FROM usuarios u
       INNER JOIN usuario_emisor ue ON ue.usuario_id = u.id
       INNER JOIN emisores e ON e.id = ue.emisor_id
       LEFT JOIN cat_006_municipios m ON m.codigo = e.municipio_codigo
+        AND m.departamento_codigo = e.departamento_codigo
+      LEFT JOIN cat_024_codigo_actividad a ON a.codigo = e.codigo_actividad
       WHERE u.activo = TRUE
         AND e.activo = TRUE
         AND (u.firebase_uid = $1 OR lower(u.email) = lower($2))
@@ -222,20 +263,19 @@ async function getReceptor(emisorId: number, receptorId: number) {
   return result.rows[0] ?? null;
 }
 
-function buildEmitter(row: Record<string, unknown>) {
-  const departamento = getString(row.departamento_codigo);
+function buildEmitter(row: Record<string, unknown>, location: ResolvedLocation) {
   return {
     nit: cleanDigits(row.nit),
     nrc: normalizeNrc(row.nrc, true),
     nombre: getString(row.nombre),
     codActividad: getString(row.codigo_actividad),
-    descActividad: getString(row.descripcion_actividad),
+    descActividad: getString(row.descripcion_actividad).trim() || getString(row.actividad_nombre).trim(),
     nombreComercial: nullableString(row.nombre_comercial),
     tipoEstablecimiento: getString(row.tipo_establecimiento_codigo) || '01',
-      direccion: {
-      departamento,
-      municipio: normalizeMunicipioCodigo(row.municipio_codigo, departamento, row.municipio_nombre),
-      distrito: getString(row.distrito_codigo),
+    direccion: {
+      departamento: location.departamento,
+      municipio: location.municipio,
+      distrito: location.distrito,
       complemento: getString(row.complemento_direccion),
     },
     telefono: getString(row.telefono),
@@ -337,7 +377,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Por ahora solo se permite ambiente test.' }, { status: 400 });
     }
 
-    const emisor = buildEmitter(emitter);
+    const emisor = buildEmitter(emitter, await resolveEmitterLocation(emitter));
+    if (!emisor.codActividad || !emisor.descActividad) {
+      return NextResponse.json(
+        { error: 'Configura el codigo y descripcion de actividad economica del emisor antes de facturar.' },
+        { status: 400 }
+      );
+    }
+    if (!emisor.direccion.departamento || !emisor.direccion.municipio || !emisor.direccion.distrito) {
+      return NextResponse.json(
+        { error: 'Configura departamento, municipio y distrito validos del emisor antes de facturar.' },
+        { status: 400 }
+      );
+    }
+
     const documentRequest = {
       ambiente: '00',
       correlativo: Date.now() % 999999999999999,
