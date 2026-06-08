@@ -31,6 +31,7 @@ interface SmtpForm {
 interface HaciendaForm {
   nit: string;
   password: string;
+  certificatePassword: string;
   environment: 'test' | 'production';
 }
 
@@ -50,9 +51,11 @@ export default function ConfiguracionesPage() {
   const [haciendaMessage, setHaciendaMessage] = useState('');
   const [haciendaError, setHaciendaError] = useState('');
   const [haciendaHasPassword, setHaciendaHasPassword] = useState(false);
+  const [haciendaHasCertificatePassword, setHaciendaHasCertificatePassword] = useState(false);
   const [haciendaForm, setHaciendaForm] = useState<HaciendaForm>({
     nit: '',
     password: '',
+    certificatePassword: '',
     environment: 'test',
   });
   const [smtpForm, setSmtpForm] = useState<SmtpForm>({
@@ -104,6 +107,7 @@ export default function ConfiguracionesPage() {
         nit?: string;
         environment?: 'test' | 'production';
         hasPassword?: boolean;
+        hasCertificatePassword?: boolean;
         lastAuthStatus?: string;
         lastAuthError?: string;
         tokenExpiresAt?: string | null;
@@ -137,9 +141,11 @@ export default function ConfiguracionesPage() {
     setHaciendaForm({
       nit: haciendaQuery.data.nit || '',
       password: '',
+      certificatePassword: '',
       environment: haciendaQuery.data.environment === 'production' ? 'production' : 'test',
     });
     setHaciendaHasPassword(Boolean(haciendaQuery.data.hasPassword));
+    setHaciendaHasCertificatePassword(Boolean(haciendaQuery.data.hasCertificatePassword));
   }, [haciendaQuery.data]);
 
   const handleSmtpChange = (field: keyof SmtpForm, value: string | boolean) => {
@@ -172,9 +178,10 @@ export default function ConfiguracionesPage() {
       if (!res.ok) throw new Error(data.error || 'No se pudo guardar Hacienda');
 
       await queryClient.invalidateQueries({ queryKey: HACIENDA_QUERY_KEY });
-      setHaciendaMessage('Credenciales de Hacienda guardadas.');
-      setHaciendaForm((current) => ({ ...current, password: '' }));
+      setHaciendaMessage('Credenciales guardadas.');
+      setHaciendaForm((current) => ({ ...current, password: '', certificatePassword: '' }));
       setHaciendaHasPassword(true);
+      if (haciendaForm.certificatePassword) setHaciendaHasCertificatePassword(true);
     } catch (error) {
       setHaciendaError(error instanceof Error ? error.message : 'No se pudo guardar Hacienda');
     } finally {
@@ -297,7 +304,7 @@ export default function ConfiguracionesPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSaveHacienda} className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-4">
               <div className="space-y-2">
                 <Label htmlFor="hacienda-env">Ambiente</Label>
                 <select
@@ -333,10 +340,21 @@ export default function ConfiguracionesPage() {
                   required={!haciendaHasPassword}
                 />
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="certificate-password">Contrasena certificado</Label>
+                <Input
+                  id="certificate-password"
+                  type="password"
+                  value={haciendaForm.certificatePassword}
+                  onChange={(e) => handleHaciendaChange('certificatePassword', e.target.value)}
+                  placeholder={haciendaHasCertificatePassword ? 'Dejar vacio para conservar' : 'Clave privada'}
+                />
+              </div>
             </div>
 
             <div className="rounded-md border p-3 text-sm text-muted-foreground">
-              El token de Hacienda se obtiene con <code>/seguridad/auth</code>, se guarda cifrado y se reutiliza hasta su vencimiento para consultar lotes DTE.
+              Las credenciales se guardan cifradas. La contrasena del certificado se usara automaticamente al firmar documentos si no la escribes en la pantalla de emision.
             </div>
 
             {haciendaQuery.data?.lastAuthStatus && (

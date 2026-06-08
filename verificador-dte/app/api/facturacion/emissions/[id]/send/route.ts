@@ -43,7 +43,9 @@ function money(value: unknown) {
 }
 
 function displayTipoDte(tipoDte: string) {
-  return tipoDte === '03' ? 'Comprobante de credito fiscal' : 'Factura';
+  if (tipoDte === '03') return 'Comprobante de credito fiscal';
+  if (tipoDte === '14') return 'Factura de sujeto excluido';
+  return 'Factura';
 }
 
 function buildDteEmailHtml(data: Row, id: string) {
@@ -165,7 +167,7 @@ export async function POST(
     const safeName = sanitizeDteFileName(codigo);
     const tipoDte = String(data.tipoDte || '');
     const documentName = displayTipoDte(tipoDte).toLowerCase();
-    const pdfBuffer = buildDtePdfBuffer(data, id);
+    const pdfBuffer = await buildDtePdfBuffer(data, id);
     const jsonBuffer = buildDteJsonBuffer(data);
 
     await sendAppMail({

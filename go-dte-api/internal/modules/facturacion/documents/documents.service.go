@@ -125,12 +125,11 @@ func (s *Service) CreateConsumerInvoice(req dto.CreateConsumerInvoiceRequest) (d
 		DocumentoRelacionado: nil,
 		Emisor:               mapEmisor(req.Emisor),
 		Receptor:             mapReceptor(req.Receptor),
-		Extension:            domain.Extension{},
+		OtrosDocumentos:      nil,
+		VentaTercero:         nil,
 		CuerpoDocumento:      cuerpo,
 		Resumen:              resumen,
 		Apendice:             mapApendice(req.Apendice),
-		VentaTercero:         nil,
-		OtrosDocumentos:      nil,
 	}
 
 	raw, err := json.Marshal(dte)
@@ -478,7 +477,7 @@ func validateItems(items []dto.ItemInput) error {
 		if item.Cantidad <= 0 {
 			return fmt.Errorf("items[%d].cantidad debe ser mayor a cero", i)
 		}
-		if item.PrecioUni <= 0 && item.VentaNoSuj <= 0 && item.VentaExenta <= 0 && item.VentaGravada <= 0 {
+		if item.PrecioUni <= 0 && item.VentaNoSuj <= 0 && item.VentaExenta <= 0 && item.VentaGravada <= 0 && item.NoGravado <= 0 {
 			return fmt.Errorf("items[%d].precioUni o venta debe ser mayor a cero", i)
 		}
 	}
@@ -515,7 +514,7 @@ func buildFacturaItemsAndResumen(items []dto.ItemInput) ([]domain.CuerpoDocument
 		ventaExenta := round2(item.VentaExenta)
 		ventaGravada := round2(item.VentaGravada)
 
-		if ventaNoSuj == 0 && ventaExenta == 0 && ventaGravada == 0 {
+		if ventaNoSuj == 0 && ventaExenta == 0 && ventaGravada == 0 && item.NoGravado == 0 {
 			ventaGravada = round2(cantidad*precio - montoDescu)
 		}
 
@@ -590,7 +589,7 @@ func buildCreditoFiscalItemsAndResumen(items []dto.ItemInput, ivaPerci float64, 
 		ventaExenta := round2(item.VentaExenta)
 		ventaGravada := round2(item.VentaGravada)
 
-		if ventaNoSuj == 0 && ventaExenta == 0 && ventaGravada == 0 {
+		if ventaNoSuj == 0 && ventaExenta == 0 && ventaGravada == 0 && item.NoGravado == 0 {
 			ventaGravada = round2(cantidad*precio - montoDescu)
 		}
 
@@ -661,7 +660,7 @@ func buildAdjustmentNoteItemsAndResumen(items []dto.ItemInput, defaultRelatedDoc
 		ventaExenta := round2(item.VentaExenta)
 		ventaGravada := round2(item.VentaGravada)
 
-		if ventaNoSuj == 0 && ventaExenta == 0 && ventaGravada == 0 {
+		if ventaNoSuj == 0 && ventaExenta == 0 && ventaGravada == 0 && item.NoGravado == 0 {
 			ventaGravada = round2(cantidad*precio - montoDescu)
 		}
 
@@ -816,9 +815,7 @@ func mapEmisor(input dto.EmisorInput) domain.Emisor {
 		Direccion:       mapDireccion(input.Direccion),
 		Telefono:        input.Telefono,
 		Correo:          input.Correo,
-		CodEstableMH:    input.CodEstable,
 		CodEstable:      input.CodEstable,
-		CodPuntoVentaMH: input.CodPuntoVenta,
 		CodPuntoVenta:   input.CodPuntoVenta,
 	}
 }

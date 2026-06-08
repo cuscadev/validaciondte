@@ -6,6 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { adminDb } from '@/lib/firebase-admin';
 import { getGoDteApiUrl } from '@/lib/go-dte-api';
 import { getHaciendaTokenForUser } from '@/lib/hacienda-auth';
+import { resolveCertificatePassword } from '@/lib/facturacion/certificate-credentials';
 import { getPostgresPool } from '@/lib/postgres';
 import { requireAuth } from '@/lib/server-auth';
 
@@ -112,6 +113,12 @@ function lastTwoDigits(value: unknown) {
   const digits = cleanDigits(value);
   if (!digits) return '';
   return digits.slice(-2).padStart(2, '0');
+}
+
+function municipioDteCode(departamento: string, municipio: string) {
+  const muniDigits = cleanDigits(municipio);
+  if (!muniDigits) return '';
+  return muniDigits.slice(-2).padStart(2, '0');
 }
 
 function normalizeText(value: unknown) {
@@ -299,7 +306,7 @@ async function buildEmitter(row: Record<string, unknown>) {
     tipoEstablecimiento: getString(row.tipo_establecimiento_codigo) || '01',
     direccion: {
       departamento: getString(row.departamento_codigo),
-      municipio: lastTwoDigits(row.municipio_codigo),
+      municipio: municipioDteCode(getString(row.departamento_codigo), getString(row.municipio_codigo)),
       distrito: await resolveDistrito(row),
       complemento: getString(row.complemento_direccion),
     },
@@ -440,7 +447,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const passwordPri = String(body.passwordPri || '');
+    const passwordPri = await resolveCertificatePassword(user.uid, body.passwordPri);
     if (!passwordPri) {
       return NextResponse.json({ error: 'Clave privada requerida para firmar el lote.' }, { status: 400 });
     }

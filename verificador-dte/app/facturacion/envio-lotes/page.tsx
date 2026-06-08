@@ -334,9 +334,6 @@ export default function EnvioLotesPage() {
       if (line.cantidad <= 0 || line.precioUni <= 0) {
         throw new Error('Cantidad y precio deben ser mayores a cero.');
       }
-      if (transmitir && !passwordPri.trim()) {
-        throw new Error('Ingresa la clave privada para firmar y transmitir.');
-      }
       if (transmitir && count < 2) {
         throw new Error('El envio por lote requiere al menos 2 documentos.');
       }
@@ -554,7 +551,7 @@ export default function EnvioLotesPage() {
                       type="password"
                       value={passwordPri}
                       onChange={(event) => setPasswordPri(event.target.value)}
-                      placeholder="Requerida para firmar"
+                      placeholder="Opcional si ya esta guardada"
                     />
                   </div>
                   <label className="flex cursor-pointer items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm dark:border-white/10 dark:bg-black">

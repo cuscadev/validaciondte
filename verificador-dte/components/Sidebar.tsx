@@ -343,8 +343,16 @@ export default function Sidebar({
         label: 'Emitir credito fiscal',
       },
       {
+        href: '/facturacion/sujeto-excluido',
+        label: 'Facturar sujeto excluido',
+      },
+      {
         href: '/facturacion/envio-lotes',
         label: 'Envio de lotes',
+      },
+      {
+        href: '/facturacion/reporte',
+        label: 'Reporte',
       },
       {
         href: '/facturacion/prueba-emision',

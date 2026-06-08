@@ -24,7 +24,7 @@ export async function GET(
     }
 
     const codigo = getDteCode(data, id);
-    const pdf = buildDtePdfBuffer(data, id);
+    const pdf = await buildDtePdfBuffer(data, id);
     return new Response(pdf, {
       status: 200,
       headers: {

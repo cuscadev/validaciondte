@@ -203,7 +203,7 @@ func itemAmounts(item dto.ItemInput) (float64, float64, float64) {
 	ventaNoSuj := round2(item.VentaNoSuj)
 	ventaExenta := round2(item.VentaExenta)
 	ventaGravada := round2(item.VentaGravada)
-	if ventaNoSuj == 0 && ventaExenta == 0 && ventaGravada == 0 {
+	if ventaNoSuj == 0 && ventaExenta == 0 && ventaGravada == 0 && item.NoGravado == 0 {
 		ventaGravada = round2(item.Cantidad*item.PrecioUni - item.MontoDescu)
 	}
 	return ventaNoSuj, ventaExenta, ventaGravada
@@ -220,7 +220,7 @@ func validateItems(items []dto.ItemInput) error {
 		if item.Cantidad <= 0 {
 			return fmt.Errorf("items[%d].cantidad debe ser mayor a cero", i)
 		}
-		if item.PrecioUni <= 0 && item.VentaNoSuj <= 0 && item.VentaExenta <= 0 && item.VentaGravada <= 0 {
+		if item.PrecioUni <= 0 && item.VentaNoSuj <= 0 && item.VentaExenta <= 0 && item.VentaGravada <= 0 && item.NoGravado <= 0 {
 			return fmt.Errorf("items[%d].precioUni o venta debe ser mayor a cero", i)
 		}
 	}

@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import QRCode from 'qrcode';
 
 type Row = Record<string, unknown>;
 
@@ -50,27 +50,39 @@ function emitField(doc: jsPDF, label: string, value: unknown, x: number, y: numb
 function buildClientDteJson(data: Row) {
   const finalPackage = getDteFinalPackage(data);
   const dte = asRecord(finalPackage.dteJson || asRecord(data.documentResponse).dteJson || {});
-  return {
+  const identificacion = asRecord(dte.identificacion);
+  const tipoDte = getString(data.tipoDte || identificacion.tipoDte);
+
+  if (tipoDte === '14') {
+    const output: Row = {
+      identificacion: dte.identificacion ?? null,
+      emisor: dte.emisor ?? null,
+      receptor: dte.receptor ?? null,
+      cuerpoDocumento: dte.cuerpoDocumento ?? [],
+      resumen: dte.resumen ?? null,
+      firmaElectronica: getString(finalPackage.firma || data.firma) || null,
+      selloRecibido: getString(finalPackage.selloRecepcion || data.selloRecepcion) || null,
+      apendice: dte.apendice ?? null,
+    };
+    return output;
+  }
+
+  const output: Row = {
     identificacion: dte.identificacion ?? null,
     documentoRelacionado: dte.documentoRelacionado ?? null,
     emisor: dte.emisor ?? null,
     receptor: dte.receptor ?? null,
-    extension: dte.extension ?? {
-      nombEntrega: null,
-      docuEntrega: null,
-      nombRecibe: null,
-      docuRecibe: null,
-      observaciones: null,
-      placaVehiculo: null,
-    },
-    apendice: dte.apendice ?? null,
-    ventaTercero: dte.ventaTercero ?? null,
     otrosDocumentos: dte.otrosDocumentos ?? null,
+    ventaTercero: dte.ventaTercero ?? null,
     cuerpoDocumento: dte.cuerpoDocumento ?? [],
     resumen: dte.resumen ?? null,
     firmaElectronica: getString(finalPackage.firma || data.firma) || null,
     selloRecibido: getString(finalPackage.selloRecepcion || data.selloRecepcion) || null,
   };
+
+  if ('extension' in dte) output.extension = dte.extension;
+  if ('apendice' in dte) output.apendice = dte.apendice;
+  return output;
 }
 
 function tributosText(value: unknown) {
@@ -81,7 +93,67 @@ function tributosText(value: unknown) {
   }).filter(Boolean).join(', ') || '-';
 }
 
-export function buildDtePdfBuffer(data: Row, id: string) {
+function qrUrl(identificacion: Row, codigo: string) {
+  const ambiente = getString(identificacion.ambiente) || '00';
+  const fecha = getString(identificacion.fecEmi);
+  return `https://admin.factura.gob.sv/consultaPublica?ambiente=${encodeURIComponent(ambiente)}&codGen=${encodeURIComponent(codigo)}&fechaEmi=${encodeURIComponent(fecha)}`;
+}
+
+function drawBox(doc: jsPDF, title: string, x: number, y: number, w: number, h: number) {
+  doc.setDrawColor(205, 210, 218);
+  doc.setLineWidth(0.25);
+  doc.roundedRect(x, y, w, h, 1.8, 1.8);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(6.8);
+  doc.text(title, x + w / 2, y + 5, { align: 'center' });
+}
+
+function smallField(doc: jsPDF, label: string, value: unknown, x: number, y: number, labelWidth = 23, maxWidth = 54) {
+  doc.setFontSize(6.3);
+  doc.setFont('helvetica', 'bold');
+  doc.text(label, x, y);
+  doc.setFont('helvetica', 'normal');
+  const text = doc.splitTextToSize(getString(value) || '-', maxWidth);
+  doc.text(text.slice(0, 2), x + labelWidth, y);
+}
+
+function drawWrappedCell(
+  doc: jsPDF,
+  text: unknown,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  options: { bold?: boolean; align?: 'left' | 'center' | 'right'; fontSize?: number; fill?: [number, number, number] } = {}
+) {
+  if (options.fill) {
+    doc.setFillColor(...options.fill);
+    doc.rect(x, y, w, h, 'F');
+  }
+  doc.setDrawColor(203, 209, 217);
+  doc.setLineWidth(0.18);
+  doc.rect(x, y, w, h);
+  doc.setFont('helvetica', options.bold ? 'bold' : 'normal');
+  doc.setFontSize(options.fontSize || 5.5);
+  doc.setTextColor(17, 24, 39);
+  const padding = 1.2;
+  const lines = doc.splitTextToSize(getString(text) || '-', Math.max(1, w - padding * 2)).slice(0, Math.max(1, Math.floor(h / 3)));
+  const textX = options.align === 'right' ? x + w - padding : options.align === 'center' ? x + w / 2 : x + padding;
+  const textY = y + 3.2;
+  doc.text(lines, textX, textY, { align: options.align || 'left' });
+}
+
+function drawSectionTitle(doc: jsPDF, title: string, x: number, y: number, w: number) {
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(226, 232, 240);
+  doc.roundedRect(x, y, w, 8, 1.4, 1.4, 'FD');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7);
+  doc.setTextColor(51, 65, 85);
+  doc.text(title, x + w / 2, y + 5.3, { align: 'center' });
+}
+
+export async function buildDtePdfBuffer(data: Row, id: string) {
   const finalPackage = getDteFinalPackage(data);
   const dte = asRecord(finalPackage.dteJson || asRecord(data.documentResponse).dteJson || {});
   const identificacion = asRecord(dte.identificacion);
@@ -90,95 +162,140 @@ export function buildDtePdfBuffer(data: Row, id: string) {
   const resumen = asRecord(dte.resumen);
   const cuerpo = Array.isArray(dte.cuerpoDocumento) ? dte.cuerpoDocumento.map(asRecord) : [];
   const tipoDte = getString(data.tipoDte || identificacion.tipoDte);
-  const titulo = tipoDte === '03' ? 'COMPROBANTE DE CREDITO FISCAL' : 'FACTURA';
+  const titulo = tipoDte === '03'
+    ? 'COMPROBANTE DE CREDITO FISCAL'
+    : tipoDte === '14'
+      ? 'FACTURA DE SUJETO EXCLUIDO'
+      : 'FACTURA';
   const codigo = getDteCode(data, id);
 
-  const doc = new jsPDF({ unit: 'mm', format: 'letter', orientation: 'landscape' });
+  const doc = new jsPDF({ unit: 'mm', format: 'letter', orientation: 'portrait' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  doc.text('DOCUMENTO TRIBUTARIO ELECTRONICO', pageWidth / 2, 16, { align: 'center' });
-  doc.text(titulo, pageWidth / 2, 22, { align: 'center' });
-
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Ver. ${getString(identificacion.version) || '-'}`, pageWidth - 16, 12, { align: 'right' });
-
-  emitField(doc, 'Codigo generacion:', codigo, 16, 34);
-  emitField(doc, 'Numero control:', data.numeroControl || identificacion.numeroControl, 16, 40);
-  emitField(doc, 'Sello recepcion:', data.selloRecepcion || finalPackage.selloRecepcion, 16, 46);
-  emitField(doc, 'Modelo:', identificacion.tipoModelo, 178, 34);
-  emitField(doc, 'Operacion:', identificacion.tipoOperacion, 178, 40);
-  emitField(doc, 'Fecha/Hora:', `${getString(identificacion.fecEmi)} ${getString(identificacion.horEmi)}`, 178, 46);
-
-  doc.setDrawColor(190);
-  doc.roundedRect(14, 56, 120, 42, 2, 2);
-  doc.roundedRect(148, 56, 120, 42, 2, 2);
-  doc.setFont('helvetica', 'bold');
-  doc.text('EMISOR', 74, 62, { align: 'center' });
-  doc.text('RECEPTOR', 208, 62, { align: 'center' });
-  doc.setFont('helvetica', 'normal');
-  emitField(doc, 'Nombre:', emisor.nombre, 18, 70);
-  emitField(doc, 'NIT:', emisor.nit, 18, 76);
-  emitField(doc, 'NRC:', emisor.nrc, 18, 82);
-  emitField(doc, 'Actividad:', emisor.descActividad, 18, 88);
-  emitField(doc, 'Correo:', emisor.correo, 18, 94);
-  emitField(doc, 'Nombre:', receptor.nombre, 152, 70);
-  emitField(doc, tipoDte === '03' ? 'NIT:' : 'Documento:', receptor.nit || receptor.numDocumento, 152, 76);
-  emitField(doc, 'NRC:', receptor.nrc, 152, 82);
-  emitField(doc, 'Actividad:', receptor.descActividad, 152, 88);
-  emitField(doc, 'Correo:', receptor.correo, 152, 94);
-
-  autoTable(doc, {
-    startY: 106,
-    margin: { left: 10, right: 10 },
-    head: [[
-      'N',
-      'Cantidad',
-      'Unidad',
-      'Codigo',
-      'Descripcion',
-      'Precio\nUnitario',
-      'Descuento\npor item',
-      'Otros Montos\nNo Afectos',
-      'Ventas\nNo Sujetas',
-      'Ventas\nExentas',
-      'Ventas\nGravadas',
-    ]],
-    body: cuerpo.map((item) => [
-      getString(item.numItem),
-      getString(item.cantidad),
-      getString(item.uniMedida),
-      getString(item.codigo),
-      getString(item.descripcion),
-      money(item.precioUni),
-      money(item.montoDescu),
-      money(item.noGravado),
-      money(item.ventaNoSuj),
-      money(item.ventaExenta),
-      money(item.ventaGravada),
-    ]),
-    styles: { fontSize: 6.2, cellPadding: 1.1, lineColor: [180, 180, 180], lineWidth: 0.1, overflow: 'linebreak', minCellWidth: 0 },
-    headStyles: { fillColor: [255, 255, 255], textColor: [20, 20, 20], halign: 'center', fontStyle: 'bold', overflow: 'linebreak' },
-    bodyStyles: { valign: 'middle' },
-    columnStyles: {
-      0: { cellWidth: 8, halign: 'center' },
-      1: { cellWidth: 14, halign: 'right' },
-      2: { cellWidth: 12, halign: 'center' },
-      3: { cellWidth: 15 },
-      4: { cellWidth: 42 },
-      5: { cellWidth: 15, halign: 'right' },
-      6: { cellWidth: 17, halign: 'right' },
-      7: { cellWidth: 28, halign: 'right' },
-      8: { cellWidth: 22, halign: 'right' },
-      9: { cellWidth: 22, halign: 'right' },
-      10: { cellWidth: 22, halign: 'right' },
-    },
-    theme: 'grid',
+  const qrDataUrl = await QRCode.toDataURL(qrUrl(identificacion, codigo), {
+    errorCorrectionLevel: 'M',
+    margin: 1,
+    width: 180,
   });
 
-  const finalY = (doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY || 130;
+  const marginX = 12;
+  const contentW = pageWidth - marginX * 2;
+
+  doc.setFillColor(15, 23, 42);
+  doc.roundedRect(marginX, 10, contentW, 32, 3, 3, 'F');
+  doc.setFillColor(234, 179, 8);
+  doc.rect(marginX, 39, contentW, 3, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.text('DOCUMENTO TRIBUTARIO ELECTRONICO', marginX + 8, 21);
+  doc.setFontSize(15);
+  doc.text(titulo, marginX + 8, 31);
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'normal');
+  doc.text(getString(emisor.nombre) || 'Emisor', marginX + 8, 37);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`Ver. ${getString(identificacion.version) || '-'}`, pageWidth - marginX - 8, 21, { align: 'right' });
+
+  doc.setFillColor(255, 255, 255);
+  doc.roundedRect(pageWidth - marginX - 37, 15, 28, 28, 2, 2, 'F');
+  doc.addImage(qrDataUrl, 'PNG', pageWidth - marginX - 35.5, 16.5, 25, 25);
+
+  doc.setTextColor(15, 23, 42);
+  doc.setDrawColor(226, 232, 240);
+  doc.roundedRect(marginX, 48, contentW, 28, 2, 2);
+  smallField(doc, 'Codigo generacion:', codigo, marginX + 6, 57, 27, 70);
+  smallField(doc, 'Numero control:', data.numeroControl || identificacion.numeroControl, marginX + 6, 65, 27, 70);
+  smallField(doc, 'Sello recepcion:', data.selloRecepcion || finalPackage.selloRecepcion, marginX + 6, 73, 27, 70);
+  smallField(doc, 'Modelo:', identificacion.tipoModelo, marginX + 116, 57, 20, 42);
+  smallField(doc, 'Transmision:', identificacion.tipoOperacion, marginX + 116, 65, 20, 42);
+  smallField(doc, 'Fecha/Hora:', `${getString(identificacion.fecEmi)} ${getString(identificacion.horEmi)}`, marginX + 116, 73, 20, 42);
+
+  drawBox(doc, 'EMISOR', marginX, 83, 91, 40);
+  drawBox(doc, 'RECEPTOR', marginX + 97, 83, 91, 40);
+  smallField(doc, 'Nombre:', emisor.nombre, marginX + 4, 94, 17, 62);
+  smallField(doc, 'NIT:', emisor.nit, marginX + 4, 100, 17, 62);
+  smallField(doc, 'NRC:', emisor.nrc, marginX + 4, 106, 17, 62);
+  smallField(doc, 'Actividad:', emisor.descActividad, marginX + 4, 112, 17, 62);
+  smallField(doc, 'Correo:', emisor.correo, marginX + 4, 120, 17, 62);
+  smallField(doc, 'Nombre:', receptor.nombre, marginX + 101, 94, 20, 58);
+  smallField(doc, tipoDte === '03' ? 'NIT:' : 'Documento:', receptor.nit || receptor.numDocumento, marginX + 101, 100, 20, 58);
+  smallField(doc, 'NRC:', receptor.nrc, marginX + 101, 106, 20, 58);
+  smallField(doc, 'Actividad:', receptor.descActividad, marginX + 101, 112, 20, 58);
+  smallField(doc, 'Correo:', receptor.correo, marginX + 101, 120, 20, 58);
+
+  drawSectionTitle(doc, 'VENTA POR CUENTA DE TERCEROS', marginX, 130, contentW);
+  drawSectionTitle(doc, 'DOCUMENTOS RELACIONADOS', marginX, 142, contentW);
+  drawSectionTitle(doc, 'OTROS DOCUMENTOS ASOCIADOS', marginX, 154, contentW);
+
+  let tableY = 169;
+  const excludedSubject = tipoDte === '14';
+  const headers = excludedSubject
+    ? ['N', 'Cant.', 'Unidad', 'Codigo', 'Descripcion', 'Precio', 'Desc.', 'Compra']
+    : ['N', 'Cant.', 'Unidad', 'Codigo', 'Descripcion', 'Precio', 'Desc.', 'No Afecto', 'No Suj.', 'Exenta', 'Gravada'];
+  const widths = excludedSubject
+    ? [7, 12, 12, 18, 67, 18, 18, 21]
+    : [7, 12, 10, 15, 38, 15, 14, 16, 16, 15, 15];
+  const rowH = 9;
+  const headerH = 13;
+  let x = marginX;
+  headers.forEach((header, index) => {
+    drawWrappedCell(doc, header, x, tableY, widths[index], headerH, {
+      bold: true,
+      align: 'center',
+      fontSize: 5.2,
+      fill: [241, 245, 249],
+    });
+    x += widths[index];
+  });
+  tableY += headerH;
+
+  const drawItemRow = (item: Row) => {
+    if (tableY + rowH > pageHeight - 54) {
+      doc.addPage();
+      tableY = 18;
+    }
+    const row = excludedSubject
+      ? [
+          getString(item.numItem),
+          getString(item.cantidad),
+          getString(item.uniMedida),
+          getString(item.codigo),
+          getString(item.descripcion),
+          money(item.precioUni),
+          money(item.montoDescu),
+          money(item.compra),
+        ]
+      : [
+          getString(item.numItem),
+          getString(item.cantidad),
+          getString(item.uniMedida),
+          getString(item.codigo),
+          getString(item.descripcion),
+          money(item.precioUni),
+          money(item.montoDescu),
+          money(item.noGravado),
+          money(item.ventaNoSuj),
+          money(item.ventaExenta),
+          money(item.ventaGravada),
+        ];
+    let rowX = marginX;
+    row.forEach((value, index) => {
+      drawWrappedCell(doc, value, rowX, tableY, widths[index], rowH, {
+        align: index === 4 ? 'left' : index < 4 ? 'center' : 'right',
+        fontSize: 5.4,
+      });
+      rowX += widths[index];
+    });
+    tableY += rowH;
+  };
+
+  if (cuerpo.length) {
+    cuerpo.forEach(drawItemRow);
+  } else {
+    drawItemRow({ numItem: 1, descripcion: 'Sin items' });
+  }
+
   const totalNoSuj = numberValue(resumen.totalNoSuj);
   const totalExenta = numberValue(resumen.totalExenta);
   const totalGravada = numberValue(resumen.totalGravada);
@@ -186,33 +303,70 @@ export function buildDtePdfBuffer(data: Row, id: string) {
   const ivaRete = numberValue(resumen.ivaRete || resumen.ivaRete1);
   const reteRenta = numberValue(resumen.reteRenta);
   const totalIva = numberValue(resumen.totalIva);
-  autoTable(doc, {
-    startY: finalY + 6,
-    margin: { left: 148, right: 10 },
-    body: [
-      ['Suma de Ventas', `${money(totalNoSuj)}   ${money(totalExenta)}   ${money(totalGravada)}`],
-      ['Sumatoria de ventas', money(resumen.subTotalVentas)],
-      ['Descuento global a ventas no sujetas', money(resumen.descuNoSuj)],
-      ['Descuento global a ventas exentas', money(resumen.descuExenta)],
-      ['Descuento global a ventas gravadas', money(resumen.descuGravada)],
-      ['Nombre del Tributo', tributosText(resumen.tributos)],
-      ['Sub-Total', money(resumen.subTotal)],
-      ...(totalIva ? [['IVA', money(totalIva)]] : []),
-      ...(ivaPerci ? [['IVA Percibido', money(ivaPerci)]] : []),
-      ['IVA Retenido', money(ivaRete)],
-      ...(reteRenta ? [['Retencion Renta', money(reteRenta)]] : []),
-      ['Monto Total de la Operacion', money(resumen.montoTotalOperacion)],
-      ['Total Otros Montos No Afectos', money(resumen.totalNoGravado)],
-      ['Total a Pagar', money(resumen.totalPagar)],
-    ],
-    styles: { fontSize: 7.6, cellPadding: 1.4, lineColor: [180, 180, 180], lineWidth: 0.1, overflow: 'linebreak', minCellWidth: 0 },
-    columnStyles: { 0: { fontStyle: 'bold', halign: 'right', cellWidth: 92 }, 1: { halign: 'right', cellWidth: 28 } },
-    theme: 'grid',
+
+  if (tableY + 74 > pageHeight - 24) {
+    doc.addPage();
+    tableY = 18;
+  }
+
+  const summaryRows = excludedSubject
+    ? [
+        ['Total compra', money(resumen.totalCompra)],
+        ['Descuento', money(resumen.descu)],
+        ['Total descuento', money(resumen.totalDescu)],
+        ['Sub-Total', money(resumen.subTotal)],
+        ['Retencion Renta', money(reteRenta)],
+        ['Total a Pagar', money(resumen.totalPagar)],
+      ]
+    : [
+        ['Suma de Ventas', `${money(totalNoSuj)} / ${money(totalExenta)} / ${money(totalGravada)}`],
+        ['Sumatoria de ventas', money(resumen.subTotalVentas)],
+        ['Descuento global a ventas no sujetas', money(resumen.descuNoSuj)],
+        ['Descuento global a ventas exentas', money(resumen.descuExenta)],
+        ['Descuento global a ventas gravadas', money(resumen.descuGravada)],
+        ['Nombre del Tributo', tributosText(resumen.tributos)],
+        ['Sub-Total', money(resumen.subTotal)],
+        ...(totalIva ? [['IVA', money(totalIva)]] : []),
+        ...(ivaPerci ? [['IVA Percibido', money(ivaPerci)]] : []),
+        ['IVA Retenido', money(ivaRete)],
+        ...(reteRenta ? [['Retencion Renta', money(reteRenta)]] : []),
+        ['Monto Total de la Operacion', money(resumen.montoTotalOperacion)],
+        ['Total Otros Montos No Afectos', money(resumen.totalNoGravado)],
+        ['Total a Pagar', money(resumen.totalPagar)],
+      ];
+  const summaryX = marginX + 96;
+  const summaryLabelW = 62;
+  const summaryValueW = contentW - 96 - summaryLabelW;
+  const summaryRowH = 6.4;
+  tableY += 4;
+  summaryRows.forEach(([label, value], index) => {
+    if (tableY + summaryRowH > pageHeight - 30) {
+      doc.addPage();
+      tableY = 18;
+    }
+    const fill: [number, number, number] = index % 2 === 0 ? [248, 250, 252] : [255, 255, 255];
+    const isTotal = label === 'Total a Pagar';
+    drawWrappedCell(doc, label, summaryX, tableY, summaryLabelW, summaryRowH, {
+      align: 'right',
+      bold: true,
+      fontSize: isTotal ? 6.4 : 5.9,
+      fill,
+    });
+    drawWrappedCell(doc, value, summaryX + summaryLabelW, tableY, summaryValueW, summaryRowH, {
+      align: 'right',
+      bold: isTotal,
+      fontSize: isTotal ? 6.4 : 5.9,
+      fill,
+    });
+    tableY += summaryRowH;
   });
 
-  const summaryY = (doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY || finalY + 44;
-  emitField(doc, 'Valor en letras:', resumen.totalLetras, 16, summaryY + 10);
-  emitField(doc, 'Observaciones:', resumen.observaciones, 16, summaryY + 16);
+  const summaryY = tableY;
+  const footerY = Math.min(summaryY + 8, pageHeight - 30);
+  doc.setDrawColor(205, 210, 218);
+  doc.roundedRect(18, footerY, 180, 16, 1.5, 1.5);
+  smallField(doc, 'Valor en letras:', resumen.totalLetras, 22, footerY + 6, 24);
+  smallField(doc, 'Observaciones:', resumen.observaciones, 22, footerY + 12, 24);
   doc.setFontSize(7);
   doc.text('Pagina 1 de 1', pageWidth - 16, pageHeight - 10, { align: 'right' });
 

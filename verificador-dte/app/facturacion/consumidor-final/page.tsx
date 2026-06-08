@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, CheckCircle2, Clock3, Download, Loader2, Plus, ReceiptText, Send, Trash2 } from 'lucide-react';
+import { Clock3, Loader2, Plus, Search, Trash2, UserRoundSearch } from 'lucide-react';
 
 import { useAuth } from '@/components/AuthProvider';
 import { auth } from '@/lib/firebase';
@@ -17,6 +17,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Modal } from '@/components/ui/modal';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 type Emitter = {
   nit?: string;
@@ -38,6 +39,7 @@ type Receptor = {
   nombre?: string;
   numeroDocumento?: string;
   tipoDocumentoCodigo?: string;
+  nrc?: string;
   correo?: string;
   telefono?: string;
   complementoDireccion?: string;
@@ -49,6 +51,7 @@ type InvoiceLine = {
   cantidad: number;
   precioUni: number;
   montoDescu: number;
+  ventaTipo: 'gravada' | 'exenta' | 'noSujeta' | 'noGravada';
   uniMedida: number;
   tipoItem: number;
 };
@@ -72,17 +75,6 @@ type InvoiceResponse = {
   error?: string;
 };
 
-type EmittedDte = {
-  id: string;
-  tipoDte?: string;
-  status?: string;
-  codigoGeneracion?: string;
-  numeroControl?: string;
-  selloRecepcion?: string;
-  totalPagar?: number;
-  createdAt?: string | null;
-};
-
 type ProcessTiming = {
   startedAt?: string;
   documentCreatedAt?: string;
@@ -101,8 +93,28 @@ const emptyLine: InvoiceLine = {
   cantidad: 1,
   precioUni: 0,
   montoDescu: 0,
+  ventaTipo: 'gravada',
   uniMedida: 59,
   tipoItem: 2,
+};
+
+const receptorPageSize = 8;
+
+type InvoiceSummary = {
+  totalNoSuj: number;
+  totalExenta: number;
+  totalGravada: number;
+  subTotalVentas: number;
+  descuNoSuj: number;
+  descuExenta: number;
+  descuGravada: number;
+  totalDescu: number;
+  subTotal: number;
+  ivaRete1: number;
+  totalIva: number;
+  montoTotalOperacion: number;
+  totalNoGravado: number;
+  totalPagar: number;
 };
 
 async function firebaseToken() {
@@ -158,11 +170,69 @@ function lineTotal(line: InvoiceLine) {
   return Math.max(0, Number(line.cantidad || 0) * Number(line.precioUni || 0) - Number(line.montoDescu || 0));
 }
 
+function roundMoney(value: number) {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+function lineBase(line: InvoiceLine) {
+  return Math.max(0, Number(line.cantidad || 0) * Number(line.precioUni || 0));
+}
+
+function buildLinePayload(line: InvoiceLine) {
+  const net = roundMoney(lineTotal(line));
+  return {
+    ...line,
+    ventaNoSuj: line.ventaTipo === 'noSujeta' ? net : 0,
+    ventaExenta: line.ventaTipo === 'exenta' ? net : 0,
+    ventaGravada: line.ventaTipo === 'gravada' ? net : 0,
+    noGravado: line.ventaTipo === 'noGravada' ? net : 0,
+  };
+}
+
+function buildSummary(items: InvoiceLine[]): InvoiceSummary {
+  return items.reduce<InvoiceSummary>((summary, line) => {
+    const payload = buildLinePayload(line);
+    const discount = roundMoney(Math.min(Number(line.montoDescu || 0), lineBase(line)));
+    summary.totalNoSuj = roundMoney(summary.totalNoSuj + payload.ventaNoSuj);
+    summary.totalExenta = roundMoney(summary.totalExenta + payload.ventaExenta);
+    summary.totalGravada = roundMoney(summary.totalGravada + payload.ventaGravada);
+    summary.totalNoGravado = roundMoney(summary.totalNoGravado + payload.noGravado);
+    summary.totalDescu = roundMoney(summary.totalDescu + discount);
+    if (line.ventaTipo === 'noSujeta') summary.descuNoSuj = roundMoney(summary.descuNoSuj + discount);
+    if (line.ventaTipo === 'exenta') summary.descuExenta = roundMoney(summary.descuExenta + discount);
+    if (line.ventaTipo === 'gravada') summary.descuGravada = roundMoney(summary.descuGravada + discount);
+    summary.totalIva = roundMoney(summary.totalIva + payload.ventaGravada * (13 / 113));
+    summary.subTotalVentas = roundMoney(summary.totalNoSuj + summary.totalExenta + summary.totalGravada);
+    summary.subTotal = summary.subTotalVentas;
+    summary.montoTotalOperacion = roundMoney(summary.subTotalVentas + summary.totalNoGravado);
+    summary.totalPagar = summary.montoTotalOperacion;
+    return summary;
+  }, {
+    totalNoSuj: 0,
+    totalExenta: 0,
+    totalGravada: 0,
+    subTotalVentas: 0,
+    descuNoSuj: 0,
+    descuExenta: 0,
+    descuGravada: 0,
+    totalDescu: 0,
+    subTotal: 0,
+    ivaRete1: 0,
+    totalIva: 0,
+    montoTotalOperacion: 0,
+    totalNoGravado: 0,
+    totalPagar: 0,
+  });
+}
+
 export default function FacturarConsumidorFinalPage() {
   const { appUser, authChecked } = useAuth();
   const [emitter, setEmitter] = useState<Emitter | null>(null);
   const [receptors, setReceptors] = useState<Receptor[]>([]);
   const [selectedReceptorId, setSelectedReceptorId] = useState('');
+  const [receptorModalOpen, setReceptorModalOpen] = useState(false);
+  const [receptorSearch, setReceptorSearch] = useState('');
+  const [receptorPage, setReceptorPage] = useState(1);
   const [items, setItems] = useState<InvoiceLine[]>([{ ...emptyLine }]);
   const [passwordPri, setPasswordPri] = useState('');
   const [transmitir, setTransmitir] = useState(false);
@@ -173,12 +243,6 @@ export default function FacturarConsumidorFinalPage() {
   const [processTiming, setProcessTiming] = useState<ProcessTiming | null>(null);
   const [lastSubmittedTransmitir, setLastSubmittedTransmitir] = useState(false);
   const [error, setError] = useState('');
-  const [emittedDtes, setEmittedDtes] = useState<EmittedDte[]>([]);
-  const [loadingEmitted, setLoadingEmitted] = useState(false);
-  const [sendTarget, setSendTarget] = useState<{ id: string; name: string } | null>(null);
-  const [sendEmail, setSendEmail] = useState('');
-  const [sendingEmail, setSendingEmail] = useState(false);
-  const [sendMessage, setSendMessage] = useState('');
 
   const canUse = appUser?.role === 'cliente' || appUser?.role === 'superadmin';
   const selectedReceptor = useMemo(
@@ -186,8 +250,35 @@ export default function FacturarConsumidorFinalPage() {
     [receptors, selectedReceptorId]
   );
 
-  const total = useMemo(
-    () => items.reduce((sum, line) => sum + lineTotal(line), 0),
+  const filteredReceptors = useMemo(() => {
+    const query = receptorSearch.trim().toLowerCase();
+    if (!query) return receptors;
+    const onlyDigits = query.replace(/\D/g, '');
+    return receptors.filter((receptor) => {
+      const haystack = [
+        receptor.nombre,
+        receptor.numeroDocumento,
+        receptor.nrc,
+        receptor.tipoDocumentoCodigo,
+      ].map((value) => String(value || '').toLowerCase());
+      const digitHaystack = [
+        receptor.numeroDocumento,
+        receptor.nrc,
+      ].map((value) => String(value || '').replace(/\D/g, ''));
+      return haystack.some((value) => value.includes(query)) ||
+        Boolean(onlyDigits && digitHaystack.some((value) => value.includes(onlyDigits)));
+    });
+  }, [receptorSearch, receptors]);
+
+  const receptorTotalPages = Math.max(1, Math.ceil(filteredReceptors.length / receptorPageSize));
+  const pagedReceptors = useMemo(() => {
+    const safePage = Math.min(receptorPage, receptorTotalPages);
+    const start = (safePage - 1) * receptorPageSize;
+    return filteredReceptors.slice(start, start + receptorPageSize);
+  }, [filteredReceptors, receptorPage, receptorTotalPages]);
+
+  const summary = useMemo(
+    () => buildSummary(items),
     [items]
   );
 
@@ -231,27 +322,12 @@ export default function FacturarConsumidorFinalPage() {
   }, [authChecked, canUse]);
 
   useEffect(() => {
-    if (!authChecked || !canUse) return;
-    void loadEmittedDtes();
-  }, [authChecked, canUse]);
+    setReceptorPage(1);
+  }, [receptorSearch]);
 
-  async function loadEmittedDtes() {
-    setLoadingEmitted(true);
-    try {
-      const token = await firebaseToken();
-      const res = await fetch('/api/facturacion/emissions?tipoDte=01&limit=50', {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: 'no-store',
-      });
-      const payload = await res.json().catch(() => ({})) as { emissions?: EmittedDte[]; error?: string };
-      if (!res.ok) throw new Error(payload.error || 'No se pudieron cargar DTE emitidos');
-      setEmittedDtes(payload.emissions || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudieron cargar DTE emitidos');
-    } finally {
-      setLoadingEmitted(false);
-    }
-  }
+  useEffect(() => {
+    if (receptorPage > receptorTotalPages) setReceptorPage(receptorTotalPages);
+  }, [receptorPage, receptorTotalPages]);
 
   function updateLine(index: number, patch: Partial<InvoiceLine>) {
     setItems((current) =>
@@ -265,6 +341,11 @@ export default function FacturarConsumidorFinalPage() {
 
   function removeLine(index: number) {
     setItems((current) => current.filter((_, i) => i !== index));
+  }
+
+  function selectReceptor(receptor: Receptor) {
+    setSelectedReceptorId(String(receptor.id));
+    setReceptorModalOpen(false);
   }
 
   async function submitInvoice() {
@@ -282,10 +363,6 @@ export default function FacturarConsumidorFinalPage() {
       if (items.some((line) => line.cantidad <= 0 || line.precioUni <= 0)) {
         throw new Error('Cada item debe tener cantidad y precio mayor a cero.');
       }
-      if (transmitir && !passwordPri.trim()) {
-        throw new Error('Ingresa la clave privada para firmar y transmitir.');
-      }
-
       const token = await firebaseToken();
       const res = await fetch('/api/facturacion/consumer-invoices', {
         method: 'POST',
@@ -295,7 +372,7 @@ export default function FacturarConsumidorFinalPage() {
         },
         body: JSON.stringify({
           receptorId: Number(selectedReceptorId),
-          items,
+          items: items.map(buildLinePayload),
           passwordPri,
           transmitir,
           observaciones,
@@ -308,112 +385,10 @@ export default function FacturarConsumidorFinalPage() {
       setProcessTiming(payload.processTiming || payload.finalPackage?.processTiming || null);
       if (!res.ok) throw new Error(payload.error || 'No se pudo facturar');
       setResult(payload);
-      await loadEmittedDtes();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo facturar');
     } finally {
       setSubmitting(false);
-    }
-  }
-
-  async function downloadJson() {
-    const current = result;
-    const downloadUrl = current?.finalPackage?.downloads?.json || (current?.id ? `/api/facturacion/emissions/${encodeURIComponent(current.id)}/json` : '');
-    if (!downloadUrl || !current) return;
-    try {
-      const token = await firebaseToken();
-      const res = await fetch(downloadUrl, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error('No se pudo descargar el JSON');
-
-      const blob = await res.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = `${current.codigoGeneracion || current.id || 'factura-consumidor-final'}.json`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(blobUrl);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo descargar el JSON');
-    }
-  }
-
-  async function downloadCurrentPdf() {
-    const current = result;
-    const downloadUrl = current?.finalPackage?.downloads?.pdf || (current?.id ? `/api/facturacion/emissions/${encodeURIComponent(current.id)}/pdf` : '');
-    if (!downloadUrl || !current) return;
-    try {
-      const token = await firebaseToken();
-      const res = await fetch(downloadUrl, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error('No se pudo descargar el PDF');
-      const blob = await res.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = `${current.codigoGeneracion || current.id || 'factura-consumidor-final'}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(blobUrl);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo descargar el PDF');
-    }
-  }
-
-  async function downloadEmission(id: string, format: 'json' | 'pdf', fallbackName: string) {
-    try {
-      const token = await firebaseToken();
-      const res = await fetch(`/api/facturacion/emissions/${encodeURIComponent(id)}/${format}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error(`No se pudo descargar el ${format.toUpperCase()}`);
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${fallbackName || id}.${format}`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : `No se pudo descargar el ${format.toUpperCase()}`);
-    }
-  }
-
-  function openSendModal(id: string, name: string, defaultEmail?: string) {
-    setSendTarget({ id, name });
-    setSendEmail(defaultEmail || selectedReceptor?.correo || '');
-    setSendMessage('');
-  }
-
-  async function sendEmission() {
-    if (!sendTarget) return;
-    setSendingEmail(true);
-    setError('');
-    setSendMessage('');
-    try {
-      const token = await firebaseToken();
-      const res = await fetch(`/api/facturacion/emissions/${encodeURIComponent(sendTarget.id)}/send`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ to: sendEmail }),
-      });
-      const payload = await res.json().catch(() => ({})) as { error?: string };
-      if (!res.ok) throw new Error(payload.error || 'No se pudo enviar el correo');
-      setSendMessage('Correo enviado correctamente.');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo enviar el correo');
-    } finally {
-      setSendingEmail(false);
     }
   }
 
@@ -434,7 +409,7 @@ export default function FacturarConsumidorFinalPage() {
 
   return (
     <main className="min-h-[calc(100vh-5rem)] bg-slate-50 text-slate-950 dark:bg-black dark:text-white">
-      <div className="grid w-full gap-4 p-0 xl:grid-cols-[minmax(0,1fr)_24rem]">
+      <div className="w-full p-0">
         <section className="space-y-4">
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-950">
             <p className="mb-2 text-sm font-semibold uppercase tracking-[0.22em] text-amber-600 dark:text-yellow-300">
@@ -457,56 +432,71 @@ export default function FacturarConsumidorFinalPage() {
           ) : (
             <>
               <Card>
-                <CardHeader>
-                  <CardTitle>Emisor autenticado</CardTitle>
-                  <CardDescription>Datos que se enviaran en el bloque oficial de emisor.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {emitter ? (
-                    <div className="grid gap-3 text-sm md:grid-cols-3">
-                      <Info label="Nombre" value={emitter.nombre || '-'} />
-                      <Info label="NIT / NRC" value={`${emitter.nit || '-'} / ${emitter.nrc || '-'}`} />
-                      <Info label="Actividad" value={emitter.descripcionActividad || emitter.codigoActividad || '-'} />
-                      <Info label="Direccion" value={emitter.complementoDireccion || '-'} wide />
-                      <Info label="Telefono" value={emitter.telefono || '-'} />
-                      <Info label="Correo" value={emitter.correo || '-'} />
+                <Tabs defaultValue="emisor">
+                  <CardHeader className="pb-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <CardTitle>Partes del documento</CardTitle>
+                        <CardDescription>Datos oficiales del emisor y receptor del DTE.</CardDescription>
+                      </div>
+                      <TabsList className="grid w-full grid-cols-2 sm:w-72">
+                        <TabsTrigger value="emisor">Emisor</TabsTrigger>
+                        <TabsTrigger value="receptor">Receptor</TabsTrigger>
+                      </TabsList>
                     </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No hay emisor configurado.</p>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Receptor</CardTitle>
-                  <CardDescription>Selecciona un cliente/receptor registrado para este emisor.</CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="receptor">Receptor</Label>
-                    <select
-                      id="receptor"
-                      value={selectedReceptorId}
-                      onChange={(event) => setSelectedReceptorId(event.target.value)}
-                      className="h-11 rounded-md border border-input bg-background px-3 text-sm"
-                    >
-                      <option value="">Seleccionar receptor</option>
-                      {receptors.map((receptor) => (
-                        <option key={receptor.id} value={receptor.id}>
-                          {receptor.nombre} - {receptor.numeroDocumento || 'sin documento'}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  {selectedReceptor && (
-                    <div className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm md:grid-cols-3 dark:border-white/10 dark:bg-black">
-                      <Info label="Nombre" value={selectedReceptor.nombre || '-'} />
-                      <Info label="Documento" value={selectedReceptor.numeroDocumento || '-'} />
-                      <Info label="Correo" value={selectedReceptor.correo || '-'} />
-                    </div>
-                  )}
-                </CardContent>
+                  </CardHeader>
+                  <CardContent>
+                    <TabsContent value="emisor" className="mt-0">
+                      {emitter ? (
+                        <div className="grid gap-3 text-sm md:grid-cols-3">
+                          <Info label="Nombre" value={emitter.nombre || '-'} />
+                          <Info label="NIT / NRC" value={`${emitter.nit || '-'} / ${emitter.nrc || '-'}`} />
+                          <Info label="Actividad" value={emitter.descripcionActividad || emitter.codigoActividad || '-'} />
+                          <Info label="Direccion" value={emitter.complementoDireccion || '-'} wide />
+                          <Info label="Telefono" value={emitter.telefono || '-'} />
+                          <Info label="Correo" value={emitter.correo || '-'} />
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No hay emisor configurado.</p>
+                      )}
+                    </TabsContent>
+                    <TabsContent value="receptor" className="mt-0">
+                      <div className="grid gap-4">
+                        <div className="grid gap-2">
+                          <Label>Receptor</Label>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="h-auto min-h-11 justify-start gap-3 px-3 py-2 text-left"
+                            onClick={() => setReceptorModalOpen(true)}
+                          >
+                            <UserRoundSearch className="size-5 shrink-0 text-amber-600 dark:text-yellow-300" />
+                            <span className="min-w-0">
+                              <span className="block truncate font-semibold">
+                                {selectedReceptor?.nombre || 'Seleccionar receptor'}
+                              </span>
+                              <span className="block truncate text-xs text-muted-foreground">
+                                {selectedReceptor
+                                  ? `${selectedReceptor.numeroDocumento || 'sin documento'}${selectedReceptor.nrc ? ` - NRC ${selectedReceptor.nrc}` : ''}`
+                                  : 'Buscar por nombre, DUI, NIT o NRC'}
+                              </span>
+                            </span>
+                          </Button>
+                        </div>
+                        {selectedReceptor && (
+                          <div className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm md:grid-cols-3 dark:border-white/10 dark:bg-black">
+                            <Info label="Nombre" value={selectedReceptor.nombre || '-'} />
+                            <Info label="Documento" value={selectedReceptor.numeroDocumento || '-'} />
+                            <Info label="NRC" value={selectedReceptor.nrc || '-'} />
+                            <Info label="Correo" value={selectedReceptor.correo || '-'} />
+                            <Info label="Telefono" value={selectedReceptor.telefono || '-'} />
+                            <Info label="Direccion" value={selectedReceptor.complementoDireccion || '-'} />
+                          </div>
+                        )}
+                      </div>
+                    </TabsContent>
+                  </CardContent>
+                </Tabs>
               </Card>
 
               <Card>
@@ -526,7 +516,7 @@ export default function FacturarConsumidorFinalPage() {
                   {items.map((line, index) => (
                     <div
                       key={index}
-                      className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 md:grid-cols-[8rem_minmax(0,1fr)_7rem_8rem_8rem_2.5rem] dark:border-white/10 dark:bg-black"
+                      className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 md:grid-cols-[7rem_minmax(0,1fr)_6rem_7rem_7rem_8rem_8rem_2.5rem] dark:border-white/10 dark:bg-black"
                     >
                       <div className="grid gap-1">
                         <Label htmlFor={`codigo-${index}`}>Codigo</Label>
@@ -569,6 +559,31 @@ export default function FacturarConsumidorFinalPage() {
                         />
                       </div>
                       <div className="grid gap-1">
+                        <Label htmlFor={`descuento-${index}`}>Descuento</Label>
+                        <Input
+                          id={`descuento-${index}`}
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={line.montoDescu}
+                          onChange={(event) => updateLine(index, { montoDescu: Number(event.target.value) })}
+                        />
+                      </div>
+                      <div className="grid gap-1">
+                        <Label htmlFor={`venta-tipo-${index}`}>Tipo venta</Label>
+                        <select
+                          id={`venta-tipo-${index}`}
+                          value={line.ventaTipo}
+                          onChange={(event) => updateLine(index, { ventaTipo: event.target.value as InvoiceLine['ventaTipo'] })}
+                          className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                        >
+                          <option value="gravada">Gravada</option>
+                          <option value="exenta">Exenta</option>
+                          <option value="noSujeta">No sujeta</option>
+                          <option value="noGravada">No gravada</option>
+                        </select>
+                      </div>
+                      <div className="grid gap-1">
                         <Label>Total</Label>
                         <div className="flex h-10 items-center rounded-md border border-input bg-muted px-3 text-sm font-semibold">
                           {money(lineTotal(line))}
@@ -587,245 +602,166 @@ export default function FacturarConsumidorFinalPage() {
                       </Button>
                     </div>
                   ))}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Firma y envio</CardTitle>
-                  <CardDescription>En ambiente test puedes generar solo el JSON o firmar y transmitir a Hacienda.</CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-4 md:grid-cols-2">
-                  <div className="grid gap-2">
-                    <Label htmlFor="passwordPri">Clave privada del certificado</Label>
-                    <Input
-                      id="passwordPri"
-                      type="password"
-                      value={passwordPri}
-                      onChange={(event) => setPasswordPri(event.target.value)}
-                      placeholder="Requerida para firmar"
-                    />
-                  </div>
-                  <label className="flex cursor-pointer items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm dark:border-white/10 dark:bg-black">
-                    <input
-                      type="checkbox"
-                      checked={transmitir}
-                      onChange={(event) => setTransmitir(event.target.checked)}
-                      className="size-4 accent-yellow-400"
-                    />
-                    <span>Transmitir a Hacienda test</span>
-                  </label>
-                  <div className="grid gap-2 md:col-span-2">
-                    <Label htmlFor="observaciones">Observaciones</Label>
-                    <Input
-                      id="observaciones"
-                      value={observaciones}
-                      onChange={(event) => setObservaciones(event.target.value)}
-                      placeholder="Opcional"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <CardTitle>DTE emitidos</CardTitle>
-                      <CardDescription>Facturas procesadas individualmente con acciones para descargar JSON y PDF.</CardDescription>
+                  <div className="pt-3">
+                    <div className="mb-2 text-right text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                      Resumen del documento
                     </div>
-                    <Button type="button" variant="outline" onClick={loadEmittedDtes} disabled={loadingEmitted}>
-                      {loadingEmitted ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
-                      Actualizar
-                    </Button>
+                    <div className="ml-auto w-full max-w-2xl overflow-hidden rounded-lg border border-slate-200 text-sm dark:border-white/10">
+                      <SummaryRow label="Suma de Ventas" value={`${money(summary.totalNoSuj)} / ${money(summary.totalExenta)} / ${money(summary.totalGravada)}`} />
+                      <SummaryRow label="Sumatoria de ventas" value={money(summary.subTotalVentas)} />
+                      <SummaryRow label="Descuento global a ventas no sujetas" value={money(summary.descuNoSuj)} />
+                      <SummaryRow label="Descuento global a ventas exentas" value={money(summary.descuExenta)} />
+                      <SummaryRow label="Descuento global a ventas gravadas" value={money(summary.descuGravada)} />
+                      <SummaryRow label="Nombre del Tributo" value="IVA" />
+                      <SummaryRow label="Valor del Tributo" value={money(summary.totalIva)} />
+                      <SummaryRow label="Sub-Total" value={money(summary.subTotal)} />
+                      <SummaryRow label="IVA Retenido" value={money(summary.ivaRete1)} />
+                      <SummaryRow label="Monto Total de la Operacion" value={money(summary.montoTotalOperacion)} />
+                      <SummaryRow label="Total Otros Montos No Afectos" value={money(summary.totalNoGravado)} />
+                      <SummaryRow label="Total a Pagar" value={money(summary.totalPagar)} strong />
+                    </div>
                   </div>
-                </CardHeader>
-                <CardContent className="overflow-x-auto">
-                  <table className="w-full min-w-[900px] text-sm">
-                    <thead className="border-b text-left text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                      <tr>
-                        <th className="py-2 pr-3">Fecha</th>
-                        <th className="py-2 pr-3">Estado</th>
-                        <th className="py-2 pr-3">Codigo generacion</th>
-                        <th className="py-2 pr-3">Numero control</th>
-                        <th className="py-2 pr-3">Sello</th>
-                        <th className="py-2 pr-3">Total</th>
-                        <th className="py-2 pr-3">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {emittedDtes.map((dte) => (
-                        <tr key={dte.id} className="border-b border-slate-200 last:border-0 dark:border-white/10">
-                          <td className="py-3 pr-3 whitespace-nowrap">{formatDate(dte.createdAt)}</td>
-                          <td className="py-3 pr-3">{dte.status || '-'}</td>
-                          <td className="py-3 pr-3 break-all font-mono text-xs">{dte.codigoGeneracion || '-'}</td>
-                          <td className="py-3 pr-3 break-all font-mono text-xs">{dte.numeroControl || '-'}</td>
-                          <td className="py-3 pr-3 break-all font-mono text-xs">{dte.selloRecepcion || '-'}</td>
-                          <td className="py-3 pr-3 font-semibold">{money(Number(dte.totalPagar || 0))}</td>
-                          <td className="py-3 pr-3">
-                            <div className="flex flex-wrap gap-2">
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                onClick={() => downloadEmission(dte.id, 'json', dte.codigoGeneracion || 'dte')}
-                              >
-                                JSON
-                              </Button>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                onClick={() => downloadEmission(dte.id, 'pdf', dte.codigoGeneracion || 'dte')}
-                              >
-                                PDF
-                              </Button>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                onClick={() => openSendModal(dte.id, dte.codigoGeneracion || 'dte')}
-                              >
-                                <Send className="size-4" />
-                                Enviar
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                      {!emittedDtes.length && (
-                        <tr>
-                          <td colSpan={7} className="py-8 text-center text-muted-foreground">
-                            Todavia no hay facturas emitidas.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
                 </CardContent>
               </Card>
+
+              <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-zinc-950">
+                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+                  <div className="grid gap-3 md:grid-cols-[16rem_minmax(0,1fr)]">
+                    <label className="flex cursor-pointer items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm dark:border-white/10 dark:bg-black">
+                      <input
+                        type="checkbox"
+                        checked={transmitir}
+                        onChange={(event) => setTransmitir(event.target.checked)}
+                        className="size-4 accent-yellow-400"
+                      />
+                      <span>Transmitir a Hacienda test</span>
+                    </label>
+                    <div className="grid gap-2">
+                      <Label htmlFor="observaciones">Observaciones</Label>
+                      <Input
+                        id="observaciones"
+                        value={observaciones}
+                        onChange={(event) => setObservaciones(event.target.value)}
+                        placeholder="Opcional"
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    disabled={loading || submitting}
+                    onClick={submitInvoice}
+                    className="h-11 bg-yellow-400 font-bold text-black hover:bg-yellow-300 lg:min-w-48"
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="size-4 animate-spin" />
+                        Procesando
+                      </>
+                    ) : (
+                      'Generar factura'
+                    )}
+                  </Button>
+                </div>
+                {error && (
+                  <p className="mt-3 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-100">
+                    {error}
+                  </p>
+                )}
+                {result && (
+                  <p className="mt-3 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-100">
+                    Factura generada: <span className="font-mono">{result.codigoGeneracion}</span>
+                  </p>
+                )}
+              </div>
             </>
           )}
         </section>
 
-        <aside className="space-y-4">
-          <Card className="sticky top-4">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ReceiptText className="size-5 text-amber-600 dark:text-yellow-300" />
-                Resumen
-              </CardTitle>
-              <CardDescription>Factura consumidor final tipo 01.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-black">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Total</p>
-                <p className="mt-1 text-3xl font-black">{money(total)}</p>
-              </div>
+      </div>
+      <Modal open={receptorModalOpen} onClose={() => setReceptorModalOpen(false)} className="w-full max-w-5xl">
+        <div className="space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 className="text-lg font-bold">Seleccionar receptor</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Busca por nombre, DUI, NIT, numero de documento o NRC.
+              </p>
+            </div>
+            <div className="relative w-full sm:max-w-sm">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={receptorSearch}
+                onChange={(event) => setReceptorSearch(event.target.value)}
+                placeholder="Buscar receptor"
+                className="pl-9"
+                autoFocus
+              />
+            </div>
+          </div>
 
+          <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-white/10">
+            <table className="w-full min-w-[760px] text-sm">
+              <thead className="border-b bg-slate-50 text-left text-xs uppercase tracking-[0.14em] text-muted-foreground dark:border-white/10 dark:bg-black">
+                <tr>
+                  <th className="px-3 py-3">Nombre</th>
+                  <th className="px-3 py-3">DUI / NIT</th>
+                  <th className="px-3 py-3">NRC</th>
+                  <th className="px-3 py-3">Correo</th>
+                  <th className="px-3 py-3">Telefono</th>
+                  <th className="px-3 py-3 text-right">Accion</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pagedReceptors.map((receptor) => (
+                  <tr key={receptor.id} className="border-b border-slate-200 last:border-0 dark:border-white/10">
+                    <td className="px-3 py-3 font-semibold">{receptor.nombre || '-'}</td>
+                    <td className="px-3 py-3 font-mono text-xs">{receptor.numeroDocumento || '-'}</td>
+                    <td className="px-3 py-3 font-mono text-xs">{receptor.nrc || '-'}</td>
+                    <td className="px-3 py-3">{receptor.correo || '-'}</td>
+                    <td className="px-3 py-3">{receptor.telefono || '-'}</td>
+                    <td className="px-3 py-3 text-right">
+                      <Button type="button" size="sm" onClick={() => selectReceptor(receptor)}>
+                        Seleccionar
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+                {!pagedReceptors.length && (
+                  <tr>
+                    <td colSpan={6} className="px-3 py-8 text-center text-muted-foreground">
+                      No se encontraron receptores.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex flex-col gap-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+            <span>
+              {filteredReceptors.length} receptores · Pagina {Math.min(receptorPage, receptorTotalPages)} de {receptorTotalPages}
+            </span>
+            <div className="flex items-center gap-2">
               <Button
                 type="button"
-                disabled={loading || submitting}
-                onClick={submitInvoice}
-                className="h-12 w-full bg-yellow-400 font-bold text-black hover:bg-yellow-300"
+                variant="outline"
+                size="sm"
+                disabled={receptorPage <= 1}
+                onClick={() => setReceptorPage((page) => Math.max(1, page - 1))}
               >
-                {submitting ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" />
-                    Procesando
-                  </>
-                ) : (
-                  'Generar factura'
-                )}
+                Anterior
               </Button>
-
-              {error && (
-                <div className="flex items-start gap-2 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-100">
-                  <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-                  <span>{error}</span>
-                </div>
-              )}
-
-              {processTiming && (
-                <ProcessTimingCard timing={processTiming} transmitted={lastSubmittedTransmitir} />
-              )}
-
-              {result && (
-                <div className="space-y-3 rounded-md border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-100">
-                  <div className="flex items-start gap-2">
-                    <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
-                    <div>
-                      <p className="font-semibold">Factura generada</p>
-                      <p className="break-all font-mono text-xs">{result.codigoGeneracion}</p>
-                    </div>
-                  </div>
-                  <div className="grid gap-1 text-xs">
-                    <span>Control: {result.numeroControl || '-'}</span>
-                    <span>Estado: {result.status || '-'}</span>
-                    <span>Sello: {result.selloRecepcion || '-'}</span>
-                  </div>
-                  {(result.processTiming || result.finalPackage?.processTiming) && !processTiming && (
-                    <ProcessTimingCard
-                      timing={result.processTiming || result.finalPackage?.processTiming || {}}
-                      transmitted={lastSubmittedTransmitir}
-                    />
-                  )}
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {(result.finalPackage?.downloads?.json || result.id) && (
-                      <Button type="button" variant="outline" className="w-full" onClick={downloadJson}>
-                        <Download className="size-4" />
-                        JSON
-                      </Button>
-                    )}
-                    {(result.finalPackage?.downloads?.pdf || result.id) && (
-                      <Button type="button" variant="outline" className="w-full" onClick={downloadCurrentPdf}>
-                        <Download className="size-4" />
-                        PDF
-                      </Button>
-                    )}
-                    {result.id && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full sm:col-span-2"
-                        onClick={() => openSendModal(result.id || '', result.codigoGeneracion || result.id || 'dte', selectedReceptor?.correo)}
-                      >
-                        <Send className="size-4" />
-                        Enviar por correo
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </aside>
-      </div>
-      <Modal open={Boolean(sendTarget)} onClose={() => setSendTarget(null)} disableClose={sendingEmail} className="w-full max-w-md">
-        <div className="space-y-4">
-          <div>
-            <h2 className="text-lg font-bold">Enviar DTE</h2>
-            <p className="mt-1 break-all text-sm text-muted-foreground">{sendTarget?.name}</p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={receptorPage >= receptorTotalPages}
+                onClick={() => setReceptorPage((page) => Math.min(receptorTotalPages, page + 1))}
+              >
+                Siguiente
+              </Button>
+            </div>
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="send-email">Correo del cliente</Label>
-            <Input
-              id="send-email"
-              type="email"
-              value={sendEmail}
-              onChange={(event) => setSendEmail(event.target.value)}
-              placeholder="cliente@correo.com"
-            />
-          </div>
-          {sendMessage && (
-            <p className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-              {sendMessage}
-            </p>
-          )}
-          <Button type="button" className="w-full" onClick={sendEmission} disabled={sendingEmail || !sendEmail.trim()}>
-            {sendingEmail ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-            Enviar PDF y JSON
-          </Button>
         </div>
       </Modal>
     </main>
@@ -878,6 +814,19 @@ function TimingRow({ label, value, strong }: { label: string; value: string; str
     <div className="flex items-center justify-between gap-3">
       <span className="text-muted-foreground">{label}</span>
       <span className={`text-right ${strong ? 'font-semibold' : 'font-medium'}`}>{value}</span>
+    </div>
+  );
+}
+
+function SummaryRow({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
+  return (
+    <div className="grid grid-cols-[minmax(0,1fr)_7.5rem] border-b border-slate-200 last:border-0 dark:border-white/10">
+      <div className={`bg-white px-3 py-2 text-right dark:bg-zinc-950 ${strong ? 'font-bold' : 'font-semibold'}`}>
+        {label}
+      </div>
+      <div className={`bg-slate-50 px-3 py-2 text-right dark:bg-black ${strong ? 'font-bold' : 'font-medium'}`}>
+        {value}
+      </div>
     </div>
   );
 }

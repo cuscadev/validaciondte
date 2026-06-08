@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { getGoDteApiUrl } from '@/lib/go-dte-api';
 import { getHaciendaTokenForUser } from '@/lib/hacienda-auth';
+import { resolveCertificatePassword } from '@/lib/facturacion/certificate-credentials';
 import { getPostgresPool } from '@/lib/postgres';
 import { requireAuth } from '@/lib/server-auth';
 
@@ -20,6 +21,7 @@ type InvoiceItem = {
   ventaNoSuj?: number;
   ventaExenta?: number;
   ventaGravada?: number;
+  noGravado?: number;
   tipoItem?: number;
 };
 
@@ -67,6 +69,12 @@ function lastTwoDigits(value: unknown) {
   const digits = cleanDigits(value);
   if (!digits) return '';
   return digits.slice(-2).padStart(2, '0');
+}
+
+function municipioDteCode(departamento: string, municipio: string) {
+  const muniDigits = cleanDigits(municipio);
+  if (!muniDigits) return '';
+  return muniDigits.slice(-2).padStart(2, '0');
 }
 
 function normalizeNrc(value: unknown, required = false) {
@@ -174,7 +182,7 @@ function buildEmitter(row: Record<string, unknown>) {
     tipoEstablecimiento: getString(row.tipo_establecimiento_codigo) || '01',
     direccion: {
       departamento: getString(row.departamento_codigo),
-      municipio: lastTwoDigits(row.municipio_codigo),
+      municipio: municipioDteCode(getString(row.departamento_codigo), getString(row.municipio_codigo)),
       distrito: lastTwoDigits(row.distrito_codigo),
       complemento: getString(row.complemento_direccion),
     },
@@ -196,7 +204,7 @@ function buildTaxCreditReceptor(row: Record<string, unknown>) {
     nombreComercial: nullableString(row.nombre_comercial),
     direccion: {
       departamento: getString(row.departamento_codigo),
-      municipio: lastTwoDigits(row.municipio_codigo),
+      municipio: municipioDteCode(getString(row.departamento_codigo), getString(row.municipio_codigo)),
       distrito: lastTwoDigits(row.distrito_codigo),
       complemento: getString(row.complemento_direccion),
     },
@@ -244,15 +252,16 @@ function validateItems(items: InvoiceItem[]) {
       ventaNoSuj: toNumber(item.ventaNoSuj),
       ventaExenta: toNumber(item.ventaExenta),
       ventaGravada: toNumber(item.ventaGravada),
+      noGravado: toNumber(item.noGravado),
     };
   });
 }
 
-function sumItems(items: ReturnType<typeof validateItems>) {
+function sumItems(items: ReturnType<typeof validateItems>, ivaPerci = 0, ivaRete = 0) {
   return items.reduce((total, item) => {
-    const explicit = item.ventaNoSuj + item.ventaExenta + item.ventaGravada;
+    const explicit = item.ventaNoSuj + item.ventaExenta + item.ventaGravada + item.noGravado;
     return total + (explicit > 0 ? explicit : item.cantidad * item.precioUni - item.montoDescu);
-  }, 0);
+  }, 0) + ivaPerci - ivaRete;
 }
 
 export async function POST(req: NextRequest) {
@@ -295,6 +304,32 @@ export async function POST(req: NextRequest) {
 
     const emisor = buildEmitter(emitter);
     const receptorFiscal = buildTaxCreditReceptor(receptor);
+    if (!emisor.codActividad || !emisor.descActividad) {
+      return NextResponse.json(
+        { error: 'Configura el codigo y descripcion de actividad economica del emisor antes de emitir.' },
+        { status: 400 }
+      );
+    }
+    if (!emisor.direccion.departamento || !emisor.direccion.municipio || !emisor.direccion.distrito || !emisor.direccion.complemento) {
+      return NextResponse.json(
+        { error: 'Configura departamento, municipio, distrito y direccion del emisor antes de emitir.' },
+        { status: 400 }
+      );
+    }
+    if (!/^\d{2}$/.test(emisor.direccion.municipio)) {
+      return NextResponse.json(
+        { error: `Municipio del emisor invalido para DTE: ${emisor.direccion.municipio}. Debe tener 2 digitos.` },
+        { status: 400 }
+      );
+    }
+    if (!/^\d{2}$/.test(receptorFiscal.direccion.municipio)) {
+      return NextResponse.json(
+        { error: `Municipio del receptor invalido para DTE: ${receptorFiscal.direccion.municipio}. Debe tener 2 digitos.` },
+        { status: 400 }
+      );
+    }
+    const ivaPerci = toNumber(body.ivaPerci);
+    const ivaRete = toNumber(body.ivaRete);
     const documentRequest = {
       ambiente: '00',
       correlativo: Date.now() % 999999999999999,
@@ -304,9 +339,9 @@ export async function POST(req: NextRequest) {
       emisor,
       receptor: receptorFiscal,
       items,
-      pagos: [{ codigo: '01', montoPago: Number(sumItems(items).toFixed(2)) }],
-      ivaPerci: toNumber(body.ivaPerci),
-      ivaRete: toNumber(body.ivaRete),
+      pagos: [{ codigo: '01', montoPago: Number(sumItems(items, ivaPerci, ivaRete).toFixed(2)) }],
+      ivaPerci,
+      ivaRete,
       observaciones: nullableString(body.observaciones),
     };
 
@@ -349,7 +384,7 @@ export async function POST(req: NextRequest) {
     let signResponse: unknown = null;
     let haciendaResponse: unknown = null;
     let selloRecepcion = '';
-    const passwordPri = String(body.passwordPri || '');
+    const passwordPri = await resolveCertificatePassword(user.uid, body.passwordPri);
 
     if (passwordPri) {
       const signStartMs = Date.now();
@@ -377,7 +412,7 @@ export async function POST(req: NextRequest) {
         environment,
         ambiente: '00',
         idEnvio: Date.now(),
-        version: Number(documentResponse.version || asRecord(asRecord(dteJson).identificacion).version || 3),
+        version: Number(documentResponse.version || asRecord(asRecord(dteJson).identificacion).version || 4),
         tipoDte: '03',
         documento: firma,
       };

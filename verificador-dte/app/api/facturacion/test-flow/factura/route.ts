@@ -88,15 +88,13 @@ function mockConsumerInvoice(nit: string, override?: JsonRecord) {
       tipoEstablecimiento: '01',
       direccion: {
         departamento: '05',
-        municipio: '28',
-        distrito: '28',
+        municipio: '04',
+        distrito: '01',
         complemento: 'Colonia La Sultana 2 Pasaje Poniente 3 Block P casa 4',
       },
       telefono: '22439538',
       correo: 'fygconstructorasadecv@gmail.com',
-      codEstableMH: null,
       codEstable: null,
-      codPuntoVentaMH: null,
       codPuntoVenta: null,
     },
     receptor: {
@@ -109,8 +107,8 @@ function mockConsumerInvoice(nit: string, override?: JsonRecord) {
       nombreComercial: 'CONVASES, S.A. DE C.V.',
       direccion: {
         departamento: '05',
-        municipio: '28',
-        distrito: '28',
+        municipio: '04',
+        distrito: '01',
         complemento: 'CARRETERA AL CUCO KM 142.5, RESTAURANTE LA PEMA, SAN MIGUEL',
       },
       telefono: '75896520',
