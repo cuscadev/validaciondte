@@ -239,11 +239,17 @@ export async function sendAppMail({
   subject,
   text,
   html,
+  attachments,
 }: {
   to: string;
   subject: string;
   text: string;
   html: string;
+  attachments?: Array<{
+    filename: string;
+    content: Buffer | string;
+    contentType?: string;
+  }>;
 }) {
   const settings = await getSmtpSettings();
   const transporter = nodemailer.createTransport({
@@ -262,5 +268,6 @@ export async function sendAppMail({
     subject,
     text,
     html,
+    attachments,
   });
 }

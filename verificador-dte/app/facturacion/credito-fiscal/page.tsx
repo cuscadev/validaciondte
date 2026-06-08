@@ -158,7 +158,7 @@ function lineTotal(line: InvoiceLine) {
   return Math.max(0, Number(line.cantidad || 0) * Number(line.precioUni || 0) - Number(line.montoDescu || 0));
 }
 
-export default function FacturarConsumidorFinalPage() {
+export default function FacturarCreditoFiscalPage() {
   const { appUser, authChecked } = useAuth();
   const [emitter, setEmitter] = useState<Emitter | null>(null);
   const [receptors, setReceptors] = useState<Receptor[]>([]);
@@ -218,7 +218,7 @@ export default function FacturarConsumidorFinalPage() {
           if (first?.id) setSelectedReceptorId(String(first.id));
         }
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Error cargando facturacion');
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Error cargando credito fiscal');
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -239,7 +239,7 @@ export default function FacturarConsumidorFinalPage() {
     setLoadingEmitted(true);
     try {
       const token = await firebaseToken();
-      const res = await fetch('/api/facturacion/emissions?tipoDte=01&limit=50', {
+      const res = await fetch('/api/facturacion/emissions?tipoDte=03&limit=50', {
         headers: { Authorization: `Bearer ${token}` },
         cache: 'no-store',
       });
@@ -287,7 +287,7 @@ export default function FacturarConsumidorFinalPage() {
       }
 
       const token = await firebaseToken();
-      const res = await fetch('/api/facturacion/consumer-invoices', {
+      const res = await fetch('/api/facturacion/tax-credit-invoices', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -306,11 +306,11 @@ export default function FacturarConsumidorFinalPage() {
 
       const payload = (await res.json()) as InvoiceResponse;
       setProcessTiming(payload.processTiming || payload.finalPackage?.processTiming || null);
-      if (!res.ok) throw new Error(payload.error || 'No se pudo facturar');
+      if (!res.ok) throw new Error(payload.error || 'No se pudo emitir credito fiscal');
       setResult(payload);
       await loadEmittedDtes();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo facturar');
+      setError(err instanceof Error ? err.message : 'No se pudo emitir credito fiscal');
     } finally {
       setSubmitting(false);
     }
@@ -331,7 +331,7 @@ export default function FacturarConsumidorFinalPage() {
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = blobUrl;
-      a.download = `${current.codigoGeneracion || current.id || 'factura-consumidor-final'}.json`;
+      a.download = `${current.codigoGeneracion || current.id || 'credito-fiscal'}.json`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -355,7 +355,7 @@ export default function FacturarConsumidorFinalPage() {
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = blobUrl;
-      a.download = `${current.codigoGeneracion || current.id || 'factura-consumidor-final'}.pdf`;
+      a.download = `${current.codigoGeneracion || current.id || 'credito-fiscal'}.pdf`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -441,10 +441,10 @@ export default function FacturarConsumidorFinalPage() {
               Facturacion electronica
             </p>
             <h1 className="text-3xl font-extrabold tracking-tight">
-              Facturar consumidor final
+              Emitir credito fiscal
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600 dark:text-zinc-300">
-              Documento tipo 01. Se usa el emisor vinculado a tu cuenta, seleccionas un receptor y agregas los bienes o servicios facturados.
+              Documento tipo 03. El receptor debe tener NIT, NRC si aplica, actividad economica y direccion completa.
             </p>
           </div>
 
@@ -632,7 +632,7 @@ export default function FacturarConsumidorFinalPage() {
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <CardTitle>DTE emitidos</CardTitle>
-                      <CardDescription>Facturas procesadas individualmente con acciones para descargar JSON y PDF.</CardDescription>
+                      <CardDescription>Creditos fiscales procesados individualmente con acciones para descargar JSON y PDF.</CardDescription>
                     </div>
                     <Button type="button" variant="outline" onClick={loadEmittedDtes} disabled={loadingEmitted}>
                       {loadingEmitted ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
@@ -696,7 +696,7 @@ export default function FacturarConsumidorFinalPage() {
                       {!emittedDtes.length && (
                         <tr>
                           <td colSpan={7} className="py-8 text-center text-muted-foreground">
-                            Todavia no hay facturas emitidas.
+                            Todavia no hay creditos fiscales emitidos.
                           </td>
                         </tr>
                       )}
@@ -715,7 +715,7 @@ export default function FacturarConsumidorFinalPage() {
                 <ReceiptText className="size-5 text-amber-600 dark:text-yellow-300" />
                 Resumen
               </CardTitle>
-              <CardDescription>Factura consumidor final tipo 01.</CardDescription>
+              <CardDescription>Comprobante de credito fiscal tipo 03.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-black">
@@ -735,7 +735,7 @@ export default function FacturarConsumidorFinalPage() {
                     Procesando
                   </>
                 ) : (
-                  'Generar factura'
+                  'Generar credito fiscal'
                 )}
               </Button>
 
@@ -755,7 +755,7 @@ export default function FacturarConsumidorFinalPage() {
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
                     <div>
-                      <p className="font-semibold">Factura generada</p>
+                      <p className="font-semibold">Credito fiscal generado</p>
                       <p className="break-all font-mono text-xs">{result.codigoGeneracion}</p>
                     </div>
                   </div>
@@ -890,3 +890,4 @@ function Info({ label, value, wide }: { label: string; value: string; wide?: boo
     </div>
   );
 }
+

@@ -30,9 +30,7 @@ function getUserAgent() {
 }
 
 function normalizeToken(token: string) {
-  // Return token exactly as received from Hacienda, without any modifications
-  // Hacienda API expects the raw token without "Bearer " prefix
-  return token.trim();
+  return token.replace(/^Bearer\s+/i, '').trim();
 }
 
 function tokenExp(token: string) {

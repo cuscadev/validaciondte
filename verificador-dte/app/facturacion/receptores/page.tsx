@@ -38,10 +38,12 @@ import {
 } from '@/components/ui/table';
 
 type CatalogRow = {
+  id?: number;
   codigo: string;
   nombre?: string;
   descripcion?: string;
   departamento_codigo?: string;
+  municipio_id?: number;
 };
 
 type ReceptorCatalogs = {
@@ -163,6 +165,11 @@ function catalogOptions(rows: CatalogRow[]): SearchableSelectOption[] {
   }));
 }
 
+function lastTwoDigits(value?: string) {
+  const clean = String(value || '').trim();
+  return clean.length > 2 ? clean.slice(-2) : clean;
+}
+
 async function firebaseToken() {
   const token = await auth.currentUser?.getIdToken();
   if (!token) throw new Error('Sesion no autorizada');
@@ -180,8 +187,8 @@ function formFromReceptor(row: Receptor): ReceptorForm {
     telefono: row.telefono || '',
     correo: row.correo || '',
     departamentoCodigo: row.departamentoCodigo || '',
-    municipioCodigo: row.municipioCodigo || '',
-    distritoCodigo: row.distritoCodigo || '',
+    municipioCodigo: lastTwoDigits(row.municipioCodigo),
+    distritoCodigo: lastTwoDigits(row.distritoCodigo),
     complementoDireccion: row.complementoDireccion || '',
     nrc: row.nrc || '',
     codigoActividad: row.codigoActividad || '',
@@ -217,17 +224,34 @@ export default function FacturacionReceptoresPage() {
     );
   }, [catalogs.municipios, form.departamentoCodigo]);
 
+  const selectedMunicipio = useMemo(
+    () =>
+      filteredMunicipios.find(
+        (row) => row.codigo === form.municipioCodigo && row.departamento_codigo === form.departamentoCodigo
+      ),
+    [filteredMunicipios, form.departamentoCodigo, form.municipioCodigo]
+  );
+
+  const filteredDistritos = useMemo(() => {
+    if (!form.departamentoCodigo || !selectedMunicipio?.id) return [];
+    return catalogs.distritos.filter(
+      (row) =>
+        row.departamento_codigo === form.departamentoCodigo &&
+        Number(row.municipio_id) === Number(selectedMunicipio.id)
+    );
+  }, [catalogs.distritos, form.departamentoCodigo, selectedMunicipio?.id]);
+
   const optionGroups = useMemo(
     () => ({
       tiposDocumento: catalogOptions(catalogs.tiposDocumento),
       departamentos: catalogOptions(catalogs.departamentos),
       municipios: catalogOptions(filteredMunicipios),
-      distritos: catalogOptions(catalogs.distritos),
+      distritos: catalogOptions(filteredDistritos),
       actividades: catalogOptions(catalogs.actividades),
       regimenesTributarios: catalogOptions(catalogs.regimenesTributarios),
       paises: catalogOptions(catalogs.paises),
     }),
-    [catalogs, filteredMunicipios]
+    [catalogs, filteredDistritos, filteredMunicipios]
   );
 
   async function loadData(search = query) {
@@ -273,7 +297,11 @@ export default function FacturacionReceptoresPage() {
   function setField(name: keyof ReceptorForm, value: string | boolean | number) {
     setForm((current) => {
       if (name === 'departamentoCodigo') {
-        return { ...current, departamentoCodigo: String(value), municipioCodigo: '' };
+        return { ...current, departamentoCodigo: String(value), municipioCodigo: '', distritoCodigo: '' };
+      }
+
+      if (name === 'municipioCodigo') {
+        return { ...current, municipioCodigo: String(value), distritoCodigo: '' };
       }
 
       return { ...current, [name]: value };

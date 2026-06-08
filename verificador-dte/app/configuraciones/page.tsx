@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { auth } from '@/lib/firebase';
 import { useAuth } from '@/components/AuthProvider';
 import { usePlanAccess } from '@/hooks/usePlanAccess';
+import { saveHaciendaBrowserToken } from '@/lib/hacienda-token-storage';
 
 // importa sin '@'
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
@@ -201,11 +202,12 @@ export default function ConfiguracionesPage() {
           environment: haciendaForm.environment,
         }),
       });
-      const data = await res.json() as { error?: string };
+      const data = await res.json() as { error?: string; token?: string; fullToken?: string };
       if (!res.ok) throw new Error(data.error || 'No se pudo autenticar con Hacienda');
 
+      saveHaciendaBrowserToken(data.token || data.fullToken || '', haciendaForm.environment);
       await queryClient.invalidateQueries({ queryKey: HACIENDA_QUERY_KEY });
-      setHaciendaMessage('Autenticacion con Hacienda correcta. Token guardado para reutilizarse.');
+      setHaciendaMessage('Autenticacion con Hacienda correcta. Token guardado en este navegador.');
     } catch (error) {
       setHaciendaError(error instanceof Error ? error.message : 'No se pudo autenticar con Hacienda');
     } finally {

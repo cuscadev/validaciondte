@@ -49,7 +49,7 @@ async function readCatalog(tableName: string) {
       `
         SELECT *
         FROM ${tableName}
-        WHERE COALESCE(a  ctivo, TRUE) = TRUE
+        WHERE COALESCE(activo, TRUE) = TRUE
         ORDER BY id
       `
     );

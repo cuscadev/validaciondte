@@ -5,11 +5,12 @@ type FacturaConsumidorFinal struct {
 	DocumentoRelacionado any               `json:"documentoRelacionado"`
 	Emisor               Emisor            `json:"emisor"`
 	Receptor             *Receptor         `json:"receptor"`
-	OtrosDocumentos      any               `json:"otrosDocumentos"`
+	Extension            Extension         `json:"extension"`
+	Apendice             any               `json:"apendice"`
 	VentaTercero         any               `json:"ventaTercero"`
+	OtrosDocumentos      any               `json:"otrosDocumentos"`
 	CuerpoDocumento      []CuerpoDocumento `json:"cuerpoDocumento"`
 	Resumen              Resumen           `json:"resumen"`
-	Apendice             any               `json:"apendice"`
 }
 
 type Identificacion struct {
@@ -37,8 +38,19 @@ type Emisor struct {
 	Direccion       Direccion `json:"direccion"`
 	Telefono        string    `json:"telefono"`
 	Correo          string    `json:"correo"`
+	CodEstableMH    *string   `json:"codEstableMH"`
 	CodEstable      *string   `json:"codEstable"`
+	CodPuntoVentaMH *string   `json:"codPuntoVentaMH"`
 	CodPuntoVenta   *string   `json:"codPuntoVenta"`
+}
+
+type Extension struct {
+	NombEntrega   *string `json:"nombEntrega"`
+	DocuEntrega   *string `json:"docuEntrega"`
+	NombRecibe    *string `json:"nombRecibe"`
+	DocuRecibe    *string `json:"docuRecibe"`
+	Observaciones *string `json:"observaciones"`
+	PlacaVehiculo *string `json:"placaVehiculo"`
 }
 
 type Receptor struct {

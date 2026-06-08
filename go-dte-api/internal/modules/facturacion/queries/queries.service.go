@@ -180,10 +180,21 @@ func (s *Service) do(req *http.Request) ([]byte, int, error) {
 }
 
 func (s *Service) setHeaders(req *http.Request, token string) {
-	req.Header.Set("Authorization", token)
+	req.Header.Set("Authorization", haciendaAuthorizationHeader(token))
 	req.Header.Set("User-Agent", s.cfg.HaciendaUserAgent)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
+}
+
+func haciendaAuthorizationHeader(token string) string {
+	token = strings.TrimSpace(token)
+	if strings.HasPrefix(strings.ToLower(token), "bearer ") {
+		token = strings.TrimSpace(token[7:])
+	}
+	if token == "" {
+		return ""
+	}
+	return "Bearer " + token
 }
 
 func (s *Service) individualURL(environment string) string {

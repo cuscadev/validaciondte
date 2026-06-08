@@ -35,6 +35,11 @@ function clean(value: unknown) {
   return trimmed ? trimmed : null;
 }
 
+function cleanLastTwoDigits(value: unknown) {
+  const trimmed = clean(value);
+  return trimmed && trimmed.length > 2 ? trimmed.slice(-2) : trimmed;
+}
+
 function required(value: unknown) {
   return typeof value === 'string' ? value.trim() : '';
 }
@@ -133,6 +138,7 @@ async function listReceptors(emisorId: number, search: string) {
       LEFT JOIN cat_003_tipo_documento td ON td.codigo = c.tipo_documento_codigo
       LEFT JOIN cat_005_departamentos d ON d.codigo = c.departamento_codigo
       LEFT JOIN cat_006_municipios m ON m.codigo = c.municipio_codigo
+        AND m.departamento_codigo = c.departamento_codigo
       LEFT JOIN cat_024_codigo_actividad a ON a.codigo = c.codigo_actividad
       LEFT JOIN cat_paises p ON p.codigo = c.pais_codigo
       WHERE c.emisor_id = $1
@@ -193,6 +199,8 @@ export async function POST(req: NextRequest) {
     const tipoDocumento = required(body.tipoDocumentoCodigo);
     const numeroDocumento = required(body.numeroDocumento);
     const nombre = required(body.nombre);
+    const municipioCodigo = cleanLastTwoDigits(body.municipioCodigo);
+    const distritoCodigo = cleanLastTwoDigits(body.distritoCodigo);
 
     if (!tipoDocumento || !numeroDocumento || !nombre) {
       return NextResponse.json(
@@ -245,8 +253,8 @@ export async function POST(req: NextRequest) {
           clean(body.telefono),
           clean(body.correo),
           clean(body.departamentoCodigo),
-          clean(body.municipioCodigo),
-          clean(body.distritoCodigo),
+          municipioCodigo,
+          distritoCodigo,
           clean(body.complementoDireccion),
           clean(body.nrc),
           clean(body.codigoActividad),
@@ -336,8 +344,8 @@ export async function POST(req: NextRequest) {
         clean(body.telefono),
         clean(body.correo),
         clean(body.departamentoCodigo),
-        clean(body.municipioCodigo),
-        clean(body.distritoCodigo),
+        municipioCodigo,
+        distritoCodigo,
         clean(body.complementoDireccion),
         clean(body.nrc),
         clean(body.codigoActividad),

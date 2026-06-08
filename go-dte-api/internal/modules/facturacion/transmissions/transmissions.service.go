@@ -3,8 +3,10 @@ package transmissions
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -31,7 +33,7 @@ func NewService(cfg config.Config) *Service {
 }
 
 func (s *Service) TransmitDTE(ctx context.Context, req dto.TransmitDTERequest, token string) ([]byte, int, error) {
-	token = strings.TrimSpace(token)
+	token = normalizeHaciendaToken(token)
 	if token == "" {
 		return nil, fiber.StatusUnauthorized, errors.New("token de Hacienda requerido")
 	}
@@ -41,34 +43,61 @@ func (s *Service) TransmitDTE(ctx context.Context, req dto.TransmitDTERequest, t
 		return nil, fiber.StatusBadRequest, err
 	}
 
+	// DEBUG LOGGING
+	fmt.Printf("[DEBUG-TRANSMIT-DTE] ====================================\n")
+	fmt.Printf("[DEBUG-TRANSMIT-DTE] Token length: %d\n", len(token))
+	fmt.Printf("[DEBUG-TRANSMIT-DTE] Token prefix: %s\n", token[:min(50, len(token))])
+	fmt.Printf("[DEBUG-TRANSMIT-DTE] Token has 'Bearer ': %v\n", strings.HasPrefix(token, "Bearer "))
+	fmt.Printf("[DEBUG-TRANSMIT-DTE] Environment: %s\n", req.Environment)
+	fmt.Printf("[DEBUG-TRANSMIT-DTE] Ambiente: %s\n", req.Ambiente)
+	fmt.Printf("[DEBUG-TRANSMIT-DTE] TipoDTE: %s\n", req.TipoDTE)
+	fmt.Printf("[DEBUG-TRANSMIT-DTE] Payload size: %d bytes\n", len(body))
+	fmt.Printf("[DEBUG-TRANSMIT-DTE] URL: %s\n", s.url(req.Environment))
+
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, s.url(req.Environment), bytes.NewReader(body))
 	if err != nil {
+		fmt.Printf("[DEBUG-TRANSMIT-DTE] Error creating request: %v\n", err)
 		return nil, fiber.StatusInternalServerError, err
 	}
 
-	httpReq.Header.Set("Authorization", token)
+	httpReq.Header.Set("Authorization", haciendaAuthorizationHeader(token))
 	httpReq.Header.Set("User-Agent", s.cfg.HaciendaUserAgent)
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Accept", "application/json")
 
+	fmt.Printf("[DEBUG-TRANSMIT-DTE] Headers set:\n")
+	fmt.Printf("[DEBUG-TRANSMIT-DTE]   Authorization: Bearer %s...\n", token[:min(30, len(token))])
+	fmt.Printf("[DEBUG-TRANSMIT-DTE]   User-Agent: %s\n", s.cfg.HaciendaUserAgent)
+	fmt.Printf("[DEBUG-TRANSMIT-DTE]   Content-Type: application/json\n")
+
 	res, err := s.client.Do(httpReq)
 	if err != nil {
+		fmt.Printf("[DEBUG-TRANSMIT-DTE] Network error: %v\n", err)
 		return nil, fiber.StatusBadGateway, err
 	}
 	defer res.Body.Close()
 
 	respBody, err := io.ReadAll(res.Body)
 	if err != nil {
+		fmt.Printf("[DEBUG-TRANSMIT-DTE] Error reading response: %v\n", err)
 		return nil, fiber.StatusBadGateway, err
 	}
+
+	fmt.Printf("[DEBUG-TRANSMIT-DTE] Response Status: %d\n", res.StatusCode)
+	fmt.Printf("[DEBUG-TRANSMIT-DTE] Response size: %d bytes\n", len(respBody))
+	fmt.Printf("[DEBUG-TRANSMIT-DTE] Response body: %s\n", string(respBody[:min(500, len(respBody))]))
+	fmt.Printf("[DEBUG-TRANSMIT-DTE] ====================================\n")
 
 	return respBody, res.StatusCode, nil
 }
 
 func (s *Service) TransmitLote(ctx context.Context, req dto.TransmitLoteRequest, token string) ([]byte, int, error) {
-	token = strings.TrimSpace(token)
+	token = normalizeHaciendaToken(token)
 	if token == "" {
 		return nil, fiber.StatusUnauthorized, errors.New("token de Hacienda requerido")
+	}
+	if err := validateJWTExpiry(token); err != nil {
+		return nil, fiber.StatusUnauthorized, err
 	}
 
 	body, err := s.buildLotePayload(req)
@@ -76,26 +105,60 @@ func (s *Service) TransmitLote(ctx context.Context, req dto.TransmitLoteRequest,
 		return nil, fiber.StatusBadRequest, err
 	}
 
+	// DETAILED LOGGING
+	fmt.Printf("\n[LOTE-TRANSMIT] =====================================\n")
+	fmt.Printf("[LOTE-TRANSMIT] TOKEN CHECK:\n")
+	fmt.Printf("[LOTE-TRANSMIT]   Length: %d chars\n", len(token))
+	fmt.Printf("[LOTE-TRANSMIT]   Prefix: %.50s\n", token)
+	fmt.Printf("[LOTE-TRANSMIT]   Valid JWT: %v\n", strings.HasPrefix(token, "eyJ"))
+	fmt.Printf("[LOTE-TRANSMIT]   Expires at: %s\n", jwtExpirySummary(token))
+	fmt.Printf("[LOTE-TRANSMIT] REQUEST DATA:\n")
+	fmt.Printf("[LOTE-TRANSMIT]   Environment: %s\n", req.Environment)
+	fmt.Printf("[LOTE-TRANSMIT]   Ambiente: %s\n", req.Ambiente)
+	fmt.Printf("[LOTE-TRANSMIT]   NIT Emisor: %s\n", req.NitEmisor)
+	fmt.Printf("[LOTE-TRANSMIT]   Documentos: %d\n", len(req.Documentos))
+	fmt.Printf("[LOTE-TRANSMIT]   URL: %s\n", s.loteURL(req.Environment))
+	fmt.Printf("[LOTE-TRANSMIT]   Payload size: %d bytes\n", len(body))
+
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, s.loteURL(req.Environment), bytes.NewReader(body))
 	if err != nil {
+		fmt.Printf("[LOTE-TRANSMIT] ERROR creating request: %v\n", err)
+		fmt.Printf("[LOTE-TRANSMIT] =====================================\n\n")
 		return nil, fiber.StatusInternalServerError, err
 	}
 
-	httpReq.Header.Set("Authorization", token)
+	httpReq.Header.Set("Authorization", haciendaAuthorizationHeader(token))
 	httpReq.Header.Set("User-Agent", s.cfg.HaciendaUserAgent)
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Accept", "application/json")
 
+	fmt.Printf("[LOTE-TRANSMIT] HEADERS SENT:\n")
+	fmt.Printf("[LOTE-TRANSMIT]   Authorization: Bearer %.40s...\n", token)
+	fmt.Printf("[LOTE-TRANSMIT]   User-Agent: %s\n", s.cfg.HaciendaUserAgent)
+	fmt.Printf("[LOTE-TRANSMIT]   Content-Type: application/json\n")
+	fmt.Printf("[LOTE-TRANSMIT] SENDING REQUEST...\n")
+
 	res, err := s.client.Do(httpReq)
 	if err != nil {
+		fmt.Printf("[LOTE-TRANSMIT] NETWORK ERROR: %v\n", err)
+		fmt.Printf("[LOTE-TRANSMIT] =====================================\n\n")
 		return nil, fiber.StatusBadGateway, err
 	}
 	defer res.Body.Close()
 
 	respBody, err := io.ReadAll(res.Body)
 	if err != nil {
+		fmt.Printf("[LOTE-TRANSMIT] ERROR reading response: %v\n", err)
+		fmt.Printf("[LOTE-TRANSMIT] =====================================\n\n")
 		return nil, fiber.StatusBadGateway, err
 	}
+
+	fmt.Printf("[LOTE-TRANSMIT] RESPONSE RECEIVED:\n")
+	fmt.Printf("[LOTE-TRANSMIT]   Status: %d\n", res.StatusCode)
+	fmt.Printf("[LOTE-TRANSMIT]   Headers: %v\n", res.Header)
+	fmt.Printf("[LOTE-TRANSMIT]   Body (%d bytes):\n", len(respBody))
+	fmt.Printf("[LOTE-TRANSMIT]   %s\n", string(respBody))
+	fmt.Printf("[LOTE-TRANSMIT] =====================================\n\n")
 
 	return respBody, res.StatusCode, nil
 }
@@ -159,29 +222,13 @@ func (s *Service) buildLotePayload(req dto.TransmitLoteRequest) ([]byte, error) 
 		return nil, errors.New("documentos debe contener entre 2 y 100 elementos")
 	}
 
-	documentos := make([]map[string]any, 0, len(req.Documentos))
+	documentos := make([]string, 0, len(req.Documentos))
 	for index, document := range req.Documentos {
-		tipoDTE := strings.TrimSpace(document.TipoDTE)
-		codigoGeneracion := strings.TrimSpace(document.CodigoGeneracion)
 		firma := strings.TrimSpace(document.Documento)
-		if tipoDTE == "" {
-			return nil, errors.New("documentos[" + toString(index) + "].tipoDte es requerido")
-		}
-		if document.Version <= 0 {
-			return nil, errors.New("documentos[" + toString(index) + "].version es requerido")
-		}
-		if codigoGeneracion == "" {
-			return nil, errors.New("documentos[" + toString(index) + "].codigoGeneracion es requerido")
-		}
 		if firma == "" {
 			return nil, errors.New("documentos[" + toString(index) + "].documento firmado es requerido")
 		}
-		documentos = append(documentos, map[string]any{
-			"tipoDte":          tipoDTE,
-			"version":          document.Version,
-			"codigoGeneracion": codigoGeneracion,
-			"documento":        firma,
-		})
+		documentos = append(documentos, firma)
 	}
 
 	idEnvio := req.IDEnvio
@@ -231,6 +278,59 @@ func firstNonEmpty(values ...string) string {
 		}
 	}
 	return ""
+}
+
+func normalizeHaciendaToken(token string) string {
+	token = strings.TrimSpace(token)
+	if strings.HasPrefix(strings.ToLower(token), "bearer ") {
+		return strings.TrimSpace(token[7:])
+	}
+	return token
+}
+
+func haciendaAuthorizationHeader(token string) string {
+	token = normalizeHaciendaToken(token)
+	if token == "" {
+		return ""
+	}
+	return "Bearer " + token
+}
+
+func validateJWTExpiry(token string) error {
+	expiresAt, ok := jwtExpiry(token)
+	if !ok {
+		return nil
+	}
+	if time.Now().After(expiresAt.Add(-30 * time.Second)) {
+		return fmt.Errorf("token de Hacienda expirado el %s", expiresAt.Format(time.RFC3339))
+	}
+	return nil
+}
+
+func jwtExpirySummary(token string) string {
+	expiresAt, ok := jwtExpiry(token)
+	if !ok {
+		return "no disponible"
+	}
+	return expiresAt.Format(time.RFC3339)
+}
+
+func jwtExpiry(token string) (time.Time, bool) {
+	parts := strings.Split(token, ".")
+	if len(parts) < 2 {
+		return time.Time{}, false
+	}
+	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return time.Time{}, false
+	}
+	var claims struct {
+		Exp int64 `json:"exp"`
+	}
+	if err := json.Unmarshal(payload, &claims); err != nil || claims.Exp <= 0 {
+		return time.Time{}, false
+	}
+	return time.Unix(claims.Exp, 0), true
 }
 
 func toString(value any) string {

@@ -26,11 +26,13 @@ type InvoiceItem = {
 
 class GoApiError extends Error {
   status: number;
+  payload: unknown;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, payload?: unknown) {
     super(message);
     this.name = 'GoApiError';
     this.status = status;
+    this.payload = payload;
   }
 }
 
@@ -42,6 +44,58 @@ function asRecord(value: unknown): JsonRecord {
 
 function getString(value: unknown): string {
   return typeof value === 'string' ? value : '';
+}
+
+function normalizeHaciendaToken(value: unknown) {
+  return getString(value).replace(/^Bearer\s+/i, '').trim();
+}
+
+function decodeHaciendaToken(token: string) {
+  const raw = normalizeHaciendaToken(token);
+  const [, payload] = raw.split('.');
+  if (!payload) return null;
+
+  try {
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized.padEnd(normalized.length + ((4 - normalized.length % 4) % 4), '=');
+    return JSON.parse(Buffer.from(padded, 'base64').toString('utf8')) as {
+      sub?: string;
+      c_nit?: string;
+      exp?: number;
+      iat?: number;
+    };
+  } catch {
+    return null;
+  }
+}
+
+function validateHaciendaTokenForLote(token: string, nitEmisor: string, environment: 'test' | 'production') {
+  const normalized = normalizeHaciendaToken(token);
+  if (!normalized) {
+    throw new Error('Token de Hacienda requerido para transmitir el lote.');
+  }
+  if (!normalized.startsWith('eyJ')) {
+    throw new Error('Token de Hacienda invalido: debe ser JWT crudo, sin prefijo Bearer.');
+  }
+
+  const claims = decodeHaciendaToken(normalized);
+  if (!claims) return normalized;
+
+  if (claims.exp && claims.exp * 1000 <= Date.now() + 30_000) {
+    throw new Error(`Token de Hacienda expirado el ${new Date(claims.exp * 1000).toISOString()}.`);
+  }
+
+  const tokenNit = cleanDigits(claims.c_nit || claims.sub);
+  const expectedNit = cleanDigits(nitEmisor);
+  if (tokenNit && expectedNit && tokenNit !== expectedNit) {
+    throw new Error(`Token de Hacienda no corresponde al NIT emisor configurado (${tokenNit} != ${expectedNit}).`);
+  }
+
+  if (environment !== 'test') {
+    throw new Error('Por ahora solo se permite transmitir lotes en ambiente test.');
+  }
+
+  return normalized;
 }
 
 function nullableString(value: unknown) {
@@ -109,7 +163,7 @@ async function postGo(path: string, body: unknown, init?: RequestInit) {
     const message = typeof payload === 'object' && payload && 'error' in payload
       ? String((payload as { error?: unknown }).error)
       : payloadMessage || text || `Go API respondio HTTP ${upstream.status}`;
-    throw new GoApiError(message || `Go API respondio HTTP ${upstream.status}`, upstream.status);
+    throw new GoApiError(message || `Go API respondio HTTP ${upstream.status}`, upstream.status, payload);
   }
 
   return payload;
@@ -344,6 +398,7 @@ export async function POST(req: NextRequest) {
       transmitir?: boolean;
       environment?: 'test' | 'production';
       observaciones?: string;
+      haciendaToken?: string;
     };
 
     const batchSize = Math.max(1, Math.min(1000, Math.floor(Number(body.batchSize || 1))));
@@ -406,7 +461,11 @@ export async function POST(req: NextRequest) {
     });
 
     // Get Hacienda token once (needed for document creation and transmission)
-    const haciendaToken = await getHaciendaTokenForUser(user.uid, false, environment);
+    const haciendaToken = validateHaciendaTokenForLote(
+      normalizeHaciendaToken(body.haciendaToken) || await getHaciendaTokenForUser(user.uid, false, environment),
+      emisor.nit,
+      environment
+    );
 
     const documentStartedAt = Date.now();
     const documents = await Promise.all(Array.from({ length: batchSize }, async (_, index) => {
@@ -534,7 +593,11 @@ export async function POST(req: NextRequest) {
             if (!(error instanceof GoApiError) || error.status !== 401) {
               throw error;
             }
-            token = await getHaciendaTokenForUser(user.uid, true, environment);
+            token = validateHaciendaTokenForLote(
+              await getHaciendaTokenForUser(user.uid, true, environment),
+              emisor.nit,
+              environment
+            );
             loteResponse = await postGo('/api/facturacion/transmissions/lote', loteRequest, {
               headers: { Authorization: token },
             });
@@ -545,10 +608,14 @@ export async function POST(req: NextRequest) {
           loteResponse = {
             error: error instanceof Error ? error.message : 'No se pudo transmitir chunk',
             status: error instanceof GoApiError ? error.status : undefined,
+            haciendaPayload: error instanceof GoApiError ? error.payload : undefined,
           };
+          const payloadDetail = error instanceof GoApiError && error.payload
+            ? ` Respuesta Hacienda/Go: ${typeof error.payload === 'string' ? error.payload : JSON.stringify(error.payload)}`
+            : '';
           throw new Error(
             error instanceof Error
-              ? `No se pudo transmitir chunk ${chunkIndex + 1} a Hacienda${statusSuffix}: ${error.message}`
+              ? `No se pudo transmitir chunk ${chunkIndex + 1} a Hacienda${statusSuffix}: ${error.message}.${payloadDetail}`
               : `No se pudo transmitir chunk ${chunkIndex + 1} a Hacienda`
           );
         } finally {
@@ -577,9 +644,12 @@ export async function POST(req: NextRequest) {
       totalMs: Date.now() - startedAt,
     };
 
+    const codigosLote = chunks.map((chunk) => chunk.codigoLote).filter(Boolean);
+
     await runRef.set({
       status: body.transmitir !== false ? 'lote_sent' : 'signed',
-      codigoLote: chunks.map((chunk) => chunk.codigoLote).filter(Boolean).join(','),
+      codigoLote: codigosLote.join(','),
+      codigosLote,
       chunks,
       rows,
       timing,
@@ -590,7 +660,8 @@ export async function POST(req: NextRequest) {
       success: true,
       id: runRef.id,
       status: body.transmitir !== false ? 'lote_sent' : 'signed',
-      codigoLote: chunks.map((chunk) => chunk.codigoLote).filter(Boolean).join(','),
+      codigoLote: codigosLote.join(','),
+      codigosLote,
       chunks,
       rows: rows.map((row) => ({
         index: row.index,

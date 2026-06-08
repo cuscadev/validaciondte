@@ -125,11 +125,12 @@ func (s *Service) CreateConsumerInvoice(req dto.CreateConsumerInvoiceRequest) (d
 		DocumentoRelacionado: nil,
 		Emisor:               mapEmisor(req.Emisor),
 		Receptor:             mapReceptor(req.Receptor),
-		OtrosDocumentos:      nil,
-		VentaTercero:         nil,
+		Extension:            domain.Extension{},
 		CuerpoDocumento:      cuerpo,
 		Resumen:              resumen,
 		Apendice:             mapApendice(req.Apendice),
+		VentaTercero:         nil,
+		OtrosDocumentos:      nil,
 	}
 
 	raw, err := json.Marshal(dte)
@@ -815,7 +816,9 @@ func mapEmisor(input dto.EmisorInput) domain.Emisor {
 		Direccion:       mapDireccion(input.Direccion),
 		Telefono:        input.Telefono,
 		Correo:          input.Correo,
+		CodEstableMH:    input.CodEstable,
 		CodEstable:      input.CodEstable,
+		CodPuntoVentaMH: input.CodPuntoVenta,
 		CodPuntoVenta:   input.CodPuntoVenta,
 	}
 }

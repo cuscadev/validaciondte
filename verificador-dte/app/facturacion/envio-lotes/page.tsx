@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, CheckCircle2, Loader2, PackageCheck, Play, ReceiptText } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Database, Loader2, PackageCheck, Play, ReceiptText, RefreshCw } from 'lucide-react';
 
 import { useAuth } from '@/components/AuthProvider';
 import { auth } from '@/lib/firebase';
+import { getHaciendaBrowserToken } from '@/lib/hacienda-token-storage';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -53,6 +54,7 @@ type InvoiceResponse = {
   id?: string;
   status?: string;
   codigoLote?: string;
+  codigosLote?: string[];
   rows?: BatchResponseRow[];
   chunks?: BatchChunk[];
   timing?: ProcessTiming;
@@ -92,6 +94,44 @@ type BatchRow = {
   elapsedMs?: number;
 };
 
+type SavedLote = {
+  id: string;
+  status?: string;
+  environment?: 'test' | 'production';
+  batchSize?: number;
+  chunkSize?: number;
+  codigoLote?: string;
+  codigosLote?: string[];
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  lastConsultedAt?: string | null;
+  lastConsultaStatus?: string;
+  lastConsultaCodigoLote?: string;
+  lastConsultaResponse?: LoteConsultaResponse | null;
+};
+
+type LoteConsultaItem = {
+  estado?: string;
+  codigoLote?: string;
+  codigoGeneracion?: string;
+  selloRecibido?: string | null;
+  fhProcesamiento?: string;
+  codigoMsg?: string;
+  descripcionMsg?: string;
+  observaciones?: unknown[];
+};
+
+type LoteConsultaResponse = {
+  procesados?: LoteConsultaItem[];
+  rechazados?: LoteConsultaItem[];
+  estado?: string;
+  codigoLote?: string;
+  codigoMsg?: string;
+  descripcionMsg?: string;
+  observaciones?: unknown[];
+  error?: string;
+};
+
 const emptyLine: InvoiceLine = {
   codigo: 'SERV-LOTE',
   descripcion: 'Servicio de prueba por lote',
@@ -120,6 +160,22 @@ function formatMs(ms?: number) {
   return `${ms} ms`;
 }
 
+function formatDate(value?: string | null) {
+  if (!value) return '-';
+  return new Intl.DateTimeFormat('es-SV', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }).format(new Date(value));
+}
+
+function loteRows(payload?: LoteConsultaResponse | null) {
+  const procesados = (payload?.procesados || []).map((item) => ({ ...item, estado: item.estado || 'PROCESADO' }));
+  const rechazados = (payload?.rechazados || []).map((item) => ({ ...item, estado: item.estado || 'RECHAZADO' }));
+  if (procesados.length || rechazados.length) return [...procesados, ...rechazados];
+  if (payload?.estado || payload?.codigoMsg || payload?.descripcionMsg) return [payload];
+  return [];
+}
+
 function lineTotal(line: InvoiceLine) {
   return Math.max(0, Number(line.cantidad || 0) * Number(line.precioUni || 0) - Number(line.montoDescu || 0));
 }
@@ -142,6 +198,10 @@ export default function EnvioLotesPage() {
   const [codigoLote, setCodigoLote] = useState('');
   const [chunks, setChunks] = useState<BatchChunk[]>([]);
   const [error, setError] = useState('');
+  const [savedLotes, setSavedLotes] = useState<SavedLote[]>([]);
+  const [loadingSavedLotes, setLoadingSavedLotes] = useState(false);
+  const [consultingLoteId, setConsultingLoteId] = useState('');
+  const [consultaResults, setConsultaResults] = useState<Record<string, LoteConsultaResponse>>({});
 
   const canUse = appUser?.role === 'cliente' || appUser?.role === 'superadmin';
   const total = useMemo(() => lineTotal(line), [line]);
@@ -186,6 +246,66 @@ export default function EnvioLotesPage() {
       cancelled = true;
     };
   }, [authChecked, canUse]);
+
+  useEffect(() => {
+    if (!authChecked || !canUse) return;
+    void loadSavedLotes();
+  }, [authChecked, canUse]);
+
+  async function loadSavedLotes() {
+    setLoadingSavedLotes(true);
+    try {
+      const token = await firebaseToken();
+      const res = await fetch('/api/facturacion/lotes?limit=50', {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
+      });
+      const payload = await res.json().catch(() => ({})) as { lotes?: SavedLote[]; error?: string };
+      if (!res.ok) throw new Error(payload.error || 'No se pudieron cargar lotes guardados');
+      setSavedLotes(payload.lotes || []);
+      setConsultaResults((current) => {
+        const next = { ...current };
+        for (const lote of payload.lotes || []) {
+          if (lote.lastConsultaResponse) next[lote.id] = lote.lastConsultaResponse;
+        }
+        return next;
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudieron cargar lotes guardados');
+    } finally {
+      setLoadingSavedLotes(false);
+    }
+  }
+
+  async function consultSavedLote(lote: SavedLote, codigo: string) {
+    setConsultingLoteId(`${lote.id}:${codigo}`);
+    setError('');
+    try {
+      const token = await firebaseToken();
+      const res = await fetch(`/api/facturacion/lotes/${encodeURIComponent(lote.id)}/consultar`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          codigoLote: codigo,
+          environment: lote.environment || 'test',
+        }),
+      });
+      const payload = await res.json().catch(() => ({})) as {
+        response?: LoteConsultaResponse;
+        error?: string;
+      };
+      if (!res.ok) throw new Error(payload.error || 'No se pudo consultar el lote');
+      setConsultaResults((current) => ({ ...current, [lote.id]: payload.response || {} }));
+      await loadSavedLotes();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo consultar el lote');
+    } finally {
+      setConsultingLoteId('');
+    }
+  }
 
   function updateLine(patch: Partial<InvoiceLine>) {
     setLine((current) => ({ ...current, ...patch }));
@@ -239,6 +359,7 @@ export default function EnvioLotesPage() {
           transmitir,
           observaciones,
           environment: 'test',
+          haciendaToken: transmitir ? getHaciendaBrowserToken('test') : undefined,
         }),
       });
 
@@ -265,6 +386,9 @@ export default function EnvioLotesPage() {
       );
 
       if (!res.ok) throw new Error(payload.error || 'No se pudo emitir lote');
+      if (payload.codigoLote || payload.codigosLote?.length) {
+        await loadSavedLotes();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo ejecutar el lote');
     } finally {
@@ -450,6 +574,110 @@ export default function EnvioLotesPage() {
                       onChange={(event) => setObservaciones(event.target.value)}
                     />
                   </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <Database className="size-5 text-amber-600 dark:text-yellow-300" />
+                        Lotes guardados
+                      </CardTitle>
+                      <CardDescription>Codigos de lote enviados y disponibles para consulta en Hacienda.</CardDescription>
+                    </div>
+                    <Button type="button" variant="outline" onClick={loadSavedLotes} disabled={loadingSavedLotes}>
+                      {loadingSavedLotes ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="size-4" />
+                      )}
+                      Actualizar
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="overflow-x-auto">
+                  <table className="w-full min-w-[860px] text-sm">
+                    <thead className="border-b text-left text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                      <tr>
+                        <th className="py-2 pr-3">Fecha</th>
+                        <th className="py-2 pr-3">Estado</th>
+                        <th className="py-2 pr-3">Codigo lote</th>
+                        <th className="py-2 pr-3">Docs</th>
+                        <th className="py-2 pr-3">Ultima consulta</th>
+                        <th className="py-2 pr-3">Resultado</th>
+                        <th className="py-2 pr-3">Accion</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {savedLotes.map((lote) => {
+                        const codes = lote.codigosLote?.length
+                          ? lote.codigosLote
+                          : (lote.codigoLote || '').split(',').map((item) => item.trim()).filter(Boolean);
+                        const selectedCode = codes[0] || '';
+                        const result = consultaResults[lote.id] || lote.lastConsultaResponse;
+                        const resultRows = loteRows(result);
+                        const procesados = resultRows.filter((item) => item.estado === 'PROCESADO').length;
+                        const rechazados = resultRows.filter((item) => item.estado === 'RECHAZADO').length;
+                        const consultaKey = `${lote.id}:${selectedCode}`;
+
+                        return (
+                          <tr key={lote.id} className="border-b border-slate-200 align-top last:border-0 dark:border-white/10">
+                            <td className="py-3 pr-3 whitespace-nowrap">{formatDate(lote.createdAt)}</td>
+                            <td className="py-3 pr-3">
+                              <span className="inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700 dark:bg-white/10 dark:text-zinc-200">
+                                {lote.status || '-'}
+                              </span>
+                            </td>
+                            <td className="py-3 pr-3">
+                              <div className="grid gap-1">
+                                {codes.map((code) => (
+                                  <span key={code} className="break-all font-mono text-xs">{code}</span>
+                                ))}
+                              </div>
+                            </td>
+                            <td className="py-3 pr-3 font-mono">{lote.batchSize || '-'}</td>
+                            <td className="py-3 pr-3 whitespace-nowrap">{formatDate(lote.lastConsultedAt)}</td>
+                            <td className="py-3 pr-3">
+                              {resultRows.length > 0 ? (
+                                <div className="grid gap-1 text-xs">
+                                  <span>Procesados: {procesados}</span>
+                                  <span>Rechazados: {rechazados}</span>
+                                  {result?.descripcionMsg && <span className="max-w-xs truncate">{result.descripcionMsg}</span>}
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground">Sin consulta</span>
+                              )}
+                            </td>
+                            <td className="py-3 pr-3">
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                disabled={!selectedCode || consultingLoteId === consultaKey}
+                                onClick={() => consultSavedLote(lote, selectedCode)}
+                              >
+                                {consultingLoteId === consultaKey ? (
+                                  <Loader2 className="size-4 animate-spin" />
+                                ) : (
+                                  <RefreshCw className="size-4" />
+                                )}
+                                Consultar
+                              </Button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {!savedLotes.length && (
+                        <tr>
+                          <td colSpan={7} className="py-8 text-center text-muted-foreground">
+                            Todavia no hay codigos de lote guardados.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </CardContent>
               </Card>
 

@@ -9,7 +9,7 @@ import (
 func (ct *Controller) DebugEnvironment(c *fiber.Ctx) error {
 	// Get token from Authorization header
 	authHeader := c.Get("Authorization")
-	token := strings.TrimSpace(authHeader)
+	token := normalizeHaciendaToken(authHeader)
 
 	// Get environment from query or use test
 	environment := c.Query("environment", "test")
@@ -30,8 +30,8 @@ func (ct *Controller) DebugEnvironment(c *fiber.Ctx) error {
 			"length":     len(token),
 			"has_bearer": strings.HasPrefix(strings.ToLower(token), "bearer "),
 		},
-		"environment":      environment,
-		"hacienda_url":     loteURL,
+		"environment":  environment,
+		"hacienda_url": loteURL,
 		"config": fiber.Map{
 			"HaciendaRecepcionLoteTest": ct.service.cfg.HaciendaRecepcionLoteTest,
 			"HaciendaRecepcionLoteProd": ct.service.cfg.HaciendaRecepcionLoteProd,

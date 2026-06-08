@@ -339,6 +339,10 @@ export default function Sidebar({
         label: 'Facturar consumidor final',
       },
       {
+        href: '/facturacion/credito-fiscal',
+        label: 'Emitir credito fiscal',
+      },
+      {
         href: '/facturacion/envio-lotes',
         label: 'Envio de lotes',
       },

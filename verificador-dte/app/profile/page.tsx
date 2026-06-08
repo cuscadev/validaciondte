@@ -86,6 +86,7 @@ type CatalogRow = {
 	nombre?: string;
 	descripcion?: string;
 	departamento_codigo?: string;
+	municipio_id?: number;
 };
 
 type ProfileCatalogs = {
@@ -152,8 +153,8 @@ function emitterToForm(data: Partial<EmitterForm>): EmitterForm {
 		codigoActividad: data.codigoActividad || '',
 		descripcionActividad: data.descripcionActividad || '',
 		departamentoCodigo: data.departamentoCodigo || '',
-		municipioCodigo: data.municipioCodigo || '',
-		distritoCodigo: data.distritoCodigo || '',
+		municipioCodigo: lastTwoDigits(data.municipioCodigo),
+		distritoCodigo: lastTwoDigits(data.distritoCodigo),
 		complementoDireccion: data.complementoDireccion || '',
 		telefono: data.telefono || '',
 		correo: data.correo || '',
@@ -185,6 +186,11 @@ function catalogOptions(rows: CatalogRow[]): SearchableSelectOption[] {
 		label: catalogLabel(row),
 		description: row.descripcion,
 	}));
+}
+
+function lastTwoDigits(value?: string) {
+	const clean = String(value || '').trim();
+	return clean.length > 2 ? clean.slice(-2) : clean;
 }
 
 const environmentOptions: SearchableSelectOption[] = [
@@ -241,6 +247,25 @@ export default function ProfilePage() {
 		);
 	}, [catalogs.municipios, emitterForm.departamentoCodigo]);
 
+	const selectedMunicipio = useMemo(
+		() =>
+			filteredMunicipios.find(
+				(row) =>
+					row.codigo === emitterForm.municipioCodigo &&
+					row.departamento_codigo === emitterForm.departamentoCodigo
+			),
+		[filteredMunicipios, emitterForm.departamentoCodigo, emitterForm.municipioCodigo]
+	);
+
+	const filteredDistritos = useMemo(() => {
+		if (!emitterForm.departamentoCodigo || !selectedMunicipio?.id) return [];
+		return catalogs.distritos.filter(
+			(row) =>
+				row.departamento_codigo === emitterForm.departamentoCodigo &&
+				Number(row.municipio_id) === Number(selectedMunicipio.id)
+		);
+	}, [catalogs.distritos, emitterForm.departamentoCodigo, selectedMunicipio?.id]);
+
 	const selectedActividad = useMemo(
 		() =>
 			catalogs.actividades.find(
@@ -252,7 +277,7 @@ export default function ProfilePage() {
 		() => ({
 			departamentos: catalogOptions(catalogs.departamentos),
 			municipios: catalogOptions(filteredMunicipios),
-			distritos: catalogOptions(catalogs.distritos),
+			distritos: catalogOptions(filteredDistritos),
 			tiposEstablecimiento: catalogOptions(catalogs.tiposEstablecimiento),
 			actividades: catalogOptions(catalogs.actividades),
 			regimenesTributarios: catalogOptions(catalogs.regimenesTributarios),
@@ -267,7 +292,7 @@ export default function ProfilePage() {
 		[
 			catalogs.actividades,
 			catalogs.departamentos,
-			catalogs.distritos,
+			filteredDistritos,
 			catalogs.regimenesTributarios,
 			catalogs.tiposAfiliacion,
 			catalogs.tiposEstablecimiento,
@@ -401,7 +426,11 @@ export default function ProfilePage() {
 	const setEmitterField = (name: keyof EmitterForm, value: string) => {
 		setEmitterForm((prev) => {
 			if (name === 'departamentoCodigo') {
-				return { ...prev, departamentoCodigo: value, municipioCodigo: '' };
+				return { ...prev, departamentoCodigo: value, municipioCodigo: '', distritoCodigo: '' };
+			}
+
+			if (name === 'municipioCodigo') {
+				return { ...prev, municipioCodigo: value, distritoCodigo: '' };
 			}
 
 			if (name === 'codigoActividad') {
