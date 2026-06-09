@@ -17,8 +17,8 @@ type EmisorSujetoExcluido struct {
 	DescActividad string    `json:"descActividad"`
 	Direccion     Direccion `json:"direccion"`
 	Telefono      string    `json:"telefono"`
-	CodEstable    *string   `json:"codEstable"`
-	CodPuntoVenta *string   `json:"codPuntoVenta"`
+	CodEstable    *string   `json:"codEstable,omitempty"`
+	CodPuntoVenta *string   `json:"codPuntoVenta,omitempty"`
 	Correo        string    `json:"correo"`
 }
 

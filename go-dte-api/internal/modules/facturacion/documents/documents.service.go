@@ -666,6 +666,7 @@ func buildCreditoFiscalItemsAndResumen(items []dto.ItemInput, ivaPerci float64, 
 func buildAdjustmentNoteItemsAndResumen(items []dto.ItemInput, defaultRelatedDocument string, ivaPerci float64, ivaRete float64) ([]domain.CuerpoDocumentoNota, domain.ResumenNota) {
 	cuerpo := make([]domain.CuerpoDocumentoNota, 0, len(items))
 	var totalNoSuj, totalExenta, totalGravada, totalDescu, totalNoGravado, totalIVA float64
+	const ivaTributo = "20"
 
 	for i, item := range items {
 		cantidad := round8(item.Cantidad)
@@ -678,6 +679,10 @@ func buildAdjustmentNoteItemsAndResumen(items []dto.ItemInput, defaultRelatedDoc
 		if ventaNoSuj == 0 && ventaExenta == 0 && ventaGravada == 0 && item.NoGravado == 0 {
 			ventaGravada = round2(cantidad*precio - montoDescu)
 		}
+		var tributos []string
+		if ventaGravada > 0 {
+			tributos = []string{ivaTributo}
+		}
 
 		itemIVAPerci := 0.0
 		itemIVARete := 0.0
@@ -685,7 +690,7 @@ func buildAdjustmentNoteItemsAndResumen(items []dto.ItemInput, defaultRelatedDoc
 			itemIVAPerci = round2(ivaPerci)
 			itemIVARete = round2(ivaRete)
 		}
-		totalIva := round2(ventaGravada * 0.13)
+		totalIva := 0.0
 		numeroDocumento := defaultRelatedDocument
 		if item.NumeroDocumento != nil && strings.TrimSpace(*item.NumeroDocumento) != "" {
 			numeroDocumento = strings.TrimSpace(*item.NumeroDocumento)
@@ -705,7 +710,7 @@ func buildAdjustmentNoteItemsAndResumen(items []dto.ItemInput, defaultRelatedDoc
 			VentaNoSuj:      ventaNoSuj,
 			VentaExenta:     ventaExenta,
 			VentaGravada:    ventaGravada,
-			Tributos:        nil,
+			Tributos:        tributos,
 			NoGravado:       round2(item.NoGravado),
 			IVAPerci:        itemIVAPerci,
 			TotalIVA:        totalIva,
@@ -725,8 +730,17 @@ func buildAdjustmentNoteItemsAndResumen(items []dto.ItemInput, defaultRelatedDoc
 	ivaPerci = round2(ivaPerci)
 	ivaRete = round2(ivaRete)
 	totalIVA = round2(totalIVA)
-	montoTotalOperacion := round2(subTotalVentas + totalIVA + totalNoGravado)
+	ivaTributoTotal := round2(totalGravada * 0.13)
+	montoTotalOperacion := round2(subTotalVentas + ivaTributoTotal + totalNoGravado)
 	totalPagar := round2(montoTotalOperacion + ivaPerci - ivaRete)
+	var tributos any
+	if ivaTributoTotal > 0 {
+		tributos = []domain.TributoResumen{{
+			Codigo:      ivaTributo,
+			Descripcion: "Impuesto al Valor Agregado 13%",
+			Valor:       ivaTributoTotal,
+		}}
+	}
 
 	return cuerpo, domain.ResumenNota{
 		TotalNoSuj:          round2(totalNoSuj),
@@ -734,7 +748,7 @@ func buildAdjustmentNoteItemsAndResumen(items []dto.ItemInput, defaultRelatedDoc
 		TotalGravada:        round2(totalGravada),
 		SubTotalVentas:      subTotalVentas,
 		TotalDescu:          round2(totalDescu),
-		Tributos:            nil,
+		Tributos:            tributos,
 		MontoTotalOperacion: montoTotalOperacion,
 		IVAPerci:            ivaPerci,
 		TotalIVA:            totalIVA,

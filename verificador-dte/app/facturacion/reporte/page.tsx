@@ -50,6 +50,7 @@ function formatDate(value?: string | null) {
 function tipoLabel(tipo?: string) {
   if (tipo === '01') return 'Factura';
   if (tipo === '03') return 'Credito fiscal';
+  if (tipo === '05') return 'Nota de credito';
   if (tipo === '14') return 'Sujeto excluido';
   return tipo || '-';
 }
@@ -213,6 +214,7 @@ export default function FacturacionReportePage() {
                 <option value="">Todos los DTE</option>
                 <option value="01">Factura</option>
                 <option value="03">Credito fiscal</option>
+                <option value="05">Nota de credito</option>
                 <option value="14">Sujeto excluido</option>
               </select>
             </div>

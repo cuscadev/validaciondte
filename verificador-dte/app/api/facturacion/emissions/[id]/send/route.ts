@@ -44,6 +44,7 @@ function money(value: unknown) {
 
 function displayTipoDte(tipoDte: string) {
   if (tipoDte === '03') return 'Comprobante de credito fiscal';
+  if (tipoDte === '05') return 'Nota de credito';
   if (tipoDte === '14') return 'Factura de sujeto excluido';
   return 'Factura';
 }

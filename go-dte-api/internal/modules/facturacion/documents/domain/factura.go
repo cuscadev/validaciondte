@@ -37,8 +37,8 @@ type Emisor struct {
 	Direccion       Direccion `json:"direccion"`
 	Telefono        string    `json:"telefono"`
 	Correo          string    `json:"correo"`
-	CodEstable      *string   `json:"codEstable"`
-	CodPuntoVenta   *string   `json:"codPuntoVenta"`
+	CodEstable      *string   `json:"codEstable,omitempty"`
+	CodPuntoVenta   *string   `json:"codPuntoVenta,omitempty"`
 }
 
 type Receptor struct {

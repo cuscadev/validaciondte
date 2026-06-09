@@ -58,11 +58,11 @@ function buildClientDteJson(data: Row) {
       identificacion: dte.identificacion ?? null,
       emisor: dte.emisor ?? null,
       receptor: dte.receptor ?? null,
-      cuerpoDocumento: dte.cuerpoDocumento ?? [],
-      resumen: dte.resumen ?? null,
-      firmaElectronica: getString(finalPackage.firma || data.firma) || null,
-      selloRecibido: getString(finalPackage.selloRecepcion || data.selloRecepcion) || null,
-      apendice: dte.apendice ?? null,
+    cuerpoDocumento: dte.cuerpoDocumento ?? [],
+    resumen: dte.resumen ?? null,
+    firmaElectronica: getString(finalPackage.firma || data.firma) || null,
+    selloRecibido: getString(finalPackage.selloRecibido || finalPackage.selloRecepcion || data.selloRecibido || data.selloRecepcion) || null,
+    apendice: dte.apendice ?? null,
     };
     return output;
   }
@@ -77,7 +77,7 @@ function buildClientDteJson(data: Row) {
     cuerpoDocumento: dte.cuerpoDocumento ?? [],
     resumen: dte.resumen ?? null,
     firmaElectronica: getString(finalPackage.firma || data.firma) || null,
-    selloRecibido: getString(finalPackage.selloRecepcion || data.selloRecepcion) || null,
+    selloRecibido: getString(finalPackage.selloRecibido || finalPackage.selloRecepcion || data.selloRecibido || data.selloRecepcion) || null,
   };
 
   if ('extension' in dte) output.extension = dte.extension;
@@ -91,6 +91,11 @@ function tributosText(value: unknown) {
     const row = asRecord(item);
     return [row.codigo, row.descripcion, row.valor].map(getString).filter(Boolean).join(' ');
   }).filter(Boolean).join(', ') || '-';
+}
+
+function tributoValor(value: unknown) {
+  if (!Array.isArray(value) || value.length === 0) return 0;
+  return value.reduce((total, item) => total + numberValue(asRecord(item).valor), 0);
 }
 
 function qrUrl(identificacion: Row, codigo: string) {
@@ -153,6 +158,120 @@ function drawSectionTitle(doc: jsPDF, title: string, x: number, y: number, w: nu
   doc.text(title, x + w / 2, y + 5.3, { align: 'center' });
 }
 
+function getDocumentTitle(tipoDte: string) {
+  if (tipoDte === '03') return 'COMPROBANTE DE CREDITO FISCAL';
+  if (tipoDte === '05') return 'NOTA DE CREDITO';
+  if (tipoDte === '14') return 'FACTURA DE SUJETO EXCLUIDO';
+  return 'FACTURA';
+}
+
+function getRelatedDocuments(dte: Row) {
+  return Array.isArray(dte.documentoRelacionado) ? dte.documentoRelacionado.map(asRecord) : [];
+}
+
+function drawRelatedDocuments(doc: jsPDF, related: Row[], x: number, y: number, w: number) {
+  drawSectionTitle(doc, 'DOCUMENTOS RELACIONADOS', x, y, w);
+  const startY = y + 9;
+  const widths = [42, 88, 58];
+  const headers = ['Tipo de Documento', 'N de documento', 'Fecha de documento'];
+  let colX = x;
+  headers.forEach((header, index) => {
+    drawWrappedCell(doc, header, colX, startY, widths[index], 7, {
+      bold: true,
+      align: 'center',
+      fontSize: 5.5,
+      fill: [248, 250, 252],
+    });
+    colX += widths[index];
+  });
+
+  const rows = related.length ? related.slice(0, 2) : [{}];
+  rows.forEach((row, rowIndex) => {
+    const values = [
+      getString(row.tipoDocumento) || '-',
+      getString(row.numeroDocumento) || '-',
+      getString(row.fechaEmision) || '-',
+    ];
+    colX = x;
+    values.forEach((value, index) => {
+      drawWrappedCell(doc, value, colX, startY + 7 + rowIndex * 7, widths[index], 7, {
+        align: index === 1 ? 'left' : 'center',
+        fontSize: 5.2,
+      });
+      colX += widths[index];
+    });
+  });
+}
+
+function getTableDefinition(tipoDte: string) {
+  if (tipoDte === '14') {
+    return {
+      headers: ['N', 'Cant.', 'Unidad', 'Codigo', 'Descripcion', 'Precio', 'Desc.', 'Compra'],
+      widths: [7, 12, 12, 18, 67, 18, 18, 21],
+    };
+  }
+
+  if (tipoDte === '05') {
+    return {
+      headers: ['N', 'N Doc. Rel.', 'IVA Recibido', 'IVA Retenido', 'Cant.', 'Unidad', 'Codigo', 'Descripcion', 'Precio', 'Desc.', 'Otros', 'No Suj.', 'Exenta', 'Gravada'],
+      widths: [7, 24, 12, 12, 10, 10, 13, 30, 13, 12, 12, 11, 11, 11],
+    };
+  }
+
+  return {
+    headers: ['N', 'Cant.', 'Unidad', 'Codigo', 'Descripcion', 'Precio', 'Desc.', 'No Afecto', 'No Suj.', 'Exenta', 'Gravada'],
+    widths: [7, 12, 10, 15, 38, 15, 14, 16, 16, 15, 15],
+  };
+}
+
+function getItemRow(tipoDte: string, item: Row) {
+  if (tipoDte === '14') {
+    return [
+      getString(item.numItem),
+      getString(item.cantidad),
+      getString(item.uniMedida),
+      getString(item.codigo),
+      getString(item.descripcion),
+      money(item.precioUni),
+      money(item.montoDescu),
+      money(item.compra),
+    ];
+  }
+
+  if (tipoDte === '05') {
+    return [
+      getString(item.numItem),
+      getString(item.numeroDocumento),
+      money(item.ivaPerci),
+      money(item.ivaRete),
+      getString(item.cantidad),
+      getString(item.uniMedida),
+      getString(item.codigo),
+      getString(item.descripcion),
+      money(item.precioUni),
+      money(item.montoDescu),
+      money(item.noGravado),
+      money(item.ventaNoSuj),
+      money(item.ventaExenta),
+      money(item.ventaGravada),
+    ];
+  }
+
+  return [
+    getString(item.numItem),
+    getString(item.cantidad),
+    getString(item.uniMedida),
+    getString(item.codigo),
+    getString(item.descripcion),
+    money(item.precioUni),
+    money(item.montoDescu),
+    money(item.noGravado),
+    money(item.ventaNoSuj),
+    money(item.ventaExenta),
+    money(item.ventaGravada),
+  ];
+}
+
 export async function buildDtePdfBuffer(data: Row, id: string) {
   const finalPackage = getDteFinalPackage(data);
   const dte = asRecord(finalPackage.dteJson || asRecord(data.documentResponse).dteJson || {});
@@ -162,11 +281,8 @@ export async function buildDtePdfBuffer(data: Row, id: string) {
   const resumen = asRecord(dte.resumen);
   const cuerpo = Array.isArray(dte.cuerpoDocumento) ? dte.cuerpoDocumento.map(asRecord) : [];
   const tipoDte = getString(data.tipoDte || identificacion.tipoDte);
-  const titulo = tipoDte === '03'
-    ? 'COMPROBANTE DE CREDITO FISCAL'
-    : tipoDte === '14'
-      ? 'FACTURA DE SUJETO EXCLUIDO'
-      : 'FACTURA';
+  const titulo = getDocumentTitle(tipoDte);
+  const relatedDocuments = getRelatedDocuments(dte);
   const codigo = getDteCode(data, id);
 
   const doc = new jsPDF({ unit: 'mm', format: 'letter', orientation: 'portrait' });
@@ -206,7 +322,7 @@ export async function buildDtePdfBuffer(data: Row, id: string) {
   doc.roundedRect(marginX, 48, contentW, 28, 2, 2);
   smallField(doc, 'Codigo generacion:', codigo, marginX + 6, 57, 27, 70);
   smallField(doc, 'Numero control:', data.numeroControl || identificacion.numeroControl, marginX + 6, 65, 27, 70);
-  smallField(doc, 'Sello recepcion:', data.selloRecepcion || finalPackage.selloRecepcion, marginX + 6, 73, 27, 70);
+  smallField(doc, 'Sello recepcion:', data.selloRecepcion || data.selloRecibido || finalPackage.selloRecepcion || finalPackage.selloRecibido, marginX + 6, 73, 27, 70);
   smallField(doc, 'Modelo:', identificacion.tipoModelo, marginX + 116, 57, 20, 42);
   smallField(doc, 'Transmision:', identificacion.tipoOperacion, marginX + 116, 65, 20, 42);
   smallField(doc, 'Fecha/Hora:', `${getString(identificacion.fecEmi)} ${getString(identificacion.horEmi)}`, marginX + 116, 73, 20, 42);
@@ -225,19 +341,16 @@ export async function buildDtePdfBuffer(data: Row, id: string) {
   smallField(doc, 'Correo:', receptor.correo, marginX + 101, 120, 20, 58);
 
   drawSectionTitle(doc, 'VENTA POR CUENTA DE TERCEROS', marginX, 130, contentW);
-  drawSectionTitle(doc, 'DOCUMENTOS RELACIONADOS', marginX, 142, contentW);
-  drawSectionTitle(doc, 'OTROS DOCUMENTOS ASOCIADOS', marginX, 154, contentW);
+  drawRelatedDocuments(doc, relatedDocuments, marginX, 142, contentW);
+  if (tipoDte !== '05') {
+    drawSectionTitle(doc, 'OTROS DOCUMENTOS ASOCIADOS', marginX, 161, contentW);
+  }
 
-  let tableY = 169;
+  let tableY = tipoDte === '05' ? 163 : 176;
   const excludedSubject = tipoDte === '14';
-  const headers = excludedSubject
-    ? ['N', 'Cant.', 'Unidad', 'Codigo', 'Descripcion', 'Precio', 'Desc.', 'Compra']
-    : ['N', 'Cant.', 'Unidad', 'Codigo', 'Descripcion', 'Precio', 'Desc.', 'No Afecto', 'No Suj.', 'Exenta', 'Gravada'];
-  const widths = excludedSubject
-    ? [7, 12, 12, 18, 67, 18, 18, 21]
-    : [7, 12, 10, 15, 38, 15, 14, 16, 16, 15, 15];
-  const rowH = 9;
-  const headerH = 13;
+  const { headers, widths } = getTableDefinition(tipoDte);
+  const rowH = tipoDte === '05' ? 7.6 : 9;
+  const headerH = tipoDte === '05' ? 11 : 13;
   let x = marginX;
   headers.forEach((header, index) => {
     drawWrappedCell(doc, header, x, tableY, widths[index], headerH, {
@@ -251,39 +364,16 @@ export async function buildDtePdfBuffer(data: Row, id: string) {
   tableY += headerH;
 
   const drawItemRow = (item: Row) => {
-    if (tableY + rowH > pageHeight - 54) {
+    if (tableY + rowH > pageHeight - 28) {
       doc.addPage();
       tableY = 18;
     }
-    const row = excludedSubject
-      ? [
-          getString(item.numItem),
-          getString(item.cantidad),
-          getString(item.uniMedida),
-          getString(item.codigo),
-          getString(item.descripcion),
-          money(item.precioUni),
-          money(item.montoDescu),
-          money(item.compra),
-        ]
-      : [
-          getString(item.numItem),
-          getString(item.cantidad),
-          getString(item.uniMedida),
-          getString(item.codigo),
-          getString(item.descripcion),
-          money(item.precioUni),
-          money(item.montoDescu),
-          money(item.noGravado),
-          money(item.ventaNoSuj),
-          money(item.ventaExenta),
-          money(item.ventaGravada),
-        ];
+    const row = getItemRow(tipoDte, item);
     let rowX = marginX;
     row.forEach((value, index) => {
       drawWrappedCell(doc, value, rowX, tableY, widths[index], rowH, {
-        align: index === 4 ? 'left' : index < 4 ? 'center' : 'right',
-        fontSize: 5.4,
+        align: (tipoDte === '05' ? index === 7 : index === 4) ? 'left' : (tipoDte === '05' ? index < 8 : index < 4) ? 'center' : 'right',
+        fontSize: tipoDte === '05' ? 4.7 : 5.4,
       });
       rowX += widths[index];
     });
@@ -303,41 +393,60 @@ export async function buildDtePdfBuffer(data: Row, id: string) {
   const ivaRete = numberValue(resumen.ivaRete || resumen.ivaRete1);
   const reteRenta = numberValue(resumen.reteRenta);
   const totalIva = numberValue(resumen.totalIva);
+  const totalTributos = tributoValor(resumen.tributos);
 
-  if (tableY + 74 > pageHeight - 24) {
-    doc.addPage();
-    tableY = 18;
-  }
+  const summaryRows = (() => {
+    if (excludedSubject) {
+      return [
+          ['Total compra', money(resumen.totalCompra)],
+          ['Descuento', money(resumen.descu)],
+          ['Total descuento', money(resumen.totalDescu)],
+          ['Sub-Total', money(resumen.subTotal)],
+          ['Retencion Renta', money(reteRenta)],
+          ['Total a Pagar', money(resumen.totalPagar)],
+        ];
+    }
 
-  const summaryRows = excludedSubject
-    ? [
-        ['Total compra', money(resumen.totalCompra)],
-        ['Descuento', money(resumen.descu)],
-        ['Total descuento', money(resumen.totalDescu)],
-        ['Sub-Total', money(resumen.subTotal)],
-        ['Retencion Renta', money(reteRenta)],
-        ['Total a Pagar', money(resumen.totalPagar)],
-      ]
-    : [
+    if (tipoDte === '05') {
+      return [
         ['Suma de Ventas', `${money(totalNoSuj)} / ${money(totalExenta)} / ${money(totalGravada)}`],
-        ['Sumatoria de ventas', money(resumen.subTotalVentas)],
-        ['Descuento global a ventas no sujetas', money(resumen.descuNoSuj)],
-        ['Descuento global a ventas exentas', money(resumen.descuExenta)],
-        ['Descuento global a ventas gravadas', money(resumen.descuGravada)],
+        ['Suma Total de Operaciones', money(resumen.subTotalVentas)],
         ['Nombre del Tributo', tributosText(resumen.tributos)],
-        ['Sub-Total', money(resumen.subTotal)],
-        ...(totalIva ? [['IVA', money(totalIva)]] : []),
-        ...(ivaPerci ? [['IVA Percibido', money(ivaPerci)]] : []),
-        ['IVA Retenido', money(ivaRete)],
-        ...(reteRenta ? [['Retencion Renta', money(reteRenta)]] : []),
+        ['Valor del Tributo', money(totalTributos)],
         ['Monto Total de la Operacion', money(resumen.montoTotalOperacion)],
+        ['Total IVA Percibido', money(ivaPerci)],
+        ['Total IVA Retenido', money(ivaRete)],
         ['Total Otros Montos No Afectos', money(resumen.totalNoGravado)],
         ['Total a Pagar', money(resumen.totalPagar)],
       ];
+    }
+
+    return [
+      ['Suma de Ventas', `${money(totalNoSuj)} / ${money(totalExenta)} / ${money(totalGravada)}`],
+      ['Sumatoria de ventas', money(resumen.subTotalVentas)],
+      ['Descuento global a ventas no sujetas', money(resumen.descuNoSuj)],
+      ['Descuento global a ventas exentas', money(resumen.descuExenta)],
+      ['Descuento global a ventas gravadas', money(resumen.descuGravada)],
+      ['Nombre del Tributo', tributosText(resumen.tributos)],
+      ['Sub-Total', money(resumen.subTotal ?? resumen.subTotalVentas)],
+      ...(totalIva ? [['IVA', money(totalIva)]] : []),
+      ...(ivaPerci ? [['IVA Percibido', money(ivaPerci)]] : []),
+      ['IVA Retenido', money(ivaRete)],
+      ...(reteRenta ? [['Retencion Renta', money(reteRenta)]] : []),
+      ['Monto Total de la Operacion', money(resumen.montoTotalOperacion)],
+      ['Total Otros Montos No Afectos', money(resumen.totalNoGravado)],
+      ['Total a Pagar', money(resumen.totalPagar)],
+    ];
+  })();
   const summaryX = marginX + 96;
   const summaryLabelW = 62;
   const summaryValueW = contentW - 96 - summaryLabelW;
-  const summaryRowH = 6.4;
+  const summaryRowH = tipoDte === '05' ? 5.9 : 6.4;
+  const summaryHeight = 4 + summaryRows.length * summaryRowH + 22;
+  if (tableY + summaryHeight > pageHeight - 10) {
+    doc.addPage();
+    tableY = 18;
+  }
   tableY += 4;
   summaryRows.forEach(([label, value], index) => {
     if (tableY + summaryRowH > pageHeight - 30) {

@@ -343,6 +343,10 @@ export default function Sidebar({
         label: 'Emitir credito fiscal',
       },
       {
+        href: '/facturacion/nota-credito',
+        label: 'Nota de credito',
+      },
+      {
         href: '/facturacion/sujeto-excluido',
         label: 'Facturar sujeto excluido',
       },

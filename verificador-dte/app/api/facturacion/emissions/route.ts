@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
           source: data.source || '',
           codigoGeneracion: data.codigoGeneracion || '',
           numeroControl: data.numeroControl || '',
-          selloRecepcion: data.selloRecepcion || '',
+          selloRecepcion: data.selloRecepcion || data.selloRecibido || '',
           totalPagar: data.totalPagar || 0,
           receptorId: data.receptorId || null,
           createdAt: dateToIso(data.createdAt),
