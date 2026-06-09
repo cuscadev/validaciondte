@@ -16,5 +16,6 @@ func Register(router fiber.Router, catalogService *catalogs.Service) {
 	documents.Post("/credito-fiscal", controller.CreateTaxCreditInvoice)
 	documents.Post("/nota-credito", controller.CreateCreditNote)
 	documents.Post("/nota-debito", controller.CreateDebitNote)
+	documents.Post("/factura-exportacion", controller.CreateExportInvoice)
 	documents.Post("/sujeto-excluido", controller.CreateExcludedSubjectInvoice)
 }

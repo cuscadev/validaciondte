@@ -20,6 +20,7 @@ const (
 	tipoDTECreditoFiscal  = "03"
 	tipoDTENotaCredito    = "05"
 	tipoDTENotaDebito     = "06"
+	tipoDTEExportacion    = "11"
 	tipoDTESujetoExcluido = "14"
 	ambienteTest          = "00"
 	monedaUSD             = "USD"
@@ -68,6 +69,15 @@ func (s *Service) PreviewDocument(req dto.PreviewDocumentRequest) (dto.PreviewDo
 			return dto.PreviewDocumentResponse{}, errors.New("nota es requerido para tipoDte 05/06")
 		}
 		resp, err := s.createAdjustmentNote(*req.Nota, spec.TipoDTE)
+		if err != nil {
+			return dto.PreviewDocumentResponse{}, err
+		}
+		return mapPreviewResponse(spec, resp.CodigoGeneracion, resp.NumeroControl, resp.TotalPagar, resp.DTEJSON), nil
+	case tipoDTEExportacion:
+		if req.Exportacion == nil {
+			return dto.PreviewDocumentResponse{}, errors.New("exportacion es requerido para tipoDte 11")
+		}
+		resp, err := s.CreateExportInvoice(*req.Exportacion)
 		if err != nil {
 			return dto.PreviewDocumentResponse{}, err
 		}
@@ -229,6 +239,70 @@ func (s *Service) CreateCreditNote(req dto.CreateAdjustmentNoteRequest) (dto.Cre
 
 func (s *Service) CreateDebitNote(req dto.CreateAdjustmentNoteRequest) (dto.CreateAdjustmentNoteResponse, error) {
 	return s.createAdjustmentNote(req, tipoDTENotaDebito)
+}
+
+func (s *Service) CreateExportInvoice(req dto.CreateExportInvoiceRequest) (dto.CreateExportInvoiceResponse, error) {
+	if err := validateExportInvoiceRequest(req); err != nil {
+		return dto.CreateExportInvoiceResponse{}, err
+	}
+	spec, err := s.catalogs.GetDocumentSpec(tipoDTEExportacion)
+	if err != nil {
+		return dto.CreateExportInvoiceResponse{}, err
+	}
+
+	now := time.Now()
+	fecEmi := firstNonEmpty(req.FecEmi, now.Format("2006-01-02"))
+	horEmi := firstNonEmpty(req.HorEmi, now.Format("15:04:05"))
+	ambiente := firstNonEmpty(req.Ambiente, ambienteTest)
+	codigoGeneracion := strings.ToUpper(firstNonEmpty(req.CodigoGeneracion, uuid.NewString()))
+	numeroControl := firstNonEmpty(req.NumeroControl, buildNumeroControlByTipo(tipoDTEExportacion, req.EstablecimientoTipo, req.Establecimiento, req.PuntoVenta, req.Correlativo))
+
+	cuerpo, resumen := buildExportItemsAndResumen(req.Items, req.Flete, req.Seguro)
+	condicion := defaultInt(req.CondicionOperacion, condicionContado)
+	resumen.CondicionOperacion = condicion
+	resumen.Pagos = normalizePagos(req.Pagos, resumen.TotalPagar)
+	resumen.CodIncoterms = req.CodIncoterms
+	resumen.DescIncoterms = req.DescIncoterms
+	resumen.Observaciones = req.Observaciones
+	resumen.TotalLetras = totalEnLetras(resumen.TotalPagar)
+
+	dte := domain.FacturaExportacion{
+		Identificacion: domain.Identificacion{
+			Version:          spec.Version,
+			Ambiente:         ambiente,
+			TipoDTE:          tipoDTEExportacion,
+			NumeroControl:    numeroControl,
+			CodigoGeneracion: codigoGeneracion,
+			TipoModelo:       defaultInt(req.TipoModelo, modeloPrevio),
+			TipoOperacion:    defaultInt(req.TipoOperacion, operacionNormal),
+			TipoContingencia: nil,
+			MotivoContin:     nil,
+			FecEmi:           fecEmi,
+			HorEmi:           horEmi,
+			TipoMoneda:       monedaUSD,
+		},
+		Emisor:          mapEmisor(req.Emisor),
+		Receptor:        mapExportReceptor(req.Receptor),
+		OtrosDocumentos: mapExportOtherDocuments(req.OtrosDocumentos),
+		VentaTercero:    mapVentaTercero(req.VentaTercero),
+		CuerpoDocumento: cuerpo,
+		Resumen:         resumen,
+		Apendice:        mapApendice(req.Apendice),
+	}
+
+	raw, err := json.Marshal(dte)
+	if err != nil {
+		return dto.CreateExportInvoiceResponse{}, err
+	}
+
+	return dto.CreateExportInvoiceResponse{
+		Success:          true,
+		TipoDTE:          tipoDTEExportacion,
+		CodigoGeneracion: codigoGeneracion,
+		NumeroControl:    numeroControl,
+		TotalPagar:       resumen.TotalPagar,
+		DTEJSON:          raw,
+	}, nil
 }
 
 func (s *Service) CreateExcludedSubjectInvoice(req dto.CreateExcludedSubjectInvoiceRequest) (dto.CreateExcludedSubjectInvoiceResponse, error) {
@@ -418,6 +492,25 @@ func validateAdjustmentNoteRequest(req dto.CreateAdjustmentNoteRequest) error {
 	}
 	if strings.TrimSpace(req.Receptor.Direccion.Complemento) == "" {
 		return errors.New("receptor.direccion.complemento es requerido")
+	}
+	return validateItems(req.Items)
+}
+
+func validateExportInvoiceRequest(req dto.CreateExportInvoiceRequest) error {
+	if err := validateEmisor(req.Emisor); err != nil {
+		return err
+	}
+	if strings.TrimSpace(req.Receptor.Nombre) == "" {
+		return errors.New("receptor.nombre es requerido")
+	}
+	if strings.TrimSpace(req.Receptor.CodPais) == "" {
+		return errors.New("receptor.codPais es requerido")
+	}
+	if strings.TrimSpace(req.Receptor.NombrePais) == "" {
+		return errors.New("receptor.nombrePais es requerido")
+	}
+	if strings.TrimSpace(req.Receptor.Complemento) == "" {
+		return errors.New("receptor.complemento es requerido")
 	}
 	return validateItems(req.Items)
 }
@@ -759,6 +852,61 @@ func buildAdjustmentNoteItemsAndResumen(items []dto.ItemInput, defaultRelatedDoc
 	}
 }
 
+func buildExportItemsAndResumen(items []dto.ItemInput, flete float64, seguro float64) ([]domain.CuerpoDocumentoExportacion, domain.ResumenExportacion) {
+	cuerpo := make([]domain.CuerpoDocumentoExportacion, 0, len(items))
+	var totalGravada, totalDescu, totalNoGravado float64
+
+	for i, item := range items {
+		cantidad := round8(item.Cantidad)
+		precio := round8(item.PrecioUni)
+		montoDescu := round2(item.MontoDescu)
+		ventaGravada := round2(item.VentaGravada)
+		if ventaGravada == 0 && item.NoGravado == 0 {
+			ventaGravada = round2(cantidad*precio - montoDescu)
+		}
+
+		tributos := []string(nil)
+		if ventaGravada > 0 {
+			tributos = []string{"C3"}
+		}
+
+		cuerpo = append(cuerpo, domain.CuerpoDocumentoExportacion{
+			NumItem:      i + 1,
+			Cantidad:     cantidad,
+			Codigo:       item.Codigo,
+			UniMedida:    defaultInt(item.UniMedida, 59),
+			Descripcion:  item.Descripcion,
+			PrecioUni:    precio,
+			MontoDescu:   montoDescu,
+			VentaGravada: ventaGravada,
+			Tributos:     tributos,
+			NoGravado:    round2(item.NoGravado),
+		})
+
+		totalGravada += ventaGravada
+		totalDescu += montoDescu
+		totalNoGravado += item.NoGravado
+	}
+
+	totalGravada = round2(totalGravada)
+	totalNoGravado = round2(totalNoGravado)
+	flete = round2(flete)
+	seguro = round2(seguro)
+	montoTotalOperacion := round2(totalGravada + totalNoGravado + flete + seguro)
+
+	return cuerpo, domain.ResumenExportacion{
+		TotalGravada:        totalGravada,
+		PorcentajeDescuento: 0,
+		TotalDescu:          round2(totalDescu),
+		MontoTotalOperacion: montoTotalOperacion,
+		TotalNoGravado:      totalNoGravado,
+		TotalPagar:          montoTotalOperacion,
+		CondicionOperacion:  condicionContado,
+		Flete:               flete,
+		Seguro:              seguro,
+	}
+}
+
 func buildExcludedSubjectItemsAndResumen(items []dto.ExcludedSubjectItemInput, reteRenta float64) ([]domain.CuerpoDocumentoSujetoExcluido, domain.ResumenSujetoExcluido) {
 	cuerpo := make([]domain.CuerpoDocumentoSujetoExcluido, 0, len(items))
 	var totalCompra, totalDescu float64
@@ -864,6 +1012,51 @@ func mapOptionalDireccion(input *dto.Direccion) *domain.Direccion {
 	}
 	direccion := mapDireccion(*input)
 	return &direccion
+}
+
+func mapExportReceptor(input dto.ExportReceptorInput) domain.ReceptorExportacion {
+	return domain.ReceptorExportacion{
+		TipoDocumento:   input.TipoDocumento,
+		NumDocumento:    input.NumDocumento,
+		TipoPersona:     defaultInt(input.TipoPersona, 2),
+		Nombre:          input.Nombre,
+		NombreComercial: input.NombreComercial,
+		CodPais:         input.CodPais,
+		NombrePais:      input.NombrePais,
+		Complemento:     input.Complemento,
+		DescActividad:   input.DescActividad,
+		Telefono:        input.Telefono,
+		Correo:          input.Correo,
+	}
+}
+
+func mapExportOtherDocuments(input []dto.ExportOtherDocument) any {
+	if len(input) == 0 {
+		return nil
+	}
+	out := make([]domain.OtrosDocumentosExportacion, 0, len(input))
+	for _, item := range input {
+		out = append(out, domain.OtrosDocumentosExportacion{
+			CodDocAsociado:   item.CodDocAsociado,
+			DescDocumento:    item.DescDocumento,
+			DetalleDocumento: item.DetalleDocumento,
+			ModoTransp:       item.ModoTransp,
+			PlacaTrans:       item.PlacaTrans,
+			NumConductor:     item.NumConductor,
+			NombreConductor:  item.NombreConductor,
+		})
+	}
+	return out
+}
+
+func mapVentaTercero(input *dto.VentaTerceroInput) any {
+	if input == nil || strings.TrimSpace(input.NIT) == "" || strings.TrimSpace(input.Nombre) == "" {
+		return nil
+	}
+	return domain.VentaTercero{
+		NIT:    input.NIT,
+		Nombre: input.Nombre,
+	}
 }
 
 func mapReceptor(input dto.ReceptorInput) *domain.Receptor {

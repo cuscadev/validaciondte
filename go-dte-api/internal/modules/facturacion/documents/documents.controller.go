@@ -84,6 +84,20 @@ func (ct *Controller) CreateDebitNote(c *fiber.Ctx) error {
 	return c.JSON(resp)
 }
 
+func (ct *Controller) CreateExportInvoice(c *fiber.Ctx) error {
+	var req dto.CreateExportInvoiceRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "JSON invalido")
+	}
+
+	resp, err := ct.service.CreateExportInvoice(req)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+
+	return c.JSON(resp)
+}
+
 func (ct *Controller) CreateExcludedSubjectInvoice(c *fiber.Ctx) error {
 	var req dto.CreateExcludedSubjectInvoiceRequest
 	if err := c.BodyParser(&req); err != nil {

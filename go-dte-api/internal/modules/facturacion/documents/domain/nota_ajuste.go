@@ -83,6 +83,7 @@ type ResumenNota struct {
 	TotalPagar          float64 `json:"totalPagar"`
 	TotalLetras         string  `json:"totalLetras"`
 	CondicionOperacion  int     `json:"condicionOperacion"`
+	NumPagoElectronico  *string `json:"numPagoElectronico"`
 	Observaciones       *string `json:"observaciones"`
 	CodigoRetencionMH   *string `json:"codigoRetencionMH"`
 }

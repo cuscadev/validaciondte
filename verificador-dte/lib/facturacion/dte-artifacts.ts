@@ -161,6 +161,8 @@ function drawSectionTitle(doc: jsPDF, title: string, x: number, y: number, w: nu
 function getDocumentTitle(tipoDte: string) {
   if (tipoDte === '03') return 'COMPROBANTE DE CREDITO FISCAL';
   if (tipoDte === '05') return 'NOTA DE CREDITO';
+  if (tipoDte === '06') return 'NOTA DE DEBITO';
+  if (tipoDte === '11') return 'FACTURA DE EXPORTACION';
   if (tipoDte === '14') return 'FACTURA DE SUJETO EXCLUIDO';
   return 'FACTURA';
 }
@@ -211,10 +213,17 @@ function getTableDefinition(tipoDte: string) {
     };
   }
 
-  if (tipoDte === '05') {
+  if (tipoDte === '05' || tipoDte === '06') {
     return {
       headers: ['N', 'N Doc. Rel.', 'IVA Recibido', 'IVA Retenido', 'Cant.', 'Unidad', 'Codigo', 'Descripcion', 'Precio', 'Desc.', 'Otros', 'No Suj.', 'Exenta', 'Gravada'],
       widths: [7, 24, 12, 12, 10, 10, 13, 30, 13, 12, 12, 11, 11, 11],
+    };
+  }
+
+  if (tipoDte === '11') {
+    return {
+      headers: ['N', 'Cant.', 'Unidad', 'Codigo', 'Descripcion', 'Precio', 'Desc.', 'No Gravado', 'Exportacion'],
+      widths: [7, 12, 12, 18, 56, 18, 17, 18, 22],
     };
   }
 
@@ -238,7 +247,7 @@ function getItemRow(tipoDte: string, item: Row) {
     ];
   }
 
-  if (tipoDte === '05') {
+  if (tipoDte === '05' || tipoDte === '06') {
     return [
       getString(item.numItem),
       getString(item.numeroDocumento),
@@ -253,6 +262,20 @@ function getItemRow(tipoDte: string, item: Row) {
       money(item.noGravado),
       money(item.ventaNoSuj),
       money(item.ventaExenta),
+      money(item.ventaGravada),
+    ];
+  }
+
+  if (tipoDte === '11') {
+    return [
+      getString(item.numItem),
+      getString(item.cantidad),
+      getString(item.uniMedida),
+      getString(item.codigo),
+      getString(item.descripcion),
+      money(item.precioUni),
+      money(item.montoDescu),
+      money(item.noGravado),
       money(item.ventaGravada),
     ];
   }
@@ -342,15 +365,16 @@ export async function buildDtePdfBuffer(data: Row, id: string) {
 
   drawSectionTitle(doc, 'VENTA POR CUENTA DE TERCEROS', marginX, 130, contentW);
   drawRelatedDocuments(doc, relatedDocuments, marginX, 142, contentW);
-  if (tipoDte !== '05') {
+  if (tipoDte !== '05' && tipoDte !== '06') {
     drawSectionTitle(doc, 'OTROS DOCUMENTOS ASOCIADOS', marginX, 161, contentW);
   }
 
-  let tableY = tipoDte === '05' ? 163 : 176;
+  let tableY = tipoDte === '05' || tipoDte === '06' ? 163 : 176;
   const excludedSubject = tipoDte === '14';
   const { headers, widths } = getTableDefinition(tipoDte);
-  const rowH = tipoDte === '05' ? 7.6 : 9;
-  const headerH = tipoDte === '05' ? 11 : 13;
+  const isAdjustmentNote = tipoDte === '05' || tipoDte === '06';
+  const rowH = isAdjustmentNote ? 7.6 : 9;
+  const headerH = isAdjustmentNote ? 11 : 13;
   let x = marginX;
   headers.forEach((header, index) => {
     drawWrappedCell(doc, header, x, tableY, widths[index], headerH, {
@@ -372,8 +396,8 @@ export async function buildDtePdfBuffer(data: Row, id: string) {
     let rowX = marginX;
     row.forEach((value, index) => {
       drawWrappedCell(doc, value, rowX, tableY, widths[index], rowH, {
-        align: (tipoDte === '05' ? index === 7 : index === 4) ? 'left' : (tipoDte === '05' ? index < 8 : index < 4) ? 'center' : 'right',
-        fontSize: tipoDte === '05' ? 4.7 : 5.4,
+        align: (isAdjustmentNote ? index === 7 : index === 4) ? 'left' : (isAdjustmentNote ? index < 8 : index < 4) ? 'center' : 'right',
+        fontSize: isAdjustmentNote ? 4.7 : 5.4,
       });
       rowX += widths[index];
     });
@@ -407,7 +431,7 @@ export async function buildDtePdfBuffer(data: Row, id: string) {
         ];
     }
 
-    if (tipoDte === '05') {
+    if (isAdjustmentNote) {
       return [
         ['Suma de Ventas', `${money(totalNoSuj)} / ${money(totalExenta)} / ${money(totalGravada)}`],
         ['Suma Total de Operaciones', money(resumen.subTotalVentas)],
@@ -416,6 +440,19 @@ export async function buildDtePdfBuffer(data: Row, id: string) {
         ['Monto Total de la Operacion', money(resumen.montoTotalOperacion)],
         ['Total IVA Percibido', money(ivaPerci)],
         ['Total IVA Retenido', money(ivaRete)],
+        ['Total Otros Montos No Afectos', money(resumen.totalNoGravado)],
+        ['Total a Pagar', money(resumen.totalPagar)],
+      ];
+    }
+
+    if (tipoDte === '11') {
+      return [
+        ['Total exportacion', money(resumen.totalGravada)],
+        ['Descuento', money(resumen.totalDescu)],
+        ['Flete', money(resumen.flete)],
+        ['Seguro', money(resumen.seguro)],
+        ['Incoterms', [resumen.codIncoterms, resumen.descIncoterms].map(getString).filter(Boolean).join(' - ') || '-'],
+        ['Monto Total de la Operacion', money(resumen.montoTotalOperacion)],
         ['Total Otros Montos No Afectos', money(resumen.totalNoGravado)],
         ['Total a Pagar', money(resumen.totalPagar)],
       ];
@@ -441,7 +478,7 @@ export async function buildDtePdfBuffer(data: Row, id: string) {
   const summaryX = marginX + 96;
   const summaryLabelW = 62;
   const summaryValueW = contentW - 96 - summaryLabelW;
-  const summaryRowH = tipoDte === '05' ? 5.9 : 6.4;
+  const summaryRowH = isAdjustmentNote ? 5.9 : 6.4;
   const summaryHeight = 4 + summaryRows.length * summaryRowH + 22;
   if (tableY + summaryHeight > pageHeight - 10) {
     doc.addPage();

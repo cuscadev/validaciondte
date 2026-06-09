@@ -47,16 +47,19 @@ const (
 	TipoDTECreditoFiscal  = "03"
 	TipoDTENotaCredito    = "05"
 	TipoDTENotaDebito     = "06"
+	TipoDTEExportacion    = "11"
 	TipoDTESujetoExcluido = "14"
 
 	ReceptorConsumidorFinal = "consumer"
 	ReceptorContribuyente   = "taxpayer"
 	ReceptorNota            = "note"
+	ReceptorExportacion     = "export"
 	ReceptorSujetoExcluido  = "excluded_subject"
 
 	ItemsFactura        = "invoice"
 	ItemsCreditoFiscal  = "tax_credit"
 	ItemsNota           = "adjustment_note"
+	ItemsExportacion    = "export"
 	ItemsSujetoExcluido = "excluded_subject"
 )
 
@@ -98,6 +101,14 @@ func NewService(cfg config.Config) *Service {
 			ItemsKind:           ItemsNota,
 			RequiresRelatedDocs: true,
 			SchemaVersion:       "v4",
+		},
+		TipoDTEExportacion: {
+			TipoDTE:       TipoDTEExportacion,
+			Version:       1,
+			Nombre:        "Factura de exportacion",
+			ReceptorKind:  ReceptorExportacion,
+			ItemsKind:     ItemsExportacion,
+			SchemaVersion: "v1",
 		},
 		TipoDTESujetoExcluido: {
 			TipoDTE:       TipoDTESujetoExcluido,

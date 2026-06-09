@@ -143,6 +143,18 @@ const ROUTE_MAP: Record<string, RouteEntry> = {
       { label: 'Nota de credito' },
     ],
   },
+  '/facturacion/exportacion': {
+    segments: [
+      { label: 'Facturacion', href: '/facturacion/exportacion' },
+      { label: 'Factura de exportacion' },
+    ],
+  },
+  '/facturacion/nota-debito': {
+    segments: [
+      { label: 'Facturacion', href: '/facturacion/nota-debito' },
+      { label: 'Nota de debito' },
+    ],
+  },
   '/integraciones/gmail': {
     segments: [
       { label: 'Integraciones', href: '/integraciones/gmail' },

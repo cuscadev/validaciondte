@@ -7,6 +7,7 @@ type PreviewDocumentRequest struct {
 	FacturaConsumidorFinal *CreateConsumerInvoiceRequest        `json:"facturaConsumidorFinal"`
 	CreditoFiscal          *CreateTaxCreditInvoiceRequest       `json:"creditoFiscal"`
 	Nota                   *CreateAdjustmentNoteRequest         `json:"nota"`
+	Exportacion            *CreateExportInvoiceRequest          `json:"exportacion"`
 	SujetoExcluido         *CreateExcludedSubjectInvoiceRequest `json:"sujetoExcluido"`
 }
 

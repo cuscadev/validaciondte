@@ -51,6 +51,8 @@ function tipoLabel(tipo?: string) {
   if (tipo === '01') return 'Factura';
   if (tipo === '03') return 'Credito fiscal';
   if (tipo === '05') return 'Nota de credito';
+  if (tipo === '06') return 'Nota de debito';
+  if (tipo === '11') return 'Factura de exportacion';
   if (tipo === '14') return 'Sujeto excluido';
   return tipo || '-';
 }
@@ -215,6 +217,8 @@ export default function FacturacionReportePage() {
                 <option value="01">Factura</option>
                 <option value="03">Credito fiscal</option>
                 <option value="05">Nota de credito</option>
+                <option value="06">Nota de debito</option>
+                <option value="11">Factura de exportacion</option>
                 <option value="14">Sujeto excluido</option>
               </select>
             </div>
