@@ -67,3 +67,9 @@ type ResumenCreditoFiscal struct {
 	NumPagoElectronico  *string `json:"numPagoElectronico"`
 	Observaciones       *string `json:"observaciones"`
 }
+
+type TributoResumen struct {
+	Codigo      string  `json:"codigo"`
+	Descripcion string  `json:"descripcion"`
+	Valor       float64 `json:"valor"`
+}

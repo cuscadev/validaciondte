@@ -258,10 +258,16 @@ function validateItems(items: InvoiceItem[]) {
 }
 
 function sumItems(items: ReturnType<typeof validateItems>, ivaPerci = 0, ivaRete = 0) {
-  return items.reduce((total, item) => {
+  const subTotal = items.reduce((total, item) => {
     const explicit = item.ventaNoSuj + item.ventaExenta + item.ventaGravada + item.noGravado;
     return total + (explicit > 0 ? explicit : item.cantidad * item.precioUni - item.montoDescu);
-  }, 0) + ivaPerci - ivaRete;
+  }, 0);
+  const totalGravada = items.reduce((total, item) => {
+    const explicit = item.ventaNoSuj + item.ventaExenta + item.ventaGravada + item.noGravado;
+    const ventaGravada = explicit > 0 ? item.ventaGravada : item.cantidad * item.precioUni - item.montoDescu;
+    return total + ventaGravada;
+  }, 0);
+  return subTotal + totalGravada * 0.13 + ivaPerci - ivaRete;
 }
 
 export async function POST(req: NextRequest) {

@@ -580,6 +580,7 @@ func buildFacturaItemsAndResumen(items []dto.ItemInput) ([]domain.CuerpoDocument
 func buildCreditoFiscalItemsAndResumen(items []dto.ItemInput, ivaPerci float64, ivaRete float64) ([]domain.CuerpoDocumentoCreditoFiscal, domain.ResumenCreditoFiscal) {
 	cuerpo := make([]domain.CuerpoDocumentoCreditoFiscal, 0, len(items))
 	var totalNoSuj, totalExenta, totalGravada, totalDescu, totalNoGravado float64
+	const ivaTributo = "20"
 
 	for i, item := range items {
 		cantidad := round8(item.Cantidad)
@@ -591,6 +592,10 @@ func buildCreditoFiscalItemsAndResumen(items []dto.ItemInput, ivaPerci float64, 
 
 		if ventaNoSuj == 0 && ventaExenta == 0 && ventaGravada == 0 && item.NoGravado == 0 {
 			ventaGravada = round2(cantidad*precio - montoDescu)
+		}
+		var tributos []string
+		if ventaGravada > 0 {
+			tributos = []string{ivaTributo}
 		}
 
 		cuerpo = append(cuerpo, domain.CuerpoDocumentoCreditoFiscal{
@@ -607,7 +612,7 @@ func buildCreditoFiscalItemsAndResumen(items []dto.ItemInput, ivaPerci float64, 
 			VentaNoSuj:      ventaNoSuj,
 			VentaExenta:     ventaExenta,
 			VentaGravada:    ventaGravada,
-			Tributos:        nil,
+			Tributos:        tributos,
 			PSV:             round2(item.PSV),
 			NoGravado:       round2(item.NoGravado),
 		})
@@ -623,7 +628,17 @@ func buildCreditoFiscalItemsAndResumen(items []dto.ItemInput, ivaPerci float64, 
 	totalNoGravado = round2(totalNoGravado)
 	ivaPerci = round2(ivaPerci)
 	ivaRete = round2(ivaRete)
-	totalPagar := round2(subTotalVentas + totalNoGravado + ivaPerci - ivaRete)
+	totalIVA := round2(totalGravada * 0.13)
+	montoTotalOperacion := round2(subTotalVentas + totalIVA + totalNoGravado)
+	totalPagar := round2(montoTotalOperacion + ivaPerci - ivaRete)
+	var tributos any
+	if totalIVA > 0 {
+		tributos = []domain.TributoResumen{{
+			Codigo:      ivaTributo,
+			Descripcion: "Impuesto al Valor Agregado 13%",
+			Valor:       totalIVA,
+		}}
+	}
 
 	return cuerpo, domain.ResumenCreditoFiscal{
 		TotalNoSuj:          round2(totalNoSuj),
@@ -635,11 +650,11 @@ func buildCreditoFiscalItemsAndResumen(items []dto.ItemInput, ivaPerci float64, 
 		DescuGravada:        0,
 		PorcentajeDescuento: 0,
 		TotalDescu:          round2(totalDescu),
-		Tributos:            nil,
+		Tributos:            tributos,
 		SubTotal:            subTotalVentas,
 		IVAPerci:            ivaPerci,
 		IVARete:             ivaRete,
-		MontoTotalOperacion: round2(subTotalVentas + totalNoGravado),
+		MontoTotalOperacion: montoTotalOperacion,
 		TotalNoGravado:      totalNoGravado,
 		TotalPagar:          totalPagar,
 		SaldoFavor:          0,

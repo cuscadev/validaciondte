@@ -70,6 +70,7 @@ type InvoiceSummary = {
   descuGravada: number;
   totalDescu: number;
   subTotal: number;
+  ivaTributo: number;
   ivaPerci: number;
   ivaRete: number;
   montoTotalOperacion: number;
@@ -140,7 +141,8 @@ function buildSummary(items: InvoiceLine[], ivaPerci: number, ivaRete: number): 
     if (line.ventaTipo === 'gravada') acc.descuGravada = roundMoney(acc.descuGravada + discount);
     acc.subTotalVentas = roundMoney(acc.totalNoSuj + acc.totalExenta + acc.totalGravada);
     acc.subTotal = acc.subTotalVentas;
-    acc.montoTotalOperacion = roundMoney(acc.subTotalVentas + acc.totalNoGravado);
+    acc.ivaTributo = roundMoney(acc.totalGravada * 0.13);
+    acc.montoTotalOperacion = roundMoney(acc.subTotalVentas + acc.ivaTributo + acc.totalNoGravado);
     return acc;
   }, {
     totalNoSuj: 0,
@@ -152,6 +154,7 @@ function buildSummary(items: InvoiceLine[], ivaPerci: number, ivaRete: number): 
     descuGravada: 0,
     totalDescu: 0,
     subTotal: 0,
+    ivaTributo: 0,
     ivaPerci: roundMoney(Math.max(0, ivaPerci || 0)),
     ivaRete: roundMoney(Math.max(0, ivaRete || 0)),
     montoTotalOperacion: 0,
@@ -536,7 +539,8 @@ export default function FacturarCreditoFiscalPage() {
                         <SummaryRow label="Descuento global a ventas no sujetas" value={money(summary.descuNoSuj)} />
                         <SummaryRow label="Descuento global a ventas exentas" value={money(summary.descuExenta)} />
                         <SummaryRow label="Descuento global a ventas gravadas" value={money(summary.descuGravada)} />
-                        <SummaryRow label="Nombre del Tributo" value="IVA" />
+                        <SummaryRow label="Nombre del Tributo" value="Impuesto al Valor Agregado 13%" />
+                        <SummaryRow label="Valor del Tributo" value={money(summary.ivaTributo)} />
                         <SummaryRow label="Sub-Total" value={money(summary.subTotal)} />
                         <SummaryRow label="IVA Percibido" value={money(summary.ivaPerci)} />
                         <SummaryRow label="IVA Retenido" value={money(summary.ivaRete)} />
