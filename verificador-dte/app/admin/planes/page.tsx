@@ -55,8 +55,8 @@ type PlansState = Record<string, PlanConfig>;
 const DEFAULT_PLANS: PlansState = {
   free: {
     allowedRoutes: DEFAULT_FREE_ROUTES,
-    queryLimit: 10,
-    mobileScanFolderLimit: 25,
+    queryLimit: null,
+    mobileScanFolderLimit: null,
     maxCollaborators: 2,
     price: 0,
     currency: 'USD',
@@ -67,8 +67,8 @@ const DEFAULT_PLANS: PlansState = {
   },
   premium: {
     allowedRoutes: DEFAULT_PREMIUM_ROUTES,
-    queryLimit: 100,
-    mobileScanFolderLimit: 50,
+    queryLimit: null,
+    mobileScanFolderLimit: null,
     maxCollaborators: 10,
     price: 19.99,
     currency: 'USD',
@@ -80,7 +80,7 @@ const DEFAULT_PLANS: PlansState = {
   pro: {
     allowedRoutes: DEFAULT_PRO_ROUTES,
     queryLimit: null,
-    mobileScanFolderLimit: 100,
+    mobileScanFolderLimit: null,
     maxCollaborators: 50,
     price: 49.99,
     currency: 'USD',
@@ -421,7 +421,7 @@ export default function PlanesPage() {
                       <input
                         type="checkbox"
                         checked={cfg.queryLimit === null}
-                        onChange={() => update(plan.id, 'queryLimit', cfg.queryLimit === null ? 100 : null)}
+                        onChange={() => update(plan.id, 'queryLimit', cfg.queryLimit === null ? 1 : null)}
                         className="size-4 rounded accent-yellow-400"
                       />
                       <span className="flex items-center gap-2">
@@ -449,7 +449,7 @@ export default function PlanesPage() {
                       <input
                         type="checkbox"
                         checked={cfg.mobileScanFolderLimit === null}
-                        onChange={() => update(plan.id, 'mobileScanFolderLimit', cfg.mobileScanFolderLimit === null ? 25 : null)}
+                        onChange={() => update(plan.id, 'mobileScanFolderLimit', cfg.mobileScanFolderLimit === null ? 1 : null)}
                         className="size-4 rounded accent-yellow-400"
                       />
                       <span className="flex items-center gap-2">

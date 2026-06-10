@@ -122,7 +122,7 @@ type PastedItem struct {
 	Fecha  string
 }
 
-const MaxItems = 10
+const MaxPastedItems = 10
 
 func ParsePastedItems(text string) []PastedItem {
 	lines := strings.Split(text, "\n")
@@ -148,7 +148,7 @@ func ParsePastedItems(text string) []PastedItem {
 		if codGen != "" && fecha != "" {
 			out = append(out, PastedItem{CodGen: strings.ToUpper(codGen), Fecha: fecha})
 		}
-		if len(out) >= MaxItems {
+		if len(out) >= MaxPastedItems {
 			break
 		}
 	}

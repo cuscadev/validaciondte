@@ -1,6 +1,6 @@
 import * as React from "react";
 import Image from "next/image";
-import { Ban, BarChart3, Eye, LogOut, MoreHorizontal, Pencil, Trash2, Unlock } from "lucide-react";
+import { Ban, BarChart3, Eye, LogOut, MoreHorizontal, Pencil, SlidersHorizontal, Trash2, Unlock } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +24,10 @@ export interface UserTableRow {
   organizationId?: string;
   collaboratorCount?: number;
   maxCollaborators?: number;
+  limits?: {
+    routeLimits?: Record<string, number | null>;
+    mobileScanFolderLimit?: number | null;
+  };
 }
 
 interface UserTableProps {
@@ -32,6 +36,7 @@ interface UserTableProps {
   onDelete: (uid: string) => void;
   onViewDetails: (row: UserTableRow) => void;
   onViewStats?: (row: UserTableRow) => void;
+  onEditLimits?: (row: UserTableRow) => void;
   onForceLogout: (uid: string) => void;
   onToggleBlock: (row: UserTableRow) => void;
 }
@@ -41,7 +46,7 @@ function getInitials(label: string) {
   return parts.slice(0, 2).map((part) => part[0]?.toUpperCase() ?? "").join("") || "?";
 }
 
-export function UserTable({ rows, onEdit, onDelete, onViewDetails, onViewStats, onForceLogout, onToggleBlock }: UserTableProps) {
+export function UserTable({ rows, onEdit, onDelete, onViewDetails, onViewStats, onEditLimits, onForceLogout, onToggleBlock }: UserTableProps) {
   return (
     <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-950">
       <table className="w-full table-fixed text-sm">
@@ -152,6 +157,12 @@ export function UserTable({ rows, onEdit, onDelete, onViewDetails, onViewStats, 
                           <Pencil className="size-4" />
                           Editar
                         </DropdownMenuItem>
+                        {row.role !== "superadmin" && (
+                          <DropdownMenuItem onClick={() => onEditLimits?.(row)}>
+                            <SlidersHorizontal className="size-4" />
+                            Configurar limites
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem onClick={() => onForceLogout(row.uid)}>
                           <LogOut className="size-4" />
                           Forzar cierre de sesion

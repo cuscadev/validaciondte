@@ -235,6 +235,8 @@ export default function DashboardPage() {
 
             monthly={monthly}
 
+            byModule={byModule}
+
             loading={showStatsSkeleton}
 
             onRefresh={() => refetch()}

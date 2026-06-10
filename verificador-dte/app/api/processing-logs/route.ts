@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Filter } from 'firebase-admin/firestore';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { incrementUserProcessingStats } from '@/lib/processing-stats-rollup';
 import { requireSuperadmin } from '@/lib/server-auth';
@@ -202,51 +201,24 @@ export async function GET(req: NextRequest) {
     const maxFiles = Number(params.get('maxFiles') || 0);
     const minRecords = Number(params.get('minRecords') || 0);
 
-    let query: FirebaseFirestore.Query = adminDb.collection('processingLogs');
+    const fromDate = from ? new Date(`${from}T00:00:00`) : null;
+    const toDate = to ? new Date(`${to}T23:59:59.999`) : null;
 
-    if (email) {
-      query = query.where(
-        Filter.or(
-          Filter.where('email', '==', email),
-          Filter.where('clientEmail', '==', email),
-          Filter.where('cliente', '==', email)
-        )
-      );
-    }
-
-    if (moduleFilter) {
-      query = query.where('routeKey', '==', moduleFilter);
-    }
-
-    if (outcome) {
-      query = query.where('outcome', '==', outcome);
-    }
-
-    if (from) {
-      query = query.where('createdAt', '>=', new Date(`${from}T00:00:00`));
-    }
-
-    if (to) {
-      query = query.where('createdAt', '<=', new Date(`${to}T23:59:59.999`));
-    }
-
-    query = query.orderBy('createdAt', 'desc');
+    let query: FirebaseFirestore.Query = adminDb
+      .collection('processingLogs')
+      .orderBy('createdAt', 'desc');
 
     if (cursor) {
       const decodedCursor = decodeCursor(cursor);
       query = query.startAfter(decodedCursor.createdAt);
     }
 
-    const snap = await query.limit(limit + 1).get();
+    const snap = await query.limit(Math.max(limit + 1, 100)).get();
 
     type ProcessingLogDocument = Record<string, unknown>;
 
     let docs = snap.docs;
     const hasMoreFromFirestore = docs.length > limit;
-
-    if (hasMoreFromFirestore) {
-      docs = docs.slice(0, limit);
-    }
 
     let logs = docs.map((doc) => {
       const data = doc.data() as ProcessingLogDocument;
@@ -297,6 +269,11 @@ export async function GET(req: NextRequest) {
       }
 
       if (outcome && outcomeValue !== outcome) return false;
+      const createdAtValue =
+        typeof record.createdAt === 'string' ? record.createdAt : serializeDate(record.createdAt);
+      const createdAtTime = createdAtValue ? new Date(createdAtValue).getTime() : 0;
+      if (fromDate && createdAtTime && createdAtTime < fromDate.getTime()) return false;
+      if (toDate && createdAtTime && createdAtTime > toDate.getTime()) return false;
       if (params.get('device') && !deviceNameValue.includes(String(params.get('device')).toLowerCase())) return false;
       if (params.get('ip') && !ipAddressValue.includes(String(params.get('ip')).toLowerCase())) return false;
       if (minFiles && fileCount < minFiles) return false;
@@ -306,7 +283,9 @@ export async function GET(req: NextRequest) {
       return true;
     });
 
-    const lastDoc = docs[docs.length - 1];
+    logs = logs.slice(0, limit);
+
+    const lastDoc = docs[Math.min(docs.length, limit) - 1];
     const lastData = lastDoc?.data() as ProcessingLogDocument | undefined;
     const lastCreatedAt = lastData?.createdAt as
       | FirebaseFirestore.Timestamp

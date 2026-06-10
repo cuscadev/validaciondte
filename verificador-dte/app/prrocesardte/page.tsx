@@ -4,6 +4,7 @@
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { auth } from '@/lib/firebase';
 
 type Item = { numItem: number; codGen: string; fechaEmi: string };
 
@@ -244,10 +245,18 @@ export default function Page() {
 
     setLoading(true);
     try {
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) throw new Error('No autorizado');
+
       const res = await fetch('/api/procesaedte', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
+          routeKey: 'verificacion_individual',
           items: items.map(it => ({ codGen: it.codGen.trim(), fecha: it.fechaEmi.trim() })),
           concurrencia: 8,
           ambiente,

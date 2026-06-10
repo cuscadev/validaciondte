@@ -72,6 +72,7 @@ export function mapOrganizationDoc(
     status: data.status === 'suspended' ? 'suspended' : 'active',
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
+    limits: data.limits as Organization['limits'],
     kyc: {
       ...defaultKyc(),
       ...kycRaw,

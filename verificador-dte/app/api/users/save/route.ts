@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { requireSuperadmin } from '@/lib/server-auth';
+import { sanitizeUsageLimits } from '@/lib/usage-limits';
 
 interface SaveUserBody {
   uid: string;
@@ -10,6 +11,7 @@ interface SaveUserBody {
     type: 'free' | 'premium' | 'pro';
     expiresAt: string;
   };
+  limits?: unknown;
 }
 
 export async function POST(req: NextRequest) {
@@ -23,7 +25,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Faltan campos obligatorios' }, { status: 400 });
     }
 
-    await adminDb.collection('users').doc(uid).set({
+    const payload: Record<string, unknown> = {
       uid,
       email,
       role,
@@ -31,7 +33,13 @@ export async function POST(req: NextRequest) {
         type: membership.type,
         expiresAt: membership.expiresAt ?? '',
       },
-    }, { merge: true });
+    };
+
+    if ('limits' in body) {
+      payload.limits = sanitizeUsageLimits(body.limits);
+    }
+
+    await adminDb.collection('users').doc(uid).set(payload, { merge: true });
 
     return NextResponse.json({ success: true });
   } catch (error) {

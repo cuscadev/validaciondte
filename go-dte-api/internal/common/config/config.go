@@ -23,6 +23,7 @@ type Config struct {
 	RedisURL                    string
 	RedisTTLSeconds             int
 	AsyncBatchThreshold         int
+	ProcessMaxItems             int
 	HaciendaEnvironment         string
 	HaciendaUserAgent           string
 	HaciendaConsultaDteLoteTest string
@@ -47,14 +48,15 @@ func Load() Config {
 		EnrichCreditNotes:             getenvBool("GO_DTE_ENRICH_NC", false),
 		PrewarmBrowsers:               getenvBool("GO_DTE_PREWARM", false),
 		RedisEnabled:                  getenvBool("GO_DTE_REDIS_ENABLED", false),
-		RedisURL:                      getenv("REDIS_URL", ""),
-		RedisTTLSeconds:               getenvInt("GO_DTE_REDIS_TTL", 600),
-		AsyncBatchThreshold:           getenvInt("GO_DTE_ASYNC_THRESHOLD", 10),
-		UseRodScraper:                 getenvBool("GO_DTE_USE_ROD", false),
-		UseBrowser:                    getenvBool("GO_DTE_USE_BROWSER", false),
-		HTTPFastPath:                  getenvBool("GO_DTE_HTTP_FAST_PATH", false),
-		HaciendaEnvironment:           getenv("HACIENDA_ENV", "test"),
-		HaciendaUserAgent:             getenv("HACIENDA_USER_AGENT", "KaiserDTE"),
+		RedisURL:                    getenv("REDIS_URL", ""),
+		RedisTTLSeconds:             getenvInt("GO_DTE_REDIS_TTL", 600),
+		AsyncBatchThreshold:         getenvInt("GO_DTE_ASYNC_THRESHOLD", 10),
+		ProcessMaxItems:             getenvInt("GO_DTE_PROCESS_MAX_ITEMS", 0),
+		UseRodScraper:               getenvBool("GO_DTE_USE_ROD", false),
+		UseBrowser:                  getenvBool("GO_DTE_USE_BROWSER", false),
+		HTTPFastPath:                getenvBool("GO_DTE_HTTP_FAST_PATH", false),
+		HaciendaEnvironment:         getenv("HACIENDA_ENV", "test"),
+		HaciendaUserAgent:           getenv("HACIENDA_USER_AGENT", "KaiserDTE"),
 		HaciendaConsultaDteLoteTest: getenv("HACIENDA_CONSULTA_DTE_LOTE_URL_TEST", "https://apitest.dtes.mh.gob.sv/fesv/recepcion/consultadtelote"),
 		HaciendaConsultaDteLoteProd: getenv("HACIENDA_CONSULTA_DTE_LOTE_URL_PROD", "https://api.dtes.mh.gob.sv/fesv/recepcion/consultadtelote"),
 	}

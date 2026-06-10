@@ -7,7 +7,12 @@ import { Buffer } from 'buffer';
 import { put } from '@vercel/blob';
 import * as XLSX from 'xlsx-js-style';
 
-import { proxyMultipartToGo } from '@/lib/go-dte-api';
+import { getGoDteApiUrl } from '@/lib/go-dte-api';
+import { requireAuth } from '@/lib/server-auth';
+import { assertMonthlyUsageLimit } from '@/lib/usage-limits';
+
+const UUID_REGEX = /^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$/;
+const DATE_REGEX = /^(\d{4}-\d{2}-\d{2}|\d{2}[/-]\d{2}[/-]\d{4})$/;
 
 export async function GET() {
   const rows = [
@@ -38,10 +43,40 @@ export async function GET() {
 }
 
 export async function POST(req) {
-  const body = Buffer.from(await req.arrayBuffer());
-  const contentType = req.headers.get('content-type') || 'multipart/form-data';
+  let user;
+  let form;
+  try {
+    user = await requireAuth(req);
+    form = await req.formData();
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'No autorizado' },
+      { status: 401 }
+    );
+  }
 
-  const upstream = await proxyMultipartToGo('/api/verificarcodyfecha', body, contentType);
+  const routeKey = String(form.get('routeKey') || 'verificarodyfecha');
+  const files = [...form.getAll('files'), ...form.getAll('file')].filter((item) => item instanceof File);
+  const count = await countCodFechaRows(files);
+
+  try {
+    await assertMonthlyUsageLimit(user, routeKey, count);
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Limite alcanzado' },
+      { status: 403 }
+    );
+  }
+
+  const upstreamForm = new FormData();
+  for (const file of files) {
+    upstreamForm.append('files', file, file.name);
+  }
+
+  const upstream = await fetch(`${getGoDteApiUrl()}/api/verificarcodyfecha`, {
+    method: 'POST',
+    body: upstreamForm,
+  });
   if (!upstream.ok) {
     return new Response(await upstream.text(), { status: upstream.status });
   }
@@ -74,4 +109,44 @@ export async function POST(req) {
   }
 
   return NextResponse.json(payloadBase);
+}
+
+async function countCodFechaRows(files) {
+  const seen = new Set();
+  for (const file of files) {
+    const name = file.name.toLowerCase();
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    if (name.endsWith('.xlsx') || name.endsWith('.xlsm') || name.endsWith('.xls')) {
+      const workbook = XLSX.read(buffer, { type: 'buffer' });
+      for (const sheetName of workbook.SheetNames) {
+        const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
+          header: 1,
+          raw: false,
+        });
+        for (const row of rows) {
+          addCodFechaRow(row, seen);
+        }
+      }
+      continue;
+    }
+
+    for (const line of buffer.toString('utf8').split(/\r?\n/)) {
+      addCodFechaRow(line.split(/\t|;|,/), seen);
+    }
+  }
+  return seen.size;
+}
+
+function addCodFechaRow(row, seen) {
+  const cells = Array.isArray(row) ? row.map((cell) => String(cell || '').trim()) : [];
+  if (cells.some((cell) => /cod/i.test(cell)) && cells.some((cell) => /fecha/i.test(cell))) {
+    return;
+  }
+
+  const cod = cells.find((cell) => UUID_REGEX.test(cell));
+  const fecha = cells.find((cell) => DATE_REGEX.test(cell));
+  if (cod && fecha) {
+    seen.add(`${cod.toUpperCase()}|${fecha}`);
+  }
 }

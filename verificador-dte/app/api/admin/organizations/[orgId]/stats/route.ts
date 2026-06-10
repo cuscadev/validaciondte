@@ -57,11 +57,6 @@ function getPeriodStart() {
   return new Date(Date.now() - PERIOD_DAYS * 86_400_000);
 }
 
-function isMissingIndexError(error: unknown) {
-  if (!(error instanceof Error)) return false;
-  return error.message.includes('FAILED_PRECONDITION') && error.message.includes('index');
-}
-
 function docToRawLog(doc: FirebaseFirestore.QueryDocumentSnapshot): RawLog {
   const data = doc.data();
   const outcome =
@@ -94,29 +89,15 @@ function sortLogs(logs: RawLog[]) {
 }
 
 async function fetchMemberLogs(uid: string, periodStart: Date): Promise<RawLog[]> {
-  try {
-    const snap = await adminDb
-      .collection('processingLogs')
-      .where('uid', '==', uid)
-      .where('createdAt', '>=', periodStart)
-      .orderBy('createdAt', 'desc')
-      .limit(LOG_LIMIT_PER_MEMBER)
-      .get();
+  const snap = await adminDb
+    .collection('processingLogs')
+    .where('uid', '==', uid)
+    .limit(FALLBACK_FETCH_LIMIT)
+    .get();
 
-    return snap.docs.map((doc) => docToRawLog(doc));
-  } catch (error) {
-    if (!isMissingIndexError(error)) throw error;
-
-    const snap = await adminDb
-      .collection('processingLogs')
-      .where('uid', '==', uid)
-      .limit(FALLBACK_FETCH_LIMIT)
-      .get();
-
-    return sortLogs(
-      snap.docs.map((doc) => docToRawLog(doc)).filter((log) => isWithinPeriod(log, periodStart))
-    ).slice(0, LOG_LIMIT_PER_MEMBER);
-  }
+  return sortLogs(
+    snap.docs.map((doc) => docToRawLog(doc)).filter((log) => isWithinPeriod(log, periodStart))
+  ).slice(0, LOG_LIMIT_PER_MEMBER);
 }
 
 function aggregateLogs(logs: RawLog[]): {

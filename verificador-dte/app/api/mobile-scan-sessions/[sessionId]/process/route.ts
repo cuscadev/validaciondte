@@ -4,6 +4,7 @@ import { requireAuth } from '@/lib/server-auth';
 import { consultCodFechaViaGo, DEFAULT_CONCURRENCY } from '@/lib/go-dte-api';
 import { recordServerProcessingLog } from '@/lib/server-processing-log';
 import { summarizeResults } from '@/lib/processing-log';
+import { resolveEffectiveUsageLimit } from '@/lib/usage-limits';
 import {
   buildWorkbook,
   isProbableCodGen,
@@ -172,6 +173,11 @@ export async function POST(req: NextRequest, context: Params) {
     processingStarted = true;
     startedAt = new Date();
     scanCount = scans.length;
+
+    const folderLimit = await resolveEffectiveUsageLimit(identity, 'escaneos-mobile');
+    if (folderLimit !== null && scans.length > folderLimit) {
+      throw new Error(`Esta carpeta tiene ${scans.length} links y tu limite actual es ${folderLimit}. Ajusta el limite en planes, organizacion o usuario antes de procesarla.`);
+    }
 
     const filas = [];
     const invalidos = [];

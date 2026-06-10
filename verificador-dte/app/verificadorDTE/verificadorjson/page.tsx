@@ -14,6 +14,7 @@ import {
 import UploadTableHints from '@/components/upload/UploadTableHints'
 import { useUploadResultsReveal } from '@/components/upload/useUploadResultsReveal'
 import { useAuth } from '@/components/AuthProvider'
+import { auth } from '@/lib/firebase'
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { recordProcessingLog } from '@/lib/client-processing-log'
@@ -84,6 +85,15 @@ type Resultado = {
   receptorNombreComercial?: string
 }
 
+type LimitCheck = {
+  allowed: boolean
+  error?: string
+  limit: number | null
+  used: number
+  incomingRecords: number
+  remaining: number | null
+}
+
 const JSON_BATCH_SIZE = 25
 
 function chunkFiles(files: File[], size: number) {
@@ -103,6 +113,8 @@ export default function Page() {
   const [data, setData] = useState<Resultado[]>([])
   const [downloadHref, setDownloadHref] = useState<string | null>(null)
   const [filename, setFilename] = useState('verificacion_json.xlsx')
+  const [limitCheck, setLimitCheck] = useState<LimitCheck | null>(null)
+  const [checkingLimit, setCheckingLimit] = useState(false)
 
   // búsqueda & paginación
   const [search, setSearch] = useState('')
@@ -115,10 +127,60 @@ export default function Page() {
     onResultsReveal,
   } = useUploadResultsReveal()
 
+  useEffect(() => {
+    let cancelled = false
+
+    async function checkSelectedFiles() {
+      setLimitCheck(null)
+      if (!selectedFiles.length || !firebaseUser) return
+
+      setCheckingLimit(true)
+      try {
+        const token = await (firebaseUser || auth.currentUser)?.getIdToken()
+        if (!token) throw new Error('No autorizado')
+        const res = await fetch('/api/usage-limits/check', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            routeKey: 'verificadorjson',
+            incomingRecords: selectedFiles.length,
+          }),
+        })
+        const data = await res.json() as LimitCheck
+        if (!cancelled) setLimitCheck({ ...data, allowed: res.ok && data.allowed !== false })
+      } catch (error) {
+        if (!cancelled) {
+          setLimitCheck({
+            allowed: false,
+            error: error instanceof Error ? error.message : 'No se pudo validar el limite',
+            limit: null,
+            used: 0,
+            incomingRecords: selectedFiles.length,
+            remaining: null,
+          })
+        }
+      } finally {
+        if (!cancelled) setCheckingLimit(false)
+      }
+    }
+
+    void checkSelectedFiles()
+    return () => {
+      cancelled = true
+    }
+  }, [firebaseUser, selectedFiles])
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (selectedFiles.length === 0) {
       toast.warning('Selecciona uno o mas archivos .json')
+      return
+    }
+    if (limitCheck && !limitCheck.allowed) {
+      toast.error(limitCheck.error || 'La cantidad de registros supera el limite permitido')
       return
     }
 
@@ -140,9 +202,17 @@ export default function Page() {
         const batch = batches[index]
 
         const fd = new FormData()
+        fd.append('routeKey', 'verificadorjson')
         batch.forEach((f) => fd.append('files', f))
 
-        const res = await fetch('/api/verificararchjson', { method: 'POST', body: fd })
+        const token = await (firebaseUser || auth.currentUser)?.getIdToken()
+        if (!token) throw new Error('No autorizado')
+
+        const res = await fetch('/api/verificararchjson', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: fd,
+        })
         if (!res.ok) {
           const txt = await res.text()
           throw new Error(txt || `Error al procesar el lote ${index + 1}`)
@@ -338,7 +408,7 @@ export default function Page() {
               }
               files={selectedFiles}
               onFilesChange={setSelectedFiles}
-              loading={loading}
+              loading={loading || checkingLimit}
               accept={{ 'application/json': ['.json'] }}
               sidePanel={
                 <UploadTableHints>
@@ -349,6 +419,14 @@ export default function Page() {
 
             </UploadFormAccordion>
           </form>
+
+          {limitCheck && limitCheck.limit !== null && (
+            <div className={`rounded-md border px-4 py-3 text-sm ${limitCheck.allowed ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200' : 'border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200'}`}>
+              {limitCheck.allowed
+                ? `Este proceso usara ${limitCheck.incomingRecords} consultas. Llevas ${limitCheck.used} de ${limitCheck.limit}; te quedaran ${limitCheck.remaining}.`
+                : limitCheck.error || `Estos archivos tienen ${limitCheck.incomingRecords} consultas y superan tu saldo mensual disponible.`}
+            </div>
+          )}
 
           <UploadResultsReveal visible={resultsVisible && data.length > 0}>
           <UploadTableToolbar

@@ -3,6 +3,7 @@ import { adminDb } from '@/lib/firebase-admin';
 import { getOrganization, listCollaborators } from '@/lib/organization-admin';
 import { buildOrganizationDisplay } from '@/lib/org-display';
 import { requireSuperadmin } from '@/lib/server-auth';
+import { sanitizeUsageLimits } from '@/lib/usage-limits';
 
 export async function GET(
   req: NextRequest,
@@ -31,6 +32,7 @@ export async function GET(
         membershipType: org.membershipType,
         collaboratorCount: org.collaboratorCount,
         maxCollaborators: org.maxCollaborators,
+        limits: org.limits || {},
         status: org.status,
         kycCompleted: org.kyc.kycCompleted,
       },
@@ -71,6 +73,7 @@ export async function PATCH(
     const { orgId } = await params;
     const body = await req.json() as {
       maxCollaborators?: number;
+      limits?: unknown;
       status?: 'active' | 'suspended';
     };
 
@@ -80,6 +83,9 @@ export async function PATCH(
     }
     if (body.status === 'active' || body.status === 'suspended') {
       patch.status = body.status;
+    }
+    if ('limits' in body) {
+      patch.limits = sanitizeUsageLimits(body.limits);
     }
 
     await adminDb.collection('organizations').doc(orgId).set(patch, { merge: true });

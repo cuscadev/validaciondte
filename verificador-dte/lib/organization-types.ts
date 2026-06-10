@@ -39,11 +39,23 @@ export interface Organization {
   createdAt: unknown;
   updatedAt: unknown;
   kyc: OrganizationKyc;
+  limits?: {
+    routeLimits?: Record<string, number | null>;
+    mobileScanFolderLimit?: number | null;
+    resetDayOfMonth?: number;
+    renewalDate?: string;
+    automaticReset?: boolean;
+  };
 }
 
 export interface PlanConfigWithSeats {
   maxCollaborators?: number;
   queryLimit?: number | null;
+  mobileScanFolderLimit?: number | null;
+  routeLimits?: Record<string, number | null>;
+  resetDayOfMonth?: number;
+  renewalDate?: string;
+  automaticReset?: boolean;
   allowedRoutes?: string[];
   price?: number;
   currency?: string;

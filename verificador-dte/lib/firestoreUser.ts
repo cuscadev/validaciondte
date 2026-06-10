@@ -14,6 +14,14 @@ export interface Membership {
   expiresAt: string; // ISO date
 }
 
+export interface UsageLimits {
+  routeLimits?: Record<string, number | null>;
+  mobileScanFolderLimit?: number | null;
+  resetDayOfMonth?: number;
+  renewalDate?: string;
+  automaticReset?: boolean;
+}
+
 export interface AppUser {
   uid: string;
   email: string;
@@ -33,6 +41,7 @@ export interface AppUser {
   disabled?: boolean;
   forceLogoutAt?: unknown;
   blockedAt?: unknown;
+  limits?: UsageLimits;
 }
 
 export function isOrgAdmin(user: Pick<AppUser, 'role' | 'orgRole'> | null | undefined) {

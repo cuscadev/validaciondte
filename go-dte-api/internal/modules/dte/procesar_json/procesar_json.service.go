@@ -113,8 +113,9 @@ func (s *Service) Process(ctx context.Context, req dto.ProcessJSONRequest) (shar
 	if len(items) == 0 {
 		return shared.ProcessResponse{}, errors.New("sin items para verificar")
 	}
-	if len(items) > shared.MaxItems {
-		return shared.ProcessResponse{}, fmt.Errorf("maximo permitido: %d items", shared.MaxItems)
+	maxItems := s.cfg.ProcessMaxItems
+	if maxItems > 0 && len(items) > maxItems {
+		return shared.ProcessResponse{}, fmt.Errorf("maximo permitido: %d items", maxItems)
 	}
 
 	type resolvedItem struct {

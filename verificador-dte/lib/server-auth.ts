@@ -8,6 +8,7 @@ import {
   type UserRole,
 } from '@/lib/firestoreUser';
 import { getOrganization } from '@/lib/organization-admin';
+import { SESSION_COOKIE_NAME } from '@/lib/session-cookie';
 
 export type AuthUser = AppUser & { email: string };
 
@@ -24,7 +25,9 @@ async function loadAppUser(uid: string): Promise<AuthUser | null> {
 
 export async function verifyBearer(req: NextRequest) {
   const authHeader = req.headers.get('Authorization');
-  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : '';
+  const token = authHeader?.startsWith('Bearer ')
+    ? authHeader.slice(7)
+    : req.cookies.get(SESSION_COOKIE_NAME)?.value || '';
   if (!token) throw new Error('No autorizado');
   const decoded = await adminAuth.verifyIdToken(token);
   return decoded;

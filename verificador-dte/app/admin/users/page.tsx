@@ -15,6 +15,7 @@ import {
   FileText,
   Percent,
   ShieldCheck,
+  SlidersHorizontal,
   UserPlus,
   Users,
   XCircle,
@@ -33,10 +34,12 @@ import { Button } from '@/components/ui/button';
 import {
   AppUser,
   MembershipType,
+  UsageLimits,
   UserRole,
   getAllUsers,
   getUser,
 } from '@/lib/firestoreUser';
+import { PLAN_ROUTE_GROUPS } from '@/lib/plan-routes';
 import { auth } from '@/lib/firebase';
 import { QUERY_CACHE_MS } from '@/components/QueryProvider';
 import {
@@ -50,6 +53,7 @@ import type {
 } from '@/lib/dashboard-stats';
 
 type UserFormState = Partial<AppUser> & { password?: string };
+type LimitDraft = Record<string, string>;
 
 type ClientApiRow = {
   uid: string;
@@ -78,6 +82,12 @@ type AdminOrganizationDetailResponse = {
   owner: OrgMembersDetail['owner'];
   collaborators: OrgMembersDetail['collaborators'];
 };
+
+const LIMIT_ROUTES = PLAN_ROUTE_GROUPS.flatMap((group) => group.routes);
+const INHERIT_LIMIT_VALUE = '';
+const UNLIMITED_LIMIT_VALUE = 'unlimited';
+const RENEWAL_DATE_DRAFT_KEY = '__renewalDate';
+const AUTOMATIC_RESET_DRAFT_KEY = '__automaticReset';
 
 type AdminOrganizationStatsMember = {
   uid: string;
@@ -108,6 +118,28 @@ type AdminOrganizationStatsResponse = {
   members: AdminOrganizationStatsMember[];
 };
 
+type UsageRouteRow = {
+  key: string;
+  label: string;
+  groupKey: string;
+  groupLabel: string;
+  limit: number | null;
+  used: number;
+  fromLogs: number;
+  adjustment: number;
+  remaining: number | null;
+};
+
+type AdminUsageLimitsResponse = {
+  uid: string;
+  monthKey: string;
+  resetDayOfMonth: number;
+  renewalDate?: string;
+  automaticReset: boolean;
+  periodStart: string;
+  routes: UsageRouteRow[];
+};
+
 const ORGANIZATIONS_QUERY_KEY = ['admin', 'organizations'] as const;
 const ROLE_FILTERS = [
   { id: 'all', label: 'Todos' },
@@ -120,6 +152,62 @@ type RoleFilter = (typeof ROLE_FILTERS)[number]['id'];
 
 function getErrorMessage(err: unknown, fallback: string) {
   return err instanceof Error ? err.message : fallback;
+}
+
+function limitValueToDraft(value: number | null | undefined) {
+  if (value === null) return UNLIMITED_LIMIT_VALUE;
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  return INHERIT_LIMIT_VALUE;
+}
+
+function limitsToDraft(limits?: UsageLimits): LimitDraft {
+  const draft: LimitDraft = {};
+  draft[RENEWAL_DATE_DRAFT_KEY] = limits?.renewalDate || INHERIT_LIMIT_VALUE;
+  draft[AUTOMATIC_RESET_DRAFT_KEY] =
+    typeof limits?.automaticReset === 'boolean'
+      ? String(limits.automaticReset)
+      : INHERIT_LIMIT_VALUE;
+  for (const route of LIMIT_ROUTES) {
+    const hasMobileLimit =
+      route.key === 'escaneos-mobile' &&
+      Object.prototype.hasOwnProperty.call(limits || {}, 'mobileScanFolderLimit');
+    const value = hasMobileLimit
+      ? limits?.mobileScanFolderLimit
+      : limits?.routeLimits?.[route.key];
+    draft[route.key] = limitValueToDraft(value);
+  }
+  return draft;
+}
+
+function draftToLimits(draft: LimitDraft): UsageLimits {
+  const routeLimits: Record<string, number | null> = {};
+  let mobileScanFolderLimit: number | null | undefined;
+  const renewalDate = String(draft[RENEWAL_DATE_DRAFT_KEY] || '').trim() || undefined;
+  const automaticResetRaw = String(draft[AUTOMATIC_RESET_DRAFT_KEY] || '').trim();
+  const automaticReset =
+    automaticResetRaw === 'true' ? true : automaticResetRaw === 'false' ? false : undefined;
+  const resetDayOfMonth = renewalDate
+    ? Math.min(31, Math.max(1, Number(renewalDate.slice(8, 10)) || 1))
+    : undefined;
+
+  for (const route of LIMIT_ROUTES) {
+    const raw = String(draft[route.key] ?? '').trim();
+    if (!raw) continue;
+    const value = raw === UNLIMITED_LIMIT_VALUE ? null : Math.max(1, Number(raw) || 1);
+    if (route.key === 'escaneos-mobile') {
+      mobileScanFolderLimit = value;
+    } else {
+      routeLimits[route.key] = value;
+    }
+  }
+
+  return {
+    ...(Object.keys(routeLimits).length ? { routeLimits } : {}),
+    ...(mobileScanFolderLimit !== undefined ? { mobileScanFolderLimit } : {}),
+    ...(resetDayOfMonth !== undefined ? { resetDayOfMonth } : {}),
+    ...(renewalDate !== undefined ? { renewalDate } : {}),
+    ...(automaticReset !== undefined ? { automaticReset } : {}),
+  };
 }
 
 export default function UsersAdminPage() {
@@ -135,7 +223,11 @@ export default function UsersAdminPage() {
   const [editMode, setEditMode] = useState<string | null>(null);
   const [delegateUser, setDelegateUser] = useState<UserTableRow | null>(null);
   const [statsUser, setStatsUser] = useState<UserTableRow | null>(null);
+  const [limitsUser, setLimitsUser] = useState<UserTableRow | null>(null);
   const [delegateLimit, setDelegateLimit] = useState('');
+  const [orgLimitDraft, setOrgLimitDraft] = useState<LimitDraft>({});
+  const [userLimitDraft, setUserLimitDraft] = useState<LimitDraft>({});
+  const [usageAdjustments, setUsageAdjustments] = useState<Record<string, string>>({});
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -177,6 +269,21 @@ export default function UsersAdminPage() {
       ? `/api/admin/organizations/${statsOrgId}/stats`
       : '/api/admin/organizations/_/stats',
     enabled: !checkingRole && statsOrgId !== null,
+  });
+  const usageQuery = useGetQuery<AdminUsageLimitsResponse>({
+    queryKey: ['admin', 'usage-limits', limitsUser?.uid || ''],
+    path: limitsUser?.uid
+      ? `/api/admin/usage-limits?uid=${encodeURIComponent(limitsUser.uid)}`
+      : '/api/admin/usage-limits',
+    enabled: !checkingRole && limitsUser !== null,
+  });
+  const delegateUsageUid = delegateUser?.uid || '';
+  const delegateUsageQuery = useGetQuery<AdminUsageLimitsResponse>({
+    queryKey: ['admin', 'usage-limits', delegateUsageUid],
+    path: delegateUsageUid
+      ? `/api/admin/usage-limits?uid=${encodeURIComponent(delegateUsageUid)}`
+      : '/api/admin/usage-limits',
+    enabled: !checkingRole && delegateUser !== null,
   });
 
   const fetchUsers = useCallback(async () => {
@@ -228,6 +335,14 @@ export default function UsersAdminPage() {
       setError(getErrorMessage(orgDetailQuery.error, 'No se pudo cargar el detalle del cliente.'));
     }
   }, [orgDetailQuery.error]);
+
+  useEffect(() => {
+    if (orgDetailQuery.data?.organization?.limits) {
+      setOrgLimitDraft(limitsToDraft(orgDetailQuery.data.organization.limits));
+    } else if (delegateUser) {
+      setOrgLimitDraft(limitsToDraft());
+    }
+  }, [delegateUser, orgDetailQuery.data?.organization?.limits]);
 
   useEffect(() => {
     if (orgStatsQuery.error) {
@@ -360,11 +475,19 @@ export default function UsersAdminPage() {
     if (row.role !== 'cliente') return;
     setDelegateUser(row);
     setDelegateLimit(String(row.maxCollaborators ?? 0));
+    setOrgLimitDraft(limitsToDraft());
+    setUsageAdjustments({});
   }
 
   function openClientStats(row: UserTableRow) {
     if (row.role !== 'cliente') return;
     setStatsUser(row);
+  }
+
+  function openUserLimits(row: UserTableRow) {
+    setLimitsUser(row);
+    setUserLimitDraft(limitsToDraft(row.limits));
+    setUsageAdjustments({});
   }
 
   function handleEditDetailMember(uid: string) {
@@ -399,6 +522,102 @@ export default function UsersAdminPage() {
     toast.success('Cupo de delegados actualizado');
   }
 
+  async function saveOrganizationLimits() {
+    if (!delegateUser) return;
+    const orgId = delegateUser.organizationId || delegateUser.uid;
+    const token = await auth.currentUser?.getIdToken();
+    const res = await fetch(`/api/admin/organizations/${orgId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ limits: draftToLimits(orgLimitDraft) }),
+    });
+    const data = await res.json().catch(() => ({})) as { error?: string };
+    if (!res.ok) {
+      toast.error(data.error || 'No se pudieron actualizar los limites');
+      return;
+    }
+    await invalidateGetQueries(queryClient, ORGANIZATIONS_QUERY_KEY);
+    await invalidateGetQueries(queryClient, ['admin', 'organizations', orgId]);
+    toast.success('Limites de organizacion actualizados');
+  }
+
+  async function saveUserLimits() {
+    if (!limitsUser) return;
+    const user = users.find((item) => item.uid === limitsUser.uid);
+    if (!user) {
+      toast.error('No se encontro el usuario.');
+      return;
+    }
+
+    const token = await auth.currentUser?.getIdToken();
+    const res = await fetch('/api/users/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        uid: user.uid,
+        email: user.email,
+        role: user.role,
+        membership: user.membership,
+        limits: draftToLimits(userLimitDraft),
+      }),
+    });
+    const data = await res.json().catch(() => ({})) as { error?: string };
+    if (!res.ok) {
+      toast.error(data.error || 'No se pudieron actualizar los limites');
+      return;
+    }
+    if (user.role === 'cliente') {
+      const orgId = user.organizationId || user.uid;
+      const orgRes = await fetch(`/api/admin/organizations/${orgId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ limits: draftToLimits(userLimitDraft) }),
+      });
+      const orgData = await orgRes.json().catch(() => ({})) as { error?: string };
+      if (!orgRes.ok) {
+        toast.error(orgData.error || 'Limite guardado en usuario, pero no en organizacion');
+        return;
+      }
+      await invalidateGetQueries(queryClient, ORGANIZATIONS_QUERY_KEY);
+      await invalidateGetQueries(queryClient, ['admin', 'organizations', orgId]);
+    }
+    await queryClient.invalidateQueries({ queryKey: ['users'] });
+    await queryClient.invalidateQueries({ queryKey: ['users', user.uid] });
+    await fetchUsers();
+    setLimitsUser(null);
+    setUserLimitDraft({});
+    toast.success('Limites de usuario actualizados');
+  }
+
+  async function adjustUserUsage(
+    routeKey: string,
+    action: 'increment' | 'decrement' | 'set',
+    targetUid = limitsUser?.uid
+  ) {
+    if (!targetUid) return;
+    const rawAmount = action === 'set' ? '0' : usageAdjustments[routeKey] || '0';
+    const amount = Math.max(0, Number(rawAmount) || 0);
+    const token = await auth.currentUser?.getIdToken();
+    const res = await fetch('/api/admin/usage-limits', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        uid: targetUid,
+        routeKey,
+        action,
+        amount,
+      }),
+    });
+    const data = await res.json().catch(() => ({})) as { error?: string };
+    if (!res.ok) {
+      toast.error(data.error || 'No se pudo ajustar el consumo');
+      return;
+    }
+    setUsageAdjustments((current) => ({ ...current, [routeKey]: '' }));
+    await invalidateGetQueries(queryClient, ['admin', 'usage-limits', targetUid]);
+    toast.success('Consumo mensual actualizado');
+  }
+
   const tableRows: UserTableRow[] = useMemo(
     () =>
       users.map((user) => {
@@ -416,6 +635,7 @@ export default function UsersAdminPage() {
           organizationId: user.organizationId || org?.organizationId || user.uid,
           collaboratorCount: org?.organization?.collaboratorCount,
           maxCollaborators: org?.organization?.maxCollaborators,
+          limits: user.limits,
         };
       }),
     [orgByOwnerUid, users]
@@ -558,6 +778,7 @@ export default function UsersAdminPage() {
             onDelete={handleDelete}
             onViewDetails={openDelegateLimit}
             onViewStats={openClientStats}
+            onEditLimits={openUserLimits}
             onForceLogout={(uid) => handleSessionAction(uid, 'forceLogout')}
             onToggleBlock={(row) => handleSessionAction(row.uid, row.disabled ? 'unblock' : 'block')}
           />
@@ -630,7 +851,10 @@ export default function UsersAdminPage() {
 
       <Modal
         open={delegateUser !== null}
-        onClose={() => setDelegateUser(null)}
+        onClose={() => {
+          setDelegateUser(null);
+          setUsageAdjustments({});
+        }}
         className="max-h-[90vh] w-[min(96vw,72rem)] overflow-y-auto"
       >
         <div className="space-y-4">
@@ -666,6 +890,24 @@ export default function UsersAdminPage() {
             </div>
           </div>
 
+          <LimitEditor
+            title="Limites de la organizacion"
+            description="Aplican al titular y a todos sus colaboradores, salvo que un usuario tenga un limite propio."
+            draft={orgLimitDraft}
+            onChange={setOrgLimitDraft}
+            onSave={saveOrganizationLimits}
+          />
+
+          <UsageAdjustmentPanel
+            loading={delegateUsageQuery.isFetching && !delegateUsageQuery.data}
+            data={delegateUsageQuery.data ?? null}
+            drafts={usageAdjustments}
+            onDraftChange={(routeKey, value) =>
+              setUsageAdjustments((current) => ({ ...current, [routeKey]: value }))
+            }
+            onAdjust={(routeKey, action) => adjustUserUsage(routeKey, action, delegateUser?.uid)}
+          />
+
           <OrgMembersPanel
             loading={orgDetailQuery.isFetching && !orgDetailQuery.data}
             detail={orgDetailQuery.data ?? null}
@@ -684,6 +926,35 @@ export default function UsersAdminPage() {
           data={orgStatsQuery.data ?? null}
           loading={orgStatsQuery.isFetching && !orgStatsQuery.data}
         />
+      </Modal>
+
+      <Modal
+        open={limitsUser !== null}
+        onClose={() => {
+          setLimitsUser(null);
+          setUserLimitDraft({});
+          setUsageAdjustments({});
+        }}
+        className="max-h-[90vh] w-[min(96vw,72rem)] overflow-y-auto"
+      >
+        <div className="space-y-4">
+          <LimitEditor
+            title={`Limites de ${limitsUser?.displayName || limitsUser?.email || 'usuario'}`}
+            description="Estos valores tienen prioridad sobre los limites de la organizacion y del plan."
+            draft={userLimitDraft}
+            onChange={setUserLimitDraft}
+            onSave={saveUserLimits}
+          />
+          <UsageAdjustmentPanel
+            loading={usageQuery.isFetching && !usageQuery.data}
+            data={usageQuery.data ?? null}
+            drafts={usageAdjustments}
+            onDraftChange={(routeKey, value) =>
+              setUsageAdjustments((current) => ({ ...current, [routeKey]: value }))
+            }
+            onAdjust={adjustUserUsage}
+          />
+        </div>
       </Modal>
     </main>
   );
@@ -704,6 +975,204 @@ function StatCard({
       <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-500">{label}</p>
       <p className="mt-1 text-sm font-bold">{value}</p>
     </div>
+  );
+}
+
+function LimitEditor({
+  title,
+  description,
+  draft,
+  onChange,
+  onSave,
+}: {
+  title: string;
+  description: string;
+  draft: LimitDraft;
+  onChange: (next: LimitDraft) => void;
+  onSave: () => void;
+}) {
+  const updateLimit = (routeKey: string, value: string) => {
+    onChange({ ...draft, [routeKey]: value });
+  };
+
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-zinc-950">
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div>
+          <h3 className="flex items-center gap-2 text-lg font-bold">
+            <SlidersHorizontal className="size-5 text-amber-600 dark:text-yellow-300" />
+            {title}
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+        </div>
+        <Button type="button" className="bg-yellow-400 font-bold text-black hover:bg-yellow-300" onClick={onSave}>
+          Guardar limites
+        </Button>
+      </div>
+
+      <div className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-black md:grid-cols-2">
+        <label className="grid gap-1 text-sm">
+          <span className="font-medium">Fecha de renovacion</span>
+          <input
+            type="date"
+            value={draft[RENEWAL_DATE_DRAFT_KEY] || ''}
+            onChange={(event) => updateLimit(RENEWAL_DATE_DRAFT_KEY, event.target.value)}
+            className="rounded-md border border-slate-200 bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-yellow-400/40 dark:border-white/10"
+          />
+          <span className="text-xs text-muted-foreground">
+            Si es automatica, se renovara cada mes usando el dia de esta fecha.
+          </span>
+        </label>
+        <label className="grid gap-1 text-sm">
+          <span className="font-medium">Renovacion</span>
+          <select
+            value={draft[AUTOMATIC_RESET_DRAFT_KEY] || INHERIT_LIMIT_VALUE}
+            onChange={(event) => updateLimit(AUTOMATIC_RESET_DRAFT_KEY, event.target.value)}
+            className="rounded-md border border-slate-200 bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-yellow-400/40 dark:border-white/10"
+          >
+            <option value={INHERIT_LIMIT_VALUE}>Heredar</option>
+            <option value="true">Automatica mensual</option>
+            <option value="false">Manual</option>
+          </select>
+          <span className="text-xs text-muted-foreground">
+            En manual el ciclo no cambia solo; el admin decide cuando resetear.
+          </span>
+        </label>
+      </div>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        {PLAN_ROUTE_GROUPS.map((group) => (
+          <div key={group.key} className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-black">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-500">
+              {group.label}
+            </p>
+            <div className="grid gap-2">
+              {group.routes.map((route) => (
+                <label key={route.key} className="grid gap-1 text-sm">
+                  <span className="font-medium">{route.label}</span>
+                  <div className="grid grid-cols-[minmax(0,1fr)_8rem] gap-2">
+                    <input
+                      type="number"
+                      min={1}
+                      value={draft[route.key] === UNLIMITED_LIMIT_VALUE ? '' : draft[route.key] || ''}
+                      onChange={(event) => updateLimit(route.key, event.target.value)}
+                      placeholder="Heredar"
+                      disabled={draft[route.key] === UNLIMITED_LIMIT_VALUE}
+                      className="w-full rounded-md border border-slate-200 bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-yellow-400/40 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10"
+                    />
+                    <select
+                      value={draft[route.key] === UNLIMITED_LIMIT_VALUE ? UNLIMITED_LIMIT_VALUE : draft[route.key] ? 'custom' : INHERIT_LIMIT_VALUE}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        updateLimit(route.key, value === 'custom' ? '1' : value);
+                      }}
+                      className="rounded-md border border-slate-200 bg-background px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-yellow-400/40 dark:border-white/10"
+                    >
+                      <option value={INHERIT_LIMIT_VALUE}>Heredar</option>
+                      <option value="custom">Fijo</option>
+                      <option value={UNLIMITED_LIMIT_VALUE}>Ilimitado</option>
+                    </select>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function UsageAdjustmentPanel({
+  loading,
+  data,
+  drafts,
+  onDraftChange,
+  onAdjust,
+}: {
+  loading: boolean;
+  data: AdminUsageLimitsResponse | null;
+  drafts: Record<string, string>;
+  onDraftChange: (routeKey: string, value: string) => void;
+  onAdjust: (routeKey: string, action: 'increment' | 'decrement' | 'set') => void;
+}) {
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-zinc-950">
+      <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+        <div>
+          <h3 className="flex items-center gap-2 text-lg font-bold">
+            <Activity className="size-5 text-amber-600 dark:text-yellow-300" />
+            Consumo mensual
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Cada usuario tiene su propio conteo. Los ajustes modifican el saldo del mes sin borrar el historial.
+          </p>
+        </div>
+        <div className="rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold dark:border-white/10">
+          {data
+            ? `${data.automaticReset ? 'Automatico' : 'Manual'} · ciclo desde ${formatDate(data.periodStart)}${data.renewalDate ? ` · renovacion ${formatDate(data.renewalDate)}` : ` · dia ${data.resetDayOfMonth}`}`
+            : 'Ciclo actual'}
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="mt-4 rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-muted-foreground dark:border-white/15">
+          Cargando consumo...
+        </div>
+      ) : (
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full min-w-[860px] text-sm">
+            <thead className="bg-slate-100 text-slate-950 dark:bg-zinc-900 dark:text-zinc-100">
+              <tr>
+                <th className="px-3 py-2 text-left">Modulo</th>
+                <th className="px-3 py-2 text-right">Usado</th>
+                <th className="px-3 py-2 text-right">Limite</th>
+                <th className="px-3 py-2 text-right">Restante</th>
+                <th className="px-3 py-2 text-right">Logs</th>
+                <th className="px-3 py-2 text-right">Ajuste</th>
+                <th className="px-3 py-2 text-left">Modificar</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200 dark:divide-white/10">
+              {data?.routes.map((route) => (
+                <tr key={route.key}>
+                  <td className="px-3 py-3">
+                    <div className="font-semibold">{route.label}</div>
+                    <div className="text-xs text-muted-foreground">{route.groupLabel}</div>
+                  </td>
+                  <td className="px-3 py-3 text-right font-bold">{route.used}</td>
+                  <td className="px-3 py-3 text-right">{route.limit === null ? 'Ilimitado' : route.limit}</td>
+                  <td className="px-3 py-3 text-right">{route.remaining === null ? '-' : route.remaining}</td>
+                  <td className="px-3 py-3 text-right">{route.fromLogs}</td>
+                  <td className="px-3 py-3 text-right">{route.adjustment}</td>
+                  <td className="px-3 py-3">
+                    <div className="flex min-w-[18rem] items-center gap-2">
+                      <input
+                        type="number"
+                        min={0}
+                        value={drafts[route.key] || ''}
+                        onChange={(event) => onDraftChange(route.key, event.target.value)}
+                        placeholder="Cantidad"
+                        className="w-24 rounded-md border border-slate-200 bg-background px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-yellow-400/40 dark:border-white/10"
+                      />
+                      <Button type="button" variant="outline" size="sm" onClick={() => onAdjust(route.key, 'increment')}>
+                        Sumar
+                      </Button>
+                      <Button type="button" variant="outline" size="sm" onClick={() => onAdjust(route.key, 'decrement')}>
+                        Restar
+                      </Button>
+                      <Button type="button" variant="outline" size="sm" onClick={() => onAdjust(route.key, 'set')}>
+                        Resetear a cero
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
   );
 }
 

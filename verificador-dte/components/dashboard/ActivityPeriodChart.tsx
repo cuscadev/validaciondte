@@ -6,7 +6,7 @@ import { Activity, ArrowRight, RefreshCw } from 'lucide-react';
 import { FadeIn } from '@/components/motion/FadeIn';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import type { ActivityPeriodPoint } from '@/lib/dashboard-stats';
+import type { ActivityPeriodPoint, DashboardModuleStat } from '@/lib/dashboard-stats';
 import { computeErrorRate } from '@/lib/dashboard-stats';
 import { cn } from '@/lib/utils';
 
@@ -16,6 +16,7 @@ type ActivityPeriodChartProps = {
   daily: ActivityPeriodPoint[];
   weekly: ActivityPeriodPoint[];
   monthly: ActivityPeriodPoint[];
+  byModule?: DashboardModuleStat[];
   loading?: boolean;
   emptyHref?: string;
   className?: string;
@@ -584,10 +585,58 @@ function OutcomeAreaChart({ points }: { points: ActivityPeriodPoint[] }) {
   );
 }
 
+function ModuleUsageBars({ byModule }: { byModule: DashboardModuleStat[] }) {
+  const modules = byModule.slice(0, 6);
+  const maxRecords = Math.max(...modules.map((mod) => mod.records), 1);
+
+  if (modules.length === 0) {
+    return (
+      <div className="rounded-lg border border-border/60 bg-muted/10 p-4 text-sm text-muted-foreground">
+        Sin uso por modulo en este periodo.
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-border/60 bg-muted/10 p-3">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <p className="text-sm font-semibold">Uso por modulo</p>
+        <p className="text-[11px] text-muted-foreground">DTEs procesados</p>
+      </div>
+      <div className="space-y-3">
+        {modules.map((mod) => {
+          const width = Math.max(4, (mod.records / maxRecords) * 100);
+          return (
+            <div key={`${mod.routeKey}-${mod.moduleName}`} className="space-y-1.5">
+              <div className="flex items-center justify-between gap-3 text-xs">
+                <span className="min-w-0 truncate font-medium">{mod.moduleName}</span>
+                <span className="shrink-0 font-semibold">{mod.records}</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-background">
+                <div
+                  className="h-full rounded-full bg-amber-500 dark:bg-yellow-400"
+                  style={{ width: `${width}%` }}
+                />
+              </div>
+              <div className="flex items-center justify-between gap-3 text-[11px] text-muted-foreground">
+                <span>{mod.count} procesos</span>
+                <span>
+                  {mod.successCount} ok / {mod.errorCount} error
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function ActivityPeriodChart({
   daily,
   weekly,
   monthly,
+  byModule = [],
   loading,
   emptyHref = '/verificadorDTE/verificador',
   className,
@@ -645,7 +694,10 @@ export function ActivityPeriodChart({
         </CardHeader>
         <CardContent className="px-4">
           {loading ? (
-            <div className="h-[210px] animate-pulse rounded-lg bg-muted/40" />
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_18rem]">
+              <div className="h-[210px] animate-pulse rounded-lg bg-muted/40" />
+              <div className="h-[210px] animate-pulse rounded-lg bg-muted/40" />
+            </div>
           ) : !hasActivity ? (
             <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
               <span className="flex size-12 items-center justify-center rounded-xl bg-muted">
@@ -664,7 +716,10 @@ export function ActivityPeriodChart({
               </Link>
             </div>
           ) : (
-            <OutcomeAreaChart points={activePoints} />
+            <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_18rem]">
+              <OutcomeAreaChart points={activePoints} />
+              <ModuleUsageBars byModule={byModule} />
+            </div>
           )}
         </CardContent>
       </Card>

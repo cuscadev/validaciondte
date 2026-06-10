@@ -21,6 +21,10 @@ export type OrgMembersDetail = {
     allowedEmailDomain?: string;
     collaboratorCount?: number;
     maxCollaborators?: number;
+    limits?: {
+      routeLimits?: Record<string, number | null>;
+      mobileScanFolderLimit?: number | null;
+    };
   };
   owner: {
     uid: string;

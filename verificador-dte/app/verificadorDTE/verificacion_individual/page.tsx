@@ -44,6 +44,7 @@ import { useTranslation } from 'react-i18next';
 import { usePathname } from 'next/navigation';
 import { consumeVerifyBatch } from '@/lib/gmail/verification-bridge';
 import { useAuth } from '@/components/AuthProvider';
+import { auth } from '@/lib/firebase';
 import { toast } from 'sonner';
 
 type Item = { numItem: number; codGen: string; fechaEmi: string };
@@ -190,10 +191,18 @@ export default function Page() {
     const emptyFiles = { count: 0, totalBytes: 0, extensions: [], mimeTypes: [] };
 
     try {
+      const token = await (firebaseUser || auth.currentUser)?.getIdToken();
+      if (!token) throw new Error('No autorizado');
+
       const res = await fetch('/api/procesaedte', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
+          routeKey: logRouteKey,
           items: items.map((it) => ({ codGen: it.codGen.trim(), fecha: it.fechaEmi.trim() })),
           concurrencia: DEFAULT_CONCURRENCY,
           ambiente,

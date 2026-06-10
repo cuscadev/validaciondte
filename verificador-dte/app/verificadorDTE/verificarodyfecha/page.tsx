@@ -16,6 +16,7 @@ import HelpTooltip from '@/components/upload/HelpTooltip'
 import UploadTemplateDownloadButton from '@/components/upload/UploadTemplateDownloadButton'
 import { useUploadResultsReveal } from '@/components/upload/useUploadResultsReveal'
 import { useAuth } from '@/components/AuthProvider'
+import { auth } from '@/lib/firebase'
 import { usePathname } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -83,6 +84,15 @@ type Resultado = {
   visitar?: string
 }
 
+type LimitCheck = {
+  allowed: boolean
+  error?: string
+  limit: number | null
+  used: number
+  incomingRecords: number
+  remaining: number | null
+}
+
 export default function VerificarPorCodigoYFechaPage() {
   const pathname = usePathname()
   const isConsultasLotes = pathname.startsWith('/consultas-lotes/excel-codigo-fecha')
@@ -99,6 +109,8 @@ export default function VerificarPorCodigoYFechaPage() {
   const [data, setData] = useState<Resultado[]>([])
   const [downloadHref, setDownloadHref] = useState<string | null>(null)
   const [filename, setFilename] = useState('resultados_dtes.xlsx')
+  const [limitCheck, setLimitCheck] = useState<LimitCheck | null>(null)
+  const [checkingLimit, setCheckingLimit] = useState(false)
 
   // búsqueda & paginación
   const [search, setSearch] = useState('')
@@ -111,10 +123,60 @@ export default function VerificarPorCodigoYFechaPage() {
     onResultsReveal,
   } = useUploadResultsReveal()
 
+  useEffect(() => {
+    let cancelled = false
+
+    async function checkSelectedFiles() {
+      setLimitCheck(null)
+      if (!selectedFiles.length || !firebaseUser) return
+
+      setCheckingLimit(true)
+      try {
+        const token = await (firebaseUser || auth.currentUser)?.getIdToken()
+        if (!token) throw new Error('No autorizado')
+        const fd = new FormData()
+        fd.append('routeKey', logRouteKey)
+        fd.append('mode', 'cod-fecha')
+        selectedFiles.forEach((file) => fd.append('files', file))
+
+        const res = await fetch('/api/usage-limits/check-files', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: fd,
+        })
+        const data = await res.json() as LimitCheck
+        if (!cancelled) setLimitCheck({ ...data, allowed: res.ok && data.allowed !== false })
+      } catch (error) {
+        if (!cancelled) {
+          setLimitCheck({
+            allowed: false,
+            error: error instanceof Error ? error.message : 'No se pudo validar el limite',
+            limit: null,
+            used: 0,
+            incomingRecords: 0,
+            remaining: null,
+          })
+        }
+      } finally {
+        if (!cancelled) setCheckingLimit(false)
+      }
+    }
+
+    void checkSelectedFiles()
+    return () => {
+      cancelled = true
+    }
+  }, [firebaseUser, logRouteKey, selectedFiles])
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (selectedFiles.length === 0) {
       toast.warning('Selecciona uno o más archivos .xlsx / .csv / .txt')
+      return
+    }
+
+    if (limitCheck && !limitCheck.allowed) {
+      toast.error(limitCheck.error || 'La cantidad de registros supera el limite permitido')
       return
     }
 
@@ -128,9 +190,17 @@ export default function VerificarPorCodigoYFechaPage() {
 
     try {
       const fd = new FormData()
+      fd.append('routeKey', logRouteKey)
       selectedFiles.forEach((f) => fd.append('files', f))
 
-      const res = await fetch('/api/verificarcodyfecha', { method: 'POST', body: fd })
+      const token = await (firebaseUser || auth.currentUser)?.getIdToken()
+      if (!token) throw new Error('No autorizado')
+
+      const res = await fetch('/api/verificarcodyfecha', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      })
       if (!res.ok) {
         const txt = await res.text()
         throw new Error(txt || 'Error al procesar')
@@ -274,7 +344,7 @@ export default function VerificarPorCodigoYFechaPage() {
               }
               files={selectedFiles}
               onFilesChange={setSelectedFiles}
-              loading={loading}
+              loading={loading || checkingLimit}
               accept={{
                 'text/csv': ['.csv', '.txt'],
                 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
@@ -288,6 +358,14 @@ export default function VerificarPorCodigoYFechaPage() {
 
             </UploadFormAccordion>
           </form>
+
+          {limitCheck && limitCheck.limit !== null && (
+            <div className={`rounded-md border px-4 py-3 text-sm ${limitCheck.allowed ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200' : 'border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200'}`}>
+              {limitCheck.allowed
+                ? `Este proceso usara ${limitCheck.incomingRecords} consultas. Llevas ${limitCheck.used} de ${limitCheck.limit}; te quedaran ${limitCheck.remaining}.`
+                : limitCheck.error || `Estos archivos tienen ${limitCheck.incomingRecords} consultas y superan tu saldo mensual disponible.`}
+            </div>
+          )}
 
           <UploadResultsReveal visible={resultsVisible && data.length > 0}>
           <UploadTableToolbar

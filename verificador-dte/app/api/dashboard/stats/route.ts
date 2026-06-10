@@ -62,11 +62,6 @@ type RawLog = {
   createdAt: string | null;
 };
 
-function isMissingIndexError(error: unknown) {
-  if (!(error instanceof Error)) return false;
-  return error.message.includes('FAILED_PRECONDITION') && error.message.includes('index');
-}
-
 function docToRawLog(doc: FirebaseFirestore.QueryDocumentSnapshot): RawLog {
   const data = doc.data();
   return {
@@ -116,26 +111,6 @@ async function fetchLogsByEquality(
   }
 }
 
-async function fetchLogsByIndexedRange(
-  field: 'uid' | 'email' | 'cliente',
-  value: string,
-  periodStart: Date,
-  byId: Map<string, RawLog>
-) {
-  const snap = await adminDb
-    .collection('processingLogs')
-    .where(field, '==', value)
-    .where('createdAt', '>=', periodStart)
-    .orderBy('createdAt', 'desc')
-    .limit(LOG_LIMIT)
-    .get();
-
-  for (const doc of snap.docs) {
-    if (byId.has(doc.id)) continue;
-    byId.set(doc.id, docToRawLog(doc));
-  }
-}
-
 async function fetchLogsSafely(
   field: 'uid' | 'email' | 'cliente',
   value: string,
@@ -143,13 +118,7 @@ async function fetchLogsSafely(
   byId: Map<string, RawLog>
 ) {
   if (!value) return;
-
-  try {
-    await fetchLogsByIndexedRange(field, value, periodStart, byId);
-  } catch (error) {
-    if (!isMissingIndexError(error)) throw error;
-    await fetchLogsByEquality(field, value, periodStart, byId);
-  }
+  await fetchLogsByEquality(field, value, periodStart, byId);
 }
 
 async function fetchProcessingLogs(
@@ -171,16 +140,15 @@ async function fetchProcessingLogs(
 async function fetchUserRollupDays(uid: string): Promise<DailyRollupPoint[]> {
   const startDateKey = getRollupStartDateKey();
 
-  try {
-    const snap = await adminDb
-      .collection('userProcessingStats')
-      .doc(uid)
-      .collection('days')
-      .where('date', '>=', startDateKey)
-      .orderBy('date', 'asc')
-      .get();
+  const snap = await adminDb
+    .collection('userProcessingStats')
+    .doc(uid)
+    .collection('days')
+    .limit(FETCH_LIMIT)
+    .get();
 
-    return snap.docs.map((doc) => {
+  return snap.docs
+    .map((doc) => {
       const data = doc.data();
       return {
         date: String(data.date || doc.id),
@@ -189,33 +157,9 @@ async function fetchUserRollupDays(uid: string): Promise<DailyRollupPoint[]> {
         successCount: Number(data.successCount || 0),
         errorCount: Number(data.errorCount || 0),
       };
-    });
-  } catch (error) {
-    if (isMissingIndexError(error)) {
-      const snap = await adminDb
-        .collection('userProcessingStats')
-        .doc(uid)
-        .collection('days')
-        .limit(FETCH_LIMIT)
-        .get();
-
-      return snap.docs
-        .map((doc) => {
-          const data = doc.data();
-          return {
-            date: String(data.date || doc.id),
-            processes: Number(data.processes || 0),
-            records: Number(data.records || 0),
-            successCount: Number(data.successCount || 0),
-            errorCount: Number(data.errorCount || 0),
-          };
-        })
-        .filter((point) => point.date >= startDateKey)
-        .sort((a, b) => a.date.localeCompare(b.date));
-    }
-
-    throw error;
-  }
+    })
+    .filter((point) => point.date >= startDateKey)
+    .sort((a, b) => a.date.localeCompare(b.date));
 }
 
 function aggregateLogs(logs: RawLog[]): Pick<

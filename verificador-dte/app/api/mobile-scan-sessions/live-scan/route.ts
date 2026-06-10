@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { resolveEffectiveUsageLimit } from '@/lib/usage-limits';
+import type { AuthUser } from '@/lib/server-auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -50,12 +52,6 @@ async function getUid(req: NextRequest) {
   }
 }
 
-const DEFAULT_MOBILE_SCAN_LIMITS: Record<string, number | null> = {
-  free: 25,
-  premium: 50,
-  pro: 100,
-};
-
 async function getUserDoc(uid: string) {
   const byId = await adminDb.collection('users').doc(uid).get();
   if (byId.exists) return byId.data() || {};
@@ -69,21 +65,14 @@ async function getUserDoc(uid: string) {
   return byFirebaseUid.docs[0]?.data() || {};
 }
 
-async function getMobileScanFolderLimit(uid: string) {
+async function getMobileScanUser(uid: string): Promise<AuthUser | null> {
   const user = await getUserDoc(uid);
-  if (user?.role === 'superadmin') return null;
-
-  const planType = String(user?.membership?.type || 'free').toLowerCase();
-  const plansSnap = await adminDb.doc('config/plans').get();
-  const plans = plansSnap.data() || {};
-  const configured = plans?.[planType]?.mobileScanFolderLimit;
-
-  if (configured === null) return null;
-  if (typeof configured === 'number' && Number.isFinite(configured) && configured > 0) {
-    return Math.floor(configured);
-  }
-
-  return DEFAULT_MOBILE_SCAN_LIMITS[planType] ?? DEFAULT_MOBILE_SCAN_LIMITS.free;
+  if (!user?.email && !user?.role) return null;
+  return {
+    ...(user as Omit<AuthUser, 'uid' | 'email'>),
+    uid,
+    email: String(user.email || ''),
+  };
 }
 
 function cleanScanValue(value: unknown) {
@@ -106,7 +95,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const folderLimit = await getMobileScanFolderLimit(uid);
+    const appUser = await getMobileScanUser(uid);
+    if (!appUser) return json({ error: 'No autorizado' }, { status: 401 });
+    const folderLimit = await resolveEffectiveUsageLimit(appUser, 'escaneos-mobile');
 
     const sessionSnap = await adminDb
       .collection('mobileScanSessions')

@@ -27,8 +27,8 @@ interface PlanConfig {
 const DEFAULT_ROUTE_CONFIGS: Record<string, PlanConfig> = {
   free: {
     allowedRoutes: DEFAULT_FREE_ROUTES,
-    queryLimit: 10,
-    mobileScanFolderLimit: 25,
+    queryLimit: null,
+    mobileScanFolderLimit: null,
     price: 0,
     currency: 'USD',
     billingCycle: 'mensual',
@@ -37,8 +37,8 @@ const DEFAULT_ROUTE_CONFIGS: Record<string, PlanConfig> = {
   },
   premium: {
     allowedRoutes: DEFAULT_PREMIUM_ROUTES,
-    queryLimit: 100,
-    mobileScanFolderLimit: 50,
+    queryLimit: null,
+    mobileScanFolderLimit: null,
     price: 19.99,
     currency: 'USD',
     billingCycle: 'mensual',
@@ -48,7 +48,7 @@ const DEFAULT_ROUTE_CONFIGS: Record<string, PlanConfig> = {
   pro: {
     allowedRoutes: DEFAULT_PRO_ROUTES,
     queryLimit: null,
-    mobileScanFolderLimit: 100,
+    mobileScanFolderLimit: null,
     price: 49.99,
     currency: 'USD',
     billingCycle: 'mensual',

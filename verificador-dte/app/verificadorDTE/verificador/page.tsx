@@ -16,6 +16,7 @@ import HelpTooltip from '@/components/upload/HelpTooltip'
 import UploadTemplateDownloadButton from '@/components/upload/UploadTemplateDownloadButton'
 import { useUploadResultsReveal } from '@/components/upload/useUploadResultsReveal'
 import { useAuth } from '@/components/AuthProvider'
+import { auth } from '@/lib/firebase'
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { recordProcessingLog } from '@/lib/client-processing-log'
@@ -86,6 +87,15 @@ type Resultado = {
   visitar?: string      // texto visible (p.ej. "Abrir")
 }
 
+type LimitCheck = {
+  allowed: boolean
+  error?: string
+  limit: number | null
+  used: number
+  incomingRecords: number
+  remaining: number | null
+}
+
 export default function HomePage() {
   const { appUser, firebaseUser } = useAuth()
   const createdBy =
@@ -95,6 +105,8 @@ export default function HomePage() {
   const [data, setData] = useState<Resultado[]>([])
   const [downloadHref, setDownloadHref] = useState<string | null>(null)
   const [filename, setFilename] = useState('resultados_dtes.xlsx')
+  const [limitCheck, setLimitCheck] = useState<LimitCheck | null>(null)
+  const [checkingLimit, setCheckingLimit] = useState(false)
 
   // 🔎 UIX: búsqueda & paginación
   const [search, setSearch] = useState('')
@@ -107,10 +119,60 @@ export default function HomePage() {
     onResultsReveal,
   } = useUploadResultsReveal()
 
+  useEffect(() => {
+    let cancelled = false
+
+    async function checkSelectedFiles() {
+      setLimitCheck(null)
+      if (!selectedFiles.length || !firebaseUser) return
+
+      setCheckingLimit(true)
+      try {
+        const token = await (firebaseUser || auth.currentUser)?.getIdToken()
+        if (!token) throw new Error('No autorizado')
+        const fd = new FormData()
+        fd.append('routeKey', 'verificador')
+        fd.append('mode', 'links')
+        selectedFiles.forEach((file) => fd.append('files', file))
+
+        const res = await fetch('/api/usage-limits/check-files', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: fd,
+        })
+        const data = await res.json() as LimitCheck
+        if (!cancelled) setLimitCheck({ ...data, allowed: res.ok && data.allowed !== false })
+      } catch (error) {
+        if (!cancelled) {
+          setLimitCheck({
+            allowed: false,
+            error: error instanceof Error ? error.message : 'No se pudo validar el limite',
+            limit: null,
+            used: 0,
+            incomingRecords: 0,
+            remaining: null,
+          })
+        }
+      } finally {
+        if (!cancelled) setCheckingLimit(false)
+      }
+    }
+
+    void checkSelectedFiles()
+    return () => {
+      cancelled = true
+    }
+  }, [firebaseUser, selectedFiles])
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (selectedFiles.length === 0) {
       toast.warning('Selecciona uno o más archivos CSV o Excel')
+      return
+    }
+
+    if (limitCheck && !limitCheck.allowed) {
+      toast.error(limitCheck.error || 'La cantidad de registros supera el limite permitido')
       return
     }
 
@@ -124,9 +186,17 @@ export default function HomePage() {
 
     try {
       const fd = new FormData()
+      fd.append('routeKey', 'verificador')
       selectedFiles.forEach((f) => fd.append('files', f))
 
-      const res = await fetch('/api/procesar', { method: 'POST', body: fd })
+      const token = await (firebaseUser || auth.currentUser)?.getIdToken()
+      if (!token) throw new Error('No autorizado')
+
+      const res = await fetch('/api/procesar', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      })
       if (!res.ok) {
         const txt = await res.text()
         throw new Error(txt || 'Error al procesar')
@@ -283,7 +353,7 @@ export default function HomePage() {
               }
               files={selectedFiles}
               onFilesChange={setSelectedFiles}
-              loading={loading}
+              loading={loading || checkingLimit}
               accept={{
                 'text/csv': ['.csv', '.txt'],
                 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx', '.xlsm'],
@@ -298,6 +368,14 @@ export default function HomePage() {
 
             </UploadFormAccordion>
           </form>
+
+          {limitCheck && limitCheck.limit !== null && (
+            <div className={`rounded-md border px-4 py-3 text-sm ${limitCheck.allowed ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200' : 'border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200'}`}>
+              {limitCheck.allowed
+                ? `Este proceso usara ${limitCheck.incomingRecords} consultas. Llevas ${limitCheck.used} de ${limitCheck.limit}; te quedaran ${limitCheck.remaining}.`
+                : limitCheck.error || `Estos archivos tienen ${limitCheck.incomingRecords} consultas y superan tu saldo mensual disponible.`}
+            </div>
+          )}
 
           <UploadResultsReveal visible={resultsVisible && data.length > 0}>
           <UploadTableToolbar
