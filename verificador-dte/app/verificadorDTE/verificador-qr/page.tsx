@@ -166,7 +166,7 @@ function VerificadorQrContent() {
     }
 
     let duplicate = false;
-    let newItem: PendingScan | null = null;
+    const created: { item: PendingScan | null } = { item: null };
 
     setPendingScans((prev) => {
       if (prev.some((item) => item.codGen.toLowerCase() === parsed.codGen.toLowerCase())) {
@@ -175,7 +175,7 @@ function VerificadorQrContent() {
       }
 
       scanCounterRef.current += 1;
-      newItem = {
+      const item: PendingScan = {
         id: `${parsed.codGen}-${Date.now()}`,
         scanNumber: scanCounterRef.current,
         raw: decodedText,
@@ -185,8 +185,9 @@ function VerificadorQrContent() {
         urlOriginal: parsed.urlOriginal,
         urlNormalizada: parsed.urlNormalizada,
       };
+      created.item = item;
 
-      return [newItem, ...prev];
+      return [item, ...prev];
     });
 
     if (duplicate) {
@@ -195,10 +196,10 @@ function VerificadorQrContent() {
       return;
     }
 
-    if (!newItem) return;
+    if (!created.item) return;
 
     setLastAddedCodGen(parsed.codGen);
-    setHighlightedScanId(newItem.id);
+    setHighlightedScanId(created.item.id);
 
     if (highlightTimeoutRef.current) {
       clearTimeout(highlightTimeoutRef.current);
@@ -211,7 +212,7 @@ function VerificadorQrContent() {
       pendingListRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     });
 
-    toast.success(`DTE #${newItem.scanNumber} agregado.`);
+    toast.success(`DTE #${created.item.scanNumber} agregado.`);
   }, []);
 
   const startScanning = useCallback(async () => {
@@ -702,10 +703,13 @@ function VerificadorQrContent() {
 
       <UploadResultsReveal visible={resultsVisible}>
         <UploadTableToolbar
-          title="Resultados de verificacion"
-          downloadHref={downloadHref}
-          downloadFilename={filename}
-          exports={{
+          resultCount={{ filtered: filtered.length, total: data.length }}
+          export={{
+            excel: {
+              href: downloadHref,
+              download: filename,
+              label: 'EXCEL',
+            },
             csv: {
               onClick: () =>
                 exportRowsToCsv(
