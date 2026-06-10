@@ -5,11 +5,9 @@
 //   ADMIN_EMAIL=admin@example.com
 //   ADMIN_PASSWORD=Admin1234!
 
-import { config as loadEnv } from 'dotenv';
-import { resolve } from 'path';
+import { loadRepoEnv } from './load-repo-env';
 
-loadEnv({ path: resolve(process.cwd(), '.env.local') });
-loadEnv({ path: resolve(process.cwd(), '.env') });
+loadRepoEnv();
 
 const email = (process.env.ADMIN_EMAIL || 'admin@gmail.com').trim().toLowerCase();
 const password = process.env.ADMIN_PASSWORD || 'Admin1234!';

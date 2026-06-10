@@ -19,3 +19,5 @@ export type GmailJsonVerifyResult = {
   montoTotal?: string;
   error?: string;
 };
+
+export type EmailJsonVerifyResult = GmailJsonVerifyResult;

@@ -13,12 +13,19 @@ import { readFileSync, readdirSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import pg from 'pg';
+import { loadRepoEnv } from '../scripts/load-env.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+loadRepoEnv();
+
 const dbUrl = process.env.SUPABASE_DB_URL?.trim();
-if (!dbUrl) {
-  console.error('Falta SUPABASE_DB_URL (connection string de Postgres en Supabase Dashboard).');
+if (!dbUrl || dbUrl.includes('[YOUR-PASSWORD]')) {
+  console.error(
+    'Falta SUPABASE_DB_URL con la contraseña real de Postgres.\n' +
+      'Supabase Dashboard > Project Settings > Database > Connection string (URI).\n' +
+      'Agregala en .env.local (raiz del repo)'
+  );
   process.exit(1);
 }
 
@@ -58,10 +65,11 @@ try {
     from information_schema.tables
     where table_schema = 'public'
       and table_name in (
-        'google_gmail_connections',
-        'gmail_sync_jobs',
-        'gmail_documents',
-        'gmail_document_links'
+        'email_connections',
+        'email_sync_jobs',
+        'email_documents',
+        'email_document_links',
+        'email_sync_job_results'
       )
     order by table_name
   `);

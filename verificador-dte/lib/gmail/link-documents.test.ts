@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { computeDocumentLinkPairs } from './link-documents';
+import { computeDocumentLinkPairs } from '@/lib/email/link-documents';
 
 const FACTURA_COD = 'A1B2C3D4-E5F6-7890-ABCD-EF1234567890';
 const NC_COD = 'B2C3D4E5-F6A7-8901-BCDE-F12345678901';

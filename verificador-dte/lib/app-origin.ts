@@ -32,33 +32,6 @@ export function resolveReturnOrigin(
   return fallbackOrigin.replace(/\/$/, '');
 }
 
-/** Callback OAuth alineado al puerto donde corre la app (localhost dev). */
-export function resolveGmailOAuthRedirectUri(appOrigin: string): string {
-  const configured =
-    process.env.GOOGLE_OAUTH_REDIRECT_URI?.trim() ||
-    `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/integrations/gmail/callback`;
-
-  if (!isAllowedAppOrigin(appOrigin)) return configured;
-
-  const dynamic = `${appOrigin.replace(/\/$/, '')}/api/integrations/gmail/callback`;
-  if (dynamic === configured) return configured;
-
-  try {
-    const cfg = new URL(configured);
-    const dyn = new URL(dynamic);
-    if (
-      (cfg.hostname === 'localhost' || cfg.hostname === '127.0.0.1') &&
-      cfg.hostname === dyn.hostname
-    ) {
-      return dynamic;
-    }
-  } catch {
-    // ignore
-  }
-
-  return configured;
-}
-
 export function resolveRequestOrigin(req: { nextUrl: URL; headers: Headers }): string {
   const originHeader = req.headers.get('origin')?.trim();
   if (originHeader && isAllowedAppOrigin(originHeader)) {

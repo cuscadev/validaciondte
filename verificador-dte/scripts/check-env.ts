@@ -1,8 +1,6 @@
-import { config as loadEnv } from 'dotenv';
-import { resolve } from 'path';
+import { loadRepoEnv } from './load-repo-env';
 
-loadEnv({ path: resolve(process.cwd(), '.env.local') });
-loadEnv({ path: resolve(process.cwd(), '.env') });
+loadRepoEnv();
 
 const requiredPublic = [
   'NEXT_PUBLIC_FIREBASE_API_KEY',
@@ -47,7 +45,7 @@ function main() {
     for (const issue of issues) {
       console.error(`  - ${issue}`);
     }
-    console.error('\nCopia .env.example a .env.local y completa los valores de Firebase.');
+    console.error('\nCopia .env.example a .env.local en la raiz del repo y completa los valores.');
     process.exit(1);
   }
 

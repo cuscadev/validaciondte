@@ -11,6 +11,7 @@ import (
 	"verificador-dte/go-dte-api/internal/common/config"
 	dtemodule "verificador-dte/go-dte-api/internal/modules/dte"
 	"verificador-dte/go-dte-api/internal/modules/dte/shared"
+	emailmodule "verificador-dte/go-dte-api/internal/modules/email"
 	haciendamodule "verificador-dte/go-dte-api/internal/modules/hacienda"
 )
 
@@ -40,6 +41,7 @@ func New(cfg config.Config) *fiber.App {
 
 	dtemodule.Register(app, cfg)
 	haciendamodule.Register(app, cfg)
+	emailmodule.Register(app, cfg)
 
 	return app
 }

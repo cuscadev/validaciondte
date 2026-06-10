@@ -344,8 +344,8 @@ export default function Sidebar({
       icon: CalendarDays,
     },
     {
-      href: '/integraciones/gmail',
-      label: 'Importar desde Gmail',
+      href: '/integraciones/correo',
+      label: 'Importar desde correo',
       icon: Mail,
     },
     {

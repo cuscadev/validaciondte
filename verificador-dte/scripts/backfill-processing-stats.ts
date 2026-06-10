@@ -6,11 +6,9 @@
 //   BACKFILL_BATCH_SIZE=500       — docs por lote de lectura
 
 import type { QueryDocumentSnapshot } from 'firebase-admin/firestore';
-import { config as loadEnv } from 'dotenv';
-import { resolve } from 'path';
+import { loadRepoEnv } from './load-repo-env';
 
-loadEnv({ path: resolve(process.cwd(), '.env.local') });
-loadEnv({ path: resolve(process.cwd(), '.env') });
+loadRepoEnv();
 
 type LogRow = {
   uid: string;

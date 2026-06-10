@@ -18,6 +18,22 @@ export function dateToDmy(date: Date): string {
   return `${dd}/${mm}/${yyyy}`;
 }
 
+export function dmyToIso(dmy: string): string | null {
+  const date = dmyToDate(dmy);
+  if (!date) return null;
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+export function isoToDmy(iso: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso.trim());
+  if (!match) return '';
+  const [, yyyy, mm, dd] = match;
+  return `${dd}/${mm}/${yyyy}`;
+}
+
 export function dmyToDate(fecha: string): Date | undefined {
   if (!FECHA_DMY_REGEX.test(fecha.trim())) return undefined;
   const [dd, mm, yyyy] = fecha.split('/').map(Number);

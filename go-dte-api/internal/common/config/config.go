@@ -1,8 +1,11 @@
 package config
 
 import (
+	"bufio"
 	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 const defaultListenHost = "0.0.0.0"
@@ -27,9 +30,15 @@ type Config struct {
 	HaciendaUserAgent           string
 	HaciendaConsultaDteLoteTest string
 	HaciendaConsultaDteLoteProd string
+	DatabaseURL                   string
+	EmailCredentialsKey           string
+	InternalAPIKey                string
+	EmailSyncConcurrency          int
+	EmailMessagesPerBatch         int
 }
 
 func Load() Config {
+	loadDotEnvFiles()
 	port := getenv("PORT", "8081")
 	concurrency := getenvInt("GO_DTE_CONCURRENCY", 8)
 	poolSize := getenvInt("GO_DTE_BROWSER_POOL", minInt(concurrency, 4))
@@ -57,6 +66,11 @@ func Load() Config {
 		HaciendaUserAgent:             getenv("HACIENDA_USER_AGENT", "KaiserDTE"),
 		HaciendaConsultaDteLoteTest: getenv("HACIENDA_CONSULTA_DTE_LOTE_URL_TEST", "https://apitest.dtes.mh.gob.sv/fesv/recepcion/consultadtelote"),
 		HaciendaConsultaDteLoteProd: getenv("HACIENDA_CONSULTA_DTE_LOTE_URL_PROD", "https://api.dtes.mh.gob.sv/fesv/recepcion/consultadtelote"),
+		DatabaseURL:                   getenv("SUPABASE_DB_URL", getenv("DATABASE_URL", "")),
+		EmailCredentialsKey:           getenv("EMAIL_CREDENTIALS_ENCRYPTION_KEY", getenv("GOOGLE_TOKEN_ENCRYPTION_KEY", "")),
+		InternalAPIKey:                getenv("GO_DTE_INTERNAL_API_KEY", ""),
+		EmailSyncConcurrency:          getenvInt("GO_EMAIL_SYNC_CONCURRENCY", 8),
+		EmailMessagesPerBatch:         getenvInt("GO_EMAIL_MESSAGES_PER_BATCH", 50),
 	}
 }
 
@@ -112,4 +126,47 @@ func minInt(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func loadDotEnvFiles() {
+	candidates := []string{
+		".env.local",
+		".env",
+		filepath.Join("..", ".env.local"),
+		filepath.Join("..", ".env"),
+	}
+	for _, path := range candidates {
+		loadDotEnvFile(path)
+	}
+}
+
+func loadDotEnvFile(path string) {
+	file, err := os.Open(path)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		key, value, ok := strings.Cut(line, "=")
+		if !ok {
+			continue
+		}
+		key = strings.TrimSpace(key)
+		value = strings.TrimSpace(value)
+		if len(value) >= 2 {
+			if (value[0] == '"' && value[len(value)-1] == '"') ||
+				(value[0] == '\'' && value[len(value)-1] == '\'') {
+				value = value[1 : len(value)-1]
+			}
+		}
+		if os.Getenv(key) == "" {
+			_ = os.Setenv(key, value)
+		}
+	}
 }

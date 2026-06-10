@@ -4,6 +4,7 @@ import { ExternalLink, FileJson, Link2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { buildHaciendaPublicUrl } from '@/lib/gmail/hacienda-url';
+import { documentHasJsonContent } from '@/lib/email/db';
 import type { GmailDocumentRow } from '@/lib/supabase-admin';
 
 export const STATUS_LABELS: Record<string, string> = {
@@ -128,7 +129,7 @@ export default function GmailDocumentTable({
                         </a>
                       </Button>
                     )}
-                    {doc.storage_path && (
+                    {documentHasJsonContent(doc) && (
                       <Button
                         type="button"
                         size="sm"

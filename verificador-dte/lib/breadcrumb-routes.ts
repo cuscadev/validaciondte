@@ -122,10 +122,16 @@ const ROUTE_MAP: Record<string, RouteEntry> = {
   '/configuraciones': {
     segments: [{ label: 'Configuracion' }],
   },
+  '/integraciones/correo': {
+    segments: [
+      { label: 'Integraciones', href: '/integraciones/correo' },
+      { label: 'Correo IMAP DTE' },
+    ],
+  },
   '/integraciones/gmail': {
     segments: [
-      { label: 'Integraciones', href: '/integraciones/gmail' },
-      { label: 'Gmail DTE' },
+      { label: 'Integraciones', href: '/integraciones/correo' },
+      { label: 'Correo IMAP DTE' },
     ],
   },
   '/profile': {

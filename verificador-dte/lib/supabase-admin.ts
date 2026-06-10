@@ -4,21 +4,89 @@ let adminClient: SupabaseClient | null = null;
 let cachedUrl = '';
 let cachedKey = '';
 
-export function getSupabaseAdmin(): SupabaseClient {
+export function extractSupabaseProjectRef(url: string | undefined): string | null {
+  if (!url) return null;
+  try {
+    const host = new URL(url).hostname;
+    const ref = host.split('.')[0];
+    return ref || null;
+  } catch {
+    return null;
+  }
+}
+
+function extractSupabaseProjectRefFromDbUrl(dbUrl: string | undefined): string | null {
+  if (!dbUrl) return null;
+  try {
+    const host = new URL(dbUrl.replace(/^postgres(ql)?:\/\//, 'http://')).hostname;
+    const match = host.match(/^db\.([^.]+)\.supabase\.co$/);
+    return match?.[1] || null;
+  } catch {
+    return null;
+  }
+}
+
+function extractJwtProjectRef(key: string): string | null {
+  if (!key.startsWith('eyJ')) return null;
+  try {
+    const payload = key.split('.')[1];
+    if (!payload) return null;
+    const decoded = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as {
+      ref?: string;
+    };
+    return decoded.ref?.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+export function resolveSupabaseServiceKey(): string {
+  return (
+    process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ||
+    process.env.SUPABASE_SECRET_KEY?.trim() ||
+    ''
+  );
+}
+
+export function validateSupabaseEnv(): void {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  const serviceKey = resolveSupabaseServiceKey();
+  const dbUrl = process.env.SUPABASE_DB_URL?.trim();
 
   if (!url || !serviceKey) {
     throw new Error(
-      'Supabase no configurado: define NEXT_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY.'
+      'Supabase no configurado: define NEXT_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY (sb_secret_... o service_role JWT del mismo proyecto).'
     );
   }
+
+  const urlRef = extractSupabaseProjectRef(url);
+  const dbRef = extractSupabaseProjectRefFromDbUrl(dbUrl);
+  const jwtRef = extractJwtProjectRef(serviceKey);
+
+  if (urlRef && dbRef && urlRef !== dbRef) {
+    throw new Error(
+      `Supabase desalineado: NEXT_PUBLIC_SUPABASE_URL usa ${urlRef} pero SUPABASE_DB_URL usa ${dbRef}.`
+    );
+  }
+
+  if (urlRef && jwtRef && urlRef !== jwtRef) {
+    throw new Error(
+      `Supabase desalineado: NEXT_PUBLIC_SUPABASE_URL usa ${urlRef} pero la service key JWT pertenece a ${jwtRef}. Copia la Secret key del proyecto correcto en Dashboard > Settings > API Keys.`
+    );
+  }
+}
+
+export function getSupabaseAdmin(): SupabaseClient {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const serviceKey = resolveSupabaseServiceKey();
+
+  validateSupabaseEnv();
 
   if (adminClient && cachedUrl === url && cachedKey === serviceKey) {
     return adminClient;
   }
 
-  adminClient = createClient(url, serviceKey, {
+  adminClient = createClient(url!, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   cachedUrl = url;
@@ -27,23 +95,33 @@ export function getSupabaseAdmin(): SupabaseClient {
   return adminClient;
 }
 
-export const GMAIL_STORAGE_BUCKET = 'client-documents';
+export const EMAIL_STORAGE_BUCKET = 'client-documents';
 
-export type GmailConnectionRow = {
+/** @deprecated use EMAIL_STORAGE_BUCKET */
+export const GMAIL_STORAGE_BUCKET = EMAIL_STORAGE_BUCKET;
+
+export type EmailProvider = 'gmail' | 'yahoo' | 'microsoft';
+
+export type EmailAuthMethod = 'app_password' | 'oauth2';
+
+export type EmailConnectionRow = {
   id: string;
   organization_id: string;
-  google_email: string;
-  refresh_token_enc: string;
-  access_token: string | null;
-  token_expires_at: string | null;
+  provider: EmailProvider;
+  email_address: string;
+  imap_host: string;
+  imap_port: number;
+  imap_secure: boolean;
+  mailbox_folder: string;
+  password_enc: string;
+  auth_method: EmailAuthMethod;
   connected_by_uid: string;
-  scopes: string[];
   created_at: string;
   updated_at: string;
   revoked_at: string | null;
 };
 
-export type GmailSyncJobRow = {
+export type EmailSyncJobRow = {
   id: string;
   organization_id: string;
   connection_id: string;
@@ -62,34 +140,37 @@ export type GmailSyncJobRow = {
   finished_at: string | null;
 };
 
-export type GmailDocumentImportStatus =
+export type EmailDocumentImportStatus =
   | 'imported'
   | 'skipped_duplicate'
   | 'skipped_date'
   | 'skipped_invalid'
   | 'skipped_unsupported_type';
 
-export type GmailDocumentLinkType =
+export type EmailDocumentLinkType =
   | 'nc_to_invoice'
   | 'nd_to_invoice'
   | 'json_reference';
 
-export type GmailDocumentRow = {
+export type EmailDocumentRow = {
   id: string;
   organization_id: string;
   connection_id: string;
   sync_job_id: string | null;
-  gmail_message_id: string;
-  gmail_attachment_id: string;
+  message_uid: string;
+  attachment_part_id: string;
+  message_id_header: string | null;
+  mailbox_folder: string;
   content_hash: string;
   file_name: string;
   storage_path: string | null;
+  json_content: string | null;
   file_size_bytes: number;
   codigo_generacion: string | null;
   fec_emi: string | null;
   email_subject: string | null;
   email_date: string | null;
-  import_status: GmailDocumentImportStatus;
+  import_status: EmailDocumentImportStatus;
   tipo_dte: string | null;
   tipo_dte_label: string | null;
   numero_control: string | null;
@@ -105,13 +186,42 @@ export type GmailDocumentRow = {
   related_codigos: string[];
   created_at: string;
   linked_count?: number;
+  /** Derivado en listados sin cargar json_content completo. */
+  has_json_content?: boolean;
 };
 
-export type GmailDocumentLinkRow = {
+export type EmailDocumentLinkRow = {
   id: string;
   organization_id: string;
   source_document_id: string;
   target_document_id: string;
-  link_type: GmailDocumentLinkType;
+  link_type: EmailDocumentLinkType;
   created_at: string;
 };
+
+export type EmailSyncJobResultRow = {
+  id: string;
+  sync_job_id: string;
+  organization_id: string;
+  document_id: string | null;
+  message_uid: string;
+  attachment_part_id: string;
+  file_name: string | null;
+  email_subject: string | null;
+  email_date: string | null;
+  import_status: EmailDocumentImportStatus;
+  codigo_generacion: string | null;
+  tipo_dte: string | null;
+  tipo_dte_label: string | null;
+  fec_emi: string | null;
+  emisor_nombre: string | null;
+  created_at: string;
+};
+
+/** Legacy aliases */
+export type GmailConnectionRow = EmailConnectionRow;
+export type GmailSyncJobRow = EmailSyncJobRow;
+export type GmailDocumentImportStatus = EmailDocumentImportStatus;
+export type GmailDocumentLinkType = EmailDocumentLinkType;
+export type GmailDocumentRow = EmailDocumentRow;
+export type GmailDocumentLinkRow = EmailDocumentLinkRow;

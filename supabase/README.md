@@ -1,4 +1,4 @@
-# Supabase — importacion Gmail DTE
+# Supabase — importacion DTE desde correo (IMAP)
 
 ## 1. Crear proyecto
 
@@ -13,30 +13,30 @@ En [supabase.com](https://supabase.com), crea un proyecto y copia:
 En el SQL Editor de Supabase, ejecuta en orden:
 
 1. `supabase/migrations/001_gmail_import.sql`
-2. `supabase/migrations/002_gmail_dte_metadata.sql` (metadatos DTE, filtro por tipo, enlaces NC/ND)
+2. `supabase/migrations/002_gmail_dte_metadata.sql`
+3. `supabase/migrations/003_email_imap.sql` (IMAP multi-proveedor, tablas `email_*`)
 
-**Opcion B — script local**  
-Con la connection string de Postgres (Dashboard → Database → Connection string URI):
+**Opcion B — script local**
 
 ```powershell
 $env:SUPABASE_DB_URL="postgresql://postgres:TU_PASSWORD@db.TU_REF.supabase.co:5432/postgres"
 node supabase/apply-migration.mjs
 ```
 
-Solo la migracion 002:
+Solo la migracion 003:
 
 ```powershell
-$env:MIGRATION="002"
+$env:MIGRATION="003"
 node supabase/apply-migration.mjs
 ```
 
-Esto crea las tablas `google_gmail_connections`, `gmail_sync_jobs`, `gmail_documents`, `gmail_document_links` y el bucket `client-documents`.
+Tablas finales: `email_connections`, `email_sync_jobs`, `email_documents`, `email_document_links`, bucket `client-documents`.
 
-Tras aplicar `002`, conviene **re-sincronizar** un rango de fechas para repoblar metadatos y enlaces en documentos ya importados.
+Las conexiones OAuth Gmail antiguas (`google_gmail_connections_legacy`) quedan revocadas; cada org debe reconectar con **contraseña de aplicacion IMAP**.
 
 ## 3. Variables en Next.js
 
-Ver `verificador-dte/.env.example` (seccion Supabase + Google OAuth).
+Ver `.env.example` en la raiz del repo (`.env.local` unificado).
 
 Generar clave de cifrado:
 
@@ -44,19 +44,18 @@ Generar clave de cifrado:
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
-## 4. Google Cloud
+Asignar a `EMAIL_CREDENTIALS_ENCRYPTION_KEY` (acepta fallback `GOOGLE_TOKEN_ENCRYPTION_KEY`).
 
-1. Habilitar **Gmail API**.
-2. OAuth consent screen (externo o interno).
-3. Credenciales OAuth Web con redirect (registra **todos** los que uses):
-   - `http://localhost:3000/api/integrations/gmail/callback`
-   - `http://localhost:3001/api/integrations/gmail/callback` (si Next.js cae en 3001)
-   - URL de produccion equivalente.
+## 4. Contraseñas de aplicacion (IMAP)
 
-Scopes: `gmail.readonly`, `openid`, `email`, `profile`.
+| Proveedor | Host IMAP | Como obtener la contraseña |
+|-----------|-----------|----------------------------|
+| Gmail | imap.gmail.com:993 | Cuenta Google → Seguridad → Verificacion en 2 pasos → Contraseñas de aplicaciones |
+| Yahoo | imap.mail.yahoo.com:993 | Ajustes Yahoo → Seguridad → Generar contraseña de app |
+| Microsoft | outlook.office365.com:993 | Outlook → Seguridad → IMAP habilitado + contraseña de app |
 
 ## 5. Uso en la app
 
-Ruta UI: `/integraciones/gmail`
+Ruta UI: `/integraciones/correo` (redirect desde `/integraciones/gmail`).
 
-Solo administradores de organizacion pueden conectar Gmail y ejecutar sincronizaciones.
+La conexion IMAP usa **el mismo correo con el que el administrador inicio sesion** en la app (no otro buzon distinto). Solo administradores pueden conectar la cuenta y ejecutar sincronizaciones.

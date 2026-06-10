@@ -11,6 +11,13 @@ import { getOrganization } from '@/lib/organization-admin';
 
 export type AuthUser = AppUser & { email: string };
 
+export function resolveAccountEmail(
+  user: Pick<AuthUser, 'email'>,
+  tokenEmail?: string | null
+): string {
+  return String(user.email || tokenEmail || '').trim().toLowerCase();
+}
+
 async function loadAppUser(uid: string): Promise<AuthUser | null> {
   const userSnap = await adminDb.collection('users').doc(uid).get();
   if (!userSnap.exists) return null;
@@ -34,14 +41,14 @@ export async function requireSuperadmin(req: NextRequest) {
   const decoded = await verifyBearer(req);
   const user = await loadAppUser(decoded.uid);
   if (user?.role !== 'superadmin') throw new Error('No autorizado');
-  return user;
+  return { ...user, email: resolveAccountEmail(user, decoded.email) };
 }
 
 export async function requireAuth(req: NextRequest) {
   const decoded = await verifyBearer(req);
   const user = await loadAppUser(decoded.uid);
   if (!user) throw new Error('No autorizado');
-  return user;
+  return { ...user, email: resolveAccountEmail(user, decoded.email) };
 }
 
 export async function requireOrgAdmin(req: NextRequest) {
