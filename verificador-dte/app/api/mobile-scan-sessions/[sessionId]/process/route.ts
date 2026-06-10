@@ -6,10 +6,10 @@ import { recordServerProcessingLog } from '@/lib/server-processing-log';
 import { summarizeResults } from '@/lib/processing-log';
 import { resolveEffectiveUsageLimit } from '@/lib/usage-limits';
 import {
-  buildWorkbook,
-  isProbableCodGen,
-  tryParseFechaFlexible,
-} from '@/lib/dteCommon';
+  buildInvalidQrResult,
+  parseConsultaPublicaUrl,
+} from '@/lib/hacienda-consulta-url';
+import { buildWorkbook } from '@/lib/dteCommon';
 import * as XLSX from 'xlsx-js-style';
 
 export const runtime = 'nodejs';
@@ -19,104 +19,16 @@ type Params = {
   params: Promise<{ sessionId: string }>;
 };
 
-function pickParam(url: URL, names: string[]) {
-  const entries = Array.from(url.searchParams.entries());
-  for (const name of names) {
-    const direct = url.searchParams.get(name);
-    if (direct) return direct;
-
-    const found = entries.find(([key]) => key.toLowerCase() === name.toLowerCase());
-    if (found?.[1]) return found[1];
-  }
-
-  return '';
-}
-
-function normalizeDateYmd(value: string) {
-  const parsed = tryParseFechaFlexible(value);
-  if (!parsed) return '';
-
-  const year = parsed.getFullYear();
-  const month = String(parsed.getMonth() + 1).padStart(2, '0');
-  const day = String(parsed.getDate()).padStart(2, '0');
-
-  return `${year}-${month}-${day}`;
-}
-
-function extractUrl(value: string) {
-  const cleanValue = value.trim().replace(/&amp;/g, '&').replace(/[\s,;]+$/g, '');
-  if (cleanValue.startsWith('http://') || cleanValue.startsWith('https://')) {
-    return cleanValue;
-  }
-
-  const match = cleanValue.match(/https?:\/\/[^\s"']+/i);
-  return match?.[0]?.replace(/[\s,;]+$/g, '') || '';
-}
-
 function parseScannedUrl(value: string) {
-  try {
-    const extracted = extractUrl(value);
-    if (!extracted) {
-      return { ok: false as const, error: 'El QR no contiene una URL vÃ¡lida.' };
-    }
-
-    const url = new URL(extracted);
-    const codGen = pickParam(url, [
-      'codGen',
-      'codigoGeneracion',
-      'codigo',
-      'codigoGeneracionDte',
-      'codigo_generacion',
-      'FeCodigoGeneracion',
-    ]);
-    const fechaRaw = pickParam(url, [
-      'fechaEmi',
-      'fecEmi',
-      'fecha',
-      'fechaEmision',
-      'fecha_emision',
-      'FeFechaGeneracionDte',
-      'fechaGeneracionDte',
-    ]);
-
-    if (!codGen || !fechaRaw) {
-      return { ok: false as const, error: 'El QR no contiene cÃ³digo y fecha.' };
-    }
-
-    if (!isProbableCodGen(codGen)) {
-      return { ok: false as const, error: 'CÃ³digo de generaciÃ³n invÃ¡lido.' };
-    }
-
-    const fechaYmd = normalizeDateYmd(fechaRaw);
-    if (!fechaYmd) {
-      return { ok: false as const, error: 'Fecha de emisiÃ³n invÃ¡lida.' };
-    }
-
-    return {
-      ok: true as const,
-      codGen: codGen.trim().toUpperCase(),
-      fechaYmd,
-    };
-  } catch {
-    return { ok: false as const, error: 'El contenido escaneado no es una URL vÃ¡lida.' };
+  const parsed = parseConsultaPublicaUrl(value);
+  if (!parsed.ok) {
+    return { ok: false as const, error: parsed.error };
   }
-}
 
-function invalidResult(value: string, error: string) {
   return {
-    ok: false,
-    url: value,
-    linkVisita: value,
-    visitar: 'Abrir',
-    ambiente: '',
-    codGen: '',
-    fechaEmi: '',
-    estado: 'ERROR',
-    descripcionEstado: '',
-    tipoDte: '',
-    numeroControl: '',
-    montoTotal: '',
-    error,
+    ok: true as const,
+    codGen: parsed.codGen,
+    fechaYmd: parsed.fechaYmd,
   };
 }
 
@@ -188,7 +100,7 @@ export async function POST(req: NextRequest, context: Params) {
       const parsed = parseScannedUrl(value);
 
       if (!parsed.ok) {
-        invalidos.push(invalidResult(value, parsed.error));
+        invalidos.push(buildInvalidQrResult(value, parsed.error));
         continue;
       }
 

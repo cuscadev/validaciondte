@@ -26,6 +26,7 @@ const MODULE_ICONS: Record<string, LucideIcon> = {
   verificador: Link2,
   verificarodyfecha: CalendarDays,
   verificadorjson: FileJson,
+  verificador_qr: QrCode,
   'qr-pdf': QrCode,
   activity: Activity,
 };

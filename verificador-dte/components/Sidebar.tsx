@@ -266,6 +266,11 @@ export default function Sidebar({
         label: 'sidebar.verificacionIndividual',
         routeKey: 'verificacion_individual',
       },
+      {
+        href: '/verificadorDTE/verificador-qr',
+        label: 'sidebar.verificadorQR',
+        routeKey: 'verificador_qr',
+      },
     ],
     [],
   );

@@ -367,6 +367,7 @@ export function getModuleIconKey(routeKey: string): string {
   const key = routeKey.toLowerCase();
   if (key.includes('verificadorjson') || key === 'verificadorjson') return 'verificadorjson';
   if (key.includes('verificarodyfecha') || key === 'verificarodyfecha') return 'verificarodyfecha';
+  if (key === 'verificador_qr' || key.includes('verificador_qr')) return 'verificador_qr';
   if (key.includes('verificador') || key === 'verificador') return 'verificador';
   if (key.includes('qr')) return 'qr-pdf';
   return key || 'activity';

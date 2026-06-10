@@ -14,6 +14,7 @@ export const VERIFICADOR_ROUTES: PlanRoute[] = [
   { key: 'verificarodyfecha', label: 'Verificar Codigo y Fecha' },
   { key: 'verificadorjson', label: 'Verificador JSON' },
   { key: 'verificacion_individual', label: 'Verificacion Individual' },
+  { key: 'verificador_qr', label: 'Escaneo QR DTE' },
 ];
 
 export const CONSULTAS_LOTES_ROUTES: PlanRoute[] = [
