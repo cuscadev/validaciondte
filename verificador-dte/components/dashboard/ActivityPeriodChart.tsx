@@ -585,25 +585,49 @@ function OutcomeAreaChart({ points }: { points: ActivityPeriodPoint[] }) {
   );
 }
 
-function ModuleUsageBars({ byModule }: { byModule: DashboardModuleStat[] }) {
-  const modules = byModule.slice(0, 6);
+function formatMonthlyQuota(mod: DashboardModuleStat) {
+  const used = mod.monthlyUsed ?? 0;
+  if (mod.limit === null || mod.limit === undefined) {
+    return `Mes: ${used} DTE · Ilimitado`;
+  }
+  return `Mes: ${used} / ${mod.limit} DTE`;
+}
+
+function ModuleUsageBars({
+  byModule,
+  isRefetching = false,
+}: {
+  byModule: DashboardModuleStat[];
+  isRefetching?: boolean;
+}) {
+  const modules = byModule;
   const maxRecords = Math.max(...modules.map((mod) => mod.records), 1);
 
   if (modules.length === 0) {
     return (
       <div className="rounded-lg border border-border/60 bg-muted/10 p-4 text-sm text-muted-foreground">
-        Sin uso por modulo en este periodo.
+        Sin modulos disponibles en tu plan.
       </div>
     );
   }
 
   return (
-    <div className="rounded-lg border border-border/60 bg-muted/10 p-3">
+    <div
+      className={cn(
+        'relative rounded-lg border border-border/60 bg-muted/10 p-3 transition-opacity',
+        isRefetching && 'opacity-60'
+      )}
+    >
+      {isRefetching && (
+        <div className="pointer-events-none absolute right-3 top-3">
+          <RefreshCw className="size-3.5 animate-spin text-muted-foreground" aria-hidden />
+        </div>
+      )}
       <div className="mb-3 flex items-center justify-between gap-3">
         <p className="text-sm font-semibold">Uso por modulo</p>
-        <p className="text-[11px] text-muted-foreground">DTEs procesados</p>
+        <p className="text-[11px] text-muted-foreground">DTEs procesados (30d)</p>
       </div>
-      <div className="space-y-3">
+      <div className="max-h-[210px] space-y-3 overflow-y-auto pr-1">
         {modules.map((mod) => {
           const width = Math.max(4, (mod.records / maxRecords) * 100);
           return (
@@ -624,6 +648,7 @@ function ModuleUsageBars({ byModule }: { byModule: DashboardModuleStat[] }) {
                   {mod.successCount} ok / {mod.errorCount} error
                 </span>
               </div>
+              <p className="text-[11px] text-muted-foreground">{formatMonthlyQuota(mod)}</p>
             </div>
           );
         })}
@@ -651,6 +676,8 @@ export function ActivityPeriodChart({
     hasOutcomeActivity(daily) ||
     hasOutcomeActivity(weekly) ||
     hasOutcomeActivity(monthly);
+  const hasModuleUsage = byModule.length > 0;
+  const showEmptyChart = !hasActivity;
 
   return (
     <FadeIn delay={0.1} className={cn('h-full', className)}>
@@ -698,7 +725,7 @@ export function ActivityPeriodChart({
               <div className="h-[210px] animate-pulse rounded-lg bg-muted/40" />
               <div className="h-[210px] animate-pulse rounded-lg bg-muted/40" />
             </div>
-          ) : !hasActivity ? (
+          ) : showEmptyChart && !hasModuleUsage ? (
             <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
               <span className="flex size-12 items-center justify-center rounded-xl bg-muted">
                 <Activity className="size-6 text-muted-foreground" />
@@ -717,8 +744,26 @@ export function ActivityPeriodChart({
             </div>
           ) : (
             <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_18rem]">
-              <OutcomeAreaChart points={activePoints} />
-              <ModuleUsageBars byModule={byModule} />
+              {showEmptyChart ? (
+                <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-border/60 bg-muted/10 px-4 py-8 text-center">
+                  <span className="flex size-12 items-center justify-center rounded-xl bg-muted">
+                    <Activity className="size-6 text-muted-foreground" />
+                  </span>
+                  <p className="max-w-xs text-sm text-muted-foreground">
+                    Aun no hay DTEs exitosos o fallidos registrados en el grafico.
+                  </p>
+                  <Link
+                    href={emptyHref}
+                    className="inline-flex items-center gap-1 text-sm font-semibold text-amber-600 hover:underline dark:text-yellow-400"
+                  >
+                    Ir al verificador
+                    <ArrowRight className="size-4" />
+                  </Link>
+                </div>
+              ) : (
+                <OutcomeAreaChart points={activePoints} />
+              )}
+              <ModuleUsageBars byModule={byModule} isRefetching={isRefetching} />
             </div>
           )}
         </CardContent>

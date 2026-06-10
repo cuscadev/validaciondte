@@ -40,6 +40,10 @@ export type DashboardModuleStat = {
   records: number;
   successCount: number;
   errorCount: number;
+  /** Monthly authorized limit (null = unlimited). */
+  limit?: number | null;
+  /** DTEs used in the current billing period. */
+  monthlyUsed?: number;
 };
 
 export type DashboardRecentLog = {

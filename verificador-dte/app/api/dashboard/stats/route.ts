@@ -3,6 +3,13 @@ import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { countUsersByStatus } from '@/lib/dashboard-user-stats';
 import { getOrganization, listCollaborators } from '@/lib/organization-admin';
 import { canManageOrgUsers, type OrgRole, type UserRole } from '@/lib/firestoreUser';
+import type { AuthUser } from '@/lib/server-auth';
+import { getRouteLabel, resolveAllowedRoutes } from '@/lib/plan-access';
+import {
+  getMonthlyRouteUsage,
+  resolveEffectiveRenewalConfig,
+  resolveEffectiveUsageLimit,
+} from '@/lib/usage-limits';
 import type {
   DailyRollupPoint,
   DashboardModuleStat,
@@ -231,6 +238,58 @@ function aggregateLogs(logs: RawLog[]): Pick<
   };
 }
 
+async function buildAllowedModuleStats(
+  authUser: AuthUser,
+  byModule: DashboardModuleStat[]
+): Promise<DashboardModuleStat[]> {
+  const [allowedRoutes, renewal] = await Promise.all([
+    resolveAllowedRoutes(authUser),
+    resolveEffectiveRenewalConfig(authUser),
+  ]);
+
+  const statsByRoute = new Map<string, DashboardModuleStat>();
+  for (const mod of byModule) {
+    const key = mod.routeKey || mod.moduleName;
+    if (key && !statsByRoute.has(key)) {
+      statsByRoute.set(key, mod);
+    }
+  }
+
+  const enriched = await Promise.all(
+    allowedRoutes.map(async (routeKey) => {
+      const existing = statsByRoute.get(routeKey);
+      const [limit, monthlyUsed] = await Promise.all([
+        resolveEffectiveUsageLimit(authUser, routeKey),
+        getMonthlyRouteUsage(
+          authUser.uid,
+          routeKey,
+          new Date(),
+          renewal.resetDayOfMonth,
+          renewal.automaticReset,
+          renewal.renewalDate
+        ),
+      ]);
+
+      if (existing) {
+        return { ...existing, limit, monthlyUsed };
+      }
+
+      return {
+        routeKey,
+        moduleName: getRouteLabel(routeKey),
+        count: 0,
+        records: 0,
+        successCount: 0,
+        errorCount: 0,
+        limit,
+        monthlyUsed,
+      };
+    })
+  );
+
+  return enriched.sort((a, b) => b.records - a.records);
+}
+
 function buildActivitySeries(
   rollupDaily: DailyRollupPoint[],
   chartLogs: RawLog[]
@@ -361,6 +420,12 @@ export async function GET(req: NextRequest) {
     ]);
 
     const aggregated = aggregateLogs(logs);
+    const authUser: AuthUser = {
+      ...(appUser as Omit<AuthUser, 'uid' | 'email'>),
+      uid: decoded.uid,
+      email,
+    };
+    const byModule = await buildAllowedModuleStats(authUser, aggregated.byModule);
     const activity = buildActivitySeries(rollupDaily, chartLogs);
 
     const response: DashboardStatsResponse = {
@@ -368,7 +433,9 @@ export async function GET(req: NextRequest) {
         from: periodStart.toISOString(),
         to: new Date().toISOString(),
       },
-      ...aggregated,
+      totals: aggregated.totals,
+      byModule,
+      recent: aggregated.recent,
       daily: activity.daily,
       weekly: activity.weekly,
       monthly: activity.monthly,
