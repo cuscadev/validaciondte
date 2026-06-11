@@ -63,6 +63,11 @@ type PendingScan = {
   urlNormalizada: string;
 };
 
+type CameraOption = {
+  id: string;
+  label: string;
+};
+
 function isCameraPermissionDenied(error: unknown) {
   return (error as { name?: string })?.name === 'NotAllowedError';
 }
@@ -104,6 +109,18 @@ function pickPreferredCamera(cameras: { id: string; label: string }[]) {
   return preferred?.id ?? cameras[0].id;
 }
 
+function getCameraDisplayLabel(camera: CameraOption, index: number) {
+  const label = camera.label.trim();
+  if (/rear|back|environment|trasera|achter/i.test(label)) {
+    return `Trasera - ${label}`;
+  }
+  if (/front|user|face|integrat|voorzijde|frontal|selfie/i.test(label)) {
+    return `Selfie - ${label}`;
+  }
+  if (label) return label;
+  return `Camara ${index + 1}`;
+}
+
 function VerificadorQrContent() {
   const { appUser, firebaseUser } = useAuth();
   const createdBy =
@@ -116,6 +133,8 @@ function VerificadorQrContent() {
   const [pendingScans, setPendingScans] = useState<PendingScan[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [cameraPermission, setCameraPermission] = useState<CameraPermission>('unknown');
+  const [cameras, setCameras] = useState<CameraOption[]>([]);
+  const [selectedCameraId, setSelectedCameraId] = useState('');
   const [scanError, setScanError] = useState('');
   const [lastScan, setLastScan] = useState('');
   const [lastAddedCodGen, setLastAddedCodGen] = useState('');
@@ -141,7 +160,7 @@ function VerificadorQrContent() {
   const ambienteRef = useRef(ambiente);
   const scanCounterRef = useRef(0);
   const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const startScanningRef = useRef<(() => Promise<void>) | null>(null);
+  const startScanningRef = useRef<((cameraIdOverride?: string) => Promise<void>) | null>(null);
 
   ambienteRef.current = ambiente;
 
@@ -215,7 +234,7 @@ function VerificadorQrContent() {
     toast.success(`DTE #${created.item.scanNumber} agregado.`);
   }, []);
 
-  const startScanning = useCallback(async () => {
+  const startScanning = useCallback(async (cameraIdOverride?: string) => {
     if (!videoRef.current) return;
 
     try {
@@ -233,10 +252,21 @@ function VerificadorQrContent() {
         setScanError('No se detecto ninguna camara.');
         setIsScanning(false);
         setCameraPermission('unknown');
+        setCameras([]);
+        setSelectedCameraId('');
         return;
       }
 
-      const preferredCameraId = pickPreferredCamera(cameras);
+      setCameras(cameras);
+
+      const preferredCameraId =
+        cameraIdOverride && cameras.some((camera) => camera.id === cameraIdOverride)
+          ? cameraIdOverride
+          : selectedCameraId && cameras.some((camera) => camera.id === selectedCameraId)
+            ? selectedCameraId
+          : pickPreferredCamera(cameras) ?? cameras[0].id;
+
+      setSelectedCameraId(preferredCameraId);
 
       scannerRef.current = new QrScanner(
         videoRef.current,
@@ -252,7 +282,7 @@ function VerificadorQrContent() {
           highlightScanRegion: true,
           highlightCodeOutline: true,
           returnDetailedScanResult: true,
-          preferredCamera: preferredCameraId ?? cameras[0].id,
+          preferredCamera: preferredCameraId,
         }
       );
 
@@ -265,7 +295,7 @@ function VerificadorQrContent() {
       setScanError(message);
       setCameraPermission(isCameraPermissionDenied(error) ? 'denied' : 'unknown');
     }
-  }, [processQR]);
+  }, [processQR, selectedCameraId]);
 
   startScanningRef.current = startScanning;
 
@@ -346,6 +376,13 @@ function VerificadorQrContent() {
     setLastScan('');
     setLastAddedCodGen('');
     setHighlightedScanId(null);
+  };
+
+  const handleCameraChange = (cameraId: string) => {
+    setSelectedCameraId(cameraId);
+    if (isScanning) {
+      void startScanning(cameraId);
+    }
   };
 
   const verificarEscaneos = async () => {
@@ -511,6 +548,25 @@ function VerificadorQrContent() {
                 >
                   <option value="01">01 (Produccion)</option>
                   <option value="00">00 (Pruebas)</option>
+                </select>
+              </label>
+              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                Camara
+                <select
+                  value={selectedCameraId}
+                  onChange={(event) => handleCameraChange(event.target.value)}
+                  disabled={cameras.length <= 1 || cameraPermission === 'requesting'}
+                  className="rounded-md border border-slate-200 bg-background px-2 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10"
+                >
+                  {cameras.length ? (
+                    cameras.map((camera, index) => (
+                      <option key={camera.id} value={camera.id}>
+                        {getCameraDisplayLabel(camera, index)}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="">Detectar camaras</option>
+                  )}
                 </select>
               </label>
             </div>
