@@ -1,15 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
-import { consultCodFechaViaGo, DEFAULT_CONCURRENCY } from '@/lib/go-dte-api';
+import { consultQrScansViaGo } from '@/lib/consult-qr-scans';
+import { buildDteExcelBase64 } from '@/lib/dteCommon';
 import { recordServerProcessingLog } from '@/lib/server-processing-log';
 import { summarizeResults } from '@/lib/processing-log';
-import {
-  buildWorkbook,
-  tryParseFechaFlexible,
-  isProbableCodGen,
-} from '@/lib/dteCommon';
-import * as XLSX from 'xlsx-js-style';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -68,129 +63,6 @@ async function getIdentity(req: NextRequest): Promise<Identity | null> {
   }
 }
 
-function pickParam(url: URL, names: string[]) {
-  const entries = Array.from(url.searchParams.entries());
-  for (const name of names) {
-    const direct = url.searchParams.get(name);
-    if (direct) return direct;
-
-    const found = entries.find(([key]) => key.toLowerCase() === name.toLowerCase());
-    if (found?.[1]) return found[1];
-  }
-
-  return '';
-}
-
-function normalizeDateYmd(value: string) {
-  const parsed = tryParseFechaFlexible(value);
-  if (!parsed) return '';
-
-  const year = parsed.getFullYear();
-  const month = String(parsed.getMonth() + 1).padStart(2, '0');
-  const day = String(parsed.getDate()).padStart(2, '0');
-
-  return `${year}-${month}-${day}`;
-}
-
-function extractUrl(value: string) {
-  const cleanValue = value
-    .trim()
-    .replace(/&amp;/g, '&')
-    .replace(/[\s,;]+$/g, '');
-
-  if (cleanValue.startsWith('http://') || cleanValue.startsWith('https://')) {
-    return cleanValue;
-  }
-
-  const match = cleanValue.match(/https?:\/\/[^\s"']+/i);
-  return match?.[0]?.replace(/[\s,;]+$/g, '') || '';
-}
-
-function parseScannedUrl(value: string) {
-  try {
-    const extracted = extractUrl(value);
-    if (!extracted) {
-      return {
-        ok: false as const,
-        error: 'El QR no contiene una URL válida.',
-      };
-    }
-
-    const url = new URL(extracted);
-    const codGen =
-      pickParam(url, [
-        'codGen',
-        'codigoGeneracion',
-        'codigo',
-        'codigoGeneracionDte',
-        'codigo_generacion',
-        'FeCodigoGeneracion',
-      ]);
-    const fechaRaw =
-      pickParam(url, [
-        'fechaEmi',
-        'fecEmi',
-        'fecha',
-        'fechaEmision',
-        'fecha_emision',
-        'FeFechaGeneracionDte',
-        'fechaGeneracionDte',
-      ]);
-
-    if (!codGen || !fechaRaw) {
-      return {
-        ok: false as const,
-        error: 'El QR no contiene codGen y fechaEmi.',
-      };
-    }
-
-    if (!isProbableCodGen(codGen)) {
-      return {
-        ok: false as const,
-        error: 'El QR contiene un código de generación inválido.',
-      };
-    }
-
-    const fechaYmd = normalizeDateYmd(fechaRaw);
-    if (!fechaYmd) {
-      return {
-        ok: false as const,
-        error: 'El QR contiene una fecha de emisión inválida.',
-      };
-    }
-
-    return {
-      ok: true as const,
-      codGen: codGen.trim().toUpperCase(),
-      fechaYmd,
-      rawUrl: extracted,
-    };
-  } catch {
-    return {
-      ok: false as const,
-      error: 'El contenido escaneado no es una URL válida.',
-    };
-  }
-}
-
-function invalidResult(value: string, error: string) {
-  return {
-    ok: false,
-    url: value,
-    linkVisita: value,
-    visitar: 'Abrir',
-    ambiente: '',
-    codGen: '',
-    fechaEmi: '',
-    estado: 'ERROR',
-    descripcionEstado: '',
-    tipoDte: '',
-    numeroControl: '',
-    montoTotal: '',
-    error,
-  };
-}
-
 export async function POST(req: NextRequest, context: Params) {
   let batchRef: FirebaseFirestore.DocumentReference | null = null;
   let activeIdentity: Identity | null = null;
@@ -232,38 +104,13 @@ export async function POST(req: NextRequest, context: Params) {
     startedAt = new Date();
     scanCount = scans.length;
 
-    const filas = [];
-    const invalidos = [];
-    const seen = new Set<string>();
+    const scanValues = scans.map((scan: { value?: string }) => String(scan?.value || '').trim());
+    const batchResult = await consultQrScansViaGo(scanValues, {
+      enrichCreditNotes: true,
+    });
 
-    for (const scan of scans) {
-      const value = String(scan?.value || '').trim();
-      const parsed = parseScannedUrl(value);
-
-      if (!parsed.ok) {
-        invalidos.push(invalidResult(value, parsed.error));
-        continue;
-      }
-
-      const key = `${parsed.codGen}|${parsed.fechaYmd}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      filas.push(parsed);
-    }
-
-    let consultados: Record<string, unknown>[] = [];
-    if (filas.length) {
-      const goResp = await consultCodFechaViaGo(
-        filas.map((f) => ({ codGen: f.codGen, fechaYmd: f.fechaYmd })),
-        { concurrencia: DEFAULT_CONCURRENCY, enrichCreditNotes: true },
-      );
-      consultados = goResp.resultados;
-    }
-
-    const results = [...invalidos, ...consultados];
-    const wb = buildWorkbook(results);
-    const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'buffer' });
-    const filename = `escaneos_mobile_${Date.now()}.xlsx`;
+    const results = batchResult.resultados;
+    const { excelBase64, filename } = buildDteExcelBase64(results);
 
     await batchRef.update({
       status: 'processed',
@@ -298,7 +145,7 @@ export async function POST(req: NextRequest, context: Params) {
       batchId,
       results,
       filename,
-      excelBase64: Buffer.from(excelBuffer).toString('base64'),
+      excelBase64,
     });
   } catch (error) {
     console.error('[api/mobile-scans/process] Error processing batch', error);

@@ -140,7 +140,7 @@ func mapDetail(pairs map[string]string) Result {
 	)
 	documentoAjustado := get("Documento ajustado", "Documento Ajustado", "Ajuste")
 
-	return Result{
+	result := Result{
 		Estado:                 NormalizarEstado(estadoRaw),
 		EstadoRaw:              estadoRaw,
 		TipoDte:                tipoDte,
@@ -152,13 +152,36 @@ func mapDetail(pairs map[string]string) Result {
 		CodigoGeneracion:       get("Código de Generación", "Codigo de Generacion", "Código Generación", "Codigo Generacion"),
 		SelloRecepcion:         get("Sello de Recepción", "Sello de Recepcion", "Sello"),
 		NumeroControl:          get("Número de Control", "Numero de Control", "N° Control", "No. de Control"),
-		MontoTotal:             get("Monto Total de la Operación", "Monto Total de la Operacion", "Monto Total", "Total a pagar"),
-		IvaOperaciones:         get("IVA de las operaciones", "IVA de las Operaciones"),
+		MontoTotalOperacion: get(
+			"Monto Total de la Operación",
+			"Monto Total de la Operacion",
+			"Monto total operación",
+			"Monto total operacion",
+		),
+		MontoTotal: get(
+			"Monto Total de la Operación",
+			"Monto Total de la Operacion",
+			"Monto Total",
+			"Monto total",
+		),
+		IvaOperaciones: get("IVA de las operaciones", "IVA de las Operaciones", "IVA Operaciones"),
 		IvaPercibido:           get("IVA percibido", "IVA Percibido"),
 		IvaRetenido:            get("IVA retenido", "IVA Retenido"),
 		RetencionRenta:         get("Retención renta", "Retencion renta", "Retenci n renta"),
 		TotalNoAfectos:         get("Total valores no afectos", "Total Valores no Afectos", "Valores no afectos"),
-		TotalPagarOperacion:    get("Total a pagar/Total de operación", "Total a pagar/Total de operacion", "Total a pagar / Total de operación", "Total de operaci n", "Total de operación", "Total de Operación", "Total de Operaci n"),
+		TotalPagarOperacion: get(
+			"Total de operación",
+			"Total de Operación",
+			"Total de operacion",
+			"Total de Operacion",
+			"Total de operaci n",
+			"Total de Operaci n",
+			"Total a pagar/Total de operación",
+			"Total a pagar/Total de operacion",
+			"Total a pagar / Total de operación",
+			"Total a pagar",
+			"Total a Pagar",
+		),
 		OtrosTributos:          get("Otros tributos", "Otros Tributos"),
 		DocumentoAjustado:      documentoAjustado,
 		DocumentoEventoAplicado: get(
@@ -170,6 +193,15 @@ func mapDetail(pairs map[string]string) Result {
 		Ajustado: strings.Contains(strings.ToLower(documentoAjustado), "ajustad"),
 		Error:    "",
 	}
+
+	if result.MontoTotalOperacion == "" {
+		result.MontoTotalOperacion = result.MontoTotal
+	}
+	if result.MontoTotal == "" {
+		result.MontoTotal = result.MontoTotalOperacion
+	}
+
+	return result
 }
 
 func applyTipoDteTextFallback(html string, detail *Result) {

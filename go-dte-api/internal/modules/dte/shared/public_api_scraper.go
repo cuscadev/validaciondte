@@ -243,17 +243,20 @@ func mapPublicAPIResponse(payload publicAPIResponse, base Result) Result {
 				payload.Documento.Identificacion.HorEmi,
 			)
 		}
+		result.MontoTotalOperacion = formatAPIAmount(payload.Documento.Resumen.MontoTotalOperacion)
 		result.MontoTotal = formatAPIAmount(
 			payload.Documento.Resumen.SubTotalVentas,
 			payload.Documento.Resumen.SubTotal,
 			payload.Documento.Resumen.TotalGravada,
-			payload.Documento.Resumen.TotalPagar,
 			payload.Documento.Resumen.MontoTotalOperacion,
 		)
-		result.TotalPagarOperacion = formatAPIAmount(
-			payload.Documento.Resumen.TotalPagar,
-			payload.Documento.Resumen.MontoTotalOperacion,
-		)
+		if result.MontoTotal == "" {
+			result.MontoTotal = formatAPIAmount(payload.Documento.Resumen.TotalPagar)
+		}
+		result.TotalPagarOperacion = formatAPIAmount(payload.Documento.Resumen.TotalPagar)
+		if result.TotalPagarOperacion == "" {
+			result.TotalPagarOperacion = result.MontoTotalOperacion
+		}
 		result.IvaOperaciones = formatAPIAmount(
 			payload.Documento.Resumen.TotalIva,
 			sumTributos(payload.Documento.Resumen.Tributos),
@@ -380,10 +383,18 @@ func mapTipoDteCode(code string) string {
 		return "COMPROBANTE DE CREDITO FISCAL"
 	case "05":
 		return "NOTA DE CREDITO"
+	case "06":
+		return "NOTA DE DEBITO"
+	case "07":
+		return "COMPROBANTE DE RETENCION"
 	case "09":
 		return "COMPROBANTE DE LIQUIDACION"
+	case "11":
+		return "FACTURA DE EXPORTACION"
 	case "14":
 		return "FACTURA SUJETO EXCLUIDO"
+	case "15":
+		return "COMPROBANTE DE DONACION"
 	default:
 		return code
 	}

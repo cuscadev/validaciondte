@@ -370,8 +370,9 @@ func ExtractDTEJSONFields(item map[string]any) Result {
 		TipoDte:          tipoDte,
 		TipoDteNorm:      NormalizarTipoDte(tipoDte),
 		SelloRecepcion:   extractSelloFromJSON(item),
-		MontoTotal:       extractMontoTotalFromResumen(resumen),
-		IvaOperaciones:   extractIVAFromResumen(resumen),
+		MontoTotal:          extractMontoTotalFromResumen(resumen),
+		MontoTotalOperacion: jsonAsString(resumen["montoTotalOperacion"]),
+		IvaOperaciones:      extractIVAFromResumen(resumen),
 		IvaPercibido:     firstNonEmpty(jsonAsString(resumen["ivaPerci1"]), jsonAsString(resumen["ivaPercibido"])),
 		IvaRetenido:      firstNonEmpty(jsonAsString(resumen["ivaRete1"]), jsonAsString(resumen["ivaRetenido"])),
 		RetencionRenta:   jsonAsString(resumen["reteRenta"]),
@@ -380,10 +381,7 @@ func ExtractDTEJSONFields(item map[string]any) Result {
 			jsonAsString(resumen["totalNoSuj"]),
 			jsonAsString(resumen["totalExenta"]),
 		),
-		TotalPagarOperacion: firstNonEmpty(
-			jsonAsString(resumen["totalPagar"]),
-			jsonAsString(resumen["montoTotalOperacion"]),
-		),
+		TotalPagarOperacion: jsonAsString(resumen["totalPagar"]),
 		OtrosTributos: extractOtrosTributos(resumen),
 
 		EmisorNit:             jsonAsString(emisor["nit"]),
@@ -431,6 +429,7 @@ func MergeJSONIntoResult(dst *Result, src Result) {
 	}
 	fillIfEmpty(&dst.SelloRecepcion, src.SelloRecepcion)
 	fillIfEmpty(&dst.MontoTotal, src.MontoTotal)
+	fillIfEmpty(&dst.MontoTotalOperacion, src.MontoTotalOperacion)
 	fillIfEmpty(&dst.IvaOperaciones, src.IvaOperaciones)
 	fillIfEmpty(&dst.IvaPercibido, src.IvaPercibido)
 	fillIfEmpty(&dst.IvaRetenido, src.IvaRetenido)

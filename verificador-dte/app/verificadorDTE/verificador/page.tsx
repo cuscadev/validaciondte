@@ -91,6 +91,7 @@ type LimitCheck = {
   allowed: boolean
   error?: string
   limit: number | null
+  batchLimit?: number | null
   used: number
   incomingRecords: number
   remaining: number | null
@@ -369,13 +370,25 @@ export default function HomePage() {
             </UploadFormAccordion>
           </form>
 
-          {limitCheck && limitCheck.limit !== null && (
-            <div className={`rounded-md border px-4 py-3 text-sm ${limitCheck.allowed ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200' : 'border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200'}`}>
-              {limitCheck.allowed
-                ? `Este proceso usara ${limitCheck.incomingRecords} consultas. Llevas ${limitCheck.used} de ${limitCheck.limit}; te quedaran ${limitCheck.remaining}.`
-                : limitCheck.error || `Estos archivos tienen ${limitCheck.incomingRecords} consultas y superan tu saldo mensual disponible.`}
+          {(limitCheck?.limit !== null && limitCheck?.limit !== undefined) ||
+          (limitCheck?.batchLimit !== null && limitCheck?.batchLimit !== undefined) ? (
+            <div className={`rounded-md border px-4 py-3 text-sm ${limitCheck?.allowed ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200' : 'border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200'}`}>
+              {limitCheck?.allowed ? (
+                <>
+                  {limitCheck.batchLimit !== null && limitCheck.batchLimit !== undefined ? (
+                    <p>Maximo por proceso: {limitCheck.incomingRecords} de {limitCheck.batchLimit} links.</p>
+                  ) : null}
+                  {limitCheck.limit !== null && limitCheck.limit !== undefined ? (
+                    <p>
+                      Uso mensual: {limitCheck.incomingRecords} en este proceso. Llevas {limitCheck.used} de {limitCheck.limit}; te quedaran {limitCheck.remaining}.
+                    </p>
+                  ) : null}
+                </>
+              ) : (
+                limitCheck?.error || 'La seleccion supera el limite configurado para este modulo.'
+              )}
             </div>
-          )}
+          ) : null}
 
           <UploadResultsReveal visible={resultsVisible && data.length > 0}>
           <UploadTableToolbar

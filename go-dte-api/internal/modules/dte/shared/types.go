@@ -38,6 +38,7 @@ type Result struct {
 	SelloRecepcion          string            `json:"selloRecepcion,omitempty"`
 	NumeroControl           string            `json:"numeroControl,omitempty"`
 	MontoTotal              string            `json:"montoTotal,omitempty"`
+	MontoTotalOperacion     string            `json:"montoTotalOperacion,omitempty"`
 	IvaOperaciones          string            `json:"ivaOperaciones,omitempty"`
 	IvaPercibido            string            `json:"ivaPercibido,omitempty"`
 	IvaRetenido             string            `json:"ivaRetenido,omitempty"`

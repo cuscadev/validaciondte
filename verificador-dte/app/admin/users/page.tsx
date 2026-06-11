@@ -89,6 +89,10 @@ const UNLIMITED_LIMIT_VALUE = 'unlimited';
 const RENEWAL_DATE_DRAFT_KEY = '__renewalDate';
 const AUTOMATIC_RESET_DRAFT_KEY = '__automaticReset';
 
+function batchDraftKey(routeKey: string) {
+  return `batch:${routeKey}`;
+}
+
 type AdminOrganizationStatsMember = {
   uid: string;
   email: string;
@@ -175,12 +179,14 @@ function limitsToDraft(limits?: UsageLimits): LimitDraft {
       ? limits?.mobileScanFolderLimit
       : limits?.routeLimits?.[route.key];
     draft[route.key] = limitValueToDraft(value);
+    draft[batchDraftKey(route.key)] = limitValueToDraft(limits?.batchLimits?.[route.key]);
   }
   return draft;
 }
 
 function draftToLimits(draft: LimitDraft): UsageLimits {
   const routeLimits: Record<string, number | null> = {};
+  const batchLimits: Record<string, number | null> = {};
   let mobileScanFolderLimit: number | null | undefined;
   const renewalDate = String(draft[RENEWAL_DATE_DRAFT_KEY] || '').trim() || undefined;
   const automaticResetRaw = String(draft[AUTOMATIC_RESET_DRAFT_KEY] || '').trim();
@@ -192,17 +198,25 @@ function draftToLimits(draft: LimitDraft): UsageLimits {
 
   for (const route of LIMIT_ROUTES) {
     const raw = String(draft[route.key] ?? '').trim();
-    if (!raw) continue;
-    const value = raw === UNLIMITED_LIMIT_VALUE ? null : Math.max(1, Number(raw) || 1);
-    if (route.key === 'escaneos-mobile') {
-      mobileScanFolderLimit = value;
-    } else {
-      routeLimits[route.key] = value;
+    if (raw) {
+      const value = raw === UNLIMITED_LIMIT_VALUE ? null : Math.max(1, Number(raw) || 1);
+      if (route.key === 'escaneos-mobile') {
+        mobileScanFolderLimit = value;
+      } else {
+        routeLimits[route.key] = value;
+      }
+    }
+
+    const batchRaw = String(draft[batchDraftKey(route.key)] ?? '').trim();
+    if (batchRaw) {
+      batchLimits[route.key] =
+        batchRaw === UNLIMITED_LIMIT_VALUE ? null : Math.max(1, Number(batchRaw) || 1);
     }
   }
 
   return {
     ...(Object.keys(routeLimits).length ? { routeLimits } : {}),
+    ...(Object.keys(batchLimits).length ? { batchLimits } : {}),
     ...(mobileScanFolderLimit !== undefined ? { mobileScanFolderLimit } : {}),
     ...(resetDayOfMonth !== undefined ? { resetDayOfMonth } : {}),
     ...(renewalDate !== undefined ? { renewalDate } : {}),
@@ -1048,32 +1062,71 @@ function LimitEditor({
             </p>
             <div className="grid gap-2">
               {group.routes.map((route) => (
-                <label key={route.key} className="grid gap-1 text-sm">
-                  <span className="font-medium">{route.label}</span>
-                  <div className="grid grid-cols-[minmax(0,1fr)_8rem] gap-2">
-                    <input
-                      type="number"
-                      min={1}
-                      value={draft[route.key] === UNLIMITED_LIMIT_VALUE ? '' : draft[route.key] || ''}
-                      onChange={(event) => updateLimit(route.key, event.target.value)}
-                      placeholder="Heredar"
-                      disabled={draft[route.key] === UNLIMITED_LIMIT_VALUE}
-                      className="w-full rounded-md border border-slate-200 bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-yellow-400/40 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10"
-                    />
-                    <select
-                      value={draft[route.key] === UNLIMITED_LIMIT_VALUE ? UNLIMITED_LIMIT_VALUE : draft[route.key] ? 'custom' : INHERIT_LIMIT_VALUE}
-                      onChange={(event) => {
-                        const value = event.target.value;
-                        updateLimit(route.key, value === 'custom' ? '1' : value);
-                      }}
-                      className="rounded-md border border-slate-200 bg-background px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-yellow-400/40 dark:border-white/10"
-                    >
-                      <option value={INHERIT_LIMIT_VALUE}>Heredar</option>
-                      <option value="custom">Fijo</option>
-                      <option value={UNLIMITED_LIMIT_VALUE}>Ilimitado</option>
-                    </select>
-                  </div>
-                </label>
+                <div key={route.key} className="grid gap-2 rounded-md border border-slate-200 bg-white p-2 dark:border-white/10 dark:bg-zinc-950">
+                  <p className="text-sm font-medium">{route.label}</p>
+                  <label className="grid gap-1 text-xs text-muted-foreground">
+                    Limite mensual
+                    <div className="grid grid-cols-[minmax(0,1fr)_8rem] gap-2">
+                      <input
+                        type="number"
+                        min={1}
+                        value={draft[route.key] === UNLIMITED_LIMIT_VALUE ? '' : draft[route.key] || ''}
+                        onChange={(event) => updateLimit(route.key, event.target.value)}
+                        placeholder="Heredar"
+                        disabled={draft[route.key] === UNLIMITED_LIMIT_VALUE}
+                        className="w-full rounded-md border border-slate-200 bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-yellow-400/40 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10"
+                      />
+                      <select
+                        value={draft[route.key] === UNLIMITED_LIMIT_VALUE ? UNLIMITED_LIMIT_VALUE : draft[route.key] ? 'custom' : INHERIT_LIMIT_VALUE}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          updateLimit(route.key, value === 'custom' ? '1' : value);
+                        }}
+                        className="rounded-md border border-slate-200 bg-background px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-yellow-400/40 dark:border-white/10"
+                      >
+                        <option value={INHERIT_LIMIT_VALUE}>Heredar</option>
+                        <option value="custom">Fijo</option>
+                        <option value={UNLIMITED_LIMIT_VALUE}>Ilimitado</option>
+                      </select>
+                    </div>
+                  </label>
+                  <label className="grid gap-1 text-xs text-muted-foreground">
+                    Limite por proceso
+                    <div className="grid grid-cols-[minmax(0,1fr)_8rem] gap-2">
+                      <input
+                        type="number"
+                        min={1}
+                        value={
+                          draft[batchDraftKey(route.key)] === UNLIMITED_LIMIT_VALUE
+                            ? ''
+                            : draft[batchDraftKey(route.key)] || ''
+                        }
+                        onChange={(event) => updateLimit(batchDraftKey(route.key), event.target.value)}
+                        placeholder="Heredar"
+                        disabled={draft[batchDraftKey(route.key)] === UNLIMITED_LIMIT_VALUE}
+                        className="w-full rounded-md border border-slate-200 bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-yellow-400/40 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10"
+                      />
+                      <select
+                        value={
+                          draft[batchDraftKey(route.key)] === UNLIMITED_LIMIT_VALUE
+                            ? UNLIMITED_LIMIT_VALUE
+                            : draft[batchDraftKey(route.key)]
+                              ? 'custom'
+                              : INHERIT_LIMIT_VALUE
+                        }
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          updateLimit(batchDraftKey(route.key), value === 'custom' ? '1' : value);
+                        }}
+                        className="rounded-md border border-slate-200 bg-background px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-yellow-400/40 dark:border-white/10"
+                      >
+                        <option value={INHERIT_LIMIT_VALUE}>Heredar</option>
+                        <option value="custom">Fijo</option>
+                        <option value={UNLIMITED_LIMIT_VALUE}>Ilimitado</option>
+                      </select>
+                    </div>
+                  </label>
+                </div>
               ))}
             </div>
           </div>

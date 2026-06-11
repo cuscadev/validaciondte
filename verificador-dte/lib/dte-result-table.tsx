@@ -19,6 +19,7 @@ export type DteResultRow = {
   selloRecepcion?: string;
   numeroControl?: string;
   montoTotal?: string;
+  montoTotalOperacion?: string;
   ivaOperaciones?: string;
   ivaPercibido?: string;
   ivaRetenido?: string;
@@ -53,6 +54,7 @@ export const DTE_RESULT_COLUMNS = [
   { key: 'fechaHoraTransmision', label: 'Fecha Transmisión' },
   { key: 'numeroControl', label: 'N° Control' },
   { key: 'montoTotal', label: 'Monto Total' },
+  { key: 'montoTotalOperacion', label: 'Monto Total Operación' },
   { key: 'ivaOperaciones', label: 'IVA Operaciones' },
   { key: 'ivaPercibido', label: 'IVA Percibido' },
   { key: 'ivaRetenido', label: 'IVA Retenido' },
@@ -102,6 +104,7 @@ export function dteResultSearchFields(r: DteResultRow): string[] {
     r.tipoDte,
     r.numeroControl,
     r.montoTotal,
+    r.montoTotalOperacion,
     r.fechaHoraGeneracion,
     r.fechaHoraTransmision,
     r.ivaOperaciones,

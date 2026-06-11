@@ -33,6 +33,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
+import { type DteResultRow } from '@/lib/dte-result-table';
+import { formatDteResultDetail } from '@/lib/dte-result-normalize';
 
 type Scan = {
   id?: string;
@@ -40,18 +42,7 @@ type Scan = {
   scannedAt: string;
 };
 
-type Result = {
-  codGen?: string;
-  fechaEmi?: string;
-  estado?: string;
-  descripcionEstado?: string;
-  tipoDte?: string;
-  numeroControl?: string;
-  montoTotal?: string;
-  linkVisita?: string;
-  url?: string;
-  error?: string;
-};
+type Result = DteResultRow;
 
 type ScanFolder = {
   id: string;
@@ -494,8 +485,14 @@ function FolderDetails({ folder }: { folder: ScanFolder }) {
                       formatDate(scan.scannedAt)
                     )}
                   </td>
-                  <td className="max-w-[24rem] truncate p-2 align-top text-muted-foreground">
-                    {hasResults ? result.error || result.descripcionEstado || result.numeroControl || '-' : '-'}
+                  <td className="max-w-[24rem] p-2 align-top text-muted-foreground">
+                    {hasResults ? (
+                      <span className="line-clamp-3 whitespace-normal text-xs">
+                        {formatDteResultDetail(result as DteResultRow)}
+                      </span>
+                    ) : (
+                      '-'
+                    )}
                   </td>
                   <td className="p-2 align-top">
                     {link ? (

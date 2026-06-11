@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/server-auth';
-import { assertMonthlyUsageLimit, resolveEffectiveRenewalConfig, resolveEffectiveUsageLimit, getMonthlyRouteUsage } from '@/lib/usage-limits';
+import { assertMonthlyUsageLimit, assertBatchProcessLimit, resolveEffectiveRenewalConfig, resolveEffectiveUsageLimit, resolveEffectiveBatchLimit, getMonthlyRouteUsage } from '@/lib/usage-limits';
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,6 +14,7 @@ export async function POST(req: NextRequest) {
     }
 
     const limit = await resolveEffectiveUsageLimit(user, routeKey);
+    const batchLimit = await resolveEffectiveBatchLimit(user, routeKey);
     const renewal = await resolveEffectiveRenewalConfig(user);
     const used = limit === null
       ? 0
@@ -25,11 +26,13 @@ export async function POST(req: NextRequest) {
           renewal.automaticReset,
           renewal.renewalDate
         );
+    await assertBatchProcessLimit(user, routeKey, incomingRecords);
     await assertMonthlyUsageLimit(user, routeKey, incomingRecords);
 
     return NextResponse.json({
       allowed: true,
       limit,
+      batchLimit,
       used,
       incomingRecords,
       ...renewal,

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as XLSX from 'xlsx-js-style';
 import { requireAuth } from '@/lib/server-auth';
-import { assertMonthlyUsageLimit, getMonthlyRouteUsage, resolveEffectiveRenewalConfig, resolveEffectiveUsageLimit } from '@/lib/usage-limits';
+import { assertMonthlyUsageLimit, assertBatchProcessLimit, getMonthlyRouteUsage, resolveEffectiveRenewalConfig, resolveEffectiveUsageLimit, resolveEffectiveBatchLimit } from '@/lib/usage-limits';
 
 const URL_REGEX = /https?:\/\/(?:admin\.factura\.gob\.sv|webapp\.dtes\.mh\.gob\.sv)\/consultaPublica\/?\?[^\s,;"'<>]+/gi;
 const UUID_REGEX = /^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$/;
@@ -77,6 +77,7 @@ export async function POST(req: NextRequest) {
 
     const incomingRecords = seen.size;
     const limit = await resolveEffectiveUsageLimit(user, routeKey);
+    const batchLimit = await resolveEffectiveBatchLimit(user, routeKey);
     const renewal = await resolveEffectiveRenewalConfig(user);
     const used = limit === null
       ? 0
@@ -88,11 +89,13 @@ export async function POST(req: NextRequest) {
           renewal.automaticReset,
           renewal.renewalDate
         );
+    await assertBatchProcessLimit(user, routeKey, incomingRecords);
     await assertMonthlyUsageLimit(user, routeKey, incomingRecords);
 
     return NextResponse.json({
       allowed: true,
       limit,
+      batchLimit,
       used,
       incomingRecords,
       ...renewal,

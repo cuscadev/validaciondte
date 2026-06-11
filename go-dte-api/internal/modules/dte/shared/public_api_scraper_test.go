@@ -111,6 +111,43 @@ func TestMapPublicAPIResponseReadsDteResumenTaxAliases(t *testing.T) {
 	}
 }
 
+func TestMapPublicAPIResponseReadsComprobanteRetencionAmounts(t *testing.T) {
+	payload := publicAPIResponse{
+		EstadoDoc:         "Transmitido Satisfactoriamente",
+		DescripcionEstado: "DTE transmitido y registrado satisfactoriamente en la DGII.",
+		FechaEmi:          "2026-05-07",
+		HoraEmi:           "12:02:50",
+		FechaProcesado:    "2026-05-07 12:03:18",
+		CodGen:            "63AE94E9-2A91-490E-85A6-439D509D3043",
+		SelloVal:          "2026A2A5FDF9C1824918B404D3B0D5051BF57KCP",
+		TipoDte:           "07",
+		NombDte:           "COMPROBANTE DE RETENCION",
+		Documento:         &publicAPIDocumento{},
+	}
+	payload.Documento.Identificacion.NumeroControl = "DTE-07-M001P005-000000000000598"
+	payload.Documento.Resumen.MontoTotalOperacion = floatPtr(354.40)
+	payload.Documento.Resumen.TotalPagar = floatPtr(3.54)
+	payload.Documento.Resumen.IvaRete1 = floatPtr(3.54)
+
+	result := mapPublicAPIResponse(payload, Result{})
+
+	if result.TipoDteNorm != "COMPROBANTE DE RETENCION" {
+		t.Fatalf("TipoDteNorm = %q", result.TipoDteNorm)
+	}
+	if result.MontoTotalOperacion != "354.4" {
+		t.Fatalf("MontoTotalOperacion = %q, want 354.4", result.MontoTotalOperacion)
+	}
+	if result.MontoTotal != "354.4" {
+		t.Fatalf("MontoTotal = %q, want 354.4", result.MontoTotal)
+	}
+	if result.TotalPagarOperacion != "3.54" {
+		t.Fatalf("TotalPagarOperacion = %q, want 3.54", result.TotalPagarOperacion)
+	}
+	if result.IvaRetenido != "3.54" {
+		t.Fatalf("IvaRetenido = %q, want 3.54", result.IvaRetenido)
+	}
+}
+
 func TestMapPublicAPIResponseNotFound(t *testing.T) {
 	payload := publicAPIResponse{
 		EstadoDoc:         "Error",

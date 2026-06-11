@@ -5,7 +5,7 @@ import { NextRequest } from 'next/server';
 import * as XLSX from 'xlsx-js-style';
 import { getGoDteApiUrl } from '@/lib/go-dte-api';
 import { requireAuth } from '@/lib/server-auth';
-import { assertMonthlyUsageLimit } from '@/lib/usage-limits';
+import { assertMonthlyUsageLimit, assertBatchProcessLimit } from '@/lib/usage-limits';
 
 const URL_REGEX = /https?:\/\/(?:admin\.factura\.gob\.sv|webapp\.dtes\.mh\.gob\.sv)\/consultaPublica\/?\?[^\s,;"'<>]+/gi;
 
@@ -53,6 +53,7 @@ export async function POST(req: NextRequest) {
       await countLinksFromFile(file, seen);
     }
 
+    await assertBatchProcessLimit(user, routeKey, seen.size);
     await assertMonthlyUsageLimit(user, routeKey, seen.size);
 
     const upstreamForm = new FormData();

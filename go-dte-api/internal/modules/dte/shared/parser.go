@@ -183,22 +183,38 @@ func NormalizarTipoDte(text string) string {
 		return "COMPROBANTE DE CREDITO FISCAL"
 	case "05":
 		return "NOTA DE CREDITO"
+	case "06":
+		return "NOTA DE DEBITO"
+	case "07":
+		return "COMPROBANTE DE RETENCION"
 	case "09":
 		return "COMPROBANTE DE LIQUIDACION"
+	case "11":
+		return "FACTURA DE EXPORTACION"
 	case "14":
 		return "FACTURA SUJETO EXCLUIDO"
+	case "15":
+		return "COMPROBANTE DE DONACION"
 	}
 
 	t := removeAccents(strings.ToUpper(trimmed))
 	switch {
 	case strings.Contains(t, "FACTURA") && strings.Contains(t, "SUJETO") && strings.Contains(t, "EXCLUIDO"):
 		return "FACTURA SUJETO EXCLUIDO"
+	case strings.Contains(t, "FACTURA") && strings.Contains(t, "EXPORT"):
+		return "FACTURA DE EXPORTACION"
 	case strings.Contains(t, "LIQUIDACION"):
 		return "COMPROBANTE DE LIQUIDACION"
+	case strings.Contains(t, "RETENCION"):
+		return "COMPROBANTE DE RETENCION"
+	case strings.Contains(t, "DONACION"):
+		return "COMPROBANTE DE DONACION"
 	case strings.Contains(t, "FACTURA"):
 		return "FACTURA"
 	case strings.Contains(t, "COMPROBANTE") && strings.Contains(t, "CREDITO") && strings.Contains(t, "FISCAL"):
 		return "COMPROBANTE DE CREDITO FISCAL"
+	case strings.Contains(t, "NOTA") && strings.Contains(t, "DEBITO"):
+		return "NOTA DE DEBITO"
 	case strings.Contains(t, "NOTA") && strings.Contains(t, "CREDITO"):
 		return "NOTA DE CREDITO"
 	default:

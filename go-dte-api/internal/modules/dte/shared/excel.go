@@ -20,7 +20,7 @@ var reportHeaders = []string{
 
 	"fechaHoraGeneracion", "fechaHoraTransmision", "fechaHoraProcesamiento",
 
-	"codigoGeneracion", "selloRecepcion", "numeroControl", "montoTotal",
+	"codigoGeneracion", "selloRecepcion", "numeroControl", "montoTotal", "montoTotalOperacion",
 
 	"ivaOperaciones", "ivaPercibido", "ivaRetenido", "retencionRenta",
 
@@ -53,11 +53,13 @@ func BuildExcelBase64(results []Result) (string, error) {
 
 	writeResultsSheet(file, "Todos", results)
 
-	writeResultsSheet(file, "FACTURA", filterByType(results, "FACTURA"))
-
-	writeResultsSheet(file, "COMPROBANTE DE CREDITO FISCAL", filterByType(results, "COMPROBANTE DE CREDITO FISCAL"))
-
-	writeResultsSheet(file, "NOTA DE CREDITO", filterByType(results, "NOTA DE CREDITO"))
+	for _, tipo := range reportTypeSheets(results) {
+		rows := filterByType(results, tipo)
+		if len(rows) == 0 {
+			continue
+		}
+		writeResultsSheet(file, tipo, rows)
+	}
 
 	writeResultsSheet(file, "Rechazados", filterRejected(results))
 
@@ -245,7 +247,7 @@ func resultRow(r Result) []any {
 
 		r.FechaHoraGeneracion, r.FechaHoraTransmision, r.FechaHoraProcesamiento,
 
-		r.CodigoGeneracion, r.SelloRecepcion, r.NumeroControl, r.MontoTotal,
+		r.CodigoGeneracion, r.SelloRecepcion, r.NumeroControl, r.MontoTotal, r.MontoTotalOperacion,
 
 		r.IvaOperaciones, r.IvaPercibido, r.IvaRetenido, r.RetencionRenta,
 
@@ -298,6 +300,38 @@ func filterByType(results []Result, typeNorm string) []Result {
 
 	return out
 
+}
+
+var defaultReportTypeSheets = []string{
+	"FACTURA",
+	"COMPROBANTE DE CREDITO FISCAL",
+	"NOTA DE CREDITO",
+	"COMPROBANTE DE RETENCION",
+	"COMPROBANTE DE LIQUIDACION",
+	"FACTURA SUJETO EXCLUIDO",
+	"NOTA DE DEBITO",
+	"FACTURA DE EXPORTACION",
+	"COMPROBANTE DE DONACION",
+}
+
+func reportTypeSheets(results []Result) []string {
+	seen := map[string]bool{}
+	out := make([]string, 0, len(defaultReportTypeSheets)+4)
+	appendType := func(tipo string) {
+		tipo = strings.TrimSpace(tipo)
+		if tipo == "" || tipo == "SIN_TIPO" || seen[tipo] {
+			return
+		}
+		seen[tipo] = true
+		out = append(out, tipo)
+	}
+	for _, tipo := range defaultReportTypeSheets {
+		appendType(tipo)
+	}
+	for _, r := range results {
+		appendType(r.TipoDteNorm)
+	}
+	return out
 }
 
 func filterRejected(results []Result) []Result {

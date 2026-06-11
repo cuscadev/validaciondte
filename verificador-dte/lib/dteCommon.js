@@ -25,8 +25,20 @@ export function normalizarTipoDte(t) {
   if (t === '01') return 'FACTURA';
   if (t === '03') return 'COMPROBANTE DE CRÉDITO FISCAL';
   if (t === '05') return 'NOTA DE CRÉDITO';
+  if (t === '06') return 'NOTA DE DÉBITO';
+  if (t === '07') return 'COMPROBANTE DE RETENCIÓN';
+  if (t === '09') return 'COMPROBANTE DE LIQUIDACIÓN';
+  if (t === '11') return 'FACTURA DE EXPORTACIÓN';
+  if (t === '14') return 'FACTURA SUJETO EXCLUIDO';
+  if (t === '15') return 'COMPROBANTE DE DONACIÓN';
+  if (t.includes('FACTURA') && t.includes('SUJETO') && t.includes('EXCLUIDO')) return 'FACTURA SUJETO EXCLUIDO';
+  if (t.includes('FACTURA') && t.includes('EXPORT')) return 'FACTURA DE EXPORTACIÓN';
+  if (t.includes('LIQUIDACION')) return 'COMPROBANTE DE LIQUIDACIÓN';
+  if (t.includes('RETENCION')) return 'COMPROBANTE DE RETENCIÓN';
+  if (t.includes('DONACION')) return 'COMPROBANTE DE DONACIÓN';
   if (t.includes('FACTURA')) return 'FACTURA';
   if (t.includes('COMPROBANTE') && t.includes('CREDITO') && t.includes('FISCAL')) return 'COMPROBANTE DE CRÉDITO FISCAL';
+  if (t.includes('NOTA') && t.includes('DEBITO')) return 'NOTA DE DÉBITO';
   if (t.includes('NOTA') && t.includes('CREDITO')) return 'NOTA DE CRÉDITO';
   return 'SIN_TIPO';
 }
@@ -325,6 +337,43 @@ export function buildReportSummarySheet(resultados, wsAll, options = {}) {
   return ws;
 }
 
+const DEFAULT_REPORT_TYPE_SHEETS = [
+  'FACTURA',
+  'COMPROBANTE DE CRÉDITO FISCAL',
+  'NOTA DE CRÉDITO',
+  'COMPROBANTE DE RETENCIÓN',
+  'COMPROBANTE DE LIQUIDACIÓN',
+  'FACTURA SUJETO EXCLUIDO',
+  'NOTA DE DÉBITO',
+  'FACTURA DE EXPORTACIÓN',
+  'COMPROBANTE DE DONACIÓN',
+];
+
+function reportTypeSheets(resultados) {
+  const seen = new Set();
+  const out = [];
+  const appendType = (tipo) => {
+    const value = String(tipo || '').trim();
+    if (!value || value === 'SIN_TIPO' || seen.has(value)) return;
+    seen.add(value);
+    out.push(value);
+  };
+  DEFAULT_REPORT_TYPE_SHEETS.forEach(appendType);
+  resultados.forEach((row) => appendType(row?.tipoDteNorm));
+  return out;
+}
+
+function buildWorkbookTypeSheets(wb, normalizedResults) {
+  for (const t of reportTypeSheets(normalizedResults)) {
+    const rows = normalizedResults.filter((r) => r?.tipoDteNorm === t);
+    if (!rows.length) continue;
+    const ws = XLSX.utils.json_to_sheet(rows);
+    applyHyperlinks(ws);
+    prepareReportSheet(ws);
+    XLSX.utils.book_append_sheet(wb, ws, sheetNameSafe(t));
+  }
+}
+
 export function buildWorkbook(resultados, options = {}) {
   const wb = XLSX.utils.book_new();
   const normalizedResults = resultados.map((row) => ({
@@ -338,14 +387,7 @@ export function buildWorkbook(resultados, options = {}) {
   XLSX.utils.book_append_sheet(wb, buildReportSummarySheet(normalizedResults, wsAll, options), sheetNameSafe('Resumen'));
   XLSX.utils.book_append_sheet(wb, wsAll, sheetNameSafe('Todos'));
 
-  const tipos = ['FACTURA', 'COMPROBANTE DE CRÉDITO FISCAL', 'NOTA DE CRÉDITO'];
-  for (const t of tipos) {
-    const rows = normalizedResults.filter((r) => r?.tipoDteNorm === t);
-    const ws = XLSX.utils.json_to_sheet(rows);
-    applyHyperlinks(ws);
-    prepareReportSheet(ws);
-    XLSX.utils.book_append_sheet(wb, ws, sheetNameSafe(t));
-  }
+  buildWorkbookTypeSheets(wb, normalizedResults);
 
   const rechaz = normalizedResults.filter((r) => r?.estado === 'RECHAZADO' || r?.estado === 'INVALIDADO');
   const wsR = XLSX.utils.json_to_sheet(rechaz);
@@ -382,6 +424,15 @@ export function buildWorkbook(resultados, options = {}) {
   }
 
   return wb;
+}
+
+export function buildDteExcelBase64(resultados, options = {}) {
+  const wb = buildWorkbook(resultados, options);
+  const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'buffer' });
+  return {
+    excelBase64: Buffer.from(excelBuffer).toString('base64'),
+    filename: `resultados_dtes_${Date.now()}.xlsx`,
+  };
 }
 
 export { XLSX };

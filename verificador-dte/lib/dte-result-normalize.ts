@@ -133,6 +133,23 @@ export function formatMontosFromFields(fields: MontoField[]): string {
     .join('; ');
 }
 
+export function formatDteResultDetail(row: RowRecord): string {
+  const montos = formatMontosFromFields(getMontosFields(row));
+  const parts = [
+    asString(row.tipoDte),
+    asString(row.numeroControl),
+    montos,
+    asString(row.documentoEventoAplicado)
+      ? `Evento: ${asString(row.documentoEventoAplicado)}`
+      : '',
+    asString(row.documentoAjustado),
+    asString(row.error),
+    asString(row.descripcionEstado),
+  ].filter((part) => part && part !== '-');
+
+  return parts.join(' | ') || '-';
+}
+
 export function toPdfExportRow(row: RowRecord) {
   const montosFields = getMontosFields(row);
   return {

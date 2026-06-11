@@ -7,6 +7,7 @@ export type UsageLimitValue = number | null;
 
 export type UsageLimits = {
   routeLimits?: Record<string, UsageLimitValue>;
+  batchLimits?: Record<string, UsageLimitValue>;
   mobileScanFolderLimit?: UsageLimitValue;
   resetDayOfMonth?: number;
   renewalDate?: string;
@@ -19,6 +20,7 @@ type PlanLimitConfig = {
   queryLimit?: UsageLimitValue;
   mobileScanFolderLimit?: UsageLimitValue;
   routeLimits?: Record<string, UsageLimitValue>;
+  batchLimits?: Record<string, UsageLimitValue>;
   resetDayOfMonth?: number;
   renewalDate?: string;
   automaticReset?: boolean;
@@ -49,6 +51,11 @@ function renewalDateToResetDay(value: unknown): number | undefined {
   return cleanResetDay(Number(clean.slice(8, 10)));
 }
 
+function getBatchRouteLimit(limits: unknown, routeKey: string): UsageLimitValue | undefined {
+  const data = limits as UsageLimits | undefined;
+  return cleanLimit(data?.batchLimits?.[routeKey]);
+}
+
 function getRouteLimit(limits: unknown, routeKey: string): UsageLimitValue | undefined {
   const data = limits as UsageLimits | undefined;
   const routeValue = data?.routeLimits?.[routeKey];
@@ -65,6 +72,7 @@ function getRouteLimit(limits: unknown, routeKey: string): UsageLimitValue | und
 export function sanitizeUsageLimits(raw: unknown): UsageLimits {
   const input = (raw || {}) as UsageLimits;
   const routeLimits: Record<string, UsageLimitValue> = {};
+  const batchLimits: Record<string, UsageLimitValue> = {};
 
   for (const [routeKey, value] of Object.entries(input.routeLimits || {})) {
     const cleanKey = routeKey.trim();
@@ -74,9 +82,20 @@ export function sanitizeUsageLimits(raw: unknown): UsageLimits {
     }
   }
 
+  for (const [routeKey, value] of Object.entries(input.batchLimits || {})) {
+    const cleanKey = routeKey.trim();
+    const clean = cleanLimit(value);
+    if (cleanKey && clean !== undefined) {
+      batchLimits[cleanKey] = clean;
+    }
+  }
+
   const output: UsageLimits = {};
   if (Object.keys(routeLimits).length > 0) {
     output.routeLimits = routeLimits;
+  }
+  if (Object.keys(batchLimits).length > 0) {
+    output.batchLimits = batchLimits;
   }
 
   const mobileLimit = cleanLimit(input.mobileScanFolderLimit);
@@ -136,6 +155,63 @@ export async function resolveEffectiveUsageLimit(
 
   const queryLimit = cleanLimit(plan.queryLimit);
   return queryLimit !== undefined ? queryLimit : null;
+}
+
+export async function resolveEffectiveBatchLimit(
+  user: AuthUser,
+  routeKey: string
+): Promise<UsageLimitValue> {
+  if (user.role === 'superadmin') return null;
+
+  const userLimit = getBatchRouteLimit(user.limits, routeKey);
+  if (userLimit !== undefined) return userLimit;
+
+  const organizationId = user.organizationId || (user.role === 'cliente' ? user.uid : '');
+  if (organizationId) {
+    const org = await getOrganization(organizationId);
+    const orgLimit = getBatchRouteLimit(org?.limits, routeKey);
+    if (orgLimit !== undefined) return orgLimit;
+  }
+
+  const membershipType = (user.membership?.type || 'free') as MembershipType;
+  const plan = await getPlanConfig(membershipType);
+  const planBatchLimit = cleanLimit(plan.batchLimits?.[routeKey]);
+  if (planBatchLimit !== undefined) return planBatchLimit;
+
+  return null;
+}
+
+export function batchLimitUnit(routeKey: string): string {
+  if (routeKey === 'verificadorjson' || routeKey === 'consultas_lotes_json') {
+    return 'archivos';
+  }
+  if (
+    routeKey === 'verificador' ||
+    routeKey === 'verificarodyfecha' ||
+    routeKey === 'verificacion_individual' ||
+    routeKey === 'verificador_qr'
+  ) {
+    return 'links';
+  }
+  return 'registros';
+}
+
+export async function assertBatchProcessLimit(
+  user: AuthUser,
+  routeKey: string,
+  incomingRecords: number
+) {
+  const limit = await resolveEffectiveBatchLimit(user, routeKey);
+  if (limit === null) return { limit, allowed: true };
+
+  const count = Math.max(0, incomingRecords);
+  if (count > limit) {
+    throw new Error(
+      `Limite por proceso alcanzado: maximo ${limit} ${batchLimitUnit(routeKey)} por ejecucion (intentaste ${count}).`
+    );
+  }
+
+  return { limit, allowed: true };
 }
 
 export async function resolveEffectiveResetDay(user: AuthUser): Promise<number> {

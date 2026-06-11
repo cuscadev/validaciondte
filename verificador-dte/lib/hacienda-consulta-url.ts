@@ -153,10 +153,68 @@ export function buildInvalidQrResult(value: string, error: string) {
     codGen: '',
     fechaEmi: '',
     estado: 'ERROR',
+    estadoRaw: '',
     descripcionEstado: '',
     tipoDte: '',
+    tipoDteNorm: '',
+    fechaHoraGeneracion: '',
+    fechaHoraTransmision: '',
     numeroControl: '',
     montoTotal: '',
+    montoTotalOperacion: '',
+    ivaOperaciones: '',
+    ivaPercibido: '',
+    ivaRetenido: '',
+    retencionRenta: '',
+    totalNoAfectos: '',
+    totalPagarOperacion: '',
+    otrosTributos: '',
+    documentoAjustado: '',
+    documentoEventoAplicado: '',
+    ajustado: false,
     error,
   };
+}
+
+export type ParsedQrScanItem = {
+  codGen: string;
+  fechaYmd: string;
+  ambiente: string;
+  raw: string;
+};
+
+export function parseQrScanBatch(
+  scans: string[],
+  fallbackAmbiente = '01'
+): {
+  valid: ParsedQrScanItem[];
+  invalid: ReturnType<typeof buildInvalidQrResult>[];
+} {
+  const valid: ParsedQrScanItem[] = [];
+  const invalid: ReturnType<typeof buildInvalidQrResult>[] = [];
+  const seen = new Set<string>();
+
+  for (const raw of scans) {
+    const trimmed = String(raw || '').trim();
+    if (!trimmed) continue;
+
+    const parsed = parseConsultaPublicaUrl(trimmed, fallbackAmbiente);
+    if (!parsed.ok) {
+      invalid.push(buildInvalidQrResult(trimmed, parsed.error));
+      continue;
+    }
+
+    const key = `${parsed.codGen}|${parsed.fechaYmd}|${parsed.ambiente}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    valid.push({
+      codGen: parsed.codGen,
+      fechaYmd: parsed.fechaYmd,
+      ambiente: parsed.ambiente,
+      raw: trimmed,
+    });
+  }
+
+  return { valid, invalid };
 }

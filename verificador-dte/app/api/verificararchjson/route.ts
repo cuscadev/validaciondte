@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest } from 'next/server';
 import { getGoDteApiUrl } from '@/lib/go-dte-api';
 import { requireAuth } from '@/lib/server-auth';
-import { assertMonthlyUsageLimit } from '@/lib/usage-limits';
+import { assertMonthlyUsageLimit, assertBatchProcessLimit } from '@/lib/usage-limits';
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,6 +15,7 @@ export async function POST(req: NextRequest) {
       (item): item is File => item instanceof File
     );
 
+    await assertBatchProcessLimit(user, routeKey, files.length);
     await assertMonthlyUsageLimit(user, routeKey, files.length);
 
     const upstreamForm = new FormData();

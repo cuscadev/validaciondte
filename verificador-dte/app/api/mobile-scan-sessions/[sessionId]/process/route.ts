@@ -1,16 +1,11 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { requireAuth } from '@/lib/server-auth';
-import { consultCodFechaViaGo, DEFAULT_CONCURRENCY } from '@/lib/go-dte-api';
+import { consultQrScansViaGo } from '@/lib/consult-qr-scans';
 import { recordServerProcessingLog } from '@/lib/server-processing-log';
 import { summarizeResults } from '@/lib/processing-log';
 import { resolveEffectiveUsageLimit } from '@/lib/usage-limits';
-import {
-  buildInvalidQrResult,
-  parseConsultaPublicaUrl,
-} from '@/lib/hacienda-consulta-url';
-import { buildWorkbook } from '@/lib/dteCommon';
-import * as XLSX from 'xlsx-js-style';
+import { buildDteExcelBase64 } from '@/lib/dteCommon';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -18,19 +13,6 @@ export const dynamic = 'force-dynamic';
 type Params = {
   params: Promise<{ sessionId: string }>;
 };
-
-function parseScannedUrl(value: string) {
-  const parsed = parseConsultaPublicaUrl(value);
-  if (!parsed.ok) {
-    return { ok: false as const, error: parsed.error };
-  }
-
-  return {
-    ok: true as const,
-    codGen: parsed.codGen,
-    fechaYmd: parsed.fechaYmd,
-  };
-}
 
 export async function POST(req: NextRequest, context: Params) {
   let activeSessionRef: FirebaseFirestore.DocumentReference | null = null;
@@ -91,38 +73,14 @@ export async function POST(req: NextRequest, context: Params) {
       throw new Error(`Esta carpeta tiene ${scans.length} links y tu limite actual es ${folderLimit}. Ajusta el limite en planes, organizacion o usuario antes de procesarla.`);
     }
 
-    const filas = [];
-    const invalidos = [];
-    const seen = new Set<string>();
+    const scanValues = scans.map((scan: { value?: string }) => String(scan?.value || '').trim());
+    const batchResult = await consultQrScansViaGo(scanValues, {
+      enrichCreditNotes: true,
+    });
 
-    for (const scan of scans) {
-      const value = String(scan?.value || '').trim();
-      const parsed = parseScannedUrl(value);
-
-      if (!parsed.ok) {
-        invalidos.push(buildInvalidQrResult(value, parsed.error));
-        continue;
-      }
-
-      const key = `${parsed.codGen}|${parsed.fechaYmd}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      filas.push(parsed);
-    }
-
-    let consultados: Record<string, unknown>[] = [];
-    if (filas.length) {
-      const goResp = await consultCodFechaViaGo(
-        filas.map((f) => ({ codGen: f.codGen, fechaYmd: f.fechaYmd })),
-        { concurrencia: DEFAULT_CONCURRENCY, enrichCreditNotes: true },
-      );
-      consultados = goResp.resultados;
-    }
-
-    const results = [...invalidos, ...consultados];
-    const wb = buildWorkbook(results);
-    const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'buffer' });
-    const filename = `escaneos_${folder.name || 'mobile'}_${Date.now()}.xlsx`;
+    const results = batchResult.resultados;
+    const { excelBase64 } = buildDteExcelBase64(results);
+    const exportFilename = `escaneos_${folder.name || 'mobile'}_${Date.now()}.xlsx`;
 
     const freshSnap = await sessionRef.get();
     const fresh = freshSnap.data() || {};
@@ -135,6 +93,7 @@ export async function POST(req: NextRequest, context: Params) {
         results,
         processedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        filename: exportFilename,
       };
     }
 
@@ -165,8 +124,8 @@ export async function POST(req: NextRequest, context: Params) {
     return NextResponse.json({
       success: true,
       results,
-      filename,
-      excelBase64: Buffer.from(excelBuffer).toString('base64'),
+      filename: exportFilename,
+      excelBase64,
     });
   } catch (error) {
     console.error('[api/mobile-scan-sessions/process] Error processing folder', error);
@@ -220,4 +179,3 @@ export async function POST(req: NextRequest, context: Params) {
     );
   }
 }
-

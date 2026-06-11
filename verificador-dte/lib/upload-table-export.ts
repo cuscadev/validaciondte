@@ -112,6 +112,7 @@ function formatDateTimeForPdf(date = new Date()): string {
 function formatPdfMonto(row: Record<string, unknown>, mapped: PdfExportRow): string {
   const direct = firstValue(row, [
     'montoTotal',
+    'montoTotalOperacion',
     'totalPagarOperacion',
     'totalPagar',
     'TotalPagar',

@@ -16,6 +16,7 @@ export interface Membership {
 
 export interface UsageLimits {
   routeLimits?: Record<string, number | null>;
+  batchLimits?: Record<string, number | null>;
   mobileScanFolderLimit?: number | null;
   resetDayOfMonth?: number;
   renewalDate?: string;
