@@ -1,8 +1,9 @@
 'use client';
 
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import Image from 'next/image';
 import Link from 'next/link';
-import { Home, Menu, Moon, Sun, X } from 'lucide-react';
+import { Menu, Moon, Sun, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
@@ -27,8 +28,15 @@ export default function PublicNavbar() {
           onClick={closeMenu}
           className="inline-flex h-10 shrink-0 items-center gap-2 rounded-md border border-zinc-200 bg-white/80 px-3 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900/80 dark:text-zinc-100 dark:hover:bg-zinc-800"
         >
-          <Home className="size-4" />
-          <span>Inicio</span>
+          <Image
+            src="/TemaDarkLogo.png"
+            alt="Kaiser DTE"
+            width={96}
+            height={32}
+            className="h-7 w-auto object-contain dark:invert-0"
+            priority
+          />
+          <span className="hidden sm:inline">Kaiser DTE</span>
         </Link>
 
         <div className="hidden items-center gap-2 md:flex">

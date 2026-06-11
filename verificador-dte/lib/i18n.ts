@@ -174,7 +174,7 @@ const resources = {
       Notificaciones: 'Notificaciones',
       'Habilitar notificaciones': 'Habilitar notificaciones',
       'Mensajes y alertas del sistema (próximamente).': 'Mensajes y alertas del sistema (próximamente).',
-      appName: 'Verificador DTE',
+      appName: 'Kaiser DTE',
       login: 'Iniciar sesión',
       signup: 'Crear cuenta',
       hideMenu: 'Ocultar menú',
@@ -220,7 +220,7 @@ const resources = {
       verificadorJSON: 'Verificador JSON',
       verificacionIndividual: 'Verificación Individual',
 
-      landingTitle: 'Bienvenido a Verificador DTE',
+      landingTitle: 'Bienvenido a Kaiser DTE',
       landingDescription:
         'Plataforma moderna para la gestión y verificación de Documentos Tributarios Electrónicos.',
       landingTagline: 'Seguridad, velocidad y control en un solo lugar.',
@@ -303,7 +303,7 @@ const resources = {
   },
   en: {
     translation: {
-      appName: 'DTE Verifier',
+      appName: 'Kaiser DTE',
       usuarios_titulo: 'User management',
       usuarios_subtitulo: 'Manage roles, status, and access for your organization.',
       usuarios_nuevo: 'New user',
@@ -518,7 +518,7 @@ const resources = {
       'sidebar.planes': 'Plans Management',
       'sidebar.gestionLicencias': 'Desktop Licenses',
 
-      landingTitle: 'Welcome to DTE Verifier',
+      landingTitle: 'Welcome to Kaiser DTE',
       landingDescription:
         'A modern platform to manage and verify electronic tax documents.',
       landingTagline: 'Security, speed, and control in one place.',
