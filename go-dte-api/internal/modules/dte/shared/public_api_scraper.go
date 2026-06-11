@@ -133,6 +133,8 @@ func publicAPIEnvPrefix(ambiente string) string {
 
 type publicAPIResponse struct {
 	EstadoDoc         string              `json:"estadoDoc"`
+	EstadoDocInc      string              `json:"estadoDocInc"`
+	ReporteInc        bool                `json:"reporteInc"`
 	DescripcionEstado string              `json:"descripcionEstado"`
 	FechaEmi          string              `json:"fechaEmi"`
 	HoraEmi           string              `json:"horaEmi"`
@@ -232,6 +234,9 @@ func mapPublicAPIResponse(payload publicAPIResponse, base Result) Result {
 	result.Estado = estado
 	result.EstadoRaw = estadoRaw
 	result.DescripcionEstado = Clean(payload.DescripcionEstado)
+	result.EstadoDocInc = strings.ToUpper(Clean(payload.EstadoDocInc))
+	result.EstadoDocIncDescripcion = resolveEstadoDocIncDescripcion(result.EstadoDocInc)
+	result.ReporteInc = payload.ReporteInc
 	result.TipoDte = tipoDte
 	result.TipoDteNorm = NormalizarTipoDte(tipoDte)
 	result.CodigoGeneracion = strings.ToUpper(Clean(payload.CodGen))
@@ -275,13 +280,10 @@ func mapPublicAPIResponse(payload publicAPIResponse, base Result) Result {
 		mapPublicAPIParty(payload.Documento.Receptor, &result, false)
 	}
 
-	result.Observaciones = mapPublicAPIObservations(payload.Observaciones)
+	result.Observaciones = mapPublicAPIObservationsWithCatalog(result.EstadoDocInc, payload.Observaciones)
 	if len(result.Observaciones) > 0 {
-		lines := make([]string, 0, len(result.Observaciones))
-		for _, obs := range result.Observaciones {
-			lines = append(lines, obs.Numero+". "+obs.Observacion)
-		}
-		result.ObservacionesTexto = strings.Join(lines, "\n")
+		result.ObservacionesTexto = formatInconsistenciasTexto(result.EstadoDocInc, result.Observaciones)
+		result.InconsistenciasCodigos = summarizeInconsistenciaCodigos(result.Observaciones)
 	}
 
 	result.Relacionados = mapPublicAPIAjustes(payload.Ajustes)

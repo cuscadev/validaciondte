@@ -131,6 +131,47 @@ export function parseXLSX_codFecha(buf) {
 }
 
 /* ========================= Excel helpers ========================= */
+// Debe coincidir con go-dte-api/internal/modules/dte/shared/excel.go (reportHeaders)
+export const REPORT_HEADERS = [
+  'url', 'nombreArchivo', 'linkVisita', 'visitar', 'host', 'ambiente', 'codGen', 'fechaEmi',
+  'estado', 'estadoRaw', 'descripcionEstado', 'estadoDocInc', 'estadoDocIncDescripcion',
+  'inconsistenciasCodigos', 'tipoDte', 'tipoDteNorm',
+  'fechaHoraGeneracion', 'fechaHoraTransmision', 'fechaHoraProcesamiento',
+  'codigoGeneracion', 'selloRecepcion', 'numeroControl', 'montoTotal', 'montoTotalOperacion',
+  'ivaOperaciones', 'ivaPercibido', 'ivaRetenido', 'retencionRenta',
+  'totalNoAfectos', 'totalPagarOperacion', 'otrosTributos',
+  'documentoEventoAplicado', 'observacionesTexto',
+  'ajustado', 'documentoAjustado',
+  'tieneNotaCredito', 'notaCreditoCodigoGeneracion', 'notaCreditoFechaGeneracion', 'notaCreditoFechaEmi',
+  'notaCreditoSelloRecepcion', 'notaCreditoTipoDocumento', 'notaCreditoEstado', 'notaCreditoEstadoRaw',
+  'notaCreditoNumeroControl', 'notaCreditoMontoTotal', 'notaCreditoLinkVisita', 'notaCreditoError',
+  'relacionadosTexto', 'error',
+];
+
+export function flattenResultForReport(row = {}) {
+  const out = {};
+  for (const key of REPORT_HEADERS) {
+    if (key === 'visitar') {
+      out[key] = row.visitar || 'Abrir';
+      continue;
+    }
+    if (Object.prototype.hasOwnProperty.call(row, key) && row[key] !== null && row[key] !== undefined) {
+      out[key] = row[key];
+    } else {
+      out[key] = '';
+    }
+  }
+  return out;
+}
+
+function jsonToReportSheet(rows) {
+  const flatRows = rows.map((row) => flattenResultForReport(row));
+  const ws = XLSX.utils.json_to_sheet(flatRows, { header: REPORT_HEADERS });
+  applyHyperlinks(ws);
+  prepareReportSheet(ws);
+  return ws;
+}
+
 export const sheetNameSafe = (name) => {
   const bad = /[:\\/?*\[\]]/g;
   let s = (name || 'Hoja').replace(bad, ' ').trim();
@@ -150,14 +191,24 @@ export function applyHyperlinks(ws) {
   }
   const colVisitar = headers.visitar;
   const colLink = headers.linkVisita;
-  if (colVisitar === undefined || colLink === undefined) return;
+  const colNcLink = headers.notaCreditoLinkVisita;
   for (let R = range.s.r + 1; R <= range.e.r; ++R) {
-    const aV = XLSX.utils.encode_cell({ r: R, c: colVisitar });
-    const aL = XLSX.utils.encode_cell({ r: R, c: colLink });
-    const url = ws[aL]?.v;
-    if (typeof url === 'string' && url) {
-      ws[aV] = ws[aV] || { t: 's', v: 'Abrir' };
-      ws[aV].l = { Target: url };
+    if (colVisitar !== undefined && colLink !== undefined) {
+      const aV = XLSX.utils.encode_cell({ r: R, c: colVisitar });
+      const aL = XLSX.utils.encode_cell({ r: R, c: colLink });
+      const url = ws[aL]?.v;
+      if (typeof url === 'string' && url) {
+        ws[aV] = ws[aV] || { t: 's', v: 'Abrir' };
+        ws[aV].l = { Target: url };
+      }
+    }
+    if (colNcLink !== undefined) {
+      const aNc = XLSX.utils.encode_cell({ r: R, c: colNcLink });
+      const ncUrl = ws[aNc]?.v;
+      if (typeof ncUrl === 'string' && ncUrl) {
+        ws[aNc] = ws[aNc] || { t: 's', v: ncUrl };
+        ws[aNc].l = { Target: ncUrl };
+      }
     }
   }
 }
@@ -367,10 +418,7 @@ function buildWorkbookTypeSheets(wb, normalizedResults) {
   for (const t of reportTypeSheets(normalizedResults)) {
     const rows = normalizedResults.filter((r) => r?.tipoDteNorm === t);
     if (!rows.length) continue;
-    const ws = XLSX.utils.json_to_sheet(rows);
-    applyHyperlinks(ws);
-    prepareReportSheet(ws);
-    XLSX.utils.book_append_sheet(wb, ws, sheetNameSafe(t));
+    XLSX.utils.book_append_sheet(wb, jsonToReportSheet(rows), sheetNameSafe(t));
   }
 }
 
@@ -381,19 +429,14 @@ export function buildWorkbook(resultados, options = {}) {
     tipoDteNorm: normalizarTipoDte(row?.tipoDteNorm || row?.tipoDte || row?.tipo || row?.TipoDte),
   }));
 
-  const wsAll = XLSX.utils.json_to_sheet(normalizedResults);
-  applyHyperlinks(wsAll);
-  prepareReportSheet(wsAll);
+  const wsAll = jsonToReportSheet(normalizedResults);
   XLSX.utils.book_append_sheet(wb, buildReportSummarySheet(normalizedResults, wsAll, options), sheetNameSafe('Resumen'));
   XLSX.utils.book_append_sheet(wb, wsAll, sheetNameSafe('Todos'));
 
   buildWorkbookTypeSheets(wb, normalizedResults);
 
   const rechaz = normalizedResults.filter((r) => r?.estado === 'RECHAZADO' || r?.estado === 'INVALIDADO');
-  const wsR = XLSX.utils.json_to_sheet(rechaz);
-  applyHyperlinks(wsR);
-  prepareReportSheet(wsR);
-  XLSX.utils.book_append_sheet(wb, wsR, sheetNameSafe('Rechazados'));
+  XLSX.utils.book_append_sheet(wb, jsonToReportSheet(rechaz), sheetNameSafe('Rechazados'));
 
   const relAll = [];
   for (const r of normalizedResults) {

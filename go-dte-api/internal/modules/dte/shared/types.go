@@ -12,8 +12,10 @@ type RelatedDocument struct {
 }
 
 type Observation struct {
-	Numero      string `json:"numero"`
-	Observacion string `json:"observacion"`
+	Numero               string `json:"numero"`
+	Observacion          string `json:"observacion"`
+	CodigoInconsistencia string `json:"codigoInconsistencia,omitempty"`
+	DescripcionCatalogo  string `json:"descripcionCatalogo,omitempty"`
 }
 
 type Result struct {
@@ -31,6 +33,10 @@ type Result struct {
 	TipoDte                 string            `json:"tipoDte,omitempty"`
 	TipoDteNorm             string            `json:"tipoDteNorm,omitempty"`
 	DescripcionEstado       string            `json:"descripcionEstado,omitempty"`
+	EstadoDocInc            string            `json:"estadoDocInc,omitempty"`
+	EstadoDocIncDescripcion string            `json:"estadoDocIncDescripcion,omitempty"`
+	ReporteInc              bool              `json:"reporteInc,omitempty"`
+	InconsistenciasCodigos  string            `json:"inconsistenciasCodigos,omitempty"`
 	FechaHoraGeneracion     string            `json:"fechaHoraGeneracion,omitempty"`
 	FechaHoraTransmision    string            `json:"fechaHoraTransmision,omitempty"`
 	FechaHoraProcesamiento  string            `json:"fechaHoraProcesamiento,omitempty"`

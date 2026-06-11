@@ -10,6 +10,9 @@ export type DteResultRow = {
   estado?: string;
   estadoRaw?: string;
   descripcionEstado?: string;
+  estadoDocInc?: string;
+  estadoDocIncDescripcion?: string;
+  inconsistenciasCodigos?: string;
   tipoDte?: string;
   tipoDteNorm?: string;
   fechaHoraGeneracion?: string;
@@ -49,6 +52,9 @@ export const DTE_RESULT_COLUMNS = [
   { key: 'codGen', label: 'Código Generación' },
   { key: 'estado', label: 'Estado' },
   { key: 'descripcionEstado', label: 'Descripción Estado' },
+  { key: 'estadoDocInc', label: 'Estado Inc.' },
+  { key: 'estadoDocIncDescripcion', label: 'Catálogo Inc.' },
+  { key: 'inconsistenciasCodigos', label: 'Códigos Inc.' },
   { key: 'tipoDte', label: 'Tipo DTE' },
   { key: 'fechaHoraGeneracion', label: 'Fecha Generación' },
   { key: 'fechaHoraTransmision', label: 'Fecha Transmisión' },
@@ -101,6 +107,9 @@ export function dteResultSearchFields(r: DteResultRow): string[] {
     r.codGen,
     r.estado,
     r.descripcionEstado,
+    r.estadoDocInc,
+    r.estadoDocIncDescripcion,
+    r.inconsistenciasCodigos,
     r.tipoDte,
     r.numeroControl,
     r.montoTotal,
@@ -188,6 +197,7 @@ export function isDteResultLongTextColumn(colKey: DteResultColumnKey) {
   return (
     colKey === 'relacionadosTexto' ||
     colKey === 'descripcionEstado' ||
+    colKey === 'estadoDocIncDescripcion' ||
     colKey === 'observacionesTexto' ||
     colKey === 'documentoAjustado' ||
     colKey === 'documentoEventoAplicado'

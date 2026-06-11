@@ -180,6 +180,134 @@ func TestMapPublicAPIResponseReadsComprobanteRetencionHaciendaVariants(t *testin
 	}
 }
 
+func TestMapPublicAPIResponseReadsCreditoFiscalRealPayload26FA8ABC(t *testing.T) {
+	payload := publicAPIResponse{
+		EstadoDoc:         "Transmitido Satisfactoriamente",
+		DescripcionEstado: "Documento Recibido",
+		FechaEmi:          "2025-05-02",
+		HoraEmi:           "10:07:23",
+		FechaProcesado:    "2025-05-02 10:07:24",
+		CodGen:            "26FA8ABC-100A-6641-AB9E-341D9A58E2B8",
+		SelloVal:          "2025A3ED1EEB6A054A3183C3DFA14F1D0AF24OLI",
+		TipoDte:           "03",
+		NombDte:           "COMPROBANTE DE CREDITO FISCAL",
+		Documento:         &publicAPIDocumento{},
+	}
+	payload.Documento.Identificacion.NumeroControl = "DTE-03-S009P001-000000000000801"
+	payload.Documento.Resumen.SubTotalVentas = floatPtr(80.97)
+	payload.Documento.Resumen.SubTotal = floatPtr(80.97)
+	payload.Documento.Resumen.TotalGravada = floatPtr(80.97)
+	payload.Documento.Resumen.MontoTotalOperacion = floatPtr(91.5)
+	payload.Documento.Resumen.TotalPagar = floatPtr(91.5)
+	payload.Documento.Resumen.IvaPerci1 = floatPtr(0)
+	payload.Documento.Resumen.IvaRete1 = floatPtr(0)
+	payload.Documento.Resumen.ReteRenta = floatPtr(0)
+	payload.Documento.Resumen.TotalNoGravado = floatPtr(0)
+	payload.Documento.Resumen.Tributos = []publicAPITributo{{
+		Codigo:      "20",
+		Descripcion: "Impuesto del 13%",
+		Valor:       floatPtr(10.53),
+	}}
+
+	result := mapPublicAPIResponse(payload, Result{})
+
+	assertCCFFAmounts(t, result, ccffExpected{
+		montoTotal:          "80.97",
+		montoTotalOperacion: "91.5",
+		ivaOperaciones:      "10.53",
+		ivaPercibido:        "0",
+		ivaRetenido:         "0",
+		retencionRenta:      "0",
+		totalNoAfectos:      "0",
+		totalPagarOperacion: "91.5",
+	})
+}
+
+func TestMapPublicAPIResponseReadsCreditoFiscalRealPayload467D60E7(t *testing.T) {
+	payload := publicAPIResponse{
+		EstadoDoc:         "Transmitido Satisfactoriamente",
+		DescripcionEstado: "Documento Recibido",
+		FechaEmi:          "2025-05-09",
+		HoraEmi:           "17:41:15",
+		FechaProcesado:    "2025-05-09 17:41:20",
+		CodGen:            "467D60E7-2682-45FA-98F8-FFC4225CDC95",
+		SelloVal:          "2025B23D4C66B55F4EACBE45C412D0161C54UIFH",
+		TipoDte:           "03",
+		NombDte:           "COMPROBANTE DE CREDITO FISCAL",
+		Documento:         &publicAPIDocumento{},
+	}
+	payload.Documento.Identificacion.NumeroControl = "DTE-03-00000000-000000000000204"
+	payload.Documento.Resumen.SubTotalVentas = floatPtr(61.95)
+	payload.Documento.Resumen.SubTotal = floatPtr(61.95)
+	payload.Documento.Resumen.TotalGravada = floatPtr(61.95)
+	payload.Documento.Resumen.MontoTotalOperacion = floatPtr(70)
+	payload.Documento.Resumen.TotalPagar = floatPtr(70)
+	payload.Documento.Resumen.IvaPerci1 = floatPtr(0)
+	payload.Documento.Resumen.IvaRete1 = floatPtr(0)
+	payload.Documento.Resumen.ReteRenta = floatPtr(0)
+	payload.Documento.Resumen.TotalNoGravado = floatPtr(0)
+	payload.Documento.Resumen.Tributos = []publicAPITributo{{
+		Codigo:      "20",
+		Descripcion: "Impuesto al Valor Agregado 13%",
+		Valor:       floatPtr(8.05),
+	}}
+
+	result := mapPublicAPIResponse(payload, Result{})
+
+	assertCCFFAmounts(t, result, ccffExpected{
+		montoTotal:          "61.95",
+		montoTotalOperacion: "70",
+		ivaOperaciones:      "8.05",
+		ivaPercibido:        "0",
+		ivaRetenido:         "0",
+		retencionRenta:      "0",
+		totalNoAfectos:      "0",
+		totalPagarOperacion: "70",
+	})
+}
+
+type ccffExpected struct {
+	montoTotal          string
+	montoTotalOperacion string
+	ivaOperaciones      string
+	ivaPercibido        string
+	ivaRetenido         string
+	retencionRenta      string
+	totalNoAfectos      string
+	totalPagarOperacion string
+}
+
+func assertCCFFAmounts(t *testing.T, result Result, want ccffExpected) {
+	t.Helper()
+	if result.TipoDteNorm != "COMPROBANTE DE CREDITO FISCAL" {
+		t.Fatalf("TipoDteNorm = %q", result.TipoDteNorm)
+	}
+	if result.MontoTotal != want.montoTotal {
+		t.Fatalf("MontoTotal = %q, want %q", result.MontoTotal, want.montoTotal)
+	}
+	if result.MontoTotalOperacion != want.montoTotalOperacion {
+		t.Fatalf("MontoTotalOperacion = %q, want %q", result.MontoTotalOperacion, want.montoTotalOperacion)
+	}
+	if result.IvaOperaciones != want.ivaOperaciones {
+		t.Fatalf("IvaOperaciones = %q, want %q", result.IvaOperaciones, want.ivaOperaciones)
+	}
+	if result.IvaPercibido != want.ivaPercibido {
+		t.Fatalf("IvaPercibido = %q, want %q", result.IvaPercibido, want.ivaPercibido)
+	}
+	if result.IvaRetenido != want.ivaRetenido {
+		t.Fatalf("IvaRetenido = %q, want %q", result.IvaRetenido, want.ivaRetenido)
+	}
+	if result.RetencionRenta != want.retencionRenta {
+		t.Fatalf("RetencionRenta = %q, want %q", result.RetencionRenta, want.retencionRenta)
+	}
+	if result.TotalNoAfectos != want.totalNoAfectos {
+		t.Fatalf("TotalNoAfectos = %q, want %q", result.TotalNoAfectos, want.totalNoAfectos)
+	}
+	if result.TotalPagarOperacion != want.totalPagarOperacion {
+		t.Fatalf("TotalPagarOperacion = %q, want %q", result.TotalPagarOperacion, want.totalPagarOperacion)
+	}
+}
+
 func TestMapPublicAPIResponseZeroIvaExemptInvoice(t *testing.T) {
 	payload := publicAPIResponse{
 		EstadoDoc: "Transmitido Satisfactoriamente",

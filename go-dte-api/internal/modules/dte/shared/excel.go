@@ -16,7 +16,8 @@ var reportHeaders = []string{
 
 	"url", "nombreArchivo", "linkVisita", "visitar", "host", "ambiente", "codGen", "fechaEmi",
 
-	"estado", "estadoRaw", "descripcionEstado", "tipoDte", "tipoDteNorm",
+	"estado", "estadoRaw", "descripcionEstado", "estadoDocInc", "estadoDocIncDescripcion",
+	"inconsistenciasCodigos", "tipoDte", "tipoDteNorm",
 
 	"fechaHoraGeneracion", "fechaHoraTransmision", "fechaHoraProcesamiento",
 
@@ -243,7 +244,8 @@ func resultRow(r Result) []any {
 
 		r.URL, r.NombreArchivo, r.LinkVisita, valueOr(r.Visitar, "Abrir"), r.Host, r.Ambiente, r.CodGen, r.FechaEmi,
 
-		r.Estado, r.EstadoRaw, r.DescripcionEstado, r.TipoDte, r.TipoDteNorm,
+		r.Estado, r.EstadoRaw, r.DescripcionEstado, r.EstadoDocInc, r.EstadoDocIncDescripcion,
+		r.InconsistenciasCodigos, r.TipoDte, r.TipoDteNorm,
 
 		r.FechaHoraGeneracion, r.FechaHoraTransmision, r.FechaHoraProcesamiento,
 
