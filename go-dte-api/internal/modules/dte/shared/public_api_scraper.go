@@ -259,9 +259,6 @@ func mapPublicAPIResponse(payload publicAPIResponse, base Result) Result {
 			result.MontoTotal = formatAPIAmount(payload.Documento.Resumen.TotalPagar)
 		}
 		result.TotalPagarOperacion = formatAPIAmount(payload.Documento.Resumen.TotalPagar)
-		if result.TotalPagarOperacion == "" {
-			result.TotalPagarOperacion = result.MontoTotalOperacion
-		}
 		applyPublicAPIResumenTaxFields(&result, payload.Documento.Resumen)
 		mapPublicAPIParty(payload.Documento.Emisor, &result, true)
 		mapPublicAPIParty(payload.Documento.Receptor, &result, false)
@@ -495,24 +492,4 @@ func formatOtrosTributosAPI(items []publicAPITributo) string {
 		parts = append(parts, codigo+": "+valor)
 	}
 	return strings.Join(parts, "; ")
-}
-
-func sumTributos(items []publicAPITributo) *float64 {
-	if len(items) == 0 {
-		return nil
-	}
-
-	var total float64
-	found := false
-	for _, item := range items {
-		if item.Valor == nil {
-			continue
-		}
-		total += *item.Valor
-		found = true
-	}
-	if !found {
-		return nil
-	}
-	return &total
 }

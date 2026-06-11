@@ -334,8 +334,6 @@ export default function HomePage() {
             <UploadFormAccordion
               accordionApiRef={accordionApiRef}
               onResultsReveal={onResultsReveal}
-              hasResults={resultsVisible && data.length > 0}
-              collapseWhenResults
             >
             <UploadFormSection
               label="Archivos CSV o Excel"
@@ -354,7 +352,9 @@ export default function HomePage() {
               }
               files={selectedFiles}
               onFilesChange={setSelectedFiles}
-              loading={loading || checkingLimit}
+              loading={loading}
+              disabled={checkingLimit}
+              syncAccordionProcessing
               accept={{
                 'text/csv': ['.csv', '.txt'],
                 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx', '.xlsm'],

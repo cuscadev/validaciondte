@@ -101,13 +101,12 @@ export default function UploadFormAccordion({
         setProcessingStats(null);
         setSummaryDisplay('none');
         setProcessingPhase('loading');
-        setOpen(false);
         return;
       }
 
       setProcessingPhase('idle');
     },
-    [setOpen]
+    []
   );
 
   const setProcessingSummary = useCallback(

@@ -26,6 +26,8 @@ export type UploadFormSectionProps = {
   sidePanel?: ReactNode;
   children?: ReactNode;
   loading?: boolean;
+  /** Si true, el acordeon muestra el panel de procesamiento (no colapsa la zona de carga). */
+  syncAccordionProcessing?: boolean;
   submitLabel?: string;
   loadingLabel?: string;
   submitClassName?: string;
@@ -48,6 +50,7 @@ export default function UploadFormSection({
   sidePanel,
   children,
   loading = false,
+  syncAccordionProcessing = true,
   submitLabel = 'Procesar',
   loadingLabel = 'Procesando…',
   submitClassName = 'w-full bg-yellow-400 font-bold text-black hover:bg-yellow-300 sm:w-auto',
@@ -57,9 +60,10 @@ export default function UploadFormSection({
   const isDisabled = disabled || loading;
 
   useEffect(() => {
+    if (!syncAccordionProcessing) return;
     accordion?.setProcessing(loading);
     return () => accordion?.setProcessing(false);
-  }, [loading, accordion]);
+  }, [loading, accordion, syncAccordionProcessing]);
 
   return (
     <div className={cn('space-y-3', className)}>

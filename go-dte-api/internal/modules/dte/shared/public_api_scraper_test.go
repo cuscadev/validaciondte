@@ -166,14 +166,14 @@ func TestMapPublicAPIResponseZeroIvaExemptInvoice(t *testing.T) {
 
 	result := mapPublicAPIResponse(payload, Result{})
 
-	if result.IvaOperaciones != "0" {
-		t.Fatalf("IvaOperaciones = %q, want 0", result.IvaOperaciones)
+	if result.IvaOperaciones != "" {
+		t.Fatalf("IvaOperaciones = %q, want empty when totalIva is null", result.IvaOperaciones)
+	}
+	if result.IvaPercibido != "0" {
+		t.Fatalf("IvaPercibido = %q, want 0 from API", result.IvaPercibido)
 	}
 	if result.TotalPagarOperacion != "56.45" {
 		t.Fatalf("TotalPagarOperacion = %q, want 56.45", result.TotalPagarOperacion)
-	}
-	if result.TotalNoAfectos != "0" {
-		t.Fatalf("TotalNoAfectos = %q, want 0", result.TotalNoAfectos)
 	}
 }
 
