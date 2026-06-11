@@ -24,8 +24,15 @@ func TestReportHeadersIncludeTributoColumns(t *testing.T) {
 	if !containsString(headers, "tributo_C8") || !containsString(headers, "tributo_D1") {
 		t.Fatalf("headers = %v", headers)
 	}
-	if containsString(headers, "otrosTributos") {
-		t.Fatal("otrosTributos should not be in excel headers")
+	if !containsString(headers, "otrosTributos") {
+		t.Fatal("otrosTributos must always be in excel headers")
+	}
+}
+
+func TestReportHeadersAlwaysIncludeOtrosTributos(t *testing.T) {
+	headers := buildReportHeaders(nil)
+	if !containsString(headers, "otrosTributos") {
+		t.Fatalf("headers = %v", headers)
 	}
 }
 

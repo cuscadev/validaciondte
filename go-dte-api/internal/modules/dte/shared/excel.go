@@ -52,10 +52,13 @@ var reportHeadersAfterTributos = []string{
 	"relacionadosTexto", "error",
 }
 
+const reportHeaderOtrosTributos = "otrosTributos"
+
 func buildReportHeaders(results []Result) []string {
 	tributoCodes := CollectTributoCodes(results)
-	headers := make([]string, 0, len(reportHeadersBeforeTributos)+len(tributoCodes)+len(reportHeadersAfterTributos))
+	headers := make([]string, 0, len(reportHeadersBeforeTributos)+1+len(tributoCodes)+len(reportHeadersAfterTributos))
 	headers = append(headers, reportHeadersBeforeTributos...)
+	headers = append(headers, reportHeaderOtrosTributos)
 	for _, codigo := range tributoCodes {
 		headers = append(headers, tributoColumnName(codigo))
 	}
@@ -289,6 +292,8 @@ func resultRow(r Result, tributoCodes []string) []any {
 		r.IvaOperaciones, r.IvaPercibido, r.IvaRetenido, r.RetencionRenta,
 
 		r.TotalNoAfectos, r.TotalPagarOperacion,
+
+		valueOr(r.OtrosTributos, formatOtrosTributosFromMap(tributos)),
 	}
 	for _, codigo := range tributoCodes {
 		row = append(row, tributos[codigo])

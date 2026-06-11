@@ -148,6 +148,8 @@ export const REPORT_HEADERS_BEFORE_TRIBUTOS = [
   'totalNoAfectos', 'totalPagarOperacion',
 ];
 
+export const REPORT_HEADER_OTROS_TRIBUTOS = 'otrosTributos';
+
 export const REPORT_HEADERS_AFTER_TRIBUTOS = [
   'documentoEventoAplicado', 'observacionesTexto',
   'ajustado', 'documentoAjustado',
@@ -195,10 +197,18 @@ export function collectTributoCodes(rows = []) {
   return Array.from(seen).sort((a, b) => a.localeCompare(b));
 }
 
+export function formatOtrosTributosFromMap(tributos = {}) {
+  return Object.keys(tributos)
+    .sort((a, b) => a.localeCompare(b))
+    .map((codigo) => `${codigo}: ${tributos[codigo]}`)
+    .join('; ');
+}
+
 export function buildReportHeaders(rows = []) {
   const tributoCodes = collectTributoCodes(rows);
   return [
     ...REPORT_HEADERS_BEFORE_TRIBUTOS,
+    REPORT_HEADER_OTROS_TRIBUTOS,
     ...tributoCodes.map((codigo) => tributoColumnName(codigo)),
     ...REPORT_HEADERS_AFTER_TRIBUTOS,
   ];
@@ -206,11 +216,17 @@ export function buildReportHeaders(rows = []) {
 
 export function flattenResultForReport(row = {}, headers = buildReportHeaders([row])) {
   const tributos = resolveTributosPorCodigo(row);
+  const otrosTributos =
+    String(row.otrosTributos || '').trim() || formatOtrosTributosFromMap(tributos);
   const out = {};
   for (const key of headers) {
     if (key.startsWith('tributo_')) {
       const codigo = key.slice('tributo_'.length);
       out[key] = tributos[codigo] || '';
+      continue;
+    }
+    if (key === REPORT_HEADER_OTROS_TRIBUTOS) {
+      out[key] = otrosTributos;
       continue;
     }
     if (key === 'visitar') {
@@ -226,8 +242,7 @@ export function flattenResultForReport(row = {}, headers = buildReportHeaders([r
   return out;
 }
 
-function jsonToReportSheet(rows) {
-  const headers = buildReportHeaders(rows);
+function jsonToReportSheet(rows, headers) {
   const flatRows = rows.map((row) => flattenResultForReport(row, headers));
   const ws = XLSX.utils.json_to_sheet(flatRows, { header: headers });
   applyHyperlinks(ws);
@@ -477,11 +492,11 @@ function reportTypeSheets(resultados) {
   return out;
 }
 
-function buildWorkbookTypeSheets(wb, normalizedResults) {
+function buildWorkbookTypeSheets(wb, normalizedResults, reportHeaders) {
   for (const t of reportTypeSheets(normalizedResults)) {
     const rows = normalizedResults.filter((r) => r?.tipoDteNorm === t);
     if (!rows.length) continue;
-    XLSX.utils.book_append_sheet(wb, jsonToReportSheet(rows), sheetNameSafe(t));
+    XLSX.utils.book_append_sheet(wb, jsonToReportSheet(rows, reportHeaders), sheetNameSafe(t));
   }
 }
 
@@ -492,14 +507,15 @@ export function buildWorkbook(resultados, options = {}) {
     tipoDteNorm: normalizarTipoDte(row?.tipoDteNorm || row?.tipoDte || row?.tipo || row?.TipoDte),
   }));
 
-  const wsAll = jsonToReportSheet(normalizedResults);
+  const reportHeaders = buildReportHeaders(normalizedResults);
+  const wsAll = jsonToReportSheet(normalizedResults, reportHeaders);
   XLSX.utils.book_append_sheet(wb, buildReportSummarySheet(normalizedResults, wsAll, options), sheetNameSafe('Resumen'));
   XLSX.utils.book_append_sheet(wb, wsAll, sheetNameSafe('Todos'));
 
-  buildWorkbookTypeSheets(wb, normalizedResults);
+  buildWorkbookTypeSheets(wb, normalizedResults, reportHeaders);
 
   const rechaz = normalizedResults.filter((r) => r?.estado === 'RECHAZADO' || r?.estado === 'INVALIDADO');
-  XLSX.utils.book_append_sheet(wb, jsonToReportSheet(rechaz), sheetNameSafe('Rechazados'));
+  XLSX.utils.book_append_sheet(wb, jsonToReportSheet(rechaz, reportHeaders), sheetNameSafe('Rechazados'));
 
   const relAll = [];
   for (const r of normalizedResults) {
