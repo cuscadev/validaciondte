@@ -6,17 +6,17 @@ import {
   listMessageIds,
   sha256,
 } from '@/lib/gmail/client';
-import { rebuildDocumentLinks } from '@/lib/gmail/link-documents';
 import {
   createSyncJob,
-  findDocumentByHash,
-  findDocumentByMessageAttachment,
   getActiveConnection,
   getSyncJob,
-  recordDocument,
   updateSyncJob,
-  uploadDocumentToStorage,
 } from '@/lib/gmail/db';
+import {
+  findDocumentByHash,
+  findDocumentByMessageAttachment,
+  recordDocument,
+} from '@/lib/gmail/firebase-db';
 import {
   isAllowedTipoDte,
   isDateInRange,
@@ -84,6 +84,7 @@ export async function runSyncBatch(input: {
         found += 1;
         try {
           const priorByMessage = await findDocumentByMessageAttachment(
+            input.organizationId,
             ref.messageId,
             ref.attachmentId
           );
@@ -114,9 +115,11 @@ export async function runSyncBatch(input: {
             organizationId: input.organizationId,
             connectionId: connection.id,
             syncJobId: job.id,
+            documentId: randomUUID(),
             ref,
             contentHash,
             fileSize: buffer.length,
+            buffer,
             parsed,
           };
 
@@ -125,7 +128,6 @@ export async function runSyncBatch(input: {
             const doc = await recordDocument({
               ...base,
               importStatus: 'skipped_invalid',
-              storagePath: null,
             });
             batchDocuments.push(doc);
             continue;
@@ -136,7 +138,6 @@ export async function runSyncBatch(input: {
             const doc = await recordDocument({
               ...base,
               importStatus: 'skipped_unsupported_type',
-              storagePath: null,
             });
             batchDocuments.push(doc);
             continue;
@@ -147,23 +148,15 @@ export async function runSyncBatch(input: {
             const doc = await recordDocument({
               ...base,
               importStatus: 'skipped_date',
-              storagePath: null,
             });
             batchDocuments.push(doc);
             continue;
           }
 
-          const documentId = randomUUID();
-          const storagePath = await uploadDocumentToStorage(
-            input.organizationId,
-            documentId,
-            buffer
-          );
           imported += 1;
           const doc = await recordDocument({
             ...base,
             importStatus: 'imported',
-            storagePath,
           });
           batchDocuments.push(doc);
         } catch (attachmentErr) {
@@ -183,10 +176,6 @@ export async function runSyncBatch(input: {
       error_count: errors,
       finished_at: completed ? new Date().toISOString() : null,
     });
-
-    if (completed) {
-      await rebuildDocumentLinks(input.organizationId);
-    }
 
     const refreshed = await getSyncJob(job.id, input.organizationId);
     return {

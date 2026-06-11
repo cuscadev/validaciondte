@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { listDocuments } from '@/lib/gmail/db';
+import { listDocuments } from '@/lib/gmail/firebase-db';
 import { requireOrgMember } from '@/lib/server-auth';
 import { getPublicServiceErrorMessage } from '@/lib/supabase-admin';
 

@@ -106,6 +106,13 @@ export type GmailDocumentRow = {
   fec_emi: string | null;
   email_subject: string | null;
   email_date: string | null;
+  email_from?: string | null;
+  email_from_name?: string | null;
+  email_to?: string[];
+  email_cc?: string[];
+  gmail_thread_id?: string | null;
+  gmail_snippet?: string | null;
+  gmail_internal_date?: string | null;
   import_status: GmailDocumentImportStatus;
   tipo_dte: string | null;
   tipo_dte_label: string | null;

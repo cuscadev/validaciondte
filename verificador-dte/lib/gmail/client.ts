@@ -9,11 +9,18 @@ import { isJsonAttachment } from '@/lib/gmail/parse-dte-json';
 
 export type GmailAttachmentRef = {
   messageId: string;
+  threadId: string;
   attachmentId: string;
   fileName: string;
   mimeType?: string;
   emailSubject: string;
   emailDate: string;
+  emailFrom: string;
+  emailFromName: string | null;
+  emailTo: string[];
+  emailCc: string[];
+  snippet: string;
+  internalDate: string | null;
 };
 
 const MESSAGES_PER_BATCH = 35;
@@ -102,6 +109,26 @@ function getHeader(
   );
 }
 
+function parseEmailHeader(value: string) {
+  const trimmed = value.trim();
+  const match = trimmed.match(/^(?:"?([^"<]*)"?\s)?<([^>]+)>$/);
+  if (!match) {
+    return { name: null, email: trimmed };
+  }
+  return {
+    name: match[1]?.trim() || null,
+    email: match[2]?.trim() || trimmed,
+  };
+}
+
+function splitEmailList(value: string) {
+  if (!value.trim()) return [];
+  return value
+    .split(',')
+    .map((item) => parseEmailHeader(item).email)
+    .filter(Boolean);
+}
+
 export async function listMessageIds(
   gmail: gmail_v1.Gmail,
   query: string,
@@ -140,7 +167,14 @@ export async function extractJsonAttachments(
 
   const subject = getHeader(res.data.payload?.headers, 'Subject');
   const dateHeader = getHeader(res.data.payload?.headers, 'Date');
+  const fromHeader = getHeader(res.data.payload?.headers, 'From');
+  const toHeader = getHeader(res.data.payload?.headers, 'To');
+  const ccHeader = getHeader(res.data.payload?.headers, 'Cc');
+  const from = parseEmailHeader(fromHeader);
   const emailDate = dateHeader ? new Date(dateHeader).toISOString() : new Date().toISOString();
+  const internalDate = res.data.internalDate
+    ? new Date(Number(res.data.internalDate)).toISOString()
+    : null;
 
   const refs: GmailAttachmentRef[] = [];
   for (const part of parts) {
@@ -150,11 +184,18 @@ export async function extractJsonAttachments(
     if (!isJsonAttachment(fileName, part.mimeType)) continue;
     refs.push({
       messageId,
+      threadId: res.data.threadId || '',
       attachmentId,
       fileName,
       mimeType: part.mimeType || undefined,
       emailSubject: subject,
       emailDate,
+      emailFrom: from.email,
+      emailFromName: from.name,
+      emailTo: splitEmailList(toHeader),
+      emailCc: splitEmailList(ccHeader),
+      snippet: res.data.snippet || '',
+      internalDate,
     });
   }
   return refs;

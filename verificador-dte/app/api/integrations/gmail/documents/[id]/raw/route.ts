@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getLinkedDocuments } from '@/lib/gmail/firebase-db';
+import { downloadDocumentJson } from '@/lib/gmail/firebase-db';
 import { requireOrgMember } from '@/lib/server-auth';
 import { getPublicServiceErrorMessage } from '@/lib/supabase-admin';
 
@@ -17,12 +17,20 @@ export async function GET(req: NextRequest, context: RouteContext) {
     }
 
     const { id } = await context.params;
-    const { links, documents } = await getLinkedDocuments(id, user.organizationId);
+    const buffer = await downloadDocumentJson(id, user.organizationId);
+    if (!buffer) {
+      return NextResponse.json({ error: 'JSON no encontrado.' }, { status: 404 });
+    }
 
-    return NextResponse.json({ links, documents });
+    return new NextResponse(buffer, {
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Content-Disposition': `inline; filename="${id}.json"`,
+      },
+    });
   } catch (error) {
     const message = getPublicServiceErrorMessage(error);
-    console.error('[gmail/documents/links]', error);
+    console.error('[gmail/documents/raw]', error);
     const status = message === 'No autorizado' ? 401 : 500;
     return NextResponse.json({ error: message }, { status });
   }

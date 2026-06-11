@@ -1,8 +1,8 @@
 import { getGoDteApiUrl } from '@/lib/go-dte-api';
 import {
-  downloadDocumentFromStorage,
+  downloadDocumentJson,
   getDocumentsByIds,
-} from '@/lib/gmail/db';
+} from '@/lib/gmail/firebase-db';
 import type { GmailJsonVerifyResult } from '@/lib/gmail/json-verify-result';
 
 export const GMAIL_JSON_VERIFY_BATCH_SIZE = 25;
@@ -33,7 +33,8 @@ export async function verifyGmailDocumentsFromStorage(input: {
     const formData = new FormData();
 
     for (const doc of batch) {
-      const buffer = await downloadDocumentFromStorage(doc.storage_path!);
+      const buffer = await downloadDocumentJson(doc.id, input.organizationId);
+      if (!buffer) continue;
       const blob = new Blob([new Uint8Array(buffer)], { type: 'application/json' });
       formData.append('files', blob, doc.file_name || `${doc.id}.json`);
     }

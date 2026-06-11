@@ -275,7 +275,11 @@ export default function GmailIntegracionPage() {
         toast.warning('Este documento no tiene archivo en almacenamiento.');
         return;
       }
-      window.open(json.jsonUrl, '_blank', 'noopener,noreferrer');
+      const rawRes = await authFetch(json.jsonUrl);
+      if (!rawRes.ok) throw new Error('No se pudo abrir el JSON.');
+      const blobUrl = URL.createObjectURL(await rawRes.blob());
+      window.open(blobUrl, '_blank', 'noopener,noreferrer');
+      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Error');
     }

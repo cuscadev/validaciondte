@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import {
-  createSignedJsonUrl,
-  getDocumentById,
-} from '@/lib/gmail/db';
+import { getDocumentById } from '@/lib/gmail/firebase-db';
 import { buildHaciendaPublicUrl } from '@/lib/gmail/hacienda-url';
 import { requireOrgMember } from '@/lib/server-auth';
 import { getPublicServiceErrorMessage } from '@/lib/supabase-admin';
@@ -26,10 +23,9 @@ export async function GET(req: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Documento no encontrado.' }, { status: 404 });
     }
 
-    let jsonUrl: string | null = null;
-    if (document.storage_path) {
-      jsonUrl = await createSignedJsonUrl(document.storage_path);
-    }
+    const jsonUrl = document.storage_path
+      ? `/api/integrations/gmail/documents/${id}/raw`
+      : null;
 
     const haciendaUrl =
       document.codigo_generacion && document.fec_emi

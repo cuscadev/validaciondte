@@ -32,6 +32,16 @@ function money(value: number | null | undefined) {
   });
 }
 
+function formatEmailDate(value: string | null | undefined) {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString('es-SV', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  });
+}
+
 export default function GmailDocumentTable({
   documents,
   selectedIds,
@@ -57,6 +67,7 @@ export default function GmailDocumentTable({
               />
             </th>
             <th className="p-2">Tipo</th>
+            <th className="p-2">Correo</th>
             <th className="p-2">Fec. Emi</th>
             <th className="p-2">Emisor</th>
             <th className="p-2">Codigo</th>
@@ -90,6 +101,14 @@ export default function GmailDocumentTable({
                 <td className="p-2">
                   <div className="font-medium">{doc.tipo_dte_label || doc.tipo_dte || '—'}</div>
                   <div className="text-xs text-muted-foreground">{doc.numero_control || '—'}</div>
+                </td>
+                <td className="max-w-[14rem] p-2 break-words">
+                  <div className="font-medium">{doc.email_from_name || doc.email_from || '—'}</div>
+                  {doc.email_from_name && (
+                    <div className="text-xs text-muted-foreground">{doc.email_from}</div>
+                  )}
+                  <div className="text-xs text-muted-foreground">{formatEmailDate(doc.email_date)}</div>
+                  <div className="mt-1 line-clamp-2 text-xs">{doc.email_subject || '—'}</div>
                 </td>
                 <td className="p-2">{doc.fec_emi || '—'}</td>
                 <td className="max-w-[10rem] p-2 break-words">
