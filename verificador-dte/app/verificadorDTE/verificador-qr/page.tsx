@@ -51,6 +51,7 @@ import { toast } from 'sonner';
 
 const ROUTE_KEY = 'verificador_qr';
 const MODULE_NAME = 'Escaneo QR DTE';
+const PRODUCTION_AMBIENTE = '01';
 
 type CameraPermission = 'unknown' | 'requesting' | 'granted' | 'denied';
 
@@ -74,6 +75,14 @@ function isCameraPermissionDenied(error: unknown) {
   return (error as { name?: string })?.name === 'NotAllowedError';
 }
 
+function isInterruptedCameraStart(error: unknown) {
+  const err = error as { name?: string; message?: string };
+  return (
+    err?.name === 'AbortError' ||
+    /play\(\) request was interrupted|new load request/i.test(err?.message || '')
+  );
+}
+
 function getCameraErrorMessage(error: unknown) {
   if (error === 'Camera not found.') {
     return 'No se encontro ninguna camara disponible.';
@@ -91,6 +100,9 @@ function getCameraErrorMessage(error: unknown) {
   }
   if (err?.name === 'OverconstrainedError') {
     return 'No se pudo inicializar la camara seleccionada.';
+  }
+  if (isInterruptedCameraStart(error)) {
+    return 'No se pudo iniciar la camara. Intenta de nuevo.';
   }
   return err?.message || 'No se pudo abrir la camara.';
 }
@@ -123,6 +135,10 @@ function getCameraDisplayLabel(camera: CameraOption, index: number) {
   return `Camara ${index + 1}`;
 }
 
+function normalizeDuplicateKey(value: string) {
+  return value.trim().toLowerCase();
+}
+
 function VerificadorQrContent() {
   const { appUser, firebaseUser } = useAuth();
   const createdBy =
@@ -142,7 +158,6 @@ function VerificadorQrContent() {
   const [lastScan, setLastScan] = useState('');
   const [lastAddedCodGen, setLastAddedCodGen] = useState('');
   const [highlightedScanId, setHighlightedScanId] = useState<string | null>(null);
-  const [ambiente, setAmbiente] = useState<'00' | '01'>('01');
   const [loading, setLoading] = useState(false);
   const [errorGlobal, setErrorGlobal] = useState<string | null>(null);
   const [data, setData] = useState<DteResultRow[]>([]);
@@ -159,16 +174,15 @@ function VerificadorQrContent() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const cameraFrameRef = useRef<HTMLDivElement>(null);
   const scannerRef = useRef<QrScanner | null>(null);
+  const cameraStartRequestRef = useRef(0);
   const scanLockRef = useRef(false);
   const pendingListRef = useRef<HTMLDivElement>(null);
-  const ambienteRef = useRef(ambiente);
   const scanCounterRef = useRef(0);
   const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startScanningRef = useRef<((cameraIdOverride?: string) => Promise<void>) | null>(null);
 
-  ambienteRef.current = ambiente;
-
   const stopScanning = useCallback(() => {
+    cameraStartRequestRef.current += 1;
     if (scannerRef.current) {
       scannerRef.current.stop();
       scannerRef.current.destroy();
@@ -181,7 +195,7 @@ function VerificadorQrContent() {
     setScanError('');
     setLastScan(decodedText);
 
-    const parsed = parseConsultaPublicaUrl(decodedText, ambienteRef.current);
+    const parsed = parseConsultaPublicaUrl(decodedText, PRODUCTION_AMBIENTE);
     if (!parsed.ok) {
       setScanError(parsed.error);
       toast.error(parsed.error);
@@ -192,7 +206,25 @@ function VerificadorQrContent() {
     const created: { item: PendingScan | null } = { item: null };
 
     setPendingScans((prev) => {
-      if (prev.some((item) => item.codGen.toLowerCase() === parsed.codGen.toLowerCase())) {
+      const incomingCodGen = normalizeDuplicateKey(parsed.codGen);
+      const incomingOriginalUrl = normalizeDuplicateKey(parsed.urlOriginal);
+      const incomingNormalizedUrl = normalizeDuplicateKey(parsed.urlNormalizada);
+
+      const alreadyScanned = prev.some((item) => {
+        const existingCodGen = normalizeDuplicateKey(item.codGen);
+        const existingOriginalUrl = normalizeDuplicateKey(item.urlOriginal);
+        const existingNormalizedUrl = normalizeDuplicateKey(item.urlNormalizada);
+
+        return (
+          existingCodGen === incomingCodGen ||
+          existingOriginalUrl === incomingOriginalUrl ||
+          existingOriginalUrl === incomingNormalizedUrl ||
+          existingNormalizedUrl === incomingOriginalUrl ||
+          existingNormalizedUrl === incomingNormalizedUrl
+        );
+      });
+
+      if (alreadyScanned) {
         duplicate = true;
         return prev;
       }
@@ -214,8 +246,8 @@ function VerificadorQrContent() {
     });
 
     if (duplicate) {
-      setScanError('Este QR ya fue escaneado.');
-      toast.error('Este QR ya fue escaneado.');
+      setScanError('Este enlace ya fue escaneado.');
+      toast.error('Este enlace ya fue escaneado.');
       return;
     }
 
@@ -240,6 +272,8 @@ function VerificadorQrContent() {
 
   const startScanning = useCallback(async (cameraIdOverride?: string) => {
     if (!videoRef.current) return;
+    const requestId = cameraStartRequestRef.current + 1;
+    cameraStartRequestRef.current = requestId;
 
     try {
       setScanError('');
@@ -252,6 +286,8 @@ function VerificadorQrContent() {
       }
 
       const cameras = await QrScanner.listCameras(true);
+      if (requestId !== cameraStartRequestRef.current) return;
+
       if (!cameras?.length) {
         setScanError('No se detecto ninguna camara.');
         setIsScanning(false);
@@ -291,9 +327,20 @@ function VerificadorQrContent() {
       );
 
       await scannerRef.current.start();
+      if (requestId !== cameraStartRequestRef.current) return;
+
       setIsScanning(true);
       setCameraPermission('granted');
     } catch (error) {
+      if (requestId !== cameraStartRequestRef.current) return;
+
+      if (isInterruptedCameraStart(error)) {
+        setScanError('');
+        setIsScanning(false);
+        setCameraPermission('unknown');
+        return;
+      }
+
       setIsScanning(false);
       const message = getCameraErrorMessage(error);
       setScanError(message);
@@ -439,7 +486,7 @@ function VerificadorQrContent() {
         body: JSON.stringify({
           routeKey: ROUTE_KEY,
           scans: pendingScans.map((item) => item.raw),
-          ambiente,
+          ambiente: PRODUCTION_AMBIENTE,
           concurrencia: DEFAULT_CONCURRENCY,
           includeExcel: true,
           async: pendingScans.length > 10,
@@ -568,19 +615,6 @@ function VerificadorQrContent() {
                 <QrCode className="size-5 text-amber-500" />
                 <h2 className="font-semibold">Camara</h2>
               </div>
-              <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                Ambiente fallback
-                <select
-                  value={ambiente}
-                  onChange={(event) =>
-                    setAmbiente(event.target.value === '00' ? '00' : '01')
-                  }
-                  className="rounded-md border border-slate-200 bg-background px-2 py-1 text-sm dark:border-white/10"
-                >
-                  <option value="01">01 (Produccion)</option>
-                  <option value="00">00 (Pruebas)</option>
-                </select>
-              </label>
               <label className="flex items-center gap-2 text-sm text-muted-foreground">
                 Camara
                 <select
@@ -715,7 +749,7 @@ function VerificadorQrContent() {
           </section>
 
           <section className="rounded-xl border border-slate-200 p-4 dark:border-white/10">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="mb-4 space-y-3">
               <div>
                 <h2 className="font-semibold">Pendientes ({pendingScans.length})</h2>
                 {lastAddedCodGen && (
@@ -724,13 +758,13 @@ function VerificadorQrContent() {
                   </p>
                 )}
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={clearScans}
                   disabled={!pendingScans.length}
-                  className="gap-2"
+                  className="w-full gap-2 sm:w-auto"
                 >
                   <Trash2 className="size-4" />
                   Limpiar
@@ -739,6 +773,7 @@ function VerificadorQrContent() {
                   type="button"
                   onClick={() => void verificarEscaneos()}
                   disabled={loading || !pendingScans.length}
+                  className="w-full sm:w-auto"
                 >
                   {loading
                     ? `Verificando ${progressDone}/${progressTotal || pendingScans.length}...`
