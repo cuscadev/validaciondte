@@ -16,6 +16,22 @@ export type UsageLimits = {
 
 export type UsageAdjustmentAction = 'increment' | 'decrement' | 'set';
 
+export type LimitNoticeAcknowledgment = {
+  fingerprint: string;
+  acknowledgedAt: string;
+};
+
+export type LimitNoticeStatus = {
+  requiresAcknowledgment: boolean;
+  routeKey: string;
+  routeLabel: string;
+  monthlyLimit: UsageLimitValue;
+  batchLimit: UsageLimitValue;
+  batchUnit: string;
+  monthlyUnit: string;
+  fingerprint: string;
+};
+
 type PlanLimitConfig = {
   queryLimit?: UsageLimitValue;
   mobileScanFolderLimit?: UsageLimitValue;
@@ -212,6 +228,40 @@ export async function assertBatchProcessLimit(
   }
 
   return { limit, allowed: true };
+}
+
+export function buildLimitNoticeFingerprint(batchLimit: UsageLimitValue): string {
+  return `b:${batchLimit ?? 'none'}`;
+}
+
+export function hasConfiguredBatchLimit(batchLimit: UsageLimitValue): boolean {
+  return batchLimit !== null;
+}
+
+export async function resolveLimitNoticeStatus(
+  user: AuthUser,
+  routeKey: string,
+  getRouteLabel: (key: string) => string
+): Promise<LimitNoticeStatus> {
+  const monthlyLimit = await resolveEffectiveUsageLimit(user, routeKey);
+  const batchLimit = await resolveEffectiveBatchLimit(user, routeKey);
+  const fingerprint = buildLimitNoticeFingerprint(batchLimit);
+  const stored = user.limitNotices?.[routeKey];
+  const requiresAcknowledgment =
+    user.role !== 'superadmin' &&
+    hasConfiguredBatchLimit(batchLimit) &&
+    stored?.fingerprint !== fingerprint;
+
+  return {
+    requiresAcknowledgment,
+    routeKey,
+    routeLabel: getRouteLabel(routeKey),
+    monthlyLimit,
+    batchLimit,
+    batchUnit: batchLimitUnit(routeKey),
+    monthlyUnit: batchLimitUnit(routeKey),
+    fingerprint,
+  };
 }
 
 export async function resolveEffectiveResetDay(user: AuthUser): Promise<number> {

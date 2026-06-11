@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 
 import { useAuth } from '@/components/AuthProvider';
+import PlanGate from '@/components/PlanGate';
 import { db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import {
@@ -257,6 +258,7 @@ export default function EscaneosMobilePage() {
   };
 
   return (
+    <PlanGate routeKey="escaneos-mobile">
     <main className="w-full max-w-full">
       <Card className="w-full max-w-full overflow-hidden border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-950">
         <CardHeader className="border-b border-slate-200 bg-white/90 dark:border-white/10 dark:bg-zinc-950/90">
@@ -436,6 +438,7 @@ export default function EscaneosMobilePage() {
         </CardContent>
       </Card>
     </main>
+    </PlanGate>
   );
 }
 

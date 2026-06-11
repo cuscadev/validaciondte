@@ -1,6 +1,8 @@
 'use client';
 
 import { usePlanAccess } from '@/hooks/usePlanAccess';
+import { useProcessLimitNotice } from '@/hooks/useProcessLimitNotice';
+import ProcessLimitNoticeModal from '@/components/ProcessLimitNoticeModal';
 import { Lock, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -11,11 +13,13 @@ interface PlanGateProps {
 
 /**
  * Envuelve una página de verificación y bloquea el acceso si el plan del usuario no lo permite.
+ * Muestra aviso obligatorio del limite por proceso (por ejecucion), distinto al limite mensual.
  */
 export default function PlanGate({ routeKey, children }: PlanGateProps) {
   const { loading, allowed, membershipType, queryLimit } = usePlanAccess(routeKey);
+  const notice = useProcessLimitNotice(routeKey, allowed);
 
-  if (loading) {
+  if (loading || (allowed && notice.loading)) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] gap-3 text-muted-foreground">
         <Loader2 className="w-5 h-5 animate-spin" />
@@ -55,6 +59,25 @@ export default function PlanGate({ routeKey, children }: PlanGateProps) {
           Ver planes disponibles
         </Link>
       </div>
+    );
+  }
+
+  if (notice.requiresAcknowledgment) {
+    return (
+      <>
+        <ProcessLimitNoticeModal
+          open
+          status={notice.status}
+          saving={notice.saving}
+          error={notice.error}
+          onAccept={() => {
+            void notice.acknowledge();
+          }}
+        />
+        <div className="flex min-h-[60vh] items-center justify-center px-4 text-center text-sm text-muted-foreground">
+          Debes aceptar el aviso del limite por proceso para continuar.
+        </div>
+      </>
     );
   }
 

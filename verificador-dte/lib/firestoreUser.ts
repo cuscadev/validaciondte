@@ -43,6 +43,12 @@ export interface AppUser {
   forceLogoutAt?: unknown;
   blockedAt?: unknown;
   limits?: UsageLimits;
+  limitNotices?: Record<string, LimitNoticeAcknowledgment>;
+}
+
+export interface LimitNoticeAcknowledgment {
+  fingerprint: string;
+  acknowledgedAt: string;
 }
 
 export function isOrgAdmin(user: Pick<AppUser, 'role' | 'orgRole'> | null | undefined) {

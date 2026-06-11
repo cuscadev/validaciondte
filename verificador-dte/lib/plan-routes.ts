@@ -62,3 +62,11 @@ export const DEFAULT_PREMIUM_ROUTES = [
 ];
 
 export const DEFAULT_PRO_ROUTES = DEFAULT_PREMIUM_ROUTES;
+
+export function getRouteLabel(routeKey: string): string {
+  for (const group of PLAN_ROUTE_GROUPS) {
+    const route = group.routes.find((item) => item.key === routeKey);
+    if (route) return route.label;
+  }
+  return routeKey;
+}
