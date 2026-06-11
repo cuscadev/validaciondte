@@ -148,6 +148,38 @@ func TestMapPublicAPIResponseReadsComprobanteRetencionAmounts(t *testing.T) {
 	}
 }
 
+func TestMapPublicAPIResponseReadsComprobanteRetencionHaciendaVariants(t *testing.T) {
+	payload := publicAPIResponse{
+		EstadoDoc:         "Transmitido Satisfactoriamente",
+		DescripcionEstado: "Transmitido Satisfactoriamente con Observaciones",
+		FechaEmi:          "2026-05-25",
+		HoraEmi:           "12:56:08",
+		FechaProcesado:    "2026-05-27 12:56:08",
+		CodGen:            "EE0B3BE4-2C7A-4936-9DA9-6DE28061B12F",
+		TipoDte:           "07",
+		NombDte:           "COMPROBANTE DE RETENCION",
+		Documento:         &publicAPIDocumento{},
+	}
+	payload.Documento.Identificacion.NumeroControl = "DTE-07-M001P001-000000000003369"
+	payload.Documento.Resumen.TotalSujetoRetencion = floatPtr(425)
+	payload.Documento.Resumen.TotalIVAretenido = floatPtr(4.25)
+
+	result := mapPublicAPIResponse(payload, Result{})
+
+	if result.MontoTotalOperacion != "425" {
+		t.Fatalf("MontoTotalOperacion = %q, want 425", result.MontoTotalOperacion)
+	}
+	if result.MontoTotal != "425" {
+		t.Fatalf("MontoTotal = %q, want 425", result.MontoTotal)
+	}
+	if result.TotalPagarOperacion != "4.25" {
+		t.Fatalf("TotalPagarOperacion = %q, want 4.25", result.TotalPagarOperacion)
+	}
+	if result.IvaRetenido != "4.25" {
+		t.Fatalf("IvaRetenido = %q, want 4.25", result.IvaRetenido)
+	}
+}
+
 func TestMapPublicAPIResponseZeroIvaExemptInvoice(t *testing.T) {
 	payload := publicAPIResponse{
 		EstadoDoc: "Transmitido Satisfactoriamente",

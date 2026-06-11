@@ -156,21 +156,24 @@ type publicAPIAjuste struct {
 }
 
 type publicAPIResumen struct {
-	MontoTotalOperacion *float64           `json:"montoTotalOperacion"`
-	TotalPagar          *float64           `json:"totalPagar"`
-	SubTotalVentas      *float64           `json:"subTotalVentas"`
-	SubTotal            *float64           `json:"subTotal"`
-	TotalGravada        *float64           `json:"totalGravada"`
-	TotalExenta         *float64           `json:"totalExenta"`
-	TotalNoSuj          *float64           `json:"totalNoSuj"`
-	TotalIva            *float64           `json:"totalIva"`
-	IvaRete             *float64           `json:"ivaRete"`
-	IvaRete1            *float64           `json:"ivaRete1"`
-	IvaPerci            *float64           `json:"ivaPerci"`
-	IvaPerci1           *float64           `json:"ivaPerci1"`
-	ReteRenta           *float64           `json:"reteRenta"`
-	TotalNoGravado      *float64           `json:"totalNoGravado"`
-	Tributos            []publicAPITributo `json:"tributos"`
+	MontoTotalOperacion  *float64           `json:"montoTotalOperacion"`
+	TotalSujetoRetencion *float64           `json:"totalSujetoRetencion"`
+	TotalPagar           *float64           `json:"totalPagar"`
+	TotalIVAretenido     *float64           `json:"totalIVAretenido"`
+	TotalIvaRetenido     *float64           `json:"totalIvaRetenido"`
+	SubTotalVentas       *float64           `json:"subTotalVentas"`
+	SubTotal             *float64           `json:"subTotal"`
+	TotalGravada         *float64           `json:"totalGravada"`
+	TotalExenta          *float64           `json:"totalExenta"`
+	TotalNoSuj           *float64           `json:"totalNoSuj"`
+	TotalIva             *float64           `json:"totalIva"`
+	IvaRete              *float64           `json:"ivaRete"`
+	IvaRete1             *float64           `json:"ivaRete1"`
+	IvaPerci             *float64           `json:"ivaPerci"`
+	IvaPerci1            *float64           `json:"ivaPerci1"`
+	ReteRenta            *float64           `json:"reteRenta"`
+	TotalNoGravado       *float64           `json:"totalNoGravado"`
+	Tributos             []publicAPITributo `json:"tributos"`
 }
 
 type publicAPIDocumento struct {
@@ -247,18 +250,26 @@ func mapPublicAPIResponse(payload publicAPIResponse, base Result) Result {
 				payload.Documento.Identificacion.HorEmi,
 			)
 		}
-		result.MontoTotalOperacion = formatAPIAmount(payload.Documento.Resumen.MontoTotalOperacion)
+		result.MontoTotalOperacion = formatAPIAmount(
+			payload.Documento.Resumen.MontoTotalOperacion,
+			payload.Documento.Resumen.TotalSujetoRetencion,
+		)
 		result.MontoTotal = formatAPIAmount(
 			payload.Documento.Resumen.SubTotalVentas,
 			payload.Documento.Resumen.SubTotal,
 			payload.Documento.Resumen.TotalGravada,
 			payload.Documento.Resumen.TotalExenta,
 			payload.Documento.Resumen.MontoTotalOperacion,
+			payload.Documento.Resumen.TotalSujetoRetencion,
 		)
 		if result.MontoTotal == "" {
 			result.MontoTotal = formatAPIAmount(payload.Documento.Resumen.TotalPagar)
 		}
-		result.TotalPagarOperacion = formatAPIAmount(payload.Documento.Resumen.TotalPagar)
+		result.TotalPagarOperacion = formatAPIAmount(
+			payload.Documento.Resumen.TotalPagar,
+			payload.Documento.Resumen.TotalIVAretenido,
+			payload.Documento.Resumen.TotalIvaRetenido,
+		)
 		applyPublicAPIResumenTaxFields(&result, payload.Documento.Resumen)
 		mapPublicAPIParty(payload.Documento.Emisor, &result, true)
 		mapPublicAPIParty(payload.Documento.Receptor, &result, false)
@@ -442,7 +453,12 @@ func applyPublicAPIResumenTaxFields(result *Result, summary publicAPIResumen) {
 	)
 	result.IvaRetenido = coalesceAmount(
 		result.IvaRetenido,
-		formatAPIAmount(summary.IvaRete, summary.IvaRete1),
+		formatAPIAmount(
+			summary.IvaRete,
+			summary.IvaRete1,
+			summary.TotalIVAretenido,
+			summary.TotalIvaRetenido,
+		),
 	)
 	result.RetencionRenta = coalesceAmount(
 		result.RetencionRenta,
