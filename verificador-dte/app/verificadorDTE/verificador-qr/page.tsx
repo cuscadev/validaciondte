@@ -157,6 +157,7 @@ function VerificadorQrContent() {
     useUploadResultsReveal();
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const cameraFrameRef = useRef<HTMLDivElement>(null);
   const scannerRef = useRef<QrScanner | null>(null);
   const scanLockRef = useRef(false);
   const pendingListRef = useRef<HTMLDivElement>(null);
@@ -516,6 +517,28 @@ function VerificadorQrContent() {
     setCurrentPage(1);
   }, [search]);
 
+  useEffect(() => {
+    const frame = cameraFrameRef.current;
+    if (!frame || typeof ResizeObserver === 'undefined') return;
+
+    const refreshScannerOverlay = () => {
+      window.dispatchEvent(new Event('resize'));
+    };
+
+    const resizeObserver = new ResizeObserver(() => {
+      requestAnimationFrame(refreshScannerOverlay);
+    });
+    resizeObserver.observe(frame);
+
+    return () => resizeObserver.disconnect();
+  }, []);
+
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      window.dispatchEvent(new Event('resize'));
+    });
+  }, [cameraExpanded]);
+
   const paginatedData = useMemo(() => {
     const start = (currentPage - 1) * rowsPerPage;
     return filtered.slice(start, start + rowsPerPage);
@@ -579,7 +602,10 @@ function VerificadorQrContent() {
               </label>
             </div>
 
-            <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-black/90 dark:border-white/10">
+            <div
+              ref={cameraFrameRef}
+              className="relative overflow-hidden rounded-xl border border-slate-200 bg-black/90 dark:border-white/10"
+            >
               <Button
                 type="button"
                 variant="secondary"
