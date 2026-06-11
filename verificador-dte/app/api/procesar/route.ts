@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest } from 'next/server';
 import * as XLSX from 'xlsx-js-style';
+import { buildDteExcelBase64 } from '@/lib/dteCommon';
 import { getGoDteApiUrl } from '@/lib/go-dte-api';
 import { requireAuth } from '@/lib/server-auth';
 import { assertMonthlyUsageLimit, assertBatchProcessLimit } from '@/lib/usage-limits';
@@ -66,12 +67,28 @@ export async function POST(req: NextRequest) {
       body: upstreamForm,
     });
 
-    return new Response(await upstream.arrayBuffer(), {
-      status: upstream.status,
-      headers: {
-        'content-type': upstream.headers.get('content-type') || 'application/json',
-      },
-    });
+    const contentType = upstream.headers.get('content-type') || '';
+    if (!upstream.ok || !contentType.includes('application/json')) {
+      return new Response(await upstream.arrayBuffer(), {
+        status: upstream.status,
+        headers: { 'content-type': contentType || 'application/json' },
+      });
+    }
+
+    const payload = (await upstream.json()) as {
+      resultados?: Record<string, unknown>[];
+      excelBase64?: string;
+      filename?: string;
+      [key: string]: unknown;
+    };
+
+    if (Array.isArray(payload.resultados) && payload.resultados.length > 0) {
+      const excel = buildDteExcelBase64(payload.resultados);
+      payload.excelBase64 = excel.excelBase64;
+      payload.filename = excel.filename;
+    }
+
+    return Response.json(payload, { status: upstream.status });
   } catch (error) {
     return Response.json(
       { error: error instanceof Error ? error.message : 'Error interno' },

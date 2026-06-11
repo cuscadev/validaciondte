@@ -155,29 +155,33 @@ type publicAPIAjuste struct {
 	FecHorEmi           string `json:"fecHorEmi"`
 }
 
+type publicAPIResumen struct {
+	MontoTotalOperacion *float64           `json:"montoTotalOperacion"`
+	TotalPagar          *float64           `json:"totalPagar"`
+	SubTotalVentas      *float64           `json:"subTotalVentas"`
+	SubTotal            *float64           `json:"subTotal"`
+	TotalGravada        *float64           `json:"totalGravada"`
+	TotalExenta         *float64           `json:"totalExenta"`
+	TotalNoSuj          *float64           `json:"totalNoSuj"`
+	TotalIva            *float64           `json:"totalIva"`
+	IvaRete             *float64           `json:"ivaRete"`
+	IvaRete1            *float64           `json:"ivaRete1"`
+	IvaPerci            *float64           `json:"ivaPerci"`
+	IvaPerci1           *float64           `json:"ivaPerci1"`
+	ReteRenta           *float64           `json:"reteRenta"`
+	TotalNoGravado      *float64           `json:"totalNoGravado"`
+	Tributos            []publicAPITributo `json:"tributos"`
+}
+
 type publicAPIDocumento struct {
 	Identificacion struct {
 		NumeroControl string `json:"numeroControl"`
 		FecEmi        string `json:"fecEmi"`
 		HorEmi        string `json:"horEmi"`
 	} `json:"identificacion"`
-	Resumen struct {
-		MontoTotalOperacion *float64           `json:"montoTotalOperacion"`
-		TotalPagar          *float64           `json:"totalPagar"`
-		SubTotalVentas      *float64           `json:"subTotalVentas"`
-		SubTotal            *float64           `json:"subTotal"`
-		TotalGravada        *float64           `json:"totalGravada"`
-		TotalIva            *float64           `json:"totalIva"`
-		IvaRete             *float64           `json:"ivaRete"`
-		IvaRete1            *float64           `json:"ivaRete1"`
-		IvaPerci            *float64           `json:"ivaPerci"`
-		IvaPerci1           *float64           `json:"ivaPerci1"`
-		ReteRenta           *float64           `json:"reteRenta"`
-		TotalNoGravado      *float64           `json:"totalNoGravado"`
-		Tributos            []publicAPITributo `json:"tributos"`
-	} `json:"resumen"`
-	Emisor   *publicAPIParty `json:"emisor"`
-	Receptor *publicAPIParty `json:"receptor"`
+	Resumen  publicAPIResumen `json:"resumen"`
+	Emisor   *publicAPIParty  `json:"emisor"`
+	Receptor *publicAPIParty  `json:"receptor"`
 }
 
 type publicAPITributo struct {
@@ -248,6 +252,7 @@ func mapPublicAPIResponse(payload publicAPIResponse, base Result) Result {
 			payload.Documento.Resumen.SubTotalVentas,
 			payload.Documento.Resumen.SubTotal,
 			payload.Documento.Resumen.TotalGravada,
+			payload.Documento.Resumen.TotalExenta,
 			payload.Documento.Resumen.MontoTotalOperacion,
 		)
 		if result.MontoTotal == "" {
@@ -257,20 +262,7 @@ func mapPublicAPIResponse(payload publicAPIResponse, base Result) Result {
 		if result.TotalPagarOperacion == "" {
 			result.TotalPagarOperacion = result.MontoTotalOperacion
 		}
-		result.IvaOperaciones = formatAPIAmount(
-			payload.Documento.Resumen.TotalIva,
-			sumTributos(payload.Documento.Resumen.Tributos),
-		)
-		result.IvaRetenido = formatAPIAmount(
-			payload.Documento.Resumen.IvaRete,
-			payload.Documento.Resumen.IvaRete1,
-		)
-		result.IvaPercibido = formatAPIAmount(
-			payload.Documento.Resumen.IvaPerci,
-			payload.Documento.Resumen.IvaPerci1,
-		)
-		result.RetencionRenta = formatAPIAmount(payload.Documento.Resumen.ReteRenta)
-		result.TotalNoAfectos = formatAPIAmount(payload.Documento.Resumen.TotalNoGravado)
+		applyPublicAPIResumenTaxFields(&result, payload.Documento.Resumen)
 		mapPublicAPIParty(payload.Documento.Emisor, &result, true)
 		mapPublicAPIParty(payload.Documento.Receptor, &result, false)
 	}
@@ -434,6 +426,75 @@ func formatAPIAmount(values ...*float64) string {
 		return strconv.FormatFloat(*value, 'f', -1, 64)
 	}
 	return ""
+}
+
+func applyPublicAPIResumenTaxFields(result *Result, summary publicAPIResumen) {
+	if result == nil {
+		return
+	}
+
+	// Solo valores tal como vienen en la API de Hacienda (sin calcular ni inferir).
+	result.IvaOperaciones = coalesceAmount(
+		result.IvaOperaciones,
+		formatAPIAmount(summary.TotalIva),
+		formatTributoAmount(summary.Tributos, "20"),
+	)
+	result.IvaPercibido = coalesceAmount(
+		result.IvaPercibido,
+		formatAPIAmount(summary.IvaPerci, summary.IvaPerci1),
+	)
+	result.IvaRetenido = coalesceAmount(
+		result.IvaRetenido,
+		formatAPIAmount(summary.IvaRete, summary.IvaRete1),
+	)
+	result.RetencionRenta = coalesceAmount(
+		result.RetencionRenta,
+		formatAPIAmount(summary.ReteRenta),
+	)
+	result.TotalNoAfectos = coalesceAmount(
+		result.TotalNoAfectos,
+		formatAPIAmount(summary.TotalNoGravado, summary.TotalNoSuj),
+	)
+	if strings.TrimSpace(result.OtrosTributos) == "" {
+		result.OtrosTributos = formatOtrosTributosAPI(summary.Tributos)
+	}
+}
+
+func coalesceAmount(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return strings.TrimSpace(value)
+		}
+	}
+	return ""
+}
+
+func formatTributoAmount(items []publicAPITributo, code string) string {
+	for _, item := range items {
+		if strings.TrimSpace(item.Codigo) != code {
+			continue
+		}
+		if v := formatAPIAmount(item.Valor); v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
+func formatOtrosTributosAPI(items []publicAPITributo) string {
+	if len(items) == 0 {
+		return ""
+	}
+	parts := make([]string, 0, len(items))
+	for _, item := range items {
+		codigo := strings.TrimSpace(item.Codigo)
+		valor := formatAPIAmount(item.Valor)
+		if codigo == "" || valor == "" || codigo == "20" {
+			continue
+		}
+		parts = append(parts, codigo+": "+valor)
+	}
+	return strings.Join(parts, "; ")
 }
 
 func sumTributos(items []publicAPITributo) *float64 {

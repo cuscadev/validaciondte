@@ -148,6 +148,35 @@ func TestMapPublicAPIResponseReadsComprobanteRetencionAmounts(t *testing.T) {
 	}
 }
 
+func TestMapPublicAPIResponseZeroIvaExemptInvoice(t *testing.T) {
+	payload := publicAPIResponse{
+		EstadoDoc: "Transmitido Satisfactoriamente",
+		CodGen:    "TEST-COD",
+		Documento: &publicAPIDocumento{},
+	}
+	payload.Documento.Resumen.SubTotalVentas = floatPtr(56.45)
+	payload.Documento.Resumen.MontoTotalOperacion = floatPtr(56.45)
+	payload.Documento.Resumen.TotalPagar = floatPtr(56.45)
+	payload.Documento.Resumen.TotalGravada = floatPtr(0)
+	payload.Documento.Resumen.TotalExenta = floatPtr(56.45)
+	payload.Documento.Resumen.IvaPerci1 = floatPtr(0)
+	payload.Documento.Resumen.IvaRete1 = floatPtr(0)
+	payload.Documento.Resumen.ReteRenta = floatPtr(0)
+	payload.Documento.Resumen.TotalNoGravado = floatPtr(0)
+
+	result := mapPublicAPIResponse(payload, Result{})
+
+	if result.IvaOperaciones != "0" {
+		t.Fatalf("IvaOperaciones = %q, want 0", result.IvaOperaciones)
+	}
+	if result.TotalPagarOperacion != "56.45" {
+		t.Fatalf("TotalPagarOperacion = %q, want 56.45", result.TotalPagarOperacion)
+	}
+	if result.TotalNoAfectos != "0" {
+		t.Fatalf("TotalNoAfectos = %q, want 0", result.TotalNoAfectos)
+	}
+}
+
 func TestMapPublicAPIResponseNotFound(t *testing.T) {
 	payload := publicAPIResponse{
 		EstadoDoc:         "Error",
