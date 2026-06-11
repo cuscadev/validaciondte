@@ -138,10 +138,10 @@ export default function TermsPage() {
 						<p className="text-base leading-8 text-slate-700 dark:text-zinc-300">
 							Para consultas sobre estos terminos, escriba a{' '}
 							<a
-								href="mailto:alexanderhernandez78@gmail.com"
+								href="mailto:alexanderhernandz78@gmail.com"
 								className="font-semibold text-amber-700 underline-offset-4 hover:underline dark:text-yellow-300"
 							>
-								alexanderhernandez78@gmail.com
+								alexanderhernandz78@gmail.com
 							</a>
 							.
 						</p>
