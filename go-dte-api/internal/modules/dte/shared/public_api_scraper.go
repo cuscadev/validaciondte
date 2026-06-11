@@ -470,9 +470,7 @@ func applyPublicAPIResumenTaxFields(result *Result, summary publicAPIResumen) {
 		result.TotalNoAfectos,
 		formatAPIAmount(summary.TotalNoGravado, summary.TotalNoSuj),
 	)
-	if strings.TrimSpace(result.OtrosTributos) == "" {
-		result.OtrosTributos = formatOtrosTributosAPI(summary.Tributos)
-	}
+	applyTributosPorCodigo(result, summary.Tributos)
 }
 
 func coalesceAmount(values ...string) string {
@@ -496,18 +494,3 @@ func formatTributoAmount(items []publicAPITributo, code string) string {
 	return ""
 }
 
-func formatOtrosTributosAPI(items []publicAPITributo) string {
-	if len(items) == 0 {
-		return ""
-	}
-	parts := make([]string, 0, len(items))
-	for _, item := range items {
-		codigo := strings.TrimSpace(item.Codigo)
-		valor := formatAPIAmount(item.Valor)
-		if codigo == "" || valor == "" || codigo == "20" {
-			continue
-		}
-		parts = append(parts, codigo+": "+valor)
-	}
-	return strings.Join(parts, "; ")
-}

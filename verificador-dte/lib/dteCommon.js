@@ -131,15 +131,24 @@ export function parseXLSX_codFecha(buf) {
 }
 
 /* ========================= Excel helpers ========================= */
-// Debe coincidir con go-dte-api/internal/modules/dte/shared/excel.go (reportHeaders)
-export const REPORT_HEADERS = [
+// Debe coincidir con go-dte-api/internal/modules/dte/shared/excel.go
+export const REPORT_HEADERS_BEFORE_TRIBUTOS = [
   'url', 'nombreArchivo', 'linkVisita', 'visitar', 'host', 'ambiente', 'codGen', 'fechaEmi',
   'estado', 'estadoRaw', 'descripcionEstado', 'estadoDocInc', 'estadoDocIncDescripcion',
   'inconsistenciasCodigos', 'tipoDte', 'tipoDteNorm',
   'fechaHoraGeneracion', 'fechaHoraTransmision', 'fechaHoraProcesamiento',
-  'codigoGeneracion', 'selloRecepcion', 'numeroControl', 'montoTotal', 'montoTotalOperacion',
+  'codigoGeneracion', 'selloRecepcion', 'numeroControl',
+  'emisorNit', 'emisorNrc', 'emisorNombre', 'emisorCodActividad', 'emisorDescActividad',
+  'emisorNombreComercial', 'emisorTelefono', 'emisorCorreo',
+  'receptorNit', 'receptorNrc', 'receptorNombre', 'receptorCodActividad', 'receptorDescActividad',
+  'receptorNombreComercial', 'receptorTelefono', 'receptorCorreo',
+  'receptorDepartamento', 'receptorMunicipio', 'receptorComplemento',
+  'montoTotal', 'montoTotalOperacion',
   'ivaOperaciones', 'ivaPercibido', 'ivaRetenido', 'retencionRenta',
-  'totalNoAfectos', 'totalPagarOperacion', 'otrosTributos',
+  'totalNoAfectos', 'totalPagarOperacion',
+];
+
+export const REPORT_HEADERS_AFTER_TRIBUTOS = [
   'documentoEventoAplicado', 'observacionesTexto',
   'ajustado', 'documentoAjustado',
   'tieneNotaCredito', 'notaCreditoCodigoGeneracion', 'notaCreditoFechaGeneracion', 'notaCreditoFechaEmi',
@@ -148,9 +157,62 @@ export const REPORT_HEADERS = [
   'relacionadosTexto', 'error',
 ];
 
-export function flattenResultForReport(row = {}) {
+function tributoColumnName(codigo) {
+  return `tributo_${String(codigo || '').trim()}`;
+}
+
+export function parseOtrosTributosText(text) {
   const out = {};
-  for (const key of REPORT_HEADERS) {
+  const value = String(text || '').trim();
+  if (!value) return out;
+  value.split(';').forEach((part) => {
+    const piece = part.trim();
+    const idx = piece.indexOf(':');
+    if (idx <= 0) return;
+    const codigo = piece.slice(0, idx).trim();
+    const amount = piece.slice(idx + 1).trim();
+    if (!codigo || !amount || codigo === '20') return;
+    out[codigo] = amount;
+  });
+  return out;
+}
+
+export function resolveTributosPorCodigo(row = {}) {
+  const fromMap = row.tributosPorCodigo;
+  if (fromMap && typeof fromMap === 'object' && !Array.isArray(fromMap)) {
+    return Object.fromEntries(
+      Object.entries(fromMap).filter(([codigo, valor]) => codigo && valor !== null && valor !== undefined && String(valor).trim() !== '')
+    );
+  }
+  return parseOtrosTributosText(row.otrosTributos);
+}
+
+export function collectTributoCodes(rows = []) {
+  const seen = new Set();
+  rows.forEach((row) => {
+    Object.keys(resolveTributosPorCodigo(row)).forEach((codigo) => seen.add(codigo));
+  });
+  return Array.from(seen).sort((a, b) => a.localeCompare(b));
+}
+
+export function buildReportHeaders(rows = []) {
+  const tributoCodes = collectTributoCodes(rows);
+  return [
+    ...REPORT_HEADERS_BEFORE_TRIBUTOS,
+    ...tributoCodes.map((codigo) => tributoColumnName(codigo)),
+    ...REPORT_HEADERS_AFTER_TRIBUTOS,
+  ];
+}
+
+export function flattenResultForReport(row = {}, headers = buildReportHeaders([row])) {
+  const tributos = resolveTributosPorCodigo(row);
+  const out = {};
+  for (const key of headers) {
+    if (key.startsWith('tributo_')) {
+      const codigo = key.slice('tributo_'.length);
+      out[key] = tributos[codigo] || '';
+      continue;
+    }
     if (key === 'visitar') {
       out[key] = row.visitar || 'Abrir';
       continue;
@@ -165,8 +227,9 @@ export function flattenResultForReport(row = {}) {
 }
 
 function jsonToReportSheet(rows) {
-  const flatRows = rows.map((row) => flattenResultForReport(row));
-  const ws = XLSX.utils.json_to_sheet(flatRows, { header: REPORT_HEADERS });
+  const headers = buildReportHeaders(rows);
+  const flatRows = rows.map((row) => flattenResultForReport(row, headers));
+  const ws = XLSX.utils.json_to_sheet(flatRows, { header: headers });
   applyHyperlinks(ws);
   prepareReportSheet(ws);
   return ws;

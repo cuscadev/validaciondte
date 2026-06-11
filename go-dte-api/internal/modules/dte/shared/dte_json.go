@@ -382,7 +382,8 @@ func ExtractDTEJSONFields(item map[string]any) Result {
 			jsonAsString(resumen["totalExenta"]),
 		),
 		TotalPagarOperacion: jsonAsString(resumen["totalPagar"]),
-		OtrosTributos: extractOtrosTributos(resumen),
+		OtrosTributos:       extractOtrosTributos(resumen),
+		TributosPorCodigo:   extractTributosPorCodigoFromResumen(resumen),
 
 		EmisorNit:             jsonAsString(emisor["nit"]),
 		EmisorNrc:             jsonAsString(emisor["nrc"]),
@@ -437,6 +438,10 @@ func MergeJSONIntoResult(dst *Result, src Result) {
 	fillIfEmpty(&dst.TotalNoAfectos, src.TotalNoAfectos)
 	fillIfEmpty(&dst.TotalPagarOperacion, src.TotalPagarOperacion)
 	fillIfEmpty(&dst.OtrosTributos, src.OtrosTributos)
+	mergeTributosPorCodigo(dst, src.TributosPorCodigo)
+	if len(dst.TributosPorCodigo) == 0 && strings.TrimSpace(src.OtrosTributos) != "" {
+		mergeTributosPorCodigo(dst, ParseOtrosTributosText(src.OtrosTributos))
+	}
 
 	fillIfEmpty(&dst.EmisorNit, src.EmisorNit)
 	fillIfEmpty(&dst.EmisorNrc, src.EmisorNrc)
@@ -532,20 +537,33 @@ func extractIVAFromResumen(resumen map[string]any) string {
 	return ""
 }
 
-func extractOtrosTributos(resumen map[string]any) string {
-	if tributos, ok := resumen["tributos"].([]any); ok {
-		parts := make([]string, 0, len(tributos))
-		for _, item := range tributos {
-			tributo := jsonAsMap(item)
-			codigo := jsonAsString(tributo["codigo"])
-			valor := jsonAsString(tributo["valor"])
-			if codigo != "" && valor != "" && codigo != "20" {
-				parts = append(parts, codigo+": "+valor)
+func extractTributosPorCodigoFromResumen(resumen map[string]any) map[string]string {
+	tributos, ok := resumen["tributos"].([]any)
+	if !ok {
+		return nil
+	}
+	items := make([]publicAPITributo, 0, len(tributos))
+	for _, item := range tributos {
+		tributo := jsonAsMap(item)
+		codigo := jsonAsString(tributo["codigo"])
+		if codigo == "" {
+			continue
+		}
+		var valor *float64
+		if raw := tributo["valor"]; raw != nil {
+			if f, ok := raw.(float64); ok {
+				valor = &f
 			}
 		}
-		if len(parts) > 0 {
-			return strings.Join(parts, "; ")
-		}
+		items = append(items, publicAPITributo{Codigo: codigo, Valor: valor})
+	}
+	return CollectTributosFromAPI(items)
+}
+
+func extractOtrosTributos(resumen map[string]any) string {
+	fromMap := extractTributosPorCodigoFromResumen(resumen)
+	if len(fromMap) > 0 {
+		return formatOtrosTributosFromMap(fromMap)
 	}
 	return jsonAsString(resumen["totalOtrosTributos"])
 }

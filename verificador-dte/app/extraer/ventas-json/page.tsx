@@ -23,6 +23,7 @@ import { recordProcessingLog } from '@/lib/client-processing-log'
 import { summarizeFiles } from '@/lib/processing-log'
 import {
   extractIdentificacion,
+  extractLibroParties,
   extractReceptor,
   extractResumenMontos,
   extractSelloFromJson,
@@ -43,6 +44,12 @@ type VentaResultado = {
   NumeroControl: string
   Fecha: string
   FechaISO: string
+  EmisorNIT: string
+  EmisorNRC: string
+  EmisorNombre: string
+  ReceptorNIT: string
+  ReceptorNRC: string
+  ReceptorNombre: string
   NIT: string
   NRC: string
   Contribuyente: string
@@ -115,6 +122,7 @@ export default function VentasJsonPage() {
 
       const identificacion = extractIdentificacion(obj)
       const receptor = extractReceptor(obj)
+      const parties = extractLibroParties(obj)
       const montos = extractResumenMontos(obj)
       const selloRecibido = extractSelloFromJson(obj)
 
@@ -126,6 +134,12 @@ export default function VentasJsonPage() {
         NumeroControl: identificacion.numeroControl,
         Fecha: formatDate(fechaISO),
         FechaISO: fechaISO,
+        EmisorNIT: parties.EmisorNIT,
+        EmisorNRC: parties.EmisorNRC,
+        EmisorNombre: parties.EmisorNombre,
+        ReceptorNIT: parties.ReceptorNIT,
+        ReceptorNRC: parties.ReceptorNRC,
+        ReceptorNombre: parties.ReceptorNombre,
         NIT: receptor.nit,
         NRC: receptor.nrc,
         Contribuyente: receptor.nombre,
@@ -146,6 +160,12 @@ export default function VentasJsonPage() {
         NumeroControl: '',
         Fecha: '',
         FechaISO: '',
+        EmisorNIT: '',
+        EmisorNRC: '',
+        EmisorNombre: '',
+        ReceptorNIT: '',
+        ReceptorNRC: '',
+        ReceptorNombre: '',
         NIT: '',
         NRC: '',
         Contribuyente: '',
@@ -169,9 +189,12 @@ export default function VentasJsonPage() {
         { key: 'Generacion', label: 'Código Generación' },
         { key: 'NumeroControl', label: 'N° Control' },
         { key: 'Fecha', label: 'Fecha' },
-        { key: 'NIT', label: 'NIT' },
-        { key: 'NRC', label: 'NRC' },
-        { key: 'Contribuyente', label: 'Cliente' },
+        { key: 'EmisorNIT', label: 'Emisor NIT' },
+        { key: 'EmisorNRC', label: 'Emisor NRC' },
+        { key: 'EmisorNombre', label: 'Emisor' },
+        { key: 'ReceptorNIT', label: 'Receptor NIT' },
+        { key: 'ReceptorNRC', label: 'Receptor NRC' },
+        { key: 'ReceptorNombre', label: 'Receptor' },
         { key: 'TipoDte', label: 'Tipo DTE' },
         { key: 'TipoDocumento', label: 'Documento' },
         { key: 'Exenta', label: 'Exenta' },
@@ -275,9 +298,12 @@ export default function VentasJsonPage() {
           r.Generacion,
           r.NumeroControl,
           r.Fecha,
-          r.NIT,
-          r.NRC,
-          r.Contribuyente,
+          r.EmisorNIT,
+          r.EmisorNRC,
+          r.EmisorNombre,
+          r.ReceptorNIT,
+          r.ReceptorNRC,
+          r.ReceptorNombre,
           r.TipoDte,
           r.TipoDocumento,
           r.SelloRecibido,
@@ -389,9 +415,12 @@ export default function VentasJsonPage() {
       Generacion: r.Generacion,
       NumeroControl: r.NumeroControl,
       Fecha: r.Fecha,
-      NIT: r.NIT,
-      NRC: r.NRC,
-      Contribuyente: r.Contribuyente,
+      EmisorNIT: r.EmisorNIT,
+      EmisorNRC: r.EmisorNRC,
+      EmisorNombre: r.EmisorNombre,
+      ReceptorNIT: r.ReceptorNIT,
+      ReceptorNRC: r.ReceptorNRC,
+      ReceptorNombre: r.ReceptorNombre,
       TipoDte: r.TipoDte,
       TipoDocumento: r.TipoDocumento,
       Exenta: r.Exenta,
@@ -471,13 +500,13 @@ export default function VentasJsonPage() {
           }
         >
       >((acc, row) => {
-        const key = row.NRC || row.NIT || row.Contribuyente || 'SIN CLIENTE'
+        const key = row.ReceptorNRC || row.ReceptorNIT || row.ReceptorNombre || 'SIN CLIENTE'
 
         if (!acc[key]) {
           acc[key] = {
-            NIT: row.NIT,
-            NRC: row.NRC,
-            Contribuyente: row.Contribuyente,
+            NIT: row.ReceptorNIT,
+            NRC: row.ReceptorNRC,
+            Contribuyente: row.ReceptorNombre,
             MontoGravado: 0,
             IVA: 0,
             TotalPagar: 0,

@@ -52,6 +52,7 @@ type Result struct {
 	TotalNoAfectos          string            `json:"totalNoAfectos,omitempty"`
 	TotalPagarOperacion     string            `json:"totalPagarOperacion,omitempty"`
 	OtrosTributos           string            `json:"otrosTributos,omitempty"`
+	TributosPorCodigo       map[string]string `json:"tributosPorCodigo,omitempty"`
 	DocumentoAjustado       string            `json:"documentoAjustado,omitempty"`
 	DocumentoEventoAplicado string            `json:"documentoEventoAplicado,omitempty"`
 	Ajustado                bool              `json:"ajustado,omitempty"`

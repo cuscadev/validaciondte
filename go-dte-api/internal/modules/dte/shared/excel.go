@@ -12,7 +12,7 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
-var reportHeaders = []string{
+var reportHeadersBeforeTributos = []string{
 
 	"url", "nombreArchivo", "linkVisita", "visitar", "host", "ambiente", "codGen", "fechaEmi",
 
@@ -21,11 +21,23 @@ var reportHeaders = []string{
 
 	"fechaHoraGeneracion", "fechaHoraTransmision", "fechaHoraProcesamiento",
 
-	"codigoGeneracion", "selloRecepcion", "numeroControl", "montoTotal", "montoTotalOperacion",
+	"codigoGeneracion", "selloRecepcion", "numeroControl",
+
+	"emisorNit", "emisorNrc", "emisorNombre", "emisorCodActividad", "emisorDescActividad",
+	"emisorNombreComercial", "emisorTelefono", "emisorCorreo",
+
+	"receptorNit", "receptorNrc", "receptorNombre", "receptorCodActividad", "receptorDescActividad",
+	"receptorNombreComercial", "receptorTelefono", "receptorCorreo",
+	"receptorDepartamento", "receptorMunicipio", "receptorComplemento",
+
+	"montoTotal", "montoTotalOperacion",
 
 	"ivaOperaciones", "ivaPercibido", "ivaRetenido", "retencionRenta",
 
-	"totalNoAfectos", "totalPagarOperacion", "otrosTributos",
+	"totalNoAfectos", "totalPagarOperacion",
+}
+
+var reportHeadersAfterTributos = []string{
 
 	"documentoEventoAplicado", "observacionesTexto",
 
@@ -40,6 +52,17 @@ var reportHeaders = []string{
 	"relacionadosTexto", "error",
 }
 
+func buildReportHeaders(results []Result) []string {
+	tributoCodes := CollectTributoCodes(results)
+	headers := make([]string, 0, len(reportHeadersBeforeTributos)+len(tributoCodes)+len(reportHeadersAfterTributos))
+	headers = append(headers, reportHeadersBeforeTributos...)
+	for _, codigo := range tributoCodes {
+		headers = append(headers, tributoColumnName(codigo))
+	}
+	headers = append(headers, reportHeadersAfterTributos...)
+	return headers
+}
+
 func BuildExcelBase64(results []Result) (string, error) {
 
 	file := excelize.NewFile()
@@ -52,17 +75,20 @@ func BuildExcelBase64(results []Result) (string, error) {
 
 	writeSummary(file, "Resumen", results)
 
-	writeResultsSheet(file, "Todos", results)
+	headers := buildReportHeaders(results)
+	tributoCodes := CollectTributoCodes(results)
+
+	writeResultsSheet(file, "Todos", results, headers, tributoCodes)
 
 	for _, tipo := range reportTypeSheets(results) {
 		rows := filterByType(results, tipo)
 		if len(rows) == 0 {
 			continue
 		}
-		writeResultsSheet(file, tipo, rows)
+		writeResultsSheet(file, tipo, rows, headers, tributoCodes)
 	}
 
-	writeResultsSheet(file, "Rechazados", filterRejected(results))
+	writeResultsSheet(file, "Rechazados", filterRejected(results), headers, tributoCodes)
 
 	writeRelatedSheet(file, results)
 
@@ -116,13 +142,13 @@ func writeSummary(file *excelize.File, sheet string, results []Result) {
 
 }
 
-func writeResultsSheet(file *excelize.File, sheet string, results []Result) {
+func writeResultsSheet(file *excelize.File, sheet string, results []Result, headers []string, tributoCodes []string) {
 
 	name := sheetNameSafe(sheet)
 
 	file.NewSheet(name)
 
-	for col, header := range reportHeaders {
+	for col, header := range headers {
 
 		cell, _ := excelize.CoordinatesToCellName(col+1, 1)
 
@@ -130,11 +156,11 @@ func writeResultsSheet(file *excelize.File, sheet string, results []Result) {
 
 	}
 
-	ncLinkCol := headerColumn("notaCreditoLinkVisita")
+	ncLinkCol := headerColumnIn(headers, "notaCreditoLinkVisita")
 
 	for row, r := range results {
 
-		values := resultRow(r)
+		values := resultRow(r, tributoCodes)
 
 		for col, value := range values {
 
@@ -145,7 +171,7 @@ func writeResultsSheet(file *excelize.File, sheet string, results []Result) {
 		}
 
 		if r.LinkVisita != "" {
-			visitarCell, _ := excelize.CoordinatesToCellName(headerColumn("visitar"), row+2)
+			visitarCell, _ := excelize.CoordinatesToCellName(headerColumnIn(headers, "visitar"), row+2)
 
 			file.SetCellHyperLink(name, visitarCell, r.LinkVisita, "External")
 
@@ -161,7 +187,7 @@ func writeResultsSheet(file *excelize.File, sheet string, results []Result) {
 
 	}
 
-	if lastCol, err := excelize.ColumnNumberToName(len(reportHeaders)); err == nil {
+	if lastCol, err := excelize.ColumnNumberToName(len(headers)); err == nil {
 		file.SetColWidth(name, "A", lastCol, 22)
 	}
 
@@ -238,9 +264,9 @@ func writeRelatedSheet(file *excelize.File, results []Result) {
 
 }
 
-func resultRow(r Result) []any {
-
-	return []any{
+func resultRow(r Result, tributoCodes []string) []any {
+	tributos := ResolveTributosPorCodigo(r)
+	row := []any{
 
 		r.URL, r.NombreArchivo, r.LinkVisita, valueOr(r.Visitar, "Abrir"), r.Host, r.Ambiente, r.CodGen, r.FechaEmi,
 
@@ -249,30 +275,38 @@ func resultRow(r Result) []any {
 
 		r.FechaHoraGeneracion, r.FechaHoraTransmision, r.FechaHoraProcesamiento,
 
-		r.CodigoGeneracion, r.SelloRecepcion, r.NumeroControl, r.MontoTotal, r.MontoTotalOperacion,
+		r.CodigoGeneracion, r.SelloRecepcion, r.NumeroControl,
+
+		r.EmisorNit, r.EmisorNrc, r.EmisorNombre, r.EmisorCodActividad, r.EmisorDescActividad,
+		r.EmisorNombreComercial, r.EmisorTelefono, r.EmisorCorreo,
+
+		r.ReceptorNit, r.ReceptorNrc, r.ReceptorNombre, r.ReceptorCodActividad, r.ReceptorDescActividad,
+		r.ReceptorNombreComercial, r.ReceptorTelefono, r.ReceptorCorreo,
+		r.ReceptorDepartamento, r.ReceptorMunicipio, r.ReceptorComplemento,
+
+		r.MontoTotal, r.MontoTotalOperacion,
 
 		r.IvaOperaciones, r.IvaPercibido, r.IvaRetenido, r.RetencionRenta,
 
-		r.TotalNoAfectos, r.TotalPagarOperacion, r.OtrosTributos,
-
-		r.DocumentoEventoAplicado, r.ObservacionesTexto,
-
-		r.Ajustado, r.DocumentoAjustado,
-
-		r.TieneNotaCredito, r.NotaCreditoCodigoGeneracion, r.NotaCreditoFechaGeneracion, r.NotaCreditoFechaEmi,
-
-		r.NotaCreditoSelloRecepcion, r.NotaCreditoTipoDocumento, r.NotaCreditoEstado, r.NotaCreditoEstadoRaw,
-
-		r.NotaCreditoNumeroControl, r.NotaCreditoMontoTotal, r.NotaCreditoLinkVisita, r.NotaCreditoError,
-
-		r.RelacionadosTexto, r.Error,
+		r.TotalNoAfectos, r.TotalPagarOperacion,
 	}
-
+	for _, codigo := range tributoCodes {
+		row = append(row, tributos[codigo])
+	}
+	row = append(row,
+		r.DocumentoEventoAplicado, r.ObservacionesTexto,
+		r.Ajustado, r.DocumentoAjustado,
+		r.TieneNotaCredito, r.NotaCreditoCodigoGeneracion, r.NotaCreditoFechaGeneracion, r.NotaCreditoFechaEmi,
+		r.NotaCreditoSelloRecepcion, r.NotaCreditoTipoDocumento, r.NotaCreditoEstado, r.NotaCreditoEstadoRaw,
+		r.NotaCreditoNumeroControl, r.NotaCreditoMontoTotal, r.NotaCreditoLinkVisita, r.NotaCreditoError,
+		r.RelacionadosTexto, r.Error,
+	)
+	return row
 }
 
-func headerColumn(name string) int {
+func headerColumnIn(headers []string, name string) int {
 
-	for i, header := range reportHeaders {
+	for i, header := range headers {
 
 		if header == name {
 

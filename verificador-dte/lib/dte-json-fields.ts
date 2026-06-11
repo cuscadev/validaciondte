@@ -39,13 +39,48 @@ function firstNonEmpty(...values: unknown[]): string {
   return '';
 }
 
-export function extractReceptor(obj: JsonRecord) {
-  const receptor = asRecord(obj.receptor);
+export type PartyFields = {
+  nit: string;
+  nrc: string;
+  nombre: string;
+  codActividad: string;
+  descActividad: string;
+  nombreComercial: string;
+  telefono: string;
+  correo: string;
+  departamento: string;
+  municipio: string;
+  complemento: string;
+};
+
+function extractParty(party: JsonRecord): PartyFields {
+  const direccion = asRecord(party.direccion);
   return {
-    nit: asString(receptor.nit),
-    nrc: asString(receptor.nrc),
-    nombre: asString(receptor.nombre).toUpperCase(),
+    nit: asString(party.nit),
+    nrc: asString(party.nrc),
+    nombre: asString(party.nombre).toUpperCase(),
+    codActividad: asString(party.codActividad),
+    descActividad: asString(party.descActividad),
+    nombreComercial: asString(party.nombreComercial),
+    telefono: asString(party.telefono),
+    correo: asString(party.correo),
+    departamento: asString(direccion.departamento),
+    municipio: asString(direccion.municipio),
+    complemento: asString(direccion.complemento),
   };
+}
+
+export function extractReceptor(obj: JsonRecord) {
+  const receptor = extractParty(asRecord(obj.receptor));
+  return {
+    nit: receptor.nit,
+    nrc: receptor.nrc,
+    nombre: receptor.nombre,
+  };
+}
+
+export function extractReceptorFull(obj: JsonRecord): PartyFields {
+  return extractParty(asRecord(obj.receptor));
 }
 
 export function extractSelloFromJson(obj: JsonRecord): string {
@@ -116,10 +151,27 @@ export function extractIdentificacion(obj: JsonRecord) {
 }
 
 export function extractEmisor(obj: JsonRecord) {
-  const emisor = asRecord(obj.emisor);
+  const emisor = extractParty(asRecord(obj.emisor));
   return {
-    nit: asString(emisor.nit),
-    nrc: asString(emisor.nrc),
-    nombre: asString(emisor.nombre).toUpperCase(),
+    nit: emisor.nit,
+    nrc: emisor.nrc,
+    nombre: emisor.nombre,
+  };
+}
+
+export function extractEmisorFull(obj: JsonRecord): PartyFields {
+  return extractParty(asRecord(obj.emisor));
+}
+
+export function extractLibroParties(obj: JsonRecord) {
+  const emisor = extractEmisorFull(obj);
+  const receptor = extractReceptorFull(obj);
+  return {
+    EmisorNIT: emisor.nit,
+    EmisorNRC: emisor.nrc,
+    EmisorNombre: emisor.nombre,
+    ReceptorNIT: receptor.nit,
+    ReceptorNRC: receptor.nrc,
+    ReceptorNombre: receptor.nombre,
   };
 }

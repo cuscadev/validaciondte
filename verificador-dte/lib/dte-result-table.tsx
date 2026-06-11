@@ -21,6 +21,25 @@ export type DteResultRow = {
   codigoGeneracion?: string;
   selloRecepcion?: string;
   numeroControl?: string;
+  emisorNit?: string;
+  emisorNrc?: string;
+  emisorNombre?: string;
+  emisorCodActividad?: string;
+  emisorDescActividad?: string;
+  emisorNombreComercial?: string;
+  emisorTelefono?: string;
+  emisorCorreo?: string;
+  receptorNit?: string;
+  receptorNrc?: string;
+  receptorNombre?: string;
+  receptorCodActividad?: string;
+  receptorDescActividad?: string;
+  receptorNombreComercial?: string;
+  receptorTelefono?: string;
+  receptorCorreo?: string;
+  receptorDepartamento?: string;
+  receptorMunicipio?: string;
+  receptorComplemento?: string;
   montoTotal?: string;
   montoTotalOperacion?: string;
   ivaOperaciones?: string;
@@ -59,6 +78,12 @@ export const DTE_RESULT_COLUMNS = [
   { key: 'fechaHoraGeneracion', label: 'Fecha Generación' },
   { key: 'fechaHoraTransmision', label: 'Fecha Transmisión' },
   { key: 'numeroControl', label: 'N° Control' },
+  { key: 'emisorNit', label: 'Emisor NIT' },
+  { key: 'emisorNrc', label: 'Emisor NRC' },
+  { key: 'emisorNombre', label: 'Emisor' },
+  { key: 'receptorNit', label: 'Receptor NIT' },
+  { key: 'receptorNrc', label: 'Receptor NRC' },
+  { key: 'receptorNombre', label: 'Receptor' },
   { key: 'montoTotal', label: 'Monto Total' },
   { key: 'montoTotalOperacion', label: 'Monto Total Operación' },
   { key: 'ivaOperaciones', label: 'IVA Operaciones' },
@@ -112,6 +137,12 @@ export function dteResultSearchFields(r: DteResultRow): string[] {
     r.inconsistenciasCodigos,
     r.tipoDte,
     r.numeroControl,
+    r.emisorNit,
+    r.emisorNrc,
+    r.emisorNombre,
+    r.receptorNit,
+    r.receptorNrc,
+    r.receptorNombre,
     r.montoTotal,
     r.montoTotalOperacion,
     r.fechaHoraGeneracion,

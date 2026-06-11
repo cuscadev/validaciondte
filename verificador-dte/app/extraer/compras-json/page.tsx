@@ -20,6 +20,7 @@ import { summarizeDteUploadResults } from '@/lib/upload-dte-stats'
 import {
   extractEmisor,
   extractIdentificacion,
+  extractLibroParties,
   extractResumenMontos,
   extractSelloFromJson,
 } from '@/lib/dte-json-fields'
@@ -37,6 +38,12 @@ type CompraResultado = {
   NumeroControl: string
   Fecha: string
   FechaISO: string
+  EmisorNIT: string
+  EmisorNRC: string
+  EmisorNombre: string
+  ReceptorNIT: string
+  ReceptorNRC: string
+  ReceptorNombre: string
   NIT: string
   NRC: string
   Contribuyente: string
@@ -101,6 +108,7 @@ export default function ComprasJsonPage() {
 
       const identificacion = extractIdentificacion(obj)
       const emisor = extractEmisor(obj)
+      const parties = extractLibroParties(obj)
       const montos = extractResumenMontos(obj)
       const selloRecibido = extractSelloFromJson(obj)
 
@@ -112,6 +120,12 @@ export default function ComprasJsonPage() {
         NumeroControl: identificacion.numeroControl,
         Fecha: formatDate(fechaISO),
         FechaISO: fechaISO,
+        EmisorNIT: parties.EmisorNIT,
+        EmisorNRC: parties.EmisorNRC,
+        EmisorNombre: parties.EmisorNombre,
+        ReceptorNIT: parties.ReceptorNIT,
+        ReceptorNRC: parties.ReceptorNRC,
+        ReceptorNombre: parties.ReceptorNombre,
         NIT: emisor.nit,
         NRC: emisor.nrc,
         Contribuyente: emisor.nombre,
@@ -132,6 +146,12 @@ export default function ComprasJsonPage() {
         NumeroControl: '',
         Fecha: '',
         FechaISO: '',
+        EmisorNIT: '',
+        EmisorNRC: '',
+        EmisorNombre: '',
+        ReceptorNIT: '',
+        ReceptorNRC: '',
+        ReceptorNombre: '',
         NIT: '',
         NRC: '',
         Contribuyente: '',
@@ -218,13 +238,13 @@ export default function ComprasJsonPage() {
         TotalPagar: number
         Registros: number
       }>>((acc, row) => {
-        const key = row.NRC || row.NIT || row.Contribuyente || 'SIN PROVEEDOR'
+        const key = row.EmisorNRC || row.EmisorNIT || row.EmisorNombre || 'SIN PROVEEDOR'
 
         if (!acc[key]) {
           acc[key] = {
-            NIT: row.NIT,
-            NRC: row.NRC,
-            Contribuyente: row.Contribuyente,
+            NIT: row.EmisorNIT,
+            NRC: row.EmisorNRC,
+            Contribuyente: row.EmisorNombre,
             Exenta: 0,
             MontoGravado: 0,
             IVA: 0,
@@ -346,9 +366,12 @@ export default function ComprasJsonPage() {
         { key: 'Generacion', label: 'Código Generación' },
         { key: 'NumeroControl', label: 'N° Control' },
         { key: 'Fecha', label: 'Fecha' },
-        { key: 'NIT', label: 'NIT' },
-        { key: 'NRC', label: 'NRC' },
-        { key: 'Contribuyente', label: 'Contribuyente' },
+        { key: 'EmisorNIT', label: 'Emisor NIT' },
+        { key: 'EmisorNRC', label: 'Emisor NRC' },
+        { key: 'EmisorNombre', label: 'Emisor' },
+        { key: 'ReceptorNIT', label: 'Receptor NIT' },
+        { key: 'ReceptorNRC', label: 'Receptor NRC' },
+        { key: 'ReceptorNombre', label: 'Receptor' },
         { key: 'TipoDte', label: 'Tipo DTE' },
         { key: 'TipoDocumento', label: 'Documento' },
         { key: 'Exenta', label: 'Exenta' },
@@ -371,9 +394,12 @@ export default function ComprasJsonPage() {
         r.Generacion,
         r.NumeroControl,
         r.Fecha,
-        r.NIT,
-        r.NRC,
-        r.Contribuyente,
+        r.EmisorNIT,
+        r.EmisorNRC,
+        r.EmisorNombre,
+        r.ReceptorNIT,
+        r.ReceptorNRC,
+        r.ReceptorNombre,
         r.TipoDte,
         r.TipoDocumento,
         r.SelloRecibido,
