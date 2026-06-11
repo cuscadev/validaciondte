@@ -603,25 +603,25 @@ function VerificadorQrContent() {
           </p>
         </div>
 
-        <div className="grid gap-4 p-4 xl:grid-cols-2">
+        <div className="grid min-w-0 gap-4 p-3 sm:p-4 xl:grid-cols-2">
           <section
             className={cn(
-              'rounded-xl border border-slate-200 p-4 dark:border-white/10',
+              'min-w-0 rounded-xl border border-slate-200 p-3 dark:border-white/10 sm:p-4',
               cameraExpanded && 'xl:col-span-2'
             )}
           >
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
                 <QrCode className="size-5 text-amber-500" />
                 <h2 className="font-semibold">Camara</h2>
               </div>
-              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+              <label className="flex min-w-0 flex-col gap-1 text-sm text-muted-foreground sm:flex-row sm:items-center sm:gap-2">
                 Camara
                 <select
                   value={selectedCameraId}
                   onChange={(event) => handleCameraChange(event.target.value)}
                   disabled={cameras.length <= 1 || cameraPermission === 'requesting'}
-                  className="rounded-md border border-slate-200 bg-background px-2 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10"
+                  className="w-full min-w-0 rounded-md border border-slate-200 bg-background px-2 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 sm:w-auto sm:max-w-[16rem]"
                 >
                   {cameras.length ? (
                     cameras.map((camera, index) => (
@@ -698,7 +698,7 @@ function VerificadorQrContent() {
                 className={cn(
                   'w-full object-cover',
                   cameraExpanded
-                    ? 'h-[68vh] min-h-[420px]'
+                    ? 'h-[72svh] min-h-[320px] sm:h-[68vh] sm:min-h-[420px]'
                     : 'aspect-video',
                   showCameraPlaceholder && 'opacity-30'
                 )}
@@ -709,13 +709,13 @@ function VerificadorQrContent() {
               <p className="mt-3 text-sm text-red-600 dark:text-red-400">{scanError}</p>
             )}
 
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               {cameraPermission !== 'granted' || !isScanning ? (
                 <Button
                   type="button"
                   onClick={() => void requestPermissionAndScan()}
                   disabled={cameraPermission === 'requesting'}
-                  className="gap-2"
+                  className="w-full gap-2 sm:w-auto"
                 >
                   {cameraPermission === 'requesting' ? (
                     <Loader2 className="size-4 animate-spin" />
@@ -732,7 +732,7 @@ function VerificadorQrContent() {
                   type="button"
                   variant="destructive"
                   onClick={stopScanning}
-                  className="gap-2"
+                  className="w-full gap-2 sm:w-auto"
                 >
                   <CameraOff className="size-4" />
                   Detener camara
@@ -748,7 +748,7 @@ function VerificadorQrContent() {
             )}
           </section>
 
-          <section className="rounded-xl border border-slate-200 p-4 dark:border-white/10">
+          <section className="min-w-0 rounded-xl border border-slate-200 p-3 dark:border-white/10 sm:p-4">
             <div className="mb-4 space-y-3">
               <div>
                 <h2 className="font-semibold">Pendientes ({pendingScans.length})</h2>
@@ -805,7 +805,7 @@ function VerificadorQrContent() {
                       highlightedScanId === item.id && 'ring-2 ring-amber-400 dark:ring-yellow-400'
                     )}
                   >
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-start justify-between gap-3">
                       <div className="min-w-0 flex-1 space-y-1">
                         <div className="flex items-center gap-2">
                           <span className="rounded-md bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:text-yellow-300">
@@ -845,6 +845,7 @@ function VerificadorQrContent() {
 
       <UploadResultsReveal visible={resultsVisible}>
         <UploadTableToolbar
+          className="min-w-0"
           resultCount={{ filtered: filtered.length, total: data.length }}
           export={{
             excel: {
@@ -898,7 +899,33 @@ function VerificadorQrContent() {
         />
 
         <div className="mt-4 overflow-hidden rounded-md border border-slate-200 dark:border-white/10">
-          <div className="max-h-[60vh] overflow-auto">
+          <div className="divide-y md:hidden">
+            {paginatedData.length === 0 ? (
+              <div className="p-6 text-center text-sm text-muted-foreground">
+                {loading ? 'Verificando...' : 'Sin resultados'}
+              </div>
+            ) : (
+              paginatedData.map((row, index) => (
+                <article
+                  key={row.codGen || row.codigoGeneracion || index}
+                  className="space-y-2 p-3 text-sm"
+                >
+                  {DTE_RESULT_COLUMNS.map((col) => (
+                    <div key={col.key} className="min-w-0">
+                      <p className="text-[11px] font-medium uppercase text-muted-foreground">
+                        {col.label}
+                      </p>
+                      <div className="break-words text-foreground">
+                        {renderDteResultCell(col.key, row)}
+                      </div>
+                    </div>
+                  ))}
+                </article>
+              ))
+            )}
+          </div>
+
+          <div className="hidden max-h-[60vh] overflow-auto md:block">
             <table className="w-full text-sm">
               <thead className="sticky top-0 z-10 bg-slate-100 text-slate-950 dark:bg-zinc-900 dark:text-zinc-100">
                 <tr>
@@ -942,11 +969,11 @@ function VerificadorQrContent() {
             </table>
           </div>
 
-          <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-black sm:flex-row">
+          <div className="flex flex-col items-stretch justify-between gap-3 border-t border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-black sm:flex-row sm:items-center">
             <span className="text-sm text-muted-foreground">
               Pagina {currentPage} de {totalPages}
             </span>
-            <div className="flex items-center gap-2">
+            <div className="grid grid-cols-4 gap-2 sm:flex sm:items-center">
               <Button
                 variant="outline"
                 size="sm"

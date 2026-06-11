@@ -38,7 +38,7 @@ export default function AppBreadcrumb() {
 
           return (
             <Fragment key={`${segment.label}-${index}`}>
-              <BreadcrumbItem className="max-w-[12rem] truncate sm:max-w-none">
+              <BreadcrumbItem className="max-w-[7rem] truncate sm:max-w-[12rem] md:max-w-none">
                 {isLast || !segment.href ? (
                   <BreadcrumbPage className="truncate">{segment.label}</BreadcrumbPage>
                 ) : (

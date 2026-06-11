@@ -252,7 +252,7 @@ function ProtectedAppShellContent({ children }: { children: React.ReactNode }) {
           ].join(' ')}
         >
           <div className="sticky top-0 z-20 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-            <div className="flex items-center gap-2 px-3 py-2">
+            <div className="flex min-w-0 items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3">
               <button
                 type="button"
                 onClick={() => setMobileSidebarOpen((value) => !value)}
@@ -280,14 +280,14 @@ function ProtectedAppShellContent({ children }: { children: React.ReactNode }) {
                 )}
               </button>
               <AppBreadcrumb />
-              <div className="ml-auto flex shrink-0 items-center gap-2">
+              <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
                 <LanguageSwitcher />
                 <Navbar onToggleSidebar={toggleSidebar} />
               </div>
             </div>
           </div>
 
-          <div className="p-4">{children}</div>
+          <div className="min-w-0 p-3 sm:p-4">{children}</div>
         </main>
       </div>
       </TooltipProvider>

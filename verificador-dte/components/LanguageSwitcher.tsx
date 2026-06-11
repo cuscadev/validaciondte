@@ -22,8 +22,8 @@ export default function LanguageSwitcher() {
   };
 
   return (
-    <div className="inline-flex items-center gap-2">
-      <Languages className="h-4 w-4 text-muted-foreground" aria-hidden />
+    <div className="inline-flex items-center gap-1 sm:gap-2">
+      <Languages className="hidden h-4 w-4 text-muted-foreground sm:block" aria-hidden />
       <span className="sr-only">{t('common.language')}</span>
       <div className="inline-flex rounded-xl border border-transparent bg-transparent p-1 shadow-none transition-all duration-300">
         {languageOptions.map((option) => {
@@ -34,7 +34,7 @@ export default function LanguageSwitcher() {
               type="button"
               variant={active ? 'secondary' : 'ghost'}
               size="sm"
-              className={`h-7 px-3 font-semibold relative transition-all duration-300 focus-visible:ring-2 focus-visible:ring-primary focus-visible:z-10 ${
+              className={`h-7 px-2 text-xs font-semibold relative transition-all duration-300 focus-visible:ring-2 focus-visible:ring-primary focus-visible:z-10 sm:px-3 sm:text-sm ${
                 active
                   ? 'bg-primary text-primary-foreground shadow-lg scale-105 border border-primary'
                   : 'hover:bg-muted hover:text-primary/90'

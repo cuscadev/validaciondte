@@ -36,7 +36,7 @@ export default function UploadTableToolbar({
           className
         )}
       >
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="min-w-0 text-sm text-muted-foreground">
           <span className="hidden sm:inline">Resultados:</span>
           <span className="font-medium text-foreground">{resultCount.filtered}</span>
           {resultCount.total !== undefined && resultCount.filtered !== resultCount.total && (
@@ -44,12 +44,13 @@ export default function UploadTableToolbar({
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          <UploadTableExportBar {...exportProps} />
+        <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2 sm:flex sm:items-center">
+          <UploadTableExportBar {...exportProps} className="w-full sm:w-auto" />
           {filters && (
             <UploadTableFilterButton
               onClick={() => setFiltersOpen(true)}
               activeCount={filters.activeCount}
+              className="w-full sm:w-auto"
             />
           )}
         </div>

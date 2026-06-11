@@ -63,7 +63,7 @@ export default function Navbar({ onToggleSidebar }: { onToggleSidebar: () => voi
       </button>
 
       {/* Campana de notificaciones */}
-      <div className="relative ml-3" ref={bellRef}>
+      <div className="relative ml-1 sm:ml-3" ref={bellRef}>
         <button
           onClick={() => setBellOpen(o => !o)}
           className="relative rounded-full bg-zinc-200 dark:bg-zinc-800 p-2 flex items-center justify-center hover:bg-zinc-300 dark:hover:bg-zinc-700"
@@ -77,7 +77,7 @@ export default function Navbar({ onToggleSidebar }: { onToggleSidebar: () => voi
         </button>
 
         {bellOpen && (
-          <div className="absolute right-0 mt-2 w-80 rounded-xl border bg-background shadow-xl z-50 overflow-hidden">
+          <div className="absolute right-0 z-50 mt-2 w-[calc(100vw-1rem)] max-w-80 overflow-hidden rounded-xl border bg-background shadow-xl">
             <div className="flex items-center justify-between px-4 py-3 border-b">
               <span className="font-semibold text-sm">
                 Notificaciones {unread.length > 0 && <span className="text-red-500">({unread.length})</span>}
