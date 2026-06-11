@@ -31,3 +31,42 @@ export function mapGmailCallbackError(error: unknown): string {
   if (message.length <= 120 && !message.includes('http')) return message;
   return 'oauth_failed';
 }
+
+export function getGmailPublicErrorMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || '');
+
+  if (message === 'No autorizado') return 'No autorizado';
+  if (message.includes('Sin organizaci')) return 'Sin organizacion asignada.';
+
+  if (
+    message.includes('GOOGLE_CLIENT_ID') ||
+    message.includes('GOOGLE_CLIENT_SECRET') ||
+    message.includes('Google OAuth no configurado')
+  ) {
+    return GMAIL_OAUTH_ERROR_MESSAGES.oauth_not_configured;
+  }
+
+  if (
+    message.includes('Gmail API has not been used') ||
+    message.includes('gmail.googleapis.com') ||
+    message.includes('accessNotConfigured')
+  ) {
+    return GMAIL_OAUTH_ERROR_MESSAGES.gmail_api_disabled;
+  }
+
+  if (message.includes('invalid_grant')) {
+    return 'Google revoco o expiro el permiso. Desconecta Gmail y vuelve a conectarlo.';
+  }
+
+  if (
+    message.includes('FIREBASE_') ||
+    message.includes('FIREBASE_SERVICE_ACCOUNT_JSON') ||
+    message.includes('Missing required environment variable')
+  ) {
+    return 'Falta configurar Firebase Admin en Vercel para guardar los documentos Gmail.';
+  }
+
+  if (message.length <= 180 && !message.includes('http')) return message;
+
+  return 'No se pudo completar la solicitud de Gmail. Revisa los logs del deployment en Vercel.';
+}

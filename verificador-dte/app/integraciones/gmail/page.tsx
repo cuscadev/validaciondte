@@ -18,7 +18,7 @@ import { Progress } from '@/components/ui/progress';
 import { auth } from '@/lib/firebase';
 import { GMAIL_OAUTH_ERROR_MESSAGES } from '@/lib/gmail/callback-errors';
 import type { GmailJsonVerifyResult } from '@/lib/gmail/json-verify-result';
-import type { GmailDocumentRow } from '@/lib/supabase-admin';
+import type { GmailDocumentRow } from '@/lib/gmail/types';
 
 type GmailStatus = {
   connected: boolean;

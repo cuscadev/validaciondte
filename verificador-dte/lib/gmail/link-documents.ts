@@ -1,8 +1,4 @@
-import type { GmailDocumentLinkType } from '@/lib/supabase-admin';
-import {
-  listImportedDocumentsForOrg,
-  upsertDocumentLink,
-} from '@/lib/gmail/db';
+import type { GmailDocumentLinkType } from '@/lib/gmail/types';
 
 const INVOICE_TIPOS = new Set(['01', '03', '11', '14']);
 const NC_TIPO = '05';
@@ -99,6 +95,9 @@ export function computeDocumentLinkPairs(documents: LinkPairInput[]): LinkPair[]
 }
 
 export async function rebuildDocumentLinks(organizationId: string) {
+  const { listImportedDocumentsForOrg, upsertDocumentLink } = await import(
+    '@/lib/gmail/firebase-db'
+  );
   const documents = await listImportedDocumentsForOrg(organizationId);
   const pairs = computeDocumentLinkPairs(
     documents.map((doc) => ({

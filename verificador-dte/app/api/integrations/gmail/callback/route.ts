@@ -3,7 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { resolveReturnOrigin } from '@/lib/app-origin';
 import { fetchGoogleEmailFromOAuth } from '@/lib/gmail/client';
 import { mapGmailCallbackError } from '@/lib/gmail/callback-errors';
-import { getActiveConnection, updateConnectionAfterOAuth, upsertConnection } from '@/lib/gmail/db';
+import {
+  getActiveConnection,
+  updateConnectionAfterOAuth,
+  upsertConnection,
+} from '@/lib/gmail/firebase-db';
 import {
   createOAuth2Client,
   exchangeCodeForTokens,

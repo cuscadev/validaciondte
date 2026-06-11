@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { verifyGmailDocumentsFromStorage } from '@/lib/gmail/verify-json-from-storage';
 import { requireOrgMember } from '@/lib/server-auth';
-import { getPublicServiceErrorMessage } from '@/lib/supabase-admin';
+import { getGmailPublicErrorMessage } from '@/lib/gmail/callback-errors';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ resultados, processedCount });
   } catch (error) {
-    const message = getPublicServiceErrorMessage(error);
+    const message = getGmailPublicErrorMessage(error);
     console.error('[gmail/documents/verify-json]', error);
     const status = message === 'No autorizado' ? 401 : 500;
     return NextResponse.json({ error: message }, { status });

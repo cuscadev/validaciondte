@@ -1,13 +1,17 @@
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 
-import { adminDb } from '@/lib/firebase-admin';
+import { adminDb, adminStorage } from '@/lib/firebase-admin';
 import type { GmailAttachmentRef } from '@/lib/gmail/client';
 import type { ParsedDteImport } from '@/lib/gmail/parse-dte-import';
+import { GMAIL_SCOPES } from '@/lib/gmail/oauth';
+import { encryptSecret } from '@/lib/gmail/token-crypto';
 import type {
+  GmailConnectionRow,
   GmailDocumentImportStatus,
   GmailDocumentLinkRow,
   GmailDocumentRow,
-} from '@/lib/supabase-admin';
+  GmailSyncJobRow,
+} from '@/lib/gmail/types';
 
 type JsonRecord = Record<string, unknown>;
 
@@ -35,6 +39,17 @@ function documentsCollection(organizationId: string) {
     .collection('gmail_documents');
 }
 
+function connectionsCollection() {
+  return adminDb.collection('gmail_connections');
+}
+
+function jobsCollection(organizationId: string) {
+  return adminDb
+    .collection('organizations')
+    .doc(organizationId)
+    .collection('gmail_sync_jobs');
+}
+
 function linksCollection(organizationId: string) {
   return adminDb
     .collection('organizations')
@@ -52,6 +67,193 @@ function asIso(value: unknown): string | null {
 
 function asStringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.map(String).filter(Boolean) : [];
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function mapConnectionSnapshot(
+  snapshot: FirebaseFirestore.DocumentSnapshot
+): GmailConnectionRow {
+  const data = (snapshot.data() || {}) as JsonRecord;
+  return {
+    id: snapshot.id,
+    organization_id: String(data.organization_id || snapshot.id),
+    google_email: String(data.google_email || ''),
+    refresh_token_enc: String(data.refresh_token_enc || ''),
+    access_token: data.access_token ? String(data.access_token) : null,
+    token_expires_at: asIso(data.token_expires_at),
+    connected_by_uid: String(data.connected_by_uid || ''),
+    scopes: asStringArray(data.scopes),
+    created_at: asIso(data.created_at) || nowIso(),
+    updated_at: asIso(data.updated_at) || nowIso(),
+    revoked_at: asIso(data.revoked_at),
+  };
+}
+
+function mapJobSnapshot(snapshot: FirebaseFirestore.DocumentSnapshot): GmailSyncJobRow {
+  const data = (snapshot.data() || {}) as JsonRecord;
+  return {
+    id: snapshot.id,
+    organization_id: String(data.organization_id || ''),
+    connection_id: String(data.connection_id || ''),
+    date_from: String(data.date_from || ''),
+    date_to: String(data.date_to || ''),
+    status: String(data.status || 'running') as GmailSyncJobRow['status'],
+    found_count: Number(data.found_count || 0),
+    imported_count: Number(data.imported_count || 0),
+    skipped_count: Number(data.skipped_count || 0),
+    error_count: Number(data.error_count || 0),
+    cursor: data.cursor ? String(data.cursor) : null,
+    error_message: data.error_message ? String(data.error_message) : null,
+    created_by_uid: String(data.created_by_uid || ''),
+    created_at: asIso(data.created_at) || nowIso(),
+    started_at: asIso(data.started_at),
+    finished_at: asIso(data.finished_at),
+  };
+}
+
+export async function getActiveConnection(
+  organizationId: string
+): Promise<GmailConnectionRow | null> {
+  const snapshot = await connectionsCollection().doc(organizationId).get();
+  if (!snapshot.exists) return null;
+  const connection = mapConnectionSnapshot(snapshot);
+  return connection.revoked_at ? null : connection;
+}
+
+export async function upsertConnection(input: {
+  organizationId: string;
+  googleEmail: string;
+  refreshToken: string;
+  accessToken?: string | null;
+  tokenExpiresAt?: Date | null;
+  connectedByUid: string;
+}) {
+  const now = FieldValue.serverTimestamp();
+  const ref = connectionsCollection().doc(input.organizationId);
+  await ref.set(
+    {
+      organization_id: input.organizationId,
+      google_email: input.googleEmail,
+      refresh_token_enc: encryptSecret(input.refreshToken),
+      access_token: input.accessToken ?? null,
+      token_expires_at: input.tokenExpiresAt?.toISOString() ?? null,
+      connected_by_uid: input.connectedByUid,
+      scopes: GMAIL_SCOPES,
+      updated_at: now,
+      created_at: now,
+      revoked_at: null,
+    },
+    { merge: true }
+  );
+  return mapConnectionSnapshot(await ref.get());
+}
+
+export async function updateConnectionAfterOAuth(input: {
+  organizationId: string;
+  googleEmail: string;
+  accessToken?: string | null;
+  tokenExpiresAt?: Date | null;
+  connectedByUid: string;
+}) {
+  await connectionsCollection().doc(input.organizationId).set(
+    {
+      google_email: input.googleEmail,
+      access_token: input.accessToken ?? null,
+      token_expires_at: input.tokenExpiresAt?.toISOString() ?? null,
+      connected_by_uid: input.connectedByUid,
+      updated_at: FieldValue.serverTimestamp(),
+      revoked_at: null,
+    },
+    { merge: true }
+  );
+}
+
+export async function updateConnectionTokens(
+  connectionId: string,
+  accessToken: string,
+  tokenExpiresAt: Date | null
+) {
+  await connectionsCollection().doc(connectionId).set(
+    {
+      access_token: accessToken,
+      token_expires_at: tokenExpiresAt?.toISOString() ?? null,
+      updated_at: FieldValue.serverTimestamp(),
+    },
+    { merge: true }
+  );
+}
+
+export async function revokeConnection(organizationId: string) {
+  await connectionsCollection().doc(organizationId).set(
+    {
+      revoked_at: FieldValue.serverTimestamp(),
+      updated_at: FieldValue.serverTimestamp(),
+    },
+    { merge: true }
+  );
+}
+
+export async function createSyncJob(input: {
+  organizationId: string;
+  connectionId: string;
+  dateFrom: string;
+  dateTo: string;
+  createdByUid: string;
+}) {
+  const ref = jobsCollection(input.organizationId).doc();
+  await ref.set({
+    organization_id: input.organizationId,
+    connection_id: input.connectionId,
+    date_from: input.dateFrom,
+    date_to: input.dateTo,
+    status: 'running',
+    found_count: 0,
+    imported_count: 0,
+    skipped_count: 0,
+    error_count: 0,
+    cursor: null,
+    error_message: null,
+    created_by_uid: input.createdByUid,
+    created_at: FieldValue.serverTimestamp(),
+    started_at: FieldValue.serverTimestamp(),
+    finished_at: null,
+  });
+  return mapJobSnapshot(await ref.get());
+}
+
+export async function getSyncJob(
+  jobId: string,
+  organizationId: string
+): Promise<GmailSyncJobRow | null> {
+  const snapshot = await jobsCollection(organizationId).doc(jobId).get();
+  if (!snapshot.exists) return null;
+  return mapJobSnapshot(snapshot);
+}
+
+export async function updateSyncJob(
+  organizationId: string,
+  jobId: string,
+  patch: Partial<GmailSyncJobRow>
+) {
+  await jobsCollection(organizationId).doc(jobId).set(
+    {
+      ...patch,
+      updated_at: FieldValue.serverTimestamp(),
+    },
+    { merge: true }
+  );
+}
+
+export async function getLastSyncJob(organizationId: string) {
+  const snapshot = await jobsCollection(organizationId)
+    .orderBy('created_at', 'desc')
+    .limit(1)
+    .get();
+  if (snapshot.empty) return null;
+  return mapJobSnapshot(snapshot.docs[0]);
 }
 
 function parsedToDocumentFields(parsed: ParsedDteImport | null) {
@@ -186,7 +388,14 @@ export async function findDocumentByHash(organizationId: string, contentHash: st
 export async function recordDocument(input: RecordDocumentInput) {
   const meta = parsedToDocumentFields(input.parsed);
   const jsonData = parseJsonBuffer(input.buffer);
-  const storagePath = `firestore://organizations/${input.organizationId}/gmail_documents/${input.documentId}`;
+  const storagePath = `gmail/${input.organizationId}/${input.documentId}.json`;
+  await adminStorage.bucket().file(storagePath).save(input.buffer, {
+    contentType: 'application/json; charset=utf-8',
+    resumable: false,
+    metadata: {
+      cacheControl: 'private, max-age=0, no-transform',
+    },
+  });
 
   const row = {
     organization_id: input.organizationId,
@@ -209,7 +418,7 @@ export async function recordDocument(input: RecordDocumentInput) {
     email_to: input.ref.emailTo || [],
     email_cc: input.ref.emailCc || [],
     import_status: input.importStatus,
-    json_data: jsonData,
+    json_preview: jsonData && typeof jsonData === 'object' ? jsonData : null,
     updated_at: FieldValue.serverTimestamp(),
     created_at: FieldValue.serverTimestamp(),
     ...meta,
@@ -279,6 +488,19 @@ export async function listDocuments(input: {
   };
 }
 
+export async function listImportedDocumentsForOrg(
+  organizationId: string
+): Promise<GmailDocumentRow[]> {
+  const snapshot = await documentsCollection(organizationId)
+    .where('import_status', '==', 'imported')
+    .get();
+
+  return snapshot.docs.map((doc) => {
+    const { json_data, ...row } = mapDocumentSnapshot(doc);
+    return row;
+  });
+}
+
 export async function getDocumentsByIds(organizationId: string, ids: string[]) {
   const documents: FirebaseGmailDocumentRow[] = [];
   for (const id of ids) {
@@ -290,8 +512,9 @@ export async function getDocumentsByIds(organizationId: string, ids: string[]) {
 
 export async function downloadDocumentJson(documentId: string, organizationId: string) {
   const doc = await getDocumentById(documentId, organizationId);
-  if (!doc?.json_data) return null;
-  return Buffer.from(JSON.stringify(doc.json_data, null, 2), 'utf8');
+  if (!doc?.storage_path) return null;
+  const [buffer] = await adminStorage.bucket().file(doc.storage_path).download();
+  return buffer;
 }
 
 export async function getLinkedDocuments(
@@ -330,4 +553,24 @@ export async function getLinkedDocuments(
   }
 
   return { links, documents };
+}
+
+export async function upsertDocumentLink(input: {
+  organizationId: string;
+  sourceDocumentId: string;
+  targetDocumentId: string;
+  linkType: GmailDocumentLinkRow['link_type'];
+}) {
+  const id = `${input.sourceDocumentId}_${input.targetDocumentId}_${input.linkType}`;
+  await linksCollection(input.organizationId).doc(id).set(
+    {
+      organization_id: input.organizationId,
+      source_document_id: input.sourceDocumentId,
+      target_document_id: input.targetDocumentId,
+      document_ids: [input.sourceDocumentId, input.targetDocumentId],
+      link_type: input.linkType,
+      created_at: FieldValue.serverTimestamp(),
+    },
+    { merge: true }
+  );
 }

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDocumentById } from '@/lib/gmail/firebase-db';
 import { buildHaciendaPublicUrl } from '@/lib/gmail/hacienda-url';
 import { requireOrgMember } from '@/lib/server-auth';
-import { getPublicServiceErrorMessage } from '@/lib/supabase-admin';
+import { getGmailPublicErrorMessage } from '@/lib/gmail/callback-errors';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest, context: RouteContext) {
 
     return NextResponse.json({ document, jsonUrl, haciendaUrl });
   } catch (error) {
-    const message = getPublicServiceErrorMessage(error);
+    const message = getGmailPublicErrorMessage(error);
     console.error('[gmail/documents/id]', error);
     const status = message === 'No autorizado' ? 401 : 500;
     return NextResponse.json({ error: message }, { status });

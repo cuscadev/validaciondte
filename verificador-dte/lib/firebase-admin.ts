@@ -1,6 +1,7 @@
 import { initializeApp, cert, getApps, getApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
+import { getStorage } from 'firebase-admin/storage';
 
 interface FirebaseAdminCredentials {
   projectId: string;
@@ -108,10 +109,14 @@ const firebaseCredentials = getServiceAccountCredentials();
 const app = !getApps().length
   ? initializeApp({
       credential: cert(firebaseCredentials),
+      storageBucket:
+        process.env.FIREBASE_STORAGE_BUCKET?.trim() ||
+        process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET?.trim(),
     })
   : getApp();
 
 const adminDb = getFirestore(app);
 const adminAuth = getAuth(app);
+const adminStorage = getStorage(app);
 
-export { adminDb, adminAuth };
+export { adminDb, adminAuth, adminStorage };

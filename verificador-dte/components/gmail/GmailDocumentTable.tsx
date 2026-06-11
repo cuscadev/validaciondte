@@ -4,7 +4,7 @@ import { ExternalLink, FileJson, Link2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { buildHaciendaPublicUrl } from '@/lib/gmail/hacienda-url';
-import type { GmailDocumentRow } from '@/lib/supabase-admin';
+import type { GmailDocumentRow } from '@/lib/gmail/types';
 
 export const STATUS_LABELS: Record<string, string> = {
   imported: 'Importado',

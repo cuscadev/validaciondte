@@ -3,8 +3,8 @@ import { google, gmail_v1 } from 'googleapis';
 
 import { createOAuth2Client, refreshAccessToken } from '@/lib/gmail/oauth';
 import { decryptSecret } from '@/lib/gmail/token-crypto';
-import type { GmailConnectionRow } from '@/lib/supabase-admin';
-import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import type { GmailConnectionRow } from '@/lib/gmail/types';
+import { updateConnectionTokens } from '@/lib/gmail/firebase-db';
 import { isJsonAttachment } from '@/lib/gmail/parse-dte-json';
 
 export type GmailAttachmentRef = {
@@ -50,14 +50,7 @@ async function persistTokens(
   accessToken: string,
   expiresAt: Date | null
 ) {
-  await getSupabaseAdmin()
-    .from('google_gmail_connections')
-    .update({
-      access_token: accessToken,
-      token_expires_at: expiresAt?.toISOString() ?? null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', connectionId);
+  await updateConnectionTokens(connectionId, accessToken, expiresAt);
 }
 
 export async function getGmailClient(connection: GmailConnectionRow) {

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getSyncJob, listDocuments } from '@/lib/gmail/db';
+import { getSyncJob, listDocuments } from '@/lib/gmail/firebase-db';
 import { requireOrgAdmin } from '@/lib/server-auth';
-import { getPublicServiceErrorMessage } from '@/lib/supabase-admin';
+import { getGmailPublicErrorMessage } from '@/lib/gmail/callback-errors';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -30,7 +30,7 @@ export async function GET(req: NextRequest, context: Params) {
 
     return NextResponse.json({ job, documents, total });
   } catch (error) {
-    const message = getPublicServiceErrorMessage(error);
+    const message = getGmailPublicErrorMessage(error);
     console.error('[gmail/sync/job]', error);
     const status = message === 'No autorizado' ? 401 : 500;
     return NextResponse.json({ error: message }, { status });

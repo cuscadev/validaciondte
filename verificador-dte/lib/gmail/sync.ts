@@ -6,23 +6,20 @@ import {
   listMessageIds,
   sha256,
 } from '@/lib/gmail/client';
+import { rebuildDocumentLinks } from '@/lib/gmail/link-documents';
 import {
   createSyncJob,
-  getActiveConnection,
   getSyncJob,
   updateSyncJob,
-} from '@/lib/gmail/db';
+  getActiveConnection,
+} from '@/lib/gmail/firebase-db';
 import {
   findDocumentByHash,
   findDocumentByMessageAttachment,
   recordDocument,
 } from '@/lib/gmail/firebase-db';
-import {
-  isAllowedTipoDte,
-  isDateInRange,
-  parseDteForImport,
-} from '@/lib/gmail/parse-dte-import';
-import type { GmailDocumentRow, GmailSyncJobRow } from '@/lib/supabase-admin';
+import { isAllowedTipoDte, isDateInRange, parseDteForImport } from '@/lib/gmail/parse-dte-import';
+import type { GmailDocumentRow, GmailSyncJobRow } from '@/lib/gmail/types';
 import { randomUUID } from 'crypto';
 
 export type SyncBatchResult = {
@@ -167,7 +164,7 @@ export async function runSyncBatch(input: {
     }
 
     const completed = !nextPageToken;
-    await updateSyncJob(job.id, {
+    await updateSyncJob(input.organizationId, job.id, {
       status: completed ? 'completed' : 'running',
       cursor: nextPageToken,
       found_count: found,
@@ -176,6 +173,10 @@ export async function runSyncBatch(input: {
       error_count: errors,
       finished_at: completed ? new Date().toISOString() : null,
     });
+
+    if (completed) {
+      await rebuildDocumentLinks(input.organizationId);
+    }
 
     const refreshed = await getSyncJob(job.id, input.organizationId);
     return {
@@ -192,7 +193,7 @@ export async function runSyncBatch(input: {
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Error en sincronizacion';
-    await updateSyncJob(job.id, {
+    await updateSyncJob(input.organizationId, job.id, {
       status: 'failed',
       error_message: message,
       found_count: found,

@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { listDocuments } from '@/lib/gmail/db';
 import { runSyncBatch } from '@/lib/gmail/sync';
 import { requireOrgAdmin } from '@/lib/server-auth';
-import { getPublicServiceErrorMessage } from '@/lib/supabase-admin';
+import { getGmailPublicErrorMessage } from '@/lib/gmail/callback-errors';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -34,10 +33,7 @@ export async function POST(req: NextRequest) {
       batchDocuments: result.batchDocuments,
     });
   } catch (error) {
-    const rawMessage = error instanceof Error ? error.message : 'Error';
-    const message = rawMessage.includes('Gmail')
-      ? rawMessage
-      : getPublicServiceErrorMessage(error);
+    const message = getGmailPublicErrorMessage(error);
     console.error('[gmail/sync]', error);
     const status =
       message === 'No autorizado'

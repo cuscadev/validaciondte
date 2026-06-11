@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getActiveConnection, getLastSyncJob, revokeConnection } from '@/lib/gmail/db';
+import {
+  getActiveConnection,
+  getLastSyncJob,
+  revokeConnection,
+} from '@/lib/gmail/firebase-db';
 import { decryptSecret } from '@/lib/gmail/token-crypto';
 import { revokeRefreshToken } from '@/lib/gmail/oauth';
 import { requireOrgAdmin } from '@/lib/server-auth';
-import { getPublicServiceErrorMessage } from '@/lib/supabase-admin';
+import { getGmailPublicErrorMessage } from '@/lib/gmail/callback-errors';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -37,7 +41,7 @@ export async function GET(req: NextRequest) {
         : null,
     });
   } catch (error) {
-    const message = getPublicServiceErrorMessage(error);
+    const message = getGmailPublicErrorMessage(error);
     console.error('[gmail/status]', error);
     const status = message === 'No autorizado' ? 401 : 500;
     return NextResponse.json({ error: message }, { status });
@@ -64,7 +68,7 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    const message = getPublicServiceErrorMessage(error);
+    const message = getGmailPublicErrorMessage(error);
     console.error('[gmail/status]', error);
     const status = message === 'No autorizado' ? 401 : 500;
     return NextResponse.json({ error: message }, { status });

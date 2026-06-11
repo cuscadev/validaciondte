@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { downloadDocumentJson } from '@/lib/gmail/firebase-db';
 import { requireOrgMember } from '@/lib/server-auth';
-import { getPublicServiceErrorMessage } from '@/lib/supabase-admin';
+import { getGmailPublicErrorMessage } from '@/lib/gmail/callback-errors';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -22,14 +22,14 @@ export async function GET(req: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'JSON no encontrado.' }, { status: 404 });
     }
 
-    return new NextResponse(buffer, {
+    return new NextResponse(new Uint8Array(buffer), {
       headers: {
         'Content-Type': 'application/json; charset=utf-8',
         'Content-Disposition': `inline; filename="${id}.json"`,
       },
     });
   } catch (error) {
-    const message = getPublicServiceErrorMessage(error);
+    const message = getGmailPublicErrorMessage(error);
     console.error('[gmail/documents/raw]', error);
     const status = message === 'No autorizado' ? 401 : 500;
     return NextResponse.json({ error: message }, { status });
