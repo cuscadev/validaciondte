@@ -281,7 +281,9 @@ function ProtectedAppShellContent({ children }: { children: React.ReactNode }) {
               </button>
               <AppBreadcrumb />
               <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
-                <LanguageSwitcher />
+                <div className="hidden sm:block">
+                  <LanguageSwitcher />
+                </div>
                 <Navbar onToggleSidebar={toggleSidebar} />
               </div>
             </div>

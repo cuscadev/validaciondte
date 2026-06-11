@@ -57,7 +57,9 @@ export default function Navbar({ onToggleSidebar }: { onToggleSidebar: () => voi
     <>
       <button
         onClick={toggleTheme}
-        className="rounded-md p-2 text-sm bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700"
+        className="hidden rounded-md bg-zinc-200 p-2 text-sm hover:bg-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 sm:inline-flex"
+        aria-label={darkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+        title={darkMode ? 'Modo claro' : 'Modo oscuro'}
       >
         {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
       </button>
@@ -139,7 +141,7 @@ export default function Navbar({ onToggleSidebar }: { onToggleSidebar: () => voi
         )}
       </div>
 
-      <UserAvatarMenu />
+      <UserAvatarMenu darkMode={darkMode} onToggleTheme={toggleTheme} />
     </>
   );
 }

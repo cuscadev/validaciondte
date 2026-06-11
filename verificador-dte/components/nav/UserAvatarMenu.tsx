@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
-import { ChevronDown, LogOut, Settings, User, UserRound } from 'lucide-react';
+import { Check, ChevronDown, Languages, LogOut, Moon, Settings, Sun, User, UserRound } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { useAuth } from '@/components/AuthProvider';
@@ -16,9 +16,23 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { auth } from '@/lib/firebase';
+import type { SupportedLanguage } from '@/lib/i18n';
 
-export default function UserAvatarMenu() {
-  const { t } = useTranslation();
+const mobileLanguageOptions: Array<{ value: SupportedLanguage; labelKey: string }> = [
+  { value: 'es', labelKey: 'common.spanish' },
+  { value: 'en', labelKey: 'common.english' },
+];
+
+type UserAvatarMenuProps = {
+  darkMode?: boolean;
+  onToggleTheme?: () => void;
+};
+
+export default function UserAvatarMenu({
+  darkMode = false,
+  onToggleTheme,
+}: UserAvatarMenuProps) {
+  const { i18n, t } = useTranslation();
   const router = useRouter();
   const { firebaseUser, appUser } = useAuth();
 
@@ -36,13 +50,20 @@ export default function UserAvatarMenu() {
     router.push('/login');
   };
 
+  const changeLanguage = (language: SupportedLanguage) => {
+    if (i18n.language !== language) {
+      void i18n.changeLanguage(language);
+      window.localStorage.setItem('language', language);
+    }
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
           type="button"
           aria-label={`${t('common.account', 'Cuenta')}: ${displayName}`}
-          className="ml-4 flex max-w-[min(100%,12rem)] items-center gap-2 rounded-full border border-yellow-200 bg-yellow-50/40 py-1 pl-1 pr-2.5 transition-colors hover:border-yellow-300 hover:bg-yellow-50/70 dark:border-yellow-400/30 dark:bg-yellow-400/5 dark:hover:border-yellow-400/45 dark:hover:bg-yellow-400/10 sm:max-w-none sm:pr-3"
+          className="ml-1 flex max-w-[min(100%,12rem)] items-center gap-2 rounded-full border border-yellow-200 bg-yellow-50/40 py-1 pl-1 pr-1.5 transition-colors hover:border-yellow-300 hover:bg-yellow-50/70 dark:border-yellow-400/30 dark:bg-yellow-400/5 dark:hover:border-yellow-400/45 dark:hover:bg-yellow-400/10 sm:ml-4 sm:max-w-none sm:pr-3"
         >
           <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-yellow-200/80 bg-yellow-50 dark:border-yellow-400/25 dark:bg-zinc-800">
             {photoURL ? (
@@ -57,13 +78,13 @@ export default function UserAvatarMenu() {
               <User className="h-5 w-5 text-yellow-700 dark:text-yellow-300" />
             )}
           </span>
-          <span className="min-w-0 truncate text-sm font-medium text-zinc-900 dark:text-yellow-50">
+          <span className="hidden min-w-0 truncate text-sm font-medium text-zinc-900 dark:text-yellow-50 sm:block">
             {displayName}
           </span>
           <ChevronDown className="size-4 shrink-0 text-yellow-600/70 dark:text-yellow-400/70" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent align="end" className="w-[calc(100vw-1rem)] max-w-72 sm:w-56">
         <DropdownMenuLabel className="font-normal">
           <p className="truncate text-sm font-semibold">{displayName}</p>
           {email && (
@@ -85,6 +106,51 @@ export default function UserAvatarMenu() {
           <Settings className="mr-2 size-4" />
           {t('sidebar.configuracion', 'Configuración')}
         </DropdownMenuItem>
+        <div className="sm:hidden">
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={onToggleTheme}
+            disabled={!onToggleTheme}
+            className="cursor-pointer"
+          >
+            {darkMode ? (
+              <Sun className="mr-2 size-4" />
+            ) : (
+              <Moon className="mr-2 size-4" />
+            )}
+            {darkMode ? 'Modo claro' : 'Modo oscuro'}
+          </DropdownMenuItem>
+          <DropdownMenuLabel className="px-2 pb-1 pt-2 text-xs font-medium text-muted-foreground">
+            <span className="inline-flex items-center gap-2">
+              <Languages className="size-3.5" />
+              {t('common.language', 'Idioma')}
+            </span>
+          </DropdownMenuLabel>
+          <div className="grid grid-cols-2 gap-1 px-1 pb-1">
+            {mobileLanguageOptions.map((option) => {
+              const active =
+                i18n.resolvedLanguage === option.value || i18n.language === option.value;
+
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => changeLanguage(option.value)}
+                  className={[
+                    'flex items-center justify-center gap-1 rounded-sm px-2 py-2 text-sm font-medium transition-colors',
+                    active
+                      ? 'bg-primary text-primary-foreground'
+                      : 'hover:bg-accent hover:text-accent-foreground',
+                  ].join(' ')}
+                  aria-pressed={active}
+                >
+                  {option.value.toUpperCase()}
+                  {active && <Check className="size-3.5" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={handleLogout}
