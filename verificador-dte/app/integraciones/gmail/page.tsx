@@ -1,7 +1,18 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Loader2, Mail, ShieldCheck, Unplug, X } from 'lucide-react';
+import {
+  CalendarRange,
+  CheckCircle2,
+  FileStack,
+  Inbox,
+  Loader2,
+  Mail,
+  RefreshCw,
+  ShieldCheck,
+  Unplug,
+  X,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 import GmailDocumentFilters, {
@@ -11,7 +22,6 @@ import GmailDocumentTable, { STATUS_LABELS } from '@/components/gmail/GmailDocum
 import GmailJsonVerifyPanel from '@/components/gmail/GmailJsonVerifyPanel';
 import PlanGate from '@/components/PlanGate';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
@@ -82,6 +92,16 @@ function buildCatalogQuery(filters: GmailCatalogFilters) {
   if (filters.dateFrom) params.set('dateFrom', filters.dateFrom);
   if (filters.dateTo) params.set('dateTo', filters.dateTo);
   return params.toString();
+}
+
+function formatDateTime(value: string | null | undefined) {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString('es-SV', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
 }
 
 export default function GmailIntegracionPage() {
@@ -380,267 +400,400 @@ export default function GmailIntegracionPage() {
         )
     : 0;
 
+  const lastImported = status?.lastSync?.importedCount ?? job?.imported_count ?? 0;
+
   return (
     <PlanGate routeKey="integraciones-gmail">
-      <main className="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Importar DTE desde Gmail</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Conecta Gmail (solo lectura), importa adjuntos JSON de tipos tributarios relevantes
-            (01, 03, 05, 06, 11, 14) y verifica en Hacienda usando el mismo flujo que Verificar JSON.
-          </p>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Mail className="size-4" />
-              Conexion Gmail
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {loadingStatus ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="size-4 animate-spin" />
-                Cargando estado...
-              </div>
-            ) : status?.connected ? (
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm font-medium">{status.googleEmail}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Conectado · acceso de solo lectura a Gmail
-                  </p>
-                </div>
-                <Button type="button" variant="outline" onClick={disconnectGmail}>
-                  <Unplug className="mr-2 size-4" />
-                  Desconectar
-                </Button>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                <p className="text-sm text-muted-foreground">
-                  Aun no has autorizado el acceso a Gmail para esta organizacion.
+      <main className="min-h-screen bg-slate-50 text-slate-950 dark:bg-black dark:text-white">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 p-4 md:p-6">
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6 dark:border-white/10 dark:bg-zinc-950">
+            <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-start">
+              <div>
+                <p className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.24em] text-amber-600 dark:text-yellow-300">
+                  <Mail className="size-4" />
+                  Integracion Gmail
                 </p>
-                <div className="w-full space-y-2 sm:max-w-sm">
-                  <Label htmlFor="gmail-email">Correo Gmail</Label>
-                  <Input
-                    id="gmail-email"
-                    type="email"
-                    inputMode="email"
-                    placeholder="usuario@gmail.com"
-                    value={gmailEmail}
-                    onChange={(event) => setGmailEmail(event.target.value)}
-                  />
-                  <Button type="button" onClick={connectGmail} className="w-full sm:w-auto">
-                    Conectar Gmail
-                  </Button>
-                </div>
+                <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">
+                  Importar DTE desde correo
+                </h1>
+                <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600 md:text-base dark:text-zinc-300">
+                  Conecta Gmail con acceso de solo lectura, importa adjuntos JSON de tipos
+                  tributarios relevantes y verifica en Hacienda con el mismo flujo de Verificar
+                  JSON.
+                </p>
               </div>
-            )}
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Buscar e importar</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="date-from">Correo desde</Label>
-                <Input
-                  id="date-from"
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  disabled={!status?.connected || syncing}
+              <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[28rem]">
+                <MetricCard
+                  icon={CheckCircle2}
+                  label="Estado"
+                  value={status?.connected ? 'Conectado' : 'Pendiente'}
+                  accent={Boolean(status?.connected)}
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="date-to">Correo hasta</Label>
-                <Input
-                  id="date-to"
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  disabled={!status?.connected || syncing}
+                <MetricCard
+                  icon={FileStack}
+                  label="En catalogo"
+                  value={String(catalogTotal)}
+                />
+                <MetricCard
+                  icon={Inbox}
+                  label="Ultima importacion"
+                  value={String(lastImported)}
                 />
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Se buscan correos con adjuntos JSON. Solo se importan DTE 01, 03, 05, 06, 11 y 14;
-              otros tipos quedan como{' '}
-              <span className="font-medium">{STATUS_LABELS.skipped_unsupported_type}</span>.
-              Se filtra por <code className="text-[11px]">identificacion.fecEmi</code> dentro del
-              rango indicado.
-            </p>
-            <Button type="button" onClick={runSync} disabled={!status?.connected || syncing}>
-              {syncing ? (
-                <>
-                  <Loader2 className="mr-2 size-4 animate-spin" />
-                  Sincronizando...
-                </>
-              ) : (
-                'Buscar e importar'
-              )}
-            </Button>
+          </section>
 
-            {job && (
-              <div className="space-y-2 rounded-lg border border-border/60 bg-muted/20 p-3">
-                <div className="flex flex-wrap gap-3 text-sm">
-                  <span>
-                    Encontrados: <strong>{job.found_count}</strong>
-                  </span>
-                  <span>
-                    Importados: <strong>{job.imported_count}</strong>
-                  </span>
-                  <span>
-                    Omitidos: <strong>{job.skipped_count}</strong>
-                  </span>
-                  <span>
-                    Errores: <strong>{job.error_count}</strong>
-                  </span>
-                  <span className="text-muted-foreground">Estado: {job.status}</span>
-                </div>
-                <Progress value={progressValue} />
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {status?.connected && (
-          <Card>
-            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <CardTitle className="text-base">Catalogo de DTE importados</CardTitle>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {catalogTotal} documento(s)
-                  {job ? ` · ultimo sync ${job.date_from} — ${job.date_to}` : ''}
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={loadingCatalog}
-                  onClick={() => void loadCatalog()}
-                >
-                  {loadingCatalog ? (
-                    <Loader2 className="mr-2 size-4 animate-spin" />
-                  ) : null}
-                  Actualizar
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  disabled={!selectedIds.size || verifyLoading}
-                  onClick={() => void verifySelected()}
-                >
-                  {verifyLoading ? (
-                    <Loader2 className="mr-2 size-4 animate-spin" />
+          <section className="grid gap-5 xl:grid-cols-[22rem_minmax(0,1fr)]">
+            <div className="space-y-5">
+              <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-950">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <h2 className="text-lg font-bold">Cuenta Gmail</h2>
+                  {status?.connected ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200">
+                      <span className="size-2 rounded-full bg-emerald-500" />
+                      Activa
+                    </span>
                   ) : (
-                    <ShieldCheck className="mr-2 size-4" />
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:bg-zinc-800 dark:text-zinc-300">
+                      Sin conectar
+                    </span>
                   )}
-                  Verificar JSON ({selectedIds.size})
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <GmailDocumentFilters
-                filters={catalogFilters}
-                onChange={(patch) => setCatalogFilters((prev) => ({ ...prev, ...patch }))}
-                disabled={loadingCatalog}
-              />
-
-              {loadingCatalog && !catalog.length ? (
-                <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
-                  <Loader2 className="size-4 animate-spin" />
-                  Cargando catalogo...
                 </div>
-              ) : catalog.length ? (
-                <GmailDocumentTable
-                  documents={catalog}
-                  selectedIds={selectedIds}
-                  onToggleSelect={toggleSelect}
-                  onToggleAll={toggleAll}
-                  onViewLinks={(doc) => void viewLinks(doc)}
-                  onViewJson={(doc) => void viewJson(doc)}
-                />
-              ) : (
-                <p className="py-6 text-sm text-muted-foreground">
-                  No hay documentos importados con estos filtros. Ejecuta una sincronizacion o
-                  amplia el rango de fechas.
-                </p>
-              )}
 
-              <GmailJsonVerifyPanel
-                results={verifyResults}
-                downloadHref={verifyDownloadHref}
-                filename={verifyFilename}
-                loading={verifyLoading}
-              />
-
-              {linkedPreview && (
-                <div className="rounded-lg border border-border/60 bg-muted/10 p-4">
-                  <div className="mb-3 flex items-start justify-between gap-2">
-                    <div>
-                      <p className="text-sm font-medium">Documentos relacionados</p>
-                      <p className="text-xs text-muted-foreground">
-                        {linkedPreview.doc.tipo_dte_label} ·{' '}
-                        {linkedPreview.doc.codigo_generacion}
+                {loadingStatus ? (
+                  <div className="flex items-center gap-2 py-6 text-sm text-slate-500">
+                    <Loader2 className="size-4 animate-spin" />
+                    Cargando estado...
+                  </div>
+                ) : status?.connected ? (
+                  <div className="space-y-4">
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/20">
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                        {status.googleEmail}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-600 dark:text-zinc-300">
+                        Conectado el {formatDateTime(status.connectedAt)}
+                      </p>
+                      <p className="mt-3 text-xs leading-5 text-slate-600 dark:text-zinc-400">
+                        Acceso de solo lectura. No enviamos ni modificamos correos.
                       </p>
                     </div>
                     <Button
                       type="button"
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => setLinkedPreview(null)}
-                      aria-label="Cerrar panel"
+                      variant="outline"
+                      className="w-full"
+                      onClick={disconnectGmail}
                     >
-                      <X className="size-4" />
+                      <Unplug className="mr-2 size-4" />
+                      Desconectar cuenta
                     </Button>
                   </div>
-                  {loadingLinks ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : linkedPreview.documents.length ? (
-                    <ul className="space-y-2 text-sm">
-                      {linkedPreview.documents.map((rel) => (
-                        <li
-                          key={rel.id}
-                          className="flex flex-wrap items-center justify-between gap-2 rounded border border-border/40 px-3 py-2"
-                        >
+                ) : (
+                  <div className="space-y-4">
+                    <p className="text-sm leading-6 text-slate-600 dark:text-zinc-300">
+                      Autoriza una cuenta Gmail de la organizacion para buscar adjuntos JSON de
+                      DTE en el buzon.
+                    </p>
+                    <div className="space-y-2">
+                      <Label htmlFor="gmail-email">Correo Gmail</Label>
+                      <Input
+                        id="gmail-email"
+                        type="email"
+                        inputMode="email"
+                        className="h-11"
+                        placeholder="usuario@gmail.com"
+                        value={gmailEmail}
+                        onChange={(event) => setGmailEmail(event.target.value)}
+                      />
+                    </div>
+                    <Button type="button" className="h-11 w-full" onClick={connectGmail}>
+                      <Mail className="mr-2 size-4" />
+                      Conectar Gmail
+                    </Button>
+                  </div>
+                )}
+              </section>
+
+              <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-950">
+                <div className="mb-4 flex items-center gap-2">
+                  <CalendarRange className="size-4 text-amber-600 dark:text-yellow-300" />
+                  <h2 className="text-lg font-bold">Sincronizacion</h2>
+                </div>
+
+                <div className="grid gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="date-from">Correos desde</Label>
+                    <Input
+                      id="date-from"
+                      type="date"
+                      className="h-11"
+                      value={dateFrom}
+                      onChange={(e) => setDateFrom(e.target.value)}
+                      disabled={!status?.connected || syncing}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="date-to">Correos hasta</Label>
+                    <Input
+                      id="date-to"
+                      type="date"
+                      className="h-11"
+                      value={dateTo}
+                      onChange={(e) => setDateTo(e.target.value)}
+                      disabled={!status?.connected || syncing}
+                    />
+                  </div>
+                </div>
+
+                <p className="mt-4 text-xs leading-5 text-slate-500 dark:text-zinc-400">
+                  Se buscan adjuntos JSON en correos del rango. Solo se importan DTE 01, 03, 05,
+                  06, 11 y 14. Otros tipos quedan como{' '}
+                  <span className="font-medium">{STATUS_LABELS.skipped_unsupported_type}</span>.
+                </p>
+
+                <Button
+                  type="button"
+                  className="mt-4 h-11 w-full"
+                  onClick={runSync}
+                  disabled={!status?.connected || syncing}
+                >
+                  {syncing ? (
+                    <>
+                      <Loader2 className="mr-2 size-4 animate-spin" />
+                      Sincronizando...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="mr-2 size-4" />
+                      Buscar e importar
+                    </>
+                  )}
+                </Button>
+
+                {job ? (
+                  <div className="mt-4 space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-zinc-900/40">
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <SyncStat label="Encontrados" value={job.found_count} />
+                      <SyncStat label="Importados" value={job.imported_count} accent />
+                      <SyncStat label="Omitidos" value={job.skipped_count} />
+                      <SyncStat label="Errores" value={job.error_count} />
+                    </div>
+                    <Progress value={progressValue} className="h-2" />
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">
+                      Rango {job.date_from} — {job.date_to} · estado {job.status}
+                    </p>
+                  </div>
+                ) : null}
+              </section>
+            </div>
+
+            <section className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-950">
+              {!status?.connected ? (
+                <div className="flex min-h-[28rem] flex-col items-center justify-center px-6 py-16 text-center">
+                  <div className="mb-4 flex size-16 items-center justify-center rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-yellow-300">
+                    <Inbox className="size-8" />
+                  </div>
+                  <h2 className="text-xl font-bold">Conecta Gmail para comenzar</h2>
+                  <p className="mt-3 max-w-md text-sm leading-6 text-slate-600 dark:text-zinc-300">
+                    Una vez autorizada la cuenta, aqui veras el catalogo de DTE importados,
+                    podras filtrarlos y verificarlos en Hacienda.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-5 md:flex-row md:items-center md:justify-between dark:border-white/10">
+                    <div>
+                      <h2 className="text-xl font-bold">Catalogo de DTE importados</h2>
+                      <p className="mt-1 text-sm text-slate-600 dark:text-zinc-300">
+                        {catalogTotal} documento(s) disponibles
+                        {job ? ` · ultimo sync ${job.date_from} — ${job.date_to}` : ''}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={loadingCatalog}
+                        onClick={() => void loadCatalog()}
+                      >
+                        {loadingCatalog ? (
+                          <Loader2 className="mr-2 size-4 animate-spin" />
+                        ) : (
+                          <RefreshCw className="mr-2 size-4" />
+                        )}
+                        Actualizar
+                      </Button>
+                      <Button
+                        type="button"
+                        disabled={!selectedIds.size || verifyLoading}
+                        onClick={() => void verifySelected()}
+                      >
+                        {verifyLoading ? (
+                          <Loader2 className="mr-2 size-4 animate-spin" />
+                        ) : (
+                          <ShieldCheck className="mr-2 size-4" />
+                        )}
+                        Verificar JSON ({selectedIds.size})
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-5 p-5">
+                    <GmailDocumentFilters
+                      filters={catalogFilters}
+                      onChange={(patch) => setCatalogFilters((prev) => ({ ...prev, ...patch }))}
+                      disabled={loadingCatalog}
+                    />
+
+                    {loadingCatalog && !catalog.length ? (
+                      <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
+                        <Loader2 className="size-4 animate-spin" />
+                        Cargando catalogo...
+                      </div>
+                    ) : catalog.length ? (
+                      <GmailDocumentTable
+                        documents={catalog}
+                        selectedIds={selectedIds}
+                        onToggleSelect={toggleSelect}
+                        onToggleAll={toggleAll}
+                        onViewLinks={(doc) => void viewLinks(doc)}
+                        onViewJson={(doc) => void viewJson(doc)}
+                      />
+                    ) : (
+                      <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-14 text-center dark:border-white/10 dark:bg-zinc-900/30">
+                        <FileStack className="mx-auto mb-3 size-8 text-slate-400" />
+                        <p className="font-medium text-slate-900 dark:text-white">
+                          Sin documentos importados
+                        </p>
+                        <p className="mt-2 text-sm text-slate-600 dark:text-zinc-300">
+                          Ejecuta una sincronizacion o amplia el rango de fechas del buzon.
+                        </p>
+                      </div>
+                    )}
+
+                    <GmailJsonVerifyPanel
+                      results={verifyResults}
+                      downloadHref={verifyDownloadHref}
+                      filename={verifyFilename}
+                      loading={verifyLoading}
+                    />
+
+                    {linkedPreview ? (
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-zinc-900/40">
+                        <div className="mb-3 flex items-start justify-between gap-2">
                           <div>
-                            <span className="font-medium">
-                              {rel.tipo_dte_label || rel.tipo_dte}
-                            </span>
-                            <span className="mx-2 text-muted-foreground">·</span>
-                            <span className="font-mono text-xs">{rel.codigo_generacion}</span>
-                            <div className="text-xs text-muted-foreground">
-                              {rel.fec_emi} · {rel.emisor_nombre || '—'}
-                            </div>
+                            <p className="text-sm font-semibold">Documentos relacionados</p>
+                            <p className="text-xs text-slate-500 dark:text-zinc-400">
+                              {linkedPreview.doc.tipo_dte_label} ·{' '}
+                              {linkedPreview.doc.codigo_generacion}
+                            </p>
                           </div>
                           <Button
                             type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={() => void viewLinks(rel)}
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => setLinkedPreview(null)}
+                            aria-label="Cerrar panel"
                           >
-                            Ver enlaces
+                            <X className="size-4" />
                           </Button>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">Sin documentos vinculados.</p>
-                  )}
-                </div>
+                        </div>
+                        {loadingLinks ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : linkedPreview.documents.length ? (
+                          <ul className="space-y-2 text-sm">
+                            {linkedPreview.documents.map((rel) => (
+                              <li
+                                key={rel.id}
+                                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-3 dark:border-white/10 dark:bg-zinc-950"
+                              >
+                                <div>
+                                  <span className="font-medium">
+                                    {rel.tipo_dte_label || rel.tipo_dte}
+                                  </span>
+                                  <span className="mx-2 text-slate-400">·</span>
+                                  <span className="font-mono text-xs">{rel.codigo_generacion}</span>
+                                  <div className="text-xs text-slate-500 dark:text-zinc-400">
+                                    {rel.fec_emi} · {rel.emisor_nombre || '—'}
+                                  </div>
+                                </div>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => void viewLinks(rel)}
+                                >
+                                  Ver enlaces
+                                </Button>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-sm text-slate-600 dark:text-zinc-300">
+                            Sin documentos vinculados.
+                          </p>
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
+                </>
               )}
-            </CardContent>
-          </Card>
-        )}
+            </section>
+          </section>
+        </div>
       </main>
     </PlanGate>
+  );
+}
+
+function MetricCard({
+  icon: Icon,
+  label,
+  value,
+  accent = false,
+}: {
+  icon: typeof Mail;
+  label: string;
+  value: string;
+  accent?: boolean;
+}) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-white/10 dark:bg-zinc-900/50">
+      <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-zinc-400">
+        <Icon className="size-3.5" />
+        {label}
+      </div>
+      <p
+        className={`text-2xl font-extrabold tracking-tight ${
+          accent ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-900 dark:text-white'
+        }`}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function SyncStat({
+  label,
+  value,
+  accent = false,
+}: {
+  label: string;
+  value: number;
+  accent?: boolean;
+}) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-white/10 dark:bg-zinc-950">
+      <p className="text-xs text-slate-500 dark:text-zinc-400">{label}</p>
+      <p
+        className={`text-lg font-bold ${
+          accent ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-900 dark:text-white'
+        }`}
+      >
+        {value}
+      </p>
+    </div>
   );
 }

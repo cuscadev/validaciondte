@@ -42,9 +42,9 @@ export default function GmailJsonVerifyPanel({
   if (!results.length) return null;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-zinc-900/40">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-medium">
+        <p className="text-sm font-semibold text-slate-900 dark:text-white">
           Resultados de verificacion JSON ({results.length})
         </p>
         {downloadHref && (
@@ -56,10 +56,10 @@ export default function GmailJsonVerifyPanel({
         )}
       </div>
 
-      <div className="overflow-x-auto rounded-md border border-border/60">
+      <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-white/10">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b bg-muted/40 text-left text-muted-foreground">
+            <tr className="border-b border-slate-200 bg-white text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-white/10 dark:bg-zinc-950 dark:text-zinc-400">
               <th className="p-2">Archivo</th>
               <th className="p-2">Codigo</th>
               <th className="p-2">Fec. Emi</th>
