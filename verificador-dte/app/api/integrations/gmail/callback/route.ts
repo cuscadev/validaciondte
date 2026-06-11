@@ -51,6 +51,12 @@ export async function GET(req: NextRequest) {
     const oauth2 = createOAuth2Client(redirectUri);
     oauth2.setCredentials(tokens);
     const googleEmail = await fetchGoogleEmailFromOAuth(oauth2);
+    if (
+      payload.expectedEmail &&
+      googleEmail.trim().toLowerCase() !== payload.expectedEmail.trim().toLowerCase()
+    ) {
+      return uiRedirect(req, returnOrigin, '?error=email_mismatch');
+    }
 
     if (!tokens.refresh_token) {
       const existing = await getActiveConnection(payload.organizationId);

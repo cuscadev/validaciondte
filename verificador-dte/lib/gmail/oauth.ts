@@ -12,6 +12,7 @@ export type OAuthStatePayload = {
   organizationId: string;
   uid: string;
   nonce: string;
+  expectedEmail?: string;
   /** Origen donde el usuario inició OAuth (p. ej. http://localhost:3001). */
   returnOrigin?: string;
   /** redirect_uri usado con Google (debe coincidir en el callback). */

@@ -88,6 +88,7 @@ export default function GmailIntegracionPage() {
   const defaults = useMemo(() => defaultDateRange(), []);
   const [status, setStatus] = useState<GmailStatus | null>(null);
   const [loadingStatus, setLoadingStatus] = useState(true);
+  const [gmailEmail, setGmailEmail] = useState('');
   const [dateFrom, setDateFrom] = useState(defaults.from);
   const [dateTo, setDateTo] = useState(defaults.to);
   const [syncing, setSyncing] = useState(false);
@@ -168,9 +169,14 @@ export default function GmailIntegracionPage() {
 
   const connectGmail = async () => {
     try {
+      const email = gmailEmail.trim().toLowerCase();
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        toast.warning('Ingresa el correo Gmail que deseas conectar.');
+        return;
+      }
       const res = await authFetch('/api/integrations/gmail/connect', {
         method: 'POST',
-        body: JSON.stringify({ returnOrigin: window.location.origin }),
+        body: JSON.stringify({ returnOrigin: window.location.origin, email }),
       });
       const json = (await res.json()) as { url?: string; error?: string };
       if (!res.ok || !json.url) throw new Error(json.error || 'No se pudo iniciar OAuth.');
@@ -412,13 +418,24 @@ export default function GmailIntegracionPage() {
                 </Button>
               </div>
             ) : (
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <p className="text-sm text-muted-foreground">
                   Aun no has autorizado el acceso a Gmail para esta organizacion.
                 </p>
-                <Button type="button" onClick={connectGmail}>
-                  Conectar Gmail
-                </Button>
+                <div className="w-full space-y-2 sm:max-w-sm">
+                  <Label htmlFor="gmail-email">Correo Gmail</Label>
+                  <Input
+                    id="gmail-email"
+                    type="email"
+                    inputMode="email"
+                    placeholder="usuario@gmail.com"
+                    value={gmailEmail}
+                    onChange={(event) => setGmailEmail(event.target.value)}
+                  />
+                  <Button type="button" onClick={connectGmail} className="w-full sm:w-auto">
+                    Conectar Gmail
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>
