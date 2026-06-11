@@ -40,6 +40,8 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Loader2,
+  Maximize2,
+  Minimize2,
   QrCode,
   Trash2,
 } from 'lucide-react';
@@ -135,6 +137,7 @@ function VerificadorQrContent() {
   const [cameraPermission, setCameraPermission] = useState<CameraPermission>('unknown');
   const [cameras, setCameras] = useState<CameraOption[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState('');
+  const [cameraExpanded, setCameraExpanded] = useState(false);
   const [scanError, setScanError] = useState('');
   const [lastScan, setLastScan] = useState('');
   const [lastAddedCodGen, setLastAddedCodGen] = useState('');
@@ -531,7 +534,12 @@ function VerificadorQrContent() {
         </div>
 
         <div className="grid gap-4 p-4 xl:grid-cols-2">
-          <section className="rounded-xl border border-slate-200 p-4 dark:border-white/10">
+          <section
+            className={cn(
+              'rounded-xl border border-slate-200 p-4 dark:border-white/10',
+              cameraExpanded && 'xl:col-span-2'
+            )}
+          >
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <QrCode className="size-5 text-amber-500" />
@@ -572,6 +580,20 @@ function VerificadorQrContent() {
             </div>
 
             <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-black/90 dark:border-white/10">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setCameraExpanded((current) => !current)}
+                className="absolute right-3 top-3 z-20 gap-2 bg-background/90 text-foreground shadow-sm backdrop-blur hover:bg-background"
+              >
+                {cameraExpanded ? (
+                  <Minimize2 className="size-4" />
+                ) : (
+                  <Maximize2 className="size-4" />
+                )}
+                {cameraExpanded ? 'Reducir' : 'Ampliar'}
+              </Button>
               {showCameraPlaceholder && (
                 <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-muted/40 p-4 text-center backdrop-blur-[1px]">
                   {cameraPermission === 'requesting' ? (
@@ -614,7 +636,10 @@ function VerificadorQrContent() {
               <video
                 ref={videoRef}
                 className={cn(
-                  'aspect-video w-full object-cover',
+                  'w-full object-cover',
+                  cameraExpanded
+                    ? 'h-[68vh] min-h-[420px]'
+                    : 'aspect-video',
                   showCameraPlaceholder && 'opacity-30'
                 )}
               />
