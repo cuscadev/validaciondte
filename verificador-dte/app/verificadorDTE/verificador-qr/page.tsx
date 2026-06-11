@@ -166,7 +166,7 @@ function VerificadorQrContent() {
     }
 
     let duplicate = false;
-    const created: { item: PendingScan | null } = { item: null };
+    let newItem: PendingScan | null = null;
 
     setPendingScans((prev) => {
       if (prev.some((item) => item.codGen.toLowerCase() === parsed.codGen.toLowerCase())) {
@@ -175,7 +175,7 @@ function VerificadorQrContent() {
       }
 
       scanCounterRef.current += 1;
-      const item: PendingScan = {
+      newItem = {
         id: `${parsed.codGen}-${Date.now()}`,
         scanNumber: scanCounterRef.current,
         raw: decodedText,
@@ -185,9 +185,8 @@ function VerificadorQrContent() {
         urlOriginal: parsed.urlOriginal,
         urlNormalizada: parsed.urlNormalizada,
       };
-      created.item = item;
 
-      return [item, ...prev];
+      return [newItem, ...prev];
     });
 
     if (duplicate) {
@@ -196,10 +195,10 @@ function VerificadorQrContent() {
       return;
     }
 
-    if (!created.item) return;
+    if (!newItem) return;
 
     setLastAddedCodGen(parsed.codGen);
-    setHighlightedScanId(created.item.id);
+    setHighlightedScanId(newItem.id);
 
     if (highlightTimeoutRef.current) {
       clearTimeout(highlightTimeoutRef.current);
@@ -212,7 +211,7 @@ function VerificadorQrContent() {
       pendingListRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     });
 
-    toast.success(`DTE #${created.item.scanNumber} agregado.`);
+    toast.success(`DTE #${newItem.scanNumber} agregado.`);
   }, []);
 
   const startScanning = useCallback(async () => {
@@ -703,13 +702,10 @@ function VerificadorQrContent() {
 
       <UploadResultsReveal visible={resultsVisible}>
         <UploadTableToolbar
-          resultCount={{ filtered: filtered.length, total: data.length }}
-          export={{
-            excel: {
-              href: downloadHref,
-              download: filename,
-              label: 'EXCEL',
-            },
+          title="Resultados de verificacion"
+          downloadHref={downloadHref}
+          downloadFilename={filename}
+          exports={{
             csv: {
               onClick: () =>
                 exportRowsToCsv(
