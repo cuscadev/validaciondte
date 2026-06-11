@@ -436,6 +436,35 @@ export default function LandingPage() {
 					</FadeIn>
 				</div>
 			</section>
+
+			<footer className="relative z-10 w-full border-t border-slate-200 bg-slate-950 px-4 py-10 text-white sm:px-6 md:px-10 lg:px-16 dark:border-white/10 dark:bg-zinc-950">
+				<div className="mx-auto flex max-w-6xl flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+					<div>
+						<p className="text-base font-bold">Kaiser DTE</p>
+						<p className="mt-2 text-sm leading-6 text-zinc-300">
+							Verificacion y gestion de DTE para equipos que necesitan trazabilidad.
+						</p>
+					</div>
+
+					<nav
+						aria-label="Enlaces legales"
+						className="flex flex-col gap-3 text-sm font-semibold text-zinc-200 sm:flex-row sm:items-center"
+					>
+						<Link
+							href="/politica-privacidad"
+							className="underline-offset-4 transition hover:text-yellow-300 hover:underline"
+						>
+							Politica de privacidad
+						</Link>
+						<Link
+							href="/terminos-condiciones"
+							className="underline-offset-4 transition hover:text-yellow-300 hover:underline"
+						>
+							Terminos y condiciones
+						</Link>
+					</nav>
+				</div>
+			</footer>
 		</main>
 	);
 }

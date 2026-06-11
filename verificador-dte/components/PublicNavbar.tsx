@@ -32,6 +32,8 @@ export default function PublicNavbar() {
         </Link>
 
         <div className="hidden items-center gap-2 md:flex">
+          <Link href="/politica-privacidad" className="rounded-md px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:text-zinc-100 dark:hover:bg-zinc-800">Privacidad</Link>
+          <Link href="/terminos-condiciones" className="rounded-md px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:text-zinc-100 dark:hover:bg-zinc-800">Terminos</Link>
           <LanguageSwitcher />
           <button
             type="button"
@@ -71,6 +73,20 @@ export default function PublicNavbar() {
               </button>
             </div>
 
+            <Link
+              href="/politica-privacidad"
+              onClick={closeMenu}
+              className="rounded-lg border border-zinc-200 bg-white px-3 py-3 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+            >
+              Politica de privacidad
+            </Link>
+            <Link
+              href="/terminos-condiciones"
+              onClick={closeMenu}
+              className="rounded-lg border border-zinc-200 bg-white px-3 py-3 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+            >
+              Terminos y condiciones
+            </Link>
             <Link
               href="/login"
               onClick={closeMenu}

@@ -14,6 +14,8 @@ export const PUBLIC_ROUTES = [
   '/consulta-hacienda',
   '/auditoria-dte',
   '/precios',
+  '/politica-privacidad',
+  '/terminos-condiciones',
 ];
 
 export function isPublicPath(pathname: string) {
