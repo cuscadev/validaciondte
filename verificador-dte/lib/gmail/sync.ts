@@ -118,6 +118,7 @@ export async function runSyncBatch(input: {
             fileSize: buffer.length,
             buffer,
             parsed,
+            mailboxEmail: connection.google_email,
           };
 
           if (!parsed) {

@@ -175,6 +175,7 @@ export async function runImapSyncBatch(input: {
                 buffer: attachment.buffer,
                 parsed,
                 source: 'imap' as const,
+                mailboxEmail: connection.email,
               };
 
               if (!parsed) {

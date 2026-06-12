@@ -52,6 +52,8 @@ export type GmailDocumentRow = {
   connection_id: string;
   sync_job_id: string | null;
   source?: DteImportSource;
+  /** Correo del buzon conectado desde el que se importo el documento. */
+  mailbox_email?: string | null;
   gmail_message_id: string;
   gmail_thread_id?: string | null;
   gmail_attachment_id: string;

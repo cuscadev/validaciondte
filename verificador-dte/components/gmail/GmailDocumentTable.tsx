@@ -94,6 +94,7 @@ export default function GmailDocumentTable({
                 />
               </th>
               <th className="px-4 py-3">Tipo</th>
+              <th className="px-4 py-3">Buzon</th>
               <th className="px-4 py-3">Correo</th>
               <th className="px-4 py-3">Fec. Emi</th>
               <th className="px-4 py-3">Emisor</th>
@@ -137,6 +138,14 @@ export default function GmailDocumentTable({
                     </div>
                     <div className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
                       {doc.numero_control || '—'}
+                    </div>
+                  </td>
+                  <td className="max-w-[12rem] px-4 py-3 break-words">
+                    <div className="text-xs font-medium text-slate-700 dark:text-zinc-200">
+                      {doc.mailbox_email || '—'}
+                    </div>
+                    <div className="mt-1 text-[11px] uppercase tracking-wide text-slate-400 dark:text-zinc-500">
+                      {doc.source === 'imap' ? 'IMAP' : 'Gmail'}
                     </div>
                   </td>
                   <td className="max-w-[14rem] px-4 py-3 break-words">

@@ -11,18 +11,26 @@ export type GmailCatalogFilters = {
   tipoDte: string;
   dateFrom: string;
   dateTo: string;
+  mailbox: string;
 };
 
 type Props = {
   filters: GmailCatalogFilters;
   onChange: (patch: Partial<GmailCatalogFilters>) => void;
   disabled?: boolean;
+  /** Buzones disponibles para filtrar (correos sincronizados). */
+  mailboxOptions?: string[];
 };
 
 const selectClassName =
   'flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/30 dark:border-white/10 dark:bg-zinc-900';
 
-export default function GmailDocumentFilters({ filters, onChange, disabled }: Props) {
+export default function GmailDocumentFilters({
+  filters,
+  onChange,
+  disabled,
+  mailboxOptions,
+}: Props) {
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-zinc-900/40">
       <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-400">
@@ -82,6 +90,25 @@ export default function GmailDocumentFilters({ filters, onChange, disabled }: Pr
             disabled={disabled}
           />
         </div>
+        {mailboxOptions && mailboxOptions.length > 1 ? (
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="gmail-mailbox">Correo sincronizado</Label>
+            <select
+              id="gmail-mailbox"
+              className={selectClassName}
+              value={filters.mailbox}
+              onChange={(e) => onChange({ mailbox: e.target.value })}
+              disabled={disabled}
+            >
+              <option value="">Todos los buzones</option>
+              {mailboxOptions.map((mailbox) => (
+                <option key={mailbox} value={mailbox}>
+                  {mailbox}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
       </div>
     </div>
   );

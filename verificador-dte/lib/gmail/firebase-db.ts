@@ -32,6 +32,7 @@ type RecordDocumentInput = {
   parsed: ParsedDteImport | null;
   importStatus: GmailDocumentImportStatus;
   source?: DteImportSource;
+  mailboxEmail?: string;
 };
 
 function documentsCollection(organizationId: string) {
@@ -324,6 +325,7 @@ function mapDocumentSnapshot(
     connection_id: String(data.connection_id || ''),
     sync_job_id: data.sync_job_id ? String(data.sync_job_id) : null,
     source: (data.source === 'imap' ? 'imap' : 'gmail') as DteImportSource,
+    mailbox_email: data.mailbox_email ? String(data.mailbox_email) : null,
     gmail_message_id: String(data.gmail_message_id || ''),
     gmail_thread_id: data.gmail_thread_id ? String(data.gmail_thread_id) : null,
     gmail_attachment_id: String(data.gmail_attachment_id || ''),
@@ -414,6 +416,7 @@ export async function recordDocument(input: RecordDocumentInput) {
     connection_id: input.connectionId,
     sync_job_id: input.syncJobId,
     source,
+    mailbox_email: input.mailboxEmail?.trim().toLowerCase() || null,
     gmail_message_id: input.ref.messageId,
     message_attachment_key: `${input.ref.messageId}:${input.ref.attachmentId}`,
     gmail_thread_id: input.ref.threadId || null,
@@ -459,6 +462,7 @@ export async function listDocuments(input: {
   dateTo?: string;
   q?: string;
   source?: string;
+  mailbox?: string;
   limit?: number;
   offset?: number;
 }) {
@@ -471,6 +475,10 @@ export async function listDocuments(input: {
 
   if (input.syncJobId) rows = rows.filter((row) => row.sync_job_id === input.syncJobId);
   if (input.source) rows = rows.filter((row) => (row.source || 'gmail') === input.source);
+  if (input.mailbox) {
+    const mailbox = input.mailbox.trim().toLowerCase();
+    rows = rows.filter((row) => (row.mailbox_email || '').toLowerCase() === mailbox);
+  }
   if (input.importStatus) rows = rows.filter((row) => row.import_status === input.importStatus);
   if (input.tipoDte) rows = rows.filter((row) => row.tipo_dte === input.tipoDte);
   if (input.dateFrom) rows = rows.filter((row) => (row.fec_emi || '') >= input.dateFrom!);

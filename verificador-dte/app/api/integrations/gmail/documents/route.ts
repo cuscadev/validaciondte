@@ -22,6 +22,7 @@ export async function GET(req: NextRequest) {
     const dateTo = params.get('dateTo') || undefined;
     const q = params.get('q') || undefined;
     const source = params.get('source') || undefined;
+    const mailbox = params.get('mailbox') || undefined;
     const limit = Number(params.get('limit') || 50);
     const offset = Number(params.get('offset') || 0);
 
@@ -34,6 +35,7 @@ export async function GET(req: NextRequest) {
       dateTo,
       q,
       source,
+      mailbox,
       limit: Math.min(Math.max(limit, 1), 200),
       offset: Math.max(offset, 0),
     });

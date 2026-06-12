@@ -216,7 +216,7 @@ export default function ImportFromMailButton({ tiposDte, onImport, disabled }: P
                     <th className="px-3 py-2">Tipo</th>
                     <th className="px-3 py-2">Fecha emision</th>
                     <th className="px-3 py-2">Emisor</th>
-                    <th className="px-3 py-2">Origen</th>
+                    <th className="px-3 py-2">Buzon</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -244,8 +244,11 @@ export default function ImportFromMailButton({ tiposDte, onImport, disabled }: P
                       <td className="max-w-[14rem] truncate px-3 py-2">
                         {doc.emisor_nombre || '—'}
                       </td>
-                      <td className="px-3 py-2">
-                        {SOURCE_LABELS[doc.source || 'gmail'] || doc.source}
+                      <td className="max-w-[12rem] truncate px-3 py-2">
+                        <span className="text-xs">{doc.mailbox_email || '—'}</span>
+                        <span className="ml-1 text-[10px] uppercase text-slate-400">
+                          {SOURCE_LABELS[doc.source || 'gmail'] || doc.source}
+                        </span>
                       </td>
                     </tr>
                   ))}

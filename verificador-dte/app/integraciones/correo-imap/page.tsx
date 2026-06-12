@@ -98,6 +98,7 @@ function buildCatalogQuery(filters: GmailCatalogFilters) {
   if (filters.tipoDte) params.set('tipoDte', filters.tipoDte);
   if (filters.dateFrom) params.set('dateFrom', filters.dateFrom);
   if (filters.dateTo) params.set('dateTo', filters.dateTo);
+  if (filters.mailbox) params.set('mailbox', filters.mailbox);
   return params.toString();
 }
 
@@ -134,6 +135,7 @@ export default function CorreoImapIntegracionPage() {
     tipoDte: '',
     dateFrom: '',
     dateTo: '',
+    mailbox: '',
   });
   const [catalog, setCatalog] = useState<GmailDocumentRow[]>([]);
   const [catalogTotal, setCatalogTotal] = useState(0);
@@ -457,6 +459,15 @@ export default function CorreoImapIntegracionPage() {
       setVerifyLoading(false);
     }
   };
+
+  const mailboxOptions = useMemo(() => {
+    const seen = new Set<string>();
+    catalog.forEach((doc) => {
+      if (doc.mailbox_email) seen.add(doc.mailbox_email);
+    });
+    if (catalogFilters.mailbox) seen.add(catalogFilters.mailbox);
+    return Array.from(seen).sort();
+  }, [catalog, catalogFilters.mailbox]);
 
   const progressValue = job
     ? job.status === 'completed'
@@ -822,6 +833,7 @@ export default function CorreoImapIntegracionPage() {
                       filters={catalogFilters}
                       onChange={(patch) => setCatalogFilters((prev) => ({ ...prev, ...patch }))}
                       disabled={loadingCatalog}
+                      mailboxOptions={mailboxOptions}
                     />
 
                     {loadingCatalog && !catalog.length ? (
