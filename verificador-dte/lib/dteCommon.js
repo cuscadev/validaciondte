@@ -159,8 +159,23 @@ export const REPORT_HEADERS_AFTER_TRIBUTOS = [
   'relacionadosTexto', 'error',
 ];
 
+// Debe coincidir con go-dte-api/internal/modules/dte/shared/tributos.go
+const TRIBUTO_COLUMN_LABELS = {
+  C8: 'cotrans',
+  D1: 'fovial',
+};
+
 function tributoColumnName(codigo) {
-  return `tributo_${String(codigo || '').trim()}`;
+  const code = String(codigo || '').trim();
+  return TRIBUTO_COLUMN_LABELS[code] || `tributo_${code}`;
+}
+
+function tributoCodeFromColumnName(key) {
+  if (key.startsWith('tributo_')) return key.slice('tributo_'.length);
+  for (const [codigo, label] of Object.entries(TRIBUTO_COLUMN_LABELS)) {
+    if (label === key) return codigo;
+  }
+  return null;
 }
 
 export function parseOtrosTributosText(text) {
@@ -220,9 +235,9 @@ export function flattenResultForReport(row = {}, headers = buildReportHeaders([r
     String(row.otrosTributos || '').trim() || formatOtrosTributosFromMap(tributos);
   const out = {};
   for (const key of headers) {
-    if (key.startsWith('tributo_')) {
-      const codigo = key.slice('tributo_'.length);
-      out[key] = tributos[codigo] || '';
+    const tributoCodigo = tributoCodeFromColumnName(key);
+    if (tributoCodigo) {
+      out[key] = tributos[tributoCodigo] || '';
       continue;
     }
     if (key === REPORT_HEADER_OTROS_TRIBUTOS) {
