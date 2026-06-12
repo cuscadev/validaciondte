@@ -2,6 +2,7 @@
 
 import PlanGate from '@/components/PlanGate'
 import UploadFormSection from '@/components/upload/UploadFormSection'
+import ImportFromMailButton from '@/components/upload/ImportFromMailButton'
 import UploadFormAccordion from '@/components/upload/UploadFormAccordion'
 import UploadResultsReveal from '@/components/upload/UploadResultsReveal'
 import UploadTableToolbar from '@/components/upload/UploadTableToolbar'
@@ -578,6 +579,13 @@ export default function VentasJsonPage() {
                 onFilesChange={setSelectedFiles}
                 loading={loading}
                 accept={{ 'application/json': ['.json'] }}
+                labelActions={
+                  <ImportFromMailButton
+                    tiposDte={['01', '03', '05']}
+                    disabled={loading}
+                    onImport={(files) => setSelectedFiles((prev) => [...prev, ...files])}
+                  />
+                }
               >
                 {data.length > 0 && (
                   <Button

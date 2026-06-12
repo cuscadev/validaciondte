@@ -131,6 +131,12 @@ const ROUTE_MAP: Record<string, RouteEntry> = {
       { label: 'Gmail DTE' },
     ],
   },
+  '/integraciones/correo-imap': {
+    segments: [
+      { label: 'Integraciones', href: '/integraciones/correo-imap' },
+      { label: 'Correo IMAP DTE' },
+    ],
+  },
   '/profile': {
     segments: [{ label: 'Perfil' }],
   },

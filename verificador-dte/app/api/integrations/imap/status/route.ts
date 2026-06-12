@@ -1,14 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import {
-  getActiveConnection,
-  getLastSyncJob,
-  revokeConnection,
-} from '@/lib/gmail/firebase-db';
-import { decryptSecret } from '@/lib/gmail/token-crypto';
-import { revokeRefreshToken } from '@/lib/gmail/oauth';
+import { getLastSyncJob } from '@/lib/gmail/firebase-db';
+import { getActiveImapConnection, revokeImapConnection } from '@/lib/imap/firebase-db';
 import { requireOrgAdmin } from '@/lib/server-auth';
-import { getGmailPublicErrorMessage } from '@/lib/gmail/callback-errors';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -20,13 +14,17 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ connected: false }, { status: 200 });
     }
 
-    const connection = await getActiveConnection(user.organizationId);
-    const lastJob = await getLastSyncJob(user.organizationId, 'gmail');
+    const connection = await getActiveImapConnection(user.organizationId);
+    const lastJob = await getLastSyncJob(user.organizationId, 'imap');
 
     return NextResponse.json({
       connected: Boolean(connection),
-      googleEmail: connection?.google_email ?? null,
+      email: connection?.email ?? null,
+      host: connection?.host ?? null,
+      port: connection?.port ?? null,
+      provider: connection?.provider ?? null,
       connectedAt: connection?.updated_at ?? null,
+      consentAcceptedAt: connection?.consent_accepted_at ?? null,
       lastSync: lastJob
         ? {
             id: lastJob.id,
@@ -41,8 +39,8 @@ export async function GET(req: NextRequest) {
         : null,
     });
   } catch (error) {
-    const message = getGmailPublicErrorMessage(error);
-    console.error('[gmail/status]', error);
+    const message = error instanceof Error ? error.message : 'Error';
+    console.error('[imap/status]', error);
     const status = message === 'No autorizado' ? 401 : 500;
     return NextResponse.json({ error: message }, { status });
   }
@@ -55,21 +53,15 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Sin organizacion.' }, { status: 400 });
     }
 
-    const connection = await getActiveConnection(user.organizationId);
+    const connection = await getActiveImapConnection(user.organizationId);
     if (connection) {
-      try {
-        const refresh = decryptSecret(connection.refresh_token_enc);
-        await revokeRefreshToken(refresh);
-      } catch (revokeErr) {
-        console.warn('[gmail disconnect revoke]', revokeErr);
-      }
-      await revokeConnection(user.organizationId);
+      await revokeImapConnection(user.organizationId);
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    const message = getGmailPublicErrorMessage(error);
-    console.error('[gmail/status]', error);
+    const message = error instanceof Error ? error.message : 'Error';
+    console.error('[imap/status]', error);
     const status = message === 'No autorizado' ? 401 : 500;
     return NextResponse.json({ error: message }, { status });
   }

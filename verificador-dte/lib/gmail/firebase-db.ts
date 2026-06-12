@@ -6,6 +6,7 @@ import type { ParsedDteImport } from '@/lib/gmail/parse-dte-import';
 import { GMAIL_SCOPES } from '@/lib/gmail/oauth';
 import { encryptSecret } from '@/lib/gmail/token-crypto';
 import type {
+  DteImportSource,
   GmailConnectionRow,
   GmailDocumentImportStatus,
   GmailDocumentLinkRow,
@@ -30,6 +31,7 @@ type RecordDocumentInput = {
   buffer: Buffer;
   parsed: ParsedDteImport | null;
   importStatus: GmailDocumentImportStatus;
+  source?: DteImportSource;
 };
 
 function documentsCollection(organizationId: string) {
@@ -98,6 +100,7 @@ function mapJobSnapshot(snapshot: FirebaseFirestore.DocumentSnapshot): GmailSync
     id: snapshot.id,
     organization_id: String(data.organization_id || ''),
     connection_id: String(data.connection_id || ''),
+    source: (data.source === 'imap' ? 'imap' : 'gmail') as DteImportSource,
     date_from: String(data.date_from || ''),
     date_to: String(data.date_to || ''),
     status: String(data.status || 'running') as GmailSyncJobRow['status'],
@@ -202,11 +205,13 @@ export async function createSyncJob(input: {
   dateFrom: string;
   dateTo: string;
   createdByUid: string;
+  source?: DteImportSource;
 }) {
   const ref = jobsCollection(input.organizationId).doc();
   await ref.set({
     organization_id: input.organizationId,
     connection_id: input.connectionId,
+    source: input.source || 'gmail',
     date_from: input.dateFrom,
     date_to: input.dateTo,
     status: 'running',
@@ -247,13 +252,18 @@ export async function updateSyncJob(
   );
 }
 
-export async function getLastSyncJob(organizationId: string) {
+export async function getLastSyncJob(
+  organizationId: string,
+  source?: DteImportSource
+) {
   const snapshot = await jobsCollection(organizationId)
     .orderBy('created_at', 'desc')
-    .limit(1)
+    .limit(source ? 25 : 1)
     .get();
   if (snapshot.empty) return null;
-  return mapJobSnapshot(snapshot.docs[0]);
+  const jobs = snapshot.docs.map(mapJobSnapshot);
+  if (!source) return jobs[0];
+  return jobs.find((job) => (job.source || 'gmail') === source) ?? null;
 }
 
 function parsedToDocumentFields(parsed: ParsedDteImport | null) {
@@ -313,6 +323,7 @@ function mapDocumentSnapshot(
     organization_id: String(data.organization_id || ''),
     connection_id: String(data.connection_id || ''),
     sync_job_id: data.sync_job_id ? String(data.sync_job_id) : null,
+    source: (data.source === 'imap' ? 'imap' : 'gmail') as DteImportSource,
     gmail_message_id: String(data.gmail_message_id || ''),
     gmail_thread_id: data.gmail_thread_id ? String(data.gmail_thread_id) : null,
     gmail_attachment_id: String(data.gmail_attachment_id || ''),
@@ -388,7 +399,8 @@ export async function findDocumentByHash(organizationId: string, contentHash: st
 export async function recordDocument(input: RecordDocumentInput) {
   const meta = parsedToDocumentFields(input.parsed);
   const jsonData = parseJsonBuffer(input.buffer);
-  const storagePath = `gmail/${input.organizationId}/${input.documentId}.json`;
+  const source = input.source || 'gmail';
+  const storagePath = `${source}/${input.organizationId}/${input.documentId}.json`;
   await adminStorage.bucket().file(storagePath).save(input.buffer, {
     contentType: 'application/json; charset=utf-8',
     resumable: false,
@@ -401,6 +413,7 @@ export async function recordDocument(input: RecordDocumentInput) {
     organization_id: input.organizationId,
     connection_id: input.connectionId,
     sync_job_id: input.syncJobId,
+    source,
     gmail_message_id: input.ref.messageId,
     message_attachment_key: `${input.ref.messageId}:${input.ref.attachmentId}`,
     gmail_thread_id: input.ref.threadId || null,
@@ -445,6 +458,7 @@ export async function listDocuments(input: {
   dateFrom?: string;
   dateTo?: string;
   q?: string;
+  source?: string;
   limit?: number;
   offset?: number;
 }) {
@@ -456,6 +470,7 @@ export async function listDocuments(input: {
   let rows = snapshot.docs.map(mapDocumentSnapshot);
 
   if (input.syncJobId) rows = rows.filter((row) => row.sync_job_id === input.syncJobId);
+  if (input.source) rows = rows.filter((row) => (row.source || 'gmail') === input.source);
   if (input.importStatus) rows = rows.filter((row) => row.import_status === input.importStatus);
   if (input.tipoDte) rows = rows.filter((row) => row.tipo_dte === input.tipoDte);
   if (input.dateFrom) rows = rows.filter((row) => (row.fec_emi || '') >= input.dateFrom!);

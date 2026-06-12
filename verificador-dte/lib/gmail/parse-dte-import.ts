@@ -11,13 +11,14 @@ type JsonRecord = Record<string, unknown>;
 const UUID_RE =
   /^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$/;
 
-export const ALLOWED_TIPO_DTE = new Set(['01', '03', '05', '06', '11', '14']);
+export const ALLOWED_TIPO_DTE = new Set(['01', '03', '05', '06', '09', '11', '14']);
 
 export const TIPO_DTE_LABELS: Record<string, string> = {
   '01': 'Factura',
   '03': 'Comprobante de Crédito Fiscal',
   '05': 'Nota de Crédito',
   '06': 'Nota de Débito',
+  '09': 'Documento Contable de Liquidación',
   '11': 'Factura de Exportación',
   '14': 'Factura de Sujeto Excluido',
 };

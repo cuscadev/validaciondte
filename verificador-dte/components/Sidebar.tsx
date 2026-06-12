@@ -386,6 +386,12 @@ export default function Sidebar({
         routeKey: 'integraciones-gmail',
       },
       {
+        href: '/integraciones/correo-imap',
+        label: 'Importar desde correo (IMAP)',
+        icon: Mail,
+        routeKey: 'integraciones-imap',
+      },
+      {
         href: '/configuraciones',
         label: 'sidebar.configuracion',
         icon: Settings,

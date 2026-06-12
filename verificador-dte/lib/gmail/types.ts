@@ -1,3 +1,5 @@
+export type DteImportSource = 'gmail' | 'imap';
+
 export type GmailConnectionRow = {
   id: string;
   organization_id: string;
@@ -16,6 +18,7 @@ export type GmailSyncJobRow = {
   id: string;
   organization_id: string;
   connection_id: string;
+  source?: DteImportSource;
   date_from: string;
   date_to: string;
   status: 'pending' | 'running' | 'completed' | 'failed';
@@ -48,6 +51,7 @@ export type GmailDocumentRow = {
   organization_id: string;
   connection_id: string;
   sync_job_id: string | null;
+  source?: DteImportSource;
   gmail_message_id: string;
   gmail_thread_id?: string | null;
   gmail_attachment_id: string;
