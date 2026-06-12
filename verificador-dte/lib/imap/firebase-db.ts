@@ -34,7 +34,11 @@ function mapConnectionSnapshot(
     port: Number(data.port || 993),
     secure: data.secure !== false,
     provider: String(data.provider || 'custom'),
+    auth_type: data.auth_type === 'oauth' ? 'oauth' : 'password',
     password_enc: String(data.password_enc || ''),
+    refresh_token_enc: data.refresh_token_enc ? String(data.refresh_token_enc) : null,
+    access_token: data.access_token ? String(data.access_token) : null,
+    token_expires_at: asIso(data.token_expires_at),
     connected_by_uid: String(data.connected_by_uid || ''),
     consent_accepted_at: asIso(data.consent_accepted_at),
     consent_accepted_by_uid: data.consent_accepted_by_uid
@@ -75,7 +79,11 @@ export async function upsertImapConnection(input: {
       port: input.port,
       secure: input.secure,
       provider: input.provider,
+      auth_type: 'password',
       password_enc: encryptImapSecret(input.password),
+      refresh_token_enc: null,
+      access_token: null,
+      token_expires_at: null,
       connected_by_uid: input.connectedByUid,
       consent_accepted_at: now,
       consent_accepted_by_uid: input.connectedByUid,
@@ -88,10 +96,67 @@ export async function upsertImapConnection(input: {
   return mapConnectionSnapshot(await ref.get());
 }
 
+export async function upsertImapOAuthConnection(input: {
+  organizationId: string;
+  email: string;
+  refreshToken: string;
+  accessToken: string | null;
+  tokenExpiresAt: Date | null;
+  connectedByUid: string;
+}): Promise<ImapConnectionRow> {
+  const now = FieldValue.serverTimestamp();
+  const ref = connectionsCollection().doc(input.organizationId);
+  await ref.set(
+    {
+      organization_id: input.organizationId,
+      email: input.email,
+      host: 'outlook.office365.com',
+      port: 993,
+      secure: true,
+      provider: 'outlook',
+      auth_type: 'oauth',
+      password_enc: '',
+      refresh_token_enc: encryptImapSecret(input.refreshToken),
+      access_token: input.accessToken,
+      token_expires_at: input.tokenExpiresAt?.toISOString() ?? null,
+      connected_by_uid: input.connectedByUid,
+      consent_accepted_at: now,
+      consent_accepted_by_uid: input.connectedByUid,
+      updated_at: now,
+      created_at: now,
+      revoked_at: null,
+    },
+    { merge: true }
+  );
+  return mapConnectionSnapshot(await ref.get());
+}
+
+export async function updateImapConnectionTokens(
+  organizationId: string,
+  input: {
+    accessToken: string;
+    tokenExpiresAt: Date | null;
+    refreshTokenEnc?: string;
+  }
+) {
+  await connectionsCollection().doc(organizationId).set(
+    {
+      access_token: input.accessToken,
+      token_expires_at: input.tokenExpiresAt?.toISOString() ?? null,
+      ...(input.refreshTokenEnc ? { refresh_token_enc: input.refreshTokenEnc } : {}),
+      updated_at: FieldValue.serverTimestamp(),
+    },
+    { merge: true }
+  );
+}
+
 export async function revokeImapConnection(organizationId: string) {
   await connectionsCollection().doc(organizationId).set(
     {
       password_enc: '',
+      refresh_token_enc: null,
+      access_token: null,
+      token_expires_at: null,
       revoked_at: FieldValue.serverTimestamp(),
       updated_at: FieldValue.serverTimestamp(),
     },

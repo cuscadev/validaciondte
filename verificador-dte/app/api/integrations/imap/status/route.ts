@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
       host: connection?.host ?? null,
       port: connection?.port ?? null,
       provider: connection?.provider ?? null,
+      authType: connection?.auth_type ?? null,
       connectedAt: connection?.updated_at ?? null,
       consentAcceptedAt: connection?.consent_accepted_at ?? null,
       lastSync: lastJob

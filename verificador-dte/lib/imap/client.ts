@@ -40,10 +40,9 @@ export function createImapClient(config: ImapConnectionConfig): ImapFlow {
     host: config.host,
     port: config.port,
     secure: config.secure,
-    auth: {
-      user: config.email,
-      pass: config.password,
-    },
+    auth: config.accessToken
+      ? { user: config.email, accessToken: config.accessToken }
+      : { user: config.email, pass: config.password || '' },
     logger: false,
     socketTimeout: 60_000,
     connectionTimeout: 30_000,

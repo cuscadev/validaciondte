@@ -19,7 +19,7 @@ import {
   scanMessagesForJsonParts,
   searchMessageUids,
 } from '@/lib/imap/client';
-import { decryptImapSecret } from '@/lib/imap/credentials-crypto';
+import { buildImapConfig } from '@/lib/imap/auth';
 import { getActiveImapConnection } from '@/lib/imap/firebase-db';
 
 export type ImapSyncBatchResult = {
@@ -71,13 +71,7 @@ export async function runImapSyncBatch(input: {
   let skipped = job.skipped_count;
   let errors = job.error_count;
 
-  const client = createImapClient({
-    host: connection.host,
-    port: connection.port,
-    secure: connection.secure,
-    email: connection.email,
-    password: decryptImapSecret(connection.password_enc),
-  });
+  const client = createImapClient(await buildImapConfig(connection));
 
   try {
     await client.connect();

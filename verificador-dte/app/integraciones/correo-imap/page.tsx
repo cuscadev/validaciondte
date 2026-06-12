@@ -37,6 +37,7 @@ type ImapStatus = {
   host: string | null;
   port: number | null;
   provider: string | null;
+  authType: 'password' | 'oauth' | null;
   connectedAt: string | null;
   consentAcceptedAt: string | null;
   lastSync: {
@@ -147,6 +148,7 @@ export default function CorreoImapIntegracionPage() {
 
   const preset = useMemo(() => getImapPreset(provider), [provider]);
   const isCustom = provider === 'custom';
+  const isOAuthProvider = preset?.authMethod === 'oauth';
 
   const loadStatus = useCallback(async () => {
     setLoadingStatus(true);
@@ -184,6 +186,16 @@ export default function CorreoImapIntegracionPage() {
 
   useEffect(() => {
     loadStatus();
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('connected') === '1') {
+      toast.success('Cuenta de correo conectada correctamente.');
+      window.history.replaceState({}, '', '/integraciones/correo-imap');
+    }
+    const err = params.get('error');
+    if (err) {
+      toast.error(decodeURIComponent(err));
+      window.history.replaceState({}, '', '/integraciones/correo-imap');
+    }
   }, [loadStatus]);
 
   useEffect(() => {
@@ -193,6 +205,31 @@ export default function CorreoImapIntegracionPage() {
     }, 300);
     return () => window.clearTimeout(timer);
   }, [status?.connected, catalogFilters, loadCatalog]);
+
+  const connectMicrosoft = async () => {
+    if (!consent) {
+      toast.warning('Debes aceptar el consentimiento de lectura del buzon.');
+      return;
+    }
+    setConnecting(true);
+    try {
+      const res = await authFetch('/api/integrations/imap/microsoft/connect', {
+        method: 'POST',
+        body: JSON.stringify({
+          returnOrigin: window.location.origin,
+          email: email.trim().toLowerCase() || undefined,
+        }),
+      });
+      const json = (await res.json()) as { url?: string; error?: string };
+      if (!res.ok || !json.url) {
+        throw new Error(json.error || 'No se pudo iniciar la conexion con Microsoft.');
+      }
+      window.location.href = json.url;
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Error');
+      setConnecting(false);
+    }
+  };
 
   const connectImap = async () => {
     const cleanEmail = email.trim().toLowerCase();
@@ -571,7 +608,9 @@ export default function CorreoImapIntegracionPage() {
                     )}
 
                     <div className="space-y-2">
-                      <Label htmlFor="imap-email">Correo</Label>
+                      <Label htmlFor="imap-email">
+                        Correo{isOAuthProvider ? ' (opcional, para validar la cuenta)' : ''}
+                      </Label>
                       <Input
                         id="imap-email"
                         type="email"
@@ -583,34 +622,41 @@ export default function CorreoImapIntegracionPage() {
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="imap-password">Clave de aplicacion</Label>
-                      <Input
-                        id="imap-password"
-                        type="password"
-                        autoComplete="off"
-                        className="h-11"
-                        placeholder="xxxx xxxx xxxx xxxx"
-                        value={password}
-                        onChange={(event) => setPassword(event.target.value)}
-                      />
-                      {preset?.appPasswordHint ? (
-                        <p className="text-xs leading-5 text-slate-500 dark:text-zinc-400">
-                          <KeyRound className="mr-1 inline size-3" />
-                          {preset.appPasswordHint}{' '}
-                          {preset.appPasswordHelpUrl ? (
-                            <a
-                              href={preset.appPasswordHelpUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="font-medium text-amber-600 underline dark:text-yellow-300"
-                            >
-                              Como generarla
-                            </a>
-                          ) : null}
-                        </p>
-                      ) : null}
-                    </div>
+                    {isOAuthProvider ? (
+                      <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+                        <KeyRound className="mr-1 inline size-3" />
+                        {preset?.appPasswordHint}
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        <Label htmlFor="imap-password">Clave de aplicacion</Label>
+                        <Input
+                          id="imap-password"
+                          type="password"
+                          autoComplete="off"
+                          className="h-11"
+                          placeholder="xxxx xxxx xxxx xxxx"
+                          value={password}
+                          onChange={(event) => setPassword(event.target.value)}
+                        />
+                        {preset?.appPasswordHint ? (
+                          <p className="text-xs leading-5 text-slate-500 dark:text-zinc-400">
+                            <KeyRound className="mr-1 inline size-3" />
+                            {preset.appPasswordHint}{' '}
+                            {preset.appPasswordHelpUrl ? (
+                              <a
+                                href={preset.appPasswordHelpUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-medium text-amber-600 underline dark:text-yellow-300"
+                              >
+                                Como generarla
+                              </a>
+                            ) : null}
+                          </p>
+                        ) : null}
+                      </div>
+                    )}
 
                     <label className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-xs leading-5 text-slate-600 dark:border-white/10 dark:bg-zinc-900/40 dark:text-zinc-300">
                       <input
@@ -628,18 +674,18 @@ export default function CorreoImapIntegracionPage() {
                     <Button
                       type="button"
                       className="h-11 w-full"
-                      onClick={connectImap}
+                      onClick={isOAuthProvider ? connectMicrosoft : connectImap}
                       disabled={connecting}
                     >
                       {connecting ? (
                         <>
                           <Loader2 className="mr-2 size-4 animate-spin" />
-                          Probando conexion...
+                          {isOAuthProvider ? 'Redirigiendo a Microsoft...' : 'Probando conexion...'}
                         </>
                       ) : (
                         <>
                           <Mail className="mr-2 size-4" />
-                          Conectar correo
+                          {isOAuthProvider ? 'Conectar con Microsoft' : 'Conectar correo'}
                         </>
                       )}
                     </Button>
