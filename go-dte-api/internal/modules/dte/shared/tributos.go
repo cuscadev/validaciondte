@@ -7,8 +7,17 @@ import (
 
 const ivaTributoCodigo = "20"
 
+var tributoColumnLabels = map[string]string{
+	"C8": "cotrans",
+	"D1": "fovial",
+}
+
 func tributoColumnName(codigo string) string {
-	return "tributo_" + strings.TrimSpace(codigo)
+	codigo = strings.TrimSpace(codigo)
+	if label, ok := tributoColumnLabels[codigo]; ok {
+		return label
+	}
+	return "tributo_" + codigo
 }
 
 func CollectTributosFromAPI(items []publicAPITributo) map[string]string {

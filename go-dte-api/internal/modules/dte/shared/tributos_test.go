@@ -1,6 +1,19 @@
+//verificador-dte/internal/modules/dte/shared/tributos_test.go
 package shared
 
 import "testing"
+
+func TestTributoColumnName(t *testing.T) {
+	if got := tributoColumnName("C8"); got != "cotrans" {
+		t.Fatalf("C8 = %q, want cotrans", got)
+	}
+	if got := tributoColumnName("D1"); got != "fovial" {
+		t.Fatalf("D1 = %q, want fovial", got)
+	}
+	if got := tributoColumnName("XX"); got != "tributo_XX" {
+		t.Fatalf("XX = %q, want tributo_XX", got)
+	}
+}
 
 func TestParseOtrosTributosText(t *testing.T) {
 	got := ParseOtrosTributosText("C8: 1.24; D1: 2.48")
@@ -28,10 +41,10 @@ func TestResultRowTributoValues(t *testing.T) {
 	c8Idx := -1
 	d1Idx := -1
 	for i, h := range headers {
-		if h == "tributo_C8" {
+		if h == "cotrans" {
 			c8Idx = i
 		}
-		if h == "tributo_D1" {
+		if h == "fovial" {
 			d1Idx = i
 		}
 	}

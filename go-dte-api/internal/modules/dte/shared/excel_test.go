@@ -21,7 +21,7 @@ func TestReportHeadersIncludeTributoColumns(t *testing.T) {
 		OtrosTributos: "C8: 1.24; D1: 2.48",
 	}}
 	headers := buildReportHeaders(results)
-	if !containsString(headers, "tributo_C8") || !containsString(headers, "tributo_D1") {
+	if !containsString(headers, "cotrans") || !containsString(headers, "fovial") {
 		t.Fatalf("headers = %v", headers)
 	}
 	if !containsString(headers, "otrosTributos") {
