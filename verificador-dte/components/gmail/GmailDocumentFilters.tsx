@@ -23,7 +23,7 @@ type Props = {
 };
 
 const selectClassName =
-  'flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/30 dark:border-white/10 dark:bg-zinc-900';
+  'flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/30 dark:border-white/10 dark:bg-zinc-900 dark:text-white dark:[color-scheme:dark] [&>option]:bg-white [&>option]:text-slate-900 dark:[&>option]:bg-zinc-900 dark:[&>option]:text-white';
 
 export default function GmailDocumentFilters({
   filters,

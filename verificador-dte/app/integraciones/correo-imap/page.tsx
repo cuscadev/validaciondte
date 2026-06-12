@@ -576,7 +576,7 @@ export default function CorreoImapIntegracionPage() {
                       <Label htmlFor="imap-provider">Proveedor</Label>
                       <select
                         id="imap-provider"
-                        className="h-11 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50 dark:bg-input/30"
+                        className="h-11 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50 dark:bg-input/30 dark:text-white dark:[color-scheme:dark] [&>option]:bg-white [&>option]:text-slate-900 dark:[&>option]:bg-zinc-900 dark:[&>option]:text-white"
                         value={provider}
                         onChange={(event) => setProvider(event.target.value)}
                       >

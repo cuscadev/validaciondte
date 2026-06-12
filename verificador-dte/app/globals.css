@@ -109,6 +109,13 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.552 0.016 285.938);
+  /* Hace que los controles nativos (select, date picker, scrollbars) se rendericen oscuros */
+  color-scheme: dark;
+}
+
+.dark select option {
+  background-color: oklch(0.21 0.006 285.885);
+  color: oklch(0.985 0 0);
 }
 
 @keyframes brand-loader-spin {
