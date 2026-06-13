@@ -1,6 +1,6 @@
 import type { QueryClient, QueryKey, UseQueryOptions } from '@tanstack/react-query'
 
-import { auth } from '@/lib/firebase'
+import { getFirebaseIdToken } from '@/lib/firebase-id-token'
 
 import { getQueryDefaults, QUERY_ONE_SHOT } from './config'
 
@@ -26,7 +26,7 @@ export async function fetchGet<T>(path: string, options: FetchGetOptions = {}): 
 
   const token =
     providedToken === undefined
-      ? await auth.currentUser?.getIdToken()
+      ? await getFirebaseIdToken()
       : providedToken
 
   if (requireAuth && !token) {
@@ -50,7 +50,7 @@ export async function fetchGet<T>(path: string, options: FetchGetOptions = {}): 
     headers.Authorization = `Bearer ${token}`
   }
 
-  const res = await fetch(url, { headers, cache })
+  const res = await fetch(url, { headers, cache, credentials: 'same-origin' })
   const data = (await res.json().catch(() => ({}))) as T & ErrorPayload
 
   if (!res.ok) {

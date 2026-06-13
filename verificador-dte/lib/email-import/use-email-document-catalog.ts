@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import type { GmailCatalogFilters } from '@/components/gmail/GmailDocumentFilters';
+import { useAuth } from '@/components/AuthProvider';
 import { authFetch } from '@/lib/email-import/auth-fetch';
 import type { EmailDocumentSortBy, EmailDocumentSortDir } from '@/lib/email-import/documents-api';
 import {
@@ -48,6 +49,7 @@ export function useEmailDocumentCatalog(options: UseEmailDocumentCatalogOptions)
     verifySuccessLabel = 'Verificacion JSON completada.',
   } = options;
 
+  const { authChecked, isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
   const catalogSource: EmailCatalogSource = sourceFilter ?? 'gmail';
 
@@ -99,7 +101,7 @@ export function useEmailDocumentCatalog(options: UseEmailDocumentCatalogOptions)
       queryKey: emailDocumentCatalogKeys.list(catalogSource, listParams),
       path: '/api/integrations/gmail/documents',
       params: catalogQueryParams(listParams),
-      enabled,
+      enabled: enabled && authChecked && isAuthenticated,
       oneShot: true,
     }),
     placeholderData: keepPreviousData,

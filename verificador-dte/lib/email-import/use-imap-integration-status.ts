@@ -1,5 +1,6 @@
 'use client';
 
+import { useAuth } from '@/components/AuthProvider';
 import { useGetQuery } from '@/lib/tanstack-query';
 import { imapIntegrationKeys } from '@/lib/email-import/query-keys';
 
@@ -22,9 +23,12 @@ export type ImapIntegrationStatus = {
 };
 
 export function useImapIntegrationStatus() {
+  const { authChecked, isAuthenticated } = useAuth();
+
   return useGetQuery<ImapIntegrationStatus>({
     queryKey: imapIntegrationKeys.status(),
     path: '/api/integrations/imap/status',
     oneShot: true,
+    enabled: authChecked && isAuthenticated,
   });
 }
