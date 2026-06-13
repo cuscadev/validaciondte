@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { requireSuperadmin } from '@/lib/server-auth';
+import { deleteAppUserAfterFirestoreDelete } from '@/lib/server-user-sync';
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,6 +14,7 @@ export async function POST(req: NextRequest) {
     }
 
     await adminDb.collection('users').doc(uid).delete();
+    await deleteAppUserAfterFirestoreDelete(uid);
 
     return NextResponse.json({ success: true });
   } catch (error) {

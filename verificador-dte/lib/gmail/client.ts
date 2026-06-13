@@ -23,7 +23,7 @@ export type GmailAttachmentRef = {
   internalDate: string | null;
 };
 
-const MESSAGES_PER_BATCH = 35;
+const MESSAGES_PER_BATCH = 50;
 
 function sha256(buffer: Buffer): string {
   return createHash('sha256').update(buffer).digest('hex');

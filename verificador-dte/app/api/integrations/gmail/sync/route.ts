@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { runSyncBatch } from '@/lib/gmail/sync';
+import { runSyncUntilComplete } from '@/lib/gmail/sync';
 import { requireOrgAdmin } from '@/lib/server-auth';
 import { getGmailPublicErrorMessage } from '@/lib/gmail/callback-errors';
 
@@ -20,17 +20,21 @@ export async function POST(req: NextRequest) {
       jobId?: string;
     };
 
-    const result = await runSyncBatch({
+    const maxBatches = body.jobId ? 1 : 6;
+
+    const result = await runSyncUntilComplete({
       organizationId: user.organizationId,
       createdByUid: user.uid,
       dateFrom: body.dateFrom,
       dateTo: body.dateTo,
       jobId: body.jobId,
+      maxBatches,
     });
 
     return NextResponse.json({
       job: result.job,
       batchDocuments: result.batchDocuments,
+      syncPlan: result.syncPlan,
     });
   } catch (error) {
     const message = getGmailPublicErrorMessage(error);

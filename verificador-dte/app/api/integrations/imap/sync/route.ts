@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { runImapSyncBatch } from '@/lib/imap/sync';
+import { runImapSyncUntilComplete } from '@/lib/imap/sync';
 import { requireOrgAdmin } from '@/lib/server-auth';
 
 export const runtime = 'nodejs';
@@ -20,17 +20,21 @@ export async function POST(req: NextRequest) {
       jobId?: string;
     };
 
-    const result = await runImapSyncBatch({
+    const maxBatches = body.jobId ? 1 : 3;
+
+    const result = await runImapSyncUntilComplete({
       organizationId: user.organizationId,
       createdByUid: user.uid,
       dateFrom: body.dateFrom,
       dateTo: body.dateTo,
       jobId: body.jobId,
+      maxBatches,
     });
 
     return NextResponse.json({
       job: result.job,
       batchDocuments: result.batchDocuments,
+      syncPlan: result.syncPlan,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Error en sincronizacion.';

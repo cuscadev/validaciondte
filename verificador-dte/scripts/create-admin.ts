@@ -57,6 +57,9 @@ async function createAdmin() {
       { merge: true }
     );
 
+    const { syncAppUserAfterFirestoreWrite } = await import('../lib/server-user-sync');
+    await syncAppUserAfterFirestoreWrite(userRecord.uid);
+
     console.log('Superadmin listo.');
     console.log('  UID:', userRecord.uid);
     console.log('  Email:', email);

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { syncAppUserAfterFirestoreWrite } from '@/lib/server-user-sync';
 
 export async function POST(req: NextRequest) {
   const { email, password, displayName, role } = await req.json();
@@ -28,6 +29,8 @@ export async function POST(req: NextRequest) {
       active: true,
       totpEnabled: false,
     });
+
+    await syncAppUserAfterFirestoreWrite(existing.uid);
 
     return NextResponse.json({ uid: existing.uid });
   } catch (error) {
@@ -58,6 +61,8 @@ export async function POST(req: NextRequest) {
     active: true,
     totpEnabled: false,
   });
+
+  await syncAppUserAfterFirestoreWrite(userRecord.uid);
 
   return NextResponse.json({ uid: userRecord.uid });
 }

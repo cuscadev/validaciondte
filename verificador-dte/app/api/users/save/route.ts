@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { requireSuperadmin } from '@/lib/server-auth';
+import { syncAppUserAfterFirestoreWrite } from '@/lib/server-user-sync';
 import { sanitizeUsageLimits } from '@/lib/usage-limits';
 
 interface SaveUserBody {
@@ -40,6 +41,7 @@ export async function POST(req: NextRequest) {
     }
 
     await adminDb.collection('users').doc(uid).set(payload, { merge: true });
+    await syncAppUserAfterFirestoreWrite(uid);
 
     return NextResponse.json({ success: true });
   } catch (error) {

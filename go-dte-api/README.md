@@ -27,10 +27,17 @@ Cada modulo de procesamiento tiene su propio:
 
 ## Desarrollo
 
+Copia `.env.example` a `.env` y configura al menos:
+
+- `SUPABASE_DB_URL` — conexion Postgres (Session pooler IPv4 de Supabase)
+- `GO_DTE_INTERNAL_API_KEY` — misma clave que `GO_DTE_INTERNAL_API_KEY` en verificador-dte
+
 ```bash
 go mod tidy
 go run ./cmd/api
 ```
+
+Al arrancar, `cmd/api/main.go` carga automaticamente `go-dte-api/.env`.
 
 Por defecto escucha en `0.0.0.0:8081`. El host lo fija el servidor; solo puedes cambiar el puerto con la variable estándar `PORT`:
 
@@ -60,7 +67,37 @@ GO_DTE_API_URL=https://validaciondte.onrender.com
 
 Si no defines `GO_DTE_API_URL`, Next.js usa `http://127.0.0.1:8081` en desarrollo y `https://validaciondte.onrender.com` en producción (ver `verificador-dte/lib/go-dte-api.ts`).
 
-## Consulta DTE (sin Chromium por defecto)
+## Documentos de correo (Postgres / Supabase)
+
+Con `SUPABASE_DB_URL` configurada se habilitan:
+
+- `GET/POST /api/email-documents` — documentos JSON importados desde Gmail/IMAP
+- `GET /api/email-documents/:id/raw` — JSON crudo almacenado en Postgres
+
+Esquema SQL: [`db/email-import-schema.sql`](db/email-import-schema.sql)
+
+## Espejo de usuarios Firebase (Postgres / Supabase)
+
+Perfiles de Firestore sincronizados a `app_users` (Firebase Auth sigue siendo el login).
+
+Esquema SQL: [`db/app-users-schema.sql`](db/app-users-schema.sql)
+
+Endpoints internos (header `X-Go-Dte-Internal-Key`):
+
+- `PUT /api/app-users/:id` — upsert de un usuario
+- `POST /api/app-users/bulk` — backfill masivo
+- `GET /api/app-users/:id` — consulta
+- `DELETE /api/app-users/:id` — eliminación
+
+Backfill inicial desde verificador-dte:
+
+```bash
+cd verificador-dte
+npx tsx scripts/sync-users-to-postgres.ts
+```
+
+Tras el backfill, verificar huérfanos y activar la FK comentada al final de `app-users-schema.sql`.
+
 
 Por defecto la API consulta Hacienda con **HTTP puro**, usando el mismo endpoint REST que el portal Angular:
 

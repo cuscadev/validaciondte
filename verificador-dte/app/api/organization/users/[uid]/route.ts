@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { syncCollaboratorCount } from '@/lib/organization-admin';
 import { requireOrgAdmin } from '@/lib/server-auth';
+import {
+  deleteAppUserAfterFirestoreDelete,
+  syncAppUserAfterFirestoreWrite,
+} from '@/lib/server-user-sync';
 import type { AccountStatus, OrgRole } from '@/lib/firestoreUser';
 
 export async function PATCH(
@@ -50,6 +54,7 @@ export async function PATCH(
     }
 
     await adminDb.collection('users').doc(uid).set(patch, { merge: true });
+    await syncAppUserAfterFirestoreWrite(uid);
     return NextResponse.json({ success: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Error';
@@ -87,6 +92,7 @@ export async function DELETE(
 
     await adminAuth.deleteUser(uid);
     await adminDb.collection('users').doc(uid).delete();
+    await deleteAppUserAfterFirestoreDelete(uid);
     await syncCollaboratorCount(orgId);
 
     return NextResponse.json({ success: true });

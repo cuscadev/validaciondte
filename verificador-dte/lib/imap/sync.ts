@@ -1,13 +1,10 @@
 import { createHash, randomUUID } from 'crypto';
 
-import {
-  createSyncJob,
-  findDocumentByHash,
-  findDocumentByMessageAttachment,
-  getSyncJob,
-  recordDocument,
-  updateSyncJob,
-} from '@/lib/gmail/firebase-db';
+import { getSyncJob, updateSyncJob } from '@/lib/gmail/firebase-db';
+import { recordDocument } from '@/lib/email-import/documents-api';
+import { startSyncWithPlan } from '@/lib/email-import/sync-start';
+import type { SyncPlanResult } from '@/lib/email-import/sync-plan';
+import { SyncDedupCache } from '@/lib/email-import/sync-dedup-cache';
 import { rebuildDocumentLinks } from '@/lib/gmail/link-documents';
 import { isAllowedTipoDte, isDateInRange, parseDteForImport } from '@/lib/gmail/parse-dte-import';
 import type { GmailAttachmentRef } from '@/lib/gmail/client';
@@ -25,10 +22,19 @@ import { getActiveImapConnection } from '@/lib/imap/firebase-db';
 export type ImapSyncBatchResult = {
   job: GmailSyncJobRow;
   batchDocuments: GmailDocumentRow[];
+  syncPlan?: SyncPlanResult;
 };
 
 function sha256(buffer: Buffer): string {
   return createHash('sha256').update(buffer).digest('hex');
+}
+
+function parseImapUidCache(cache: string | null | undefined): number[] {
+  if (!cache?.trim()) return [];
+  return cache
+    .split(',')
+    .map((value) => Number(value.trim()))
+    .filter((uid) => Number.isFinite(uid) && uid > 0);
 }
 
 export async function runImapSyncBatch(input: {
@@ -44,6 +50,7 @@ export async function runImapSyncBatch(input: {
   }
 
   let job: GmailSyncJobRow | null = null;
+  let syncPlan: SyncPlanResult | undefined;
 
   if (input.jobId) {
     job = await getSyncJob(input.jobId, input.organizationId);
@@ -55,14 +62,21 @@ export async function runImapSyncBatch(input: {
     if (!input.dateFrom || !input.dateTo) {
       throw new Error('Indica dateFrom y dateTo para iniciar la sincronizacion.');
     }
-    job = await createSyncJob({
+
+    const start = await startSyncWithPlan({
       organizationId: input.organizationId,
       connectionId: connection.id,
+      createdByUid: input.createdByUid,
       dateFrom: input.dateFrom,
       dateTo: input.dateTo,
-      createdByUid: input.createdByUid,
       source: 'imap',
     });
+    syncPlan = start.plan;
+    job = start.job;
+
+    if (start.kind === 'cache_hit') {
+      return { job, batchDocuments: [], syncPlan };
+    }
   }
 
   const batchDocuments: GmailDocumentRow[] = [];
@@ -72,6 +86,7 @@ export async function runImapSyncBatch(input: {
   let errors = job.error_count;
 
   const client = createImapClient(await buildImapConfig(connection));
+  const dedup = new SyncDedupCache();
 
   try {
     await client.connect();
@@ -79,9 +94,15 @@ export async function runImapSyncBatch(input: {
 
     let completed = false;
     let nextCursor: string | null = null;
+    let uidCacheToPersist: string | null = null;
 
     try {
-      const uids = await searchMessageUids(client, job.date_from, job.date_to);
+      let uids = parseImapUidCache(job.imap_uid_cache);
+      if (uids.length === 0) {
+        uids = await searchMessageUids(client, job.date_from, job.date_to);
+        uidCacheToPersist = uids.join(',');
+      }
+
       const mailbox = client.mailbox;
       const mailboxKey =
         mailbox && typeof mailbox === 'object'
@@ -94,22 +115,28 @@ export async function runImapSyncBatch(input: {
       completed = nextOffset >= uids.length;
       nextCursor = completed ? null : String(nextOffset);
 
-      // Fase 1: un solo FETCH de estructura/metadatos para todo el lote
-      // (sin descargar contenido). Solo quedan los mensajes con JSON/ZIP.
       const candidates = await scanMessagesForJsonParts(client, batchUids, mailboxKey);
+
+      const preloadRefs: Array<{ messageId: string; attachmentId: string }> = [];
+      for (const message of candidates) {
+        for (const candidatePart of message.parts) {
+          if (!candidatePart.isZip) {
+            preloadRefs.push({
+              messageId: message.meta.messageKey,
+              attachmentId: `${candidatePart.part}:${candidatePart.fileName}`,
+            });
+          }
+        }
+      }
+      await dedup.preloadAttachments(input.organizationId, preloadRefs);
 
       for (const message of candidates) {
         for (const candidatePart of message.parts) {
-          // Dedup antes de descargar: si esta parte ya se importo, no se baja de nuevo.
           let attachments;
           try {
             const knownKey = `${candidatePart.part}:${candidatePart.fileName}`;
             if (!candidatePart.isZip) {
-              const priorByPart = await findDocumentByMessageAttachment(
-                input.organizationId,
-                message.meta.messageKey,
-                knownKey
-              );
+              const priorByPart = dedup.getByAttachment(message.meta.messageKey, knownKey);
               if (priorByPart) {
                 found += 1;
                 skipped += 1;
@@ -117,7 +144,6 @@ export async function runImapSyncBatch(input: {
                 continue;
               }
             }
-            // Fase 2: descargar solo la parte MIME del adjunto.
             attachments = await downloadCandidatePart(client, message.uid, candidatePart);
           } catch (partErr) {
             errors += 1;
@@ -125,22 +151,39 @@ export async function runImapSyncBatch(input: {
             continue;
           }
 
+          const attachmentKeys = attachments.map((attachment) => ({
+            messageId: message.meta.messageKey,
+            attachmentId: attachment.attachmentKey,
+          }));
+          await dedup.preloadAttachments(input.organizationId, attachmentKeys);
+
+          const pendingHashes: string[] = [];
+          const pendingAttachments: Array<{
+            attachment: (typeof attachments)[number];
+            contentHash: string;
+          }> = [];
+
           for (const attachment of attachments) {
             found += 1;
-            try {
-              const priorByMessage = await findDocumentByMessageAttachment(
-                input.organizationId,
-                message.meta.messageKey,
-                attachment.attachmentKey
-              );
-              if (priorByMessage) {
-                skipped += 1;
-                batchDocuments.push(priorByMessage);
-                continue;
-              }
+            const priorByMessage = dedup.getByAttachment(
+              message.meta.messageKey,
+              attachment.attachmentKey
+            );
+            if (priorByMessage) {
+              skipped += 1;
+              batchDocuments.push(priorByMessage);
+              continue;
+            }
+            const contentHash = sha256(attachment.buffer);
+            pendingHashes.push(contentHash);
+            pendingAttachments.push({ attachment, contentHash });
+          }
 
-              const contentHash = sha256(attachment.buffer);
-              const existing = await findDocumentByHash(input.organizationId, contentHash);
+          await dedup.preloadHashes(input.organizationId, pendingHashes);
+
+          for (const { attachment, contentHash } of pendingAttachments) {
+            try {
+              const existing = dedup.getByHash(contentHash);
               if (existing) {
                 skipped += 1;
                 batchDocuments.push(existing);
@@ -176,34 +219,40 @@ export async function runImapSyncBatch(input: {
                 parsed,
                 source: 'imap' as const,
                 mailboxEmail: connection.email,
+                createdByUid: job.created_by_uid || input.createdByUid,
               };
 
               if (!parsed) {
                 skipped += 1;
-                batchDocuments.push(
-                  await recordDocument({ ...base, importStatus: 'skipped_invalid' })
-                );
+                const doc = await recordDocument({ ...base, importStatus: 'skipped_invalid' });
+                dedup.remember(doc);
+                batchDocuments.push(doc);
                 continue;
               }
 
               if (!isAllowedTipoDte(parsed.tipoDte)) {
                 skipped += 1;
-                batchDocuments.push(
-                  await recordDocument({ ...base, importStatus: 'skipped_unsupported_type' })
-                );
+                const doc = await recordDocument({
+                  ...base,
+                  importStatus: 'skipped_unsupported_type',
+                });
+                dedup.remember(doc);
+                batchDocuments.push(doc);
                 continue;
               }
 
               if (!isDateInRange(parsed.fecEmi, job.date_from, job.date_to)) {
                 skipped += 1;
-                batchDocuments.push(
-                  await recordDocument({ ...base, importStatus: 'skipped_date' })
-                );
+                const doc = await recordDocument({ ...base, importStatus: 'skipped_date' });
+                dedup.remember(doc);
+                batchDocuments.push(doc);
                 continue;
               }
 
               imported += 1;
-              batchDocuments.push(await recordDocument({ ...base, importStatus: 'imported' }));
+              const doc = await recordDocument({ ...base, importStatus: 'imported' });
+              dedup.remember(doc);
+              batchDocuments.push(doc);
             } catch (attachmentErr) {
               errors += 1;
               console.error('[imap-sync attachment]', attachmentErr);
@@ -223,6 +272,7 @@ export async function runImapSyncBatch(input: {
       skipped_count: skipped,
       error_count: errors,
       finished_at: completed ? new Date().toISOString() : null,
+      ...(uidCacheToPersist ? { imap_uid_cache: uidCacheToPersist } : {}),
     });
 
     if (completed) {
@@ -239,8 +289,10 @@ export async function runImapSyncBatch(input: {
         skipped_count: skipped,
         error_count: errors,
         cursor: nextCursor,
+        imap_uid_cache: uidCacheToPersist || job.imap_uid_cache || null,
       },
       batchDocuments,
+      syncPlan,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Error en sincronizacion IMAP';
@@ -257,4 +309,28 @@ export async function runImapSyncBatch(input: {
   } finally {
     await client.logout().catch(() => undefined);
   }
+}
+
+export async function runImapSyncUntilComplete(input: {
+  organizationId: string;
+  createdByUid: string;
+  dateFrom?: string;
+  dateTo?: string;
+  jobId?: string;
+  maxBatches?: number;
+}): Promise<ImapSyncBatchResult> {
+  const maxBatches = input.maxBatches ?? 1;
+  let result = await runImapSyncBatch(input);
+  let batches = 1;
+
+  while (result.job.status === 'running' && batches < maxBatches) {
+    result = await runImapSyncBatch({
+      organizationId: input.organizationId,
+      createdByUid: input.createdByUid,
+      jobId: result.job.id,
+    });
+    batches += 1;
+  }
+
+  return result;
 }

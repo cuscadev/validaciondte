@@ -4,6 +4,7 @@ import { createOrganizationForOwner, getOrganization, updateOrganization } from 
 import { getOrgDisplayTitle } from '@/lib/org-display';
 import type { Organization, PersonType } from '@/lib/organization-types';
 import { requireAuth } from '@/lib/server-auth';
+import { syncAppUserAfterFirestoreWrite } from '@/lib/server-user-sync';
 
 function onlyDigits(value: string | undefined) {
   return (value ?? '').replace(/\D/g, '');
@@ -133,6 +134,7 @@ export async function POST(req: NextRequest) {
     }
 
     await adminDb.collection('users').doc(user.uid).set(userPatch, { merge: true });
+    await syncAppUserAfterFirestoreWrite(user.uid);
 
     const org = await getOrganization(organizationId);
     return NextResponse.json({ success: true, organization: org });

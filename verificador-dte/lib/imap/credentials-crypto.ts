@@ -43,5 +43,11 @@ export function decryptImapSecret(payload: string): string {
   const data = Buffer.from(dataB64, 'base64');
   const decipher = createDecipheriv(ALGO, key, iv);
   decipher.setAuthTag(tag);
-  return Buffer.concat([decipher.update(data), decipher.final()]).toString('utf8');
+  try {
+    return Buffer.concat([decipher.update(data), decipher.final()]).toString('utf8');
+  } catch {
+    throw new Error(
+      'No se pudieron descifrar las credenciales IMAP. La clave de cifrado cambió o la cuenta se guardó en otro entorno. Vuelve a conectar la cuenta IMAP desde Integraciones.'
+    );
+  }
 }

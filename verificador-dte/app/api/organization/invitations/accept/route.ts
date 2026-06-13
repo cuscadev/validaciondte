@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { syncCollaboratorCount } from '@/lib/organization-admin';
 import { getUserDocByEmail } from '@/lib/server-users';
+import { syncAppUserAfterFirestoreWrite } from '@/lib/server-user-sync';
 
 function invitationExpired(value: unknown) {
   if (!value) return true;
@@ -100,6 +101,8 @@ export async function POST(req: NextRequest) {
       createdAt: new Date(),
       active: true,
     }, { merge: true });
+
+    await syncAppUserAfterFirestoreWrite(uid);
 
     await invitation.ref.update({
       status: 'accepted',

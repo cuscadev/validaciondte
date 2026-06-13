@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { downloadDocumentJson } from '@/lib/gmail/firebase-db';
+import { downloadDocumentJson } from '@/lib/email-import/documents-api';
 import { requireOrgMember } from '@/lib/server-auth';
 import { getGmailPublicErrorMessage } from '@/lib/gmail/callback-errors';
 

@@ -9,14 +9,20 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 
 	"verificador-dte/go-dte-api/internal/common/config"
+	"verificador-dte/go-dte-api/internal/common/db"
 	dtemodule "verificador-dte/go-dte-api/internal/modules/dte"
 	"verificador-dte/go-dte-api/internal/modules/dte/shared"
+	appusers "verificador-dte/go-dte-api/internal/modules/app_users"
+	emaildocuments "verificador-dte/go-dte-api/internal/modules/email_documents"
 	haciendamodule "verificador-dte/go-dte-api/internal/modules/hacienda"
 )
 
 func New(cfg config.Config) *fiber.App {
 	if err := shared.InitScrapeRuntime(context.Background(), cfg); err != nil {
 		log.Printf("warn: scrape runtime init failed: %v", err)
+	}
+	if err := db.Init(context.Background(), cfg.SupabaseDBURL); err != nil {
+		log.Printf("warn: postgres init failed: %v", err)
 	}
 
 	app := fiber.New(fiber.Config{
@@ -40,6 +46,8 @@ func New(cfg config.Config) *fiber.App {
 
 	dtemodule.Register(app, cfg)
 	haciendamodule.Register(app, cfg)
+	emaildocuments.Register(app, cfg)
+	appusers.Register(app, cfg)
 
 	return app
 }

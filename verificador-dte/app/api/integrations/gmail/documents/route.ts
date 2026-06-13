@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { listDocuments } from '@/lib/gmail/firebase-db';
+import { listDocuments, type EmailDocumentSortBy, type EmailDocumentSortDir } from '@/lib/email-import/documents-api';
 import { requireOrgMember } from '@/lib/server-auth';
 import { getGmailPublicErrorMessage } from '@/lib/gmail/callback-errors';
 
@@ -25,6 +25,8 @@ export async function GET(req: NextRequest) {
     const mailbox = params.get('mailbox') || undefined;
     const limit = Number(params.get('limit') || 50);
     const offset = Number(params.get('offset') || 0);
+    const sortBy = params.get('sortBy') || undefined;
+    const sortDir = params.get('sortDir') || undefined;
 
     const { documents, total } = await listDocuments({
       organizationId: user.organizationId,
@@ -38,6 +40,10 @@ export async function GET(req: NextRequest) {
       mailbox,
       limit: Math.min(Math.max(limit, 1), 200),
       offset: Math.max(offset, 0),
+      sortBy: sortBy as EmailDocumentSortBy | undefined,
+      sortDir: (sortDir === 'asc' || sortDir === 'desc' ? sortDir : undefined) as
+        | EmailDocumentSortDir
+        | undefined,
     });
 
     return NextResponse.json({ documents, total });

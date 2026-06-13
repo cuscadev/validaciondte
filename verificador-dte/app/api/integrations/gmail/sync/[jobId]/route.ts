@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getSyncJob, listDocuments } from '@/lib/gmail/firebase-db';
+import { getSyncJob } from '@/lib/gmail/firebase-db';
+import { listDocuments } from '@/lib/email-import/documents-api';
 import { requireOrgAdmin } from '@/lib/server-auth';
 import { getGmailPublicErrorMessage } from '@/lib/gmail/callback-errors';
 

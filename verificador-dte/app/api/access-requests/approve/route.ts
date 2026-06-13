@@ -6,6 +6,7 @@ import { Timestamp } from 'firebase-admin/firestore';
 import { createOrganizationForOwner } from '@/lib/organization-admin';
 import { generateTemporaryPassword, sendAppMail, temporaryPasswordEmail } from '@/lib/server-mail';
 import { requireSuperadmin } from '@/lib/server-auth';
+import { syncAppUserAfterFirestoreWrite } from '@/lib/server-user-sync';
 
 function getAppBaseUrl() {
   const configured = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL;
@@ -95,6 +96,8 @@ export async function POST(req: NextRequest) {
       mustChangePassword: true,
       temporaryPasswordIssuedAt: new Date(),
     }, { merge: true });
+
+    await syncAppUserAfterFirestoreWrite(uid);
 
     await adminDb.collection('accessRequests').doc(requestId).update({
       status: 'approved',

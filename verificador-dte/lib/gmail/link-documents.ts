@@ -96,7 +96,7 @@ export function computeDocumentLinkPairs(documents: LinkPairInput[]): LinkPair[]
 
 export async function rebuildDocumentLinks(organizationId: string) {
   const { listImportedDocumentsForOrg, upsertDocumentLink } = await import(
-    '@/lib/gmail/firebase-db'
+    '@/lib/email-import/documents-api'
   );
   const documents = await listImportedDocumentsForOrg(organizationId);
   const pairs = computeDocumentLinkPairs(

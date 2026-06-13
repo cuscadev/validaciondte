@@ -2,7 +2,7 @@ import { getGoDteApiUrl } from '@/lib/go-dte-api';
 import {
   downloadDocumentJson,
   getDocumentsByIds,
-} from '@/lib/gmail/firebase-db';
+} from '@/lib/email-import/documents-api';
 import type { GmailJsonVerifyResult } from '@/lib/gmail/json-verify-result';
 
 export const GMAIL_JSON_VERIFY_BATCH_SIZE = 25;

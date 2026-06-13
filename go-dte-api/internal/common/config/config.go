@@ -28,6 +28,8 @@ type Config struct {
 	HaciendaUserAgent           string
 	HaciendaConsultaDteLoteTest string
 	HaciendaConsultaDteLoteProd string
+	SupabaseDBURL               string
+	InternalAPIKey              string
 }
 
 func Load() Config {
@@ -59,6 +61,8 @@ func Load() Config {
 		HaciendaUserAgent:           getenv("HACIENDA_USER_AGENT", "KaiserDTE"),
 		HaciendaConsultaDteLoteTest: getenv("HACIENDA_CONSULTA_DTE_LOTE_URL_TEST", "https://apitest.dtes.mh.gob.sv/fesv/recepcion/consultadtelote"),
 		HaciendaConsultaDteLoteProd: getenv("HACIENDA_CONSULTA_DTE_LOTE_URL_PROD", "https://api.dtes.mh.gob.sv/fesv/recepcion/consultadtelote"),
+		SupabaseDBURL:               getenv("SUPABASE_DB_URL", ""),
+		InternalAPIKey:              getenv("GO_DTE_INTERNAL_API_KEY", ""),
 	}
 }
 

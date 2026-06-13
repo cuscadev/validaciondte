@@ -32,6 +32,10 @@ export type GmailSyncJobRow = {
   created_at: string;
   started_at: string | null;
   finished_at: string | null;
+  mailbox_skipped?: boolean;
+  requested_date_from?: string | null;
+  requested_date_to?: string | null;
+  imap_uid_cache?: string | null;
 };
 
 export type GmailDocumentImportStatus =
@@ -54,6 +58,8 @@ export type GmailDocumentRow = {
   source?: DteImportSource;
   /** Correo del buzon conectado desde el que se importo el documento. */
   mailbox_email?: string | null;
+  /** Uid del usuario de Firebase que ejecuto la sincronizacion. */
+  firebase_user_id?: string | null;
   gmail_message_id: string;
   gmail_thread_id?: string | null;
   gmail_attachment_id: string;
