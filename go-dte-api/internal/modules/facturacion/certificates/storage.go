@@ -26,6 +26,11 @@ func NewStorage(cfg config.Config) *Storage {
 	}
 }
 
+func (s *Storage) IsConfigured() bool {
+	return strings.TrimSpace(s.cfg.SupabaseURL) != "" &&
+		strings.TrimSpace(s.cfg.SupabaseServiceRoleKey) != ""
+}
+
 func (s *Storage) Upload(ctx context.Context, objectPath string, data []byte) (string, error) {
 	baseURL := strings.TrimRight(s.cfg.SupabaseURL, "/")
 	serviceKey := strings.TrimSpace(s.cfg.SupabaseServiceRoleKey)
@@ -34,8 +39,8 @@ func (s *Storage) Upload(ctx context.Context, objectPath string, data []byte) (s
 		bucket = "certificates"
 	}
 
-	if baseURL == "" || serviceKey == "" {
-		return objectPath, fmt.Errorf("supabase storage no configurado")
+	if !s.IsConfigured() {
+		return "", fmt.Errorf("supabase storage no configurado")
 	}
 
 	objectPath = strings.TrimLeft(objectPath, "/")

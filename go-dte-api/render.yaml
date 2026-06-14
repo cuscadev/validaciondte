@@ -7,4 +7,13 @@ services:
     envVars:
       - key: PORT
         value: "8081"
+      - key: HACIENDA_CREDENTIALS_ENCRYPTION_KEY
+        sync: false
+      - key: SUPABASE_DB_URL
+        sync: false
+      - key: GO_DTE_INTERNAL_API_KEY
+        sync: false
+      # Opcional: si se configura, certificados van a Storage; si no, Postgres cifrado.
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
     healthCheckPath: /health

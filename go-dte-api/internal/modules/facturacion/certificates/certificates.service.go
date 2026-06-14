@@ -23,6 +23,8 @@ import (
 
 var nitRegex = regexp.MustCompile(`^\d{9}$|^\d{14}$`)
 
+const dbCertificatePath = "db:encrypted"
+
 type Service struct {
 	cfg     config.Config
 	cache   *Cache
@@ -85,12 +87,20 @@ func (s *Service) Upload(ctx context.Context, xmlData []byte, req dto.UploadRequ
 	}
 
 	objectPath := fmt.Sprintf("%d/%s.crt", req.EmisorID, nit)
-	storagePath, err := s.storage.Upload(ctx, objectPath, xmlData)
-	if err != nil {
-		return dto.UploadResponse{}, err
+	var storagePath string
+	if s.storage.IsConfigured() {
+		storagePath, err = s.storage.Upload(ctx, objectPath, xmlData)
+		if err != nil {
+			return dto.UploadResponse{}, err
+		}
+	} else {
+		storagePath, err = s.storeCertificateInDB(ctx, req.EmisorID, xmlData, password)
+		if err != nil {
+			return dto.UploadResponse{}, err
+		}
 	}
 
-	if s.pool != nil && req.EmisorID > 0 {
+	if s.pool != nil && req.EmisorID > 0 && s.storage.IsConfigured() {
 		passwordHash, err := appcrypto.EncryptSecret([]byte(password), s.cfg.HaciendaCredentialsEncryptionKey)
 		if err != nil {
 			return dto.UploadResponse{}, err
@@ -99,6 +109,7 @@ func (s *Service) Upload(ctx context.Context, xmlData []byte, req dto.UploadRequ
 			UPDATE emisores
 			SET certificado_path = $1,
 			    certificado_password_hash = $2,
+			    certificado_xml_cifrado = NULL,
 			    updated_at = CURRENT_TIMESTAMP
 			WHERE id = $3
 		`, storagePath, passwordHash, req.EmisorID)
@@ -166,12 +177,22 @@ func (s *Service) LoadCertificate(ctx context.Context, nit string) (*signerdomai
 	}
 
 	if strings.TrimSpace(storagePath) != "" {
-		data, err := s.storage.Download(ctx, storagePath)
-		if err == nil {
-			cert, parseErr := ParseCertificateXML(data)
-			if parseErr == nil {
-				s.cache.Set(nit, cert)
+		if strings.HasPrefix(storagePath, "db:") {
+			cert, err := s.loadCertificateFromDB(ctx, nit)
+			if err != nil {
+				return nil, err
+			}
+			if cert != nil {
 				return cert, nil
+			}
+		} else {
+			data, err := s.storage.Download(ctx, storagePath)
+			if err == nil {
+				cert, parseErr := ParseCertificateXML(data)
+				if parseErr == nil {
+					s.cache.Set(nit, cert)
+					return cert, nil
+				}
 			}
 		}
 	}
@@ -241,4 +262,62 @@ func (s *Service) ResolvePassword(ctx context.Context, nit, provided string) (st
 		return "", errors.New("passwordPri es requerida")
 	}
 	return password, nil
+}
+
+func (s *Service) storeCertificateInDB(ctx context.Context, emisorID int, xmlData []byte, password string) (string, error) {
+	if s.pool == nil || emisorID <= 0 {
+		return "", errors.New("postgres no configurado para almacenar certificados")
+	}
+
+	encryptedXML, err := appcrypto.EncryptSecret(xmlData, s.cfg.HaciendaCredentialsEncryptionKey)
+	if err != nil {
+		return "", fmt.Errorf("no se pudo cifrar el certificado: %w", err)
+	}
+	passwordHash, err := appcrypto.EncryptSecret([]byte(password), s.cfg.HaciendaCredentialsEncryptionKey)
+	if err != nil {
+		return "", fmt.Errorf("no se pudo cifrar la clave del certificado: %w", err)
+	}
+
+	_, err = s.pool.Exec(ctx, `
+		UPDATE emisores
+		SET certificado_path = $1,
+		    certificado_password_hash = $2,
+		    certificado_xml_cifrado = $3,
+		    updated_at = CURRENT_TIMESTAMP
+		WHERE id = $4
+	`, dbCertificatePath, passwordHash, encryptedXML, emisorID)
+	if err != nil {
+		return "", err
+	}
+
+	return dbCertificatePath, nil
+}
+
+func (s *Service) loadCertificateFromDB(ctx context.Context, nit string) (*signerdomain.CertificateMH, error) {
+	if s.pool == nil {
+		return nil, nil
+	}
+
+	var encryptedXML string
+	err := s.pool.QueryRow(ctx, `
+		SELECT certificado_xml_cifrado
+		FROM emisores
+		WHERE nit = $1 AND activo = TRUE AND certificado_path LIKE 'db:%'
+		LIMIT 1
+	`, nit).Scan(&encryptedXML)
+	if err != nil || strings.TrimSpace(encryptedXML) == "" {
+		return nil, nil
+	}
+
+	xmlData, err := appcrypto.DecryptSecret(encryptedXML, s.cfg.HaciendaCredentialsEncryptionKey)
+	if err != nil {
+		return nil, errors.New("no se pudo descifrar el certificado almacenado")
+	}
+
+	cert, err := ParseCertificateXML(xmlData)
+	if err != nil {
+		return nil, err
+	}
+	s.cache.Set(nit, cert)
+	return cert, nil
 }

@@ -3,10 +3,14 @@ package config
 import (
 	"bufio"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 )
+
+var supabaseProjectRefFromHost = regexp.MustCompile(`^db\.([a-z0-9]+)\.supabase\.co$`)
+var supabaseProjectRefFromUser = regexp.MustCompile(`^postgres\.([a-z0-9]+)$`)
 
 const defaultListenHost = "0.0.0.0"
 
@@ -96,7 +100,7 @@ func Load() Config {
 		HaciendaConsultaDteLoteTest: getenv("HACIENDA_CONSULTA_DTE_LOTE_URL_TEST", "https://apitest.dtes.mh.gob.sv/fesv/recepcion/consultadtelote"),
 		HaciendaConsultaDteLoteProd: getenv("HACIENDA_CONSULTA_DTE_LOTE_URL_PROD", "https://api.dtes.mh.gob.sv/fesv/recepcion/consultadtelote"),
 		SupabaseDBURL:               supabaseDBURL,
-		SupabaseURL:                 getenv("SUPABASE_URL", ""),
+		SupabaseURL:                 resolveSupabaseURL(getenv("SUPABASE_URL", ""), supabaseDBURL),
 		SupabaseServiceRoleKey:      getenv("SUPABASE_SERVICE_ROLE_KEY", ""),
 		SupabaseCertificatesBucket:  getenv("SUPABASE_CERTIFICATES_BUCKET", "certificates"),
 		HaciendaAuthURLTest:         getenv("HACIENDA_AUTH_URL_TEST", "https://apitest.dtes.mh.gob.sv/seguridad/auth"),
@@ -190,4 +194,55 @@ func minInt(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func resolveSupabaseURL(explicitURL, dbURL string) string {
+	if strings.TrimSpace(explicitURL) != "" {
+		return strings.TrimSpace(explicitURL)
+	}
+	ref := supabaseProjectRefFromDBURL(dbURL)
+	if ref == "" {
+		return ""
+	}
+	return "https://" + ref + ".supabase.co"
+}
+
+func supabaseProjectRefFromDBURL(dbURL string) string {
+	dbURL = strings.TrimSpace(dbURL)
+	if dbURL == "" {
+		return ""
+	}
+
+	withoutScheme := dbURL
+	if idx := strings.Index(dbURL, "://"); idx >= 0 {
+		withoutScheme = dbURL[idx+3:]
+	}
+	atIdx := strings.LastIndex(withoutScheme, "@")
+	if atIdx < 0 {
+		return ""
+	}
+
+	userInfo := withoutScheme[:atIdx]
+	hostPort := withoutScheme[atIdx+1:]
+	host := hostPort
+	if colonIdx := strings.Index(hostPort, ":"); colonIdx >= 0 {
+		host = hostPort[:colonIdx]
+	}
+	if slashIdx := strings.Index(host, "/"); slashIdx >= 0 {
+		host = host[:slashIdx]
+	}
+
+	if match := supabaseProjectRefFromHost.FindStringSubmatch(host); len(match) == 2 {
+		return match[1]
+	}
+
+	user := userInfo
+	if colonIdx := strings.Index(userInfo, ":"); colonIdx >= 0 {
+		user = userInfo[:colonIdx]
+	}
+	if match := supabaseProjectRefFromUser.FindStringSubmatch(user); len(match) == 2 {
+		return match[1]
+	}
+
+	return ""
 }
