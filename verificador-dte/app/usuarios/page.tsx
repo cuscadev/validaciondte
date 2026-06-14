@@ -84,13 +84,13 @@ export default function UsuariosOrgPage() {
       return;
     }
     if (!cleanName) {
-      toast.error('Ingresa el nombre del delegado');
+      toast.error('Ingresa el nombre de la persona');
       return;
     }
 
     const ownerEmail = owner?.email?.trim().toLowerCase();
     if (ownerEmail && normalizedEmail === ownerEmail) {
-      toast.error('No puedes invitar el correo del titular. Usa otro correo para el delegado.');
+      toast.error('No puedes invitar el correo del titular. Usa otro correo para el personal.');
       return;
     }
 
@@ -125,7 +125,7 @@ export default function UsuariosOrgPage() {
   }
 
   async function deleteCollaborator(uid: string, label: string) {
-    if (!confirm(`Eliminar a ${label || 'este delegado'}? Podras volver a invitar el mismo correo despues.`)) {
+    if (!confirm(`Eliminar a ${label || 'esta persona'}? Podras volver a invitar el mismo correo despues.`)) {
       return;
     }
     setDeletingUid(uid);
@@ -138,7 +138,7 @@ export default function UsuariosOrgPage() {
       const resData = await res.json();
       if (!res.ok) throw new Error(resData.error || 'Error');
       await queryClient.invalidateQueries({ queryKey: ['organization', 'users'] });
-      toast.success('Delegado eliminado');
+      toast.success('Persona eliminada');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Error');
     } finally {
@@ -185,7 +185,7 @@ export default function UsuariosOrgPage() {
             disabled={seats.used >= seats.max}
           >
             <UserPlus className="size-4" />
-            Invitar delegado
+            Invitar personal
           </Button>
         </div>
 
@@ -224,9 +224,9 @@ export default function UsuariosOrgPage() {
 
             <section className="rounded-lg border bg-card">
               <div className="border-b px-4 py-3">
-                <h2 className="text-sm font-semibold">Personas delegadas</h2>
+                <h2 className="text-sm font-semibold">Personal</h2>
                 <p className="text-xs text-muted-foreground">
-                  Usuarios que realizan verificaciones en nombre del titular
+                  Personas de tu equipo que realizan verificaciones en nombre del titular
                 </p>
               </div>
               <Table>
@@ -243,7 +243,7 @@ export default function UsuariosOrgPage() {
                   {collaborators.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center text-muted-foreground">
-                        No hay delegados. Invita al primer usuario.
+                        No hay personal registrado. Invita a la primera persona.
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -307,18 +307,21 @@ export default function UsuariosOrgPage() {
           <div className="space-y-4 p-2">
             <h2 className="text-lg font-bold">Invitacion enviada</h2>
             <p className="text-sm text-muted-foreground">
-              Enviamos un enlace a {inviteSentEmail}. El delegado debe abrirlo, establecer su contrasena y confirmar para activar su usuario.
+              Enviamos un enlace a {inviteSentEmail}. La persona invitada debe abrirlo, establecer su contrasena y confirmar para activar su usuario.
             </p>
             <Button onClick={closeInviteModal}>Cerrar</Button>
           </div>
         ) : (
           <form onSubmit={createInvitation} className="space-y-5 p-2">
-            <h2 className="text-lg font-bold">Invitar delegado</h2>
+            <h2 className="text-lg font-bold">Invitar personal</h2>
+            <p className="text-sm text-muted-foreground">
+              Envia una invitacion por correo para que forme parte de tu equipo.
+            </p>
 
             <div className="space-y-2">
-              <Label htmlFor="delegate-email" className="block">Correo electronico</Label>
+              <Label htmlFor="staff-email" className="block">Correo electronico</Label>
               <Input
-                id="delegate-email"
+                id="staff-email"
                 type="email"
                 required
                 value={email}
@@ -326,22 +329,22 @@ export default function UsuariosOrgPage() {
                   setInviteError(null);
                   setEmail(e.target.value);
                 }}
-                placeholder="delegado@correo.com"
+                placeholder="persona@correo.com"
                 disabled={inviteSubmitting}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="delegate-name" className="block">Nombre</Label>
+              <Label htmlFor="staff-name" className="block">Nombre</Label>
               <Input
-                id="delegate-name"
+                id="staff-name"
                 required
                 value={displayName}
                 onChange={(e) => {
                   setInviteError(null);
                   setDisplayName(e.target.value);
                 }}
-                placeholder="Nombre del delegado"
+                placeholder="Nombre completo"
                 disabled={inviteSubmitting}
               />
             </div>

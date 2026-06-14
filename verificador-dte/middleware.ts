@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify, createRemoteJWKSet } from 'jose';
+import { isCollaboratorInviteToken } from './lib/app-url';
 import { isPublicPath } from './lib/publicRoutes';
+
+const INVITE_TOKEN_MISROUTED_PATHS = new Set(['/signup', '/register', '/login']);
 
 const FIREBASE_PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 
@@ -13,6 +16,15 @@ const JWKS = createRemoteJWKSet(
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  if (INVITE_TOKEN_MISROUTED_PATHS.has(pathname)) {
+    const token = req.nextUrl.searchParams.get('token');
+    if (isCollaboratorInviteToken(token)) {
+      const redirectUrl = req.nextUrl.clone();
+      redirectUrl.pathname = '/invitacion-colaborador';
+      return NextResponse.redirect(redirectUrl);
+    }
+  }
 
   // Skip API routes (they have their own auth checks) and public pages
   if (pathname.startsWith('/api/') || isPublicPath(pathname)) {

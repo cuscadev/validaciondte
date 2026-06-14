@@ -7,19 +7,13 @@ import {
   listCollaborators,
   syncCollaboratorCount,
 } from '@/lib/organization-admin';
+import { buildCollaboratorInviteUrl } from '@/lib/app-url';
 import { buildOrganizationDisplay } from '@/lib/org-display';
 import { collaboratorInviteEmail, sendAppMail } from '@/lib/server-mail';
 import { isValidEmailFormat } from '@/lib/email-invite';
 import { requireOrgAdmin } from '@/lib/server-auth';
 import { getUserDocByEmail, resolveInviteEmailConflict } from '@/lib/server-users';
 import type { MembershipType } from '@/lib/firestoreUser';
-
-function getAppBaseUrl() {
-  const configured = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL;
-  if (configured) return configured.replace(/\/$/, '');
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  return 'https://verificadordtev2.cuscadev.com';
-}
 
 export async function GET(req: NextRequest) {
   try {
@@ -141,7 +135,7 @@ export async function POST(req: NextRequest) {
       expiresAt,
     });
 
-    const inviteUrl = `${getAppBaseUrl()}/invitacion-colaborador?token=${token}`;
+    const inviteUrl = buildCollaboratorInviteUrl(token, req);
     const mail = collaboratorInviteEmail({ organizationName: orgName, inviteUrl });
     await sendAppMail({
       to: normalizedEmail,

@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { adminDb } from '@/lib/firebase-admin';
+import { getAppBaseUrl } from '@/lib/app-url';
 
 export interface SmtpSettings {
   host: string;
@@ -21,13 +22,6 @@ export function generateTemporaryPassword() {
   return Array.from({ length: 14 }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join('');
 }
 
-function getAppBaseUrl() {
-  const configuredUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL;
-  if (configuredUrl) return configuredUrl.replace(/\/$/, '');
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  return 'https://verificadordtev2.cuscadev.com';
-}
-
 function escapeHtml(value: string) {
   return value
     .replace(/&/g, '&amp;')
@@ -35,6 +29,15 @@ function escapeHtml(value: string) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+function getMailBrandColors() {
+  return {
+    accent: '#00d1ff',
+    accentText: '#0f1419',
+    headerBg: '#1a1e23',
+    panelBg: '#24292e',
+  };
 }
 
 function renderBrandedEmail({
@@ -61,6 +64,7 @@ function renderBrandedEmail({
   const baseUrl = getAppBaseUrl();
   const logoUrl = `${baseUrl}/TemaDarkLogo.png`;
   const safeDetails = details.filter(Boolean);
+  const brand = getMailBrandColors();
 
   return `<!doctype html>
 <html lang="es">
@@ -77,9 +81,9 @@ function renderBrandedEmail({
         <td align="center">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;background:#ffffff;border:1px solid #e4e4e7;border-radius:18px;overflow:hidden;box-shadow:0 18px 45px rgba(24,24,27,0.10);">
             <tr>
-              <td style="background:#050505;padding:28px 30px;border-bottom:4px solid #facc15;">
+              <td style="background:${brand.headerBg};padding:28px 30px;border-bottom:4px solid ${brand.accent};">
                 <img src="${logoUrl}" width="150" alt="KayDTe" style="display:block;max-width:150px;height:auto;margin:0 0 22px 0;">
-                <div style="font-size:12px;letter-spacing:0.22em;text-transform:uppercase;color:#facc15;font-weight:700;">${escapeHtml(eyebrow)}</div>
+                <div style="font-size:12px;letter-spacing:0.22em;text-transform:uppercase;color:${brand.accent};font-weight:700;">${escapeHtml(eyebrow)}</div>
                 <h1 style="margin:10px 0 0 0;color:#ffffff;font-size:26px;line-height:1.2;font-weight:800;">${escapeHtml(title)}</h1>
               </td>
             </tr>
@@ -88,14 +92,14 @@ function renderBrandedEmail({
                 <p style="margin:0 0 20px 0;color:#3f3f46;font-size:16px;line-height:1.65;">${escapeHtml(intro)}</p>
 
                 ${highlight ? `
-                <div style="margin:24px 0;padding:22px;border-radius:14px;background:#111111;border:1px solid #27272a;text-align:center;">
-                  ${highlightLabel ? `<div style="margin-bottom:10px;color:#facc15;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.18em;">${escapeHtml(highlightLabel)}</div>` : ''}
+                <div style="margin:24px 0;padding:22px;border-radius:14px;background:${brand.panelBg};border:1px solid #27272a;text-align:center;">
+                  ${highlightLabel ? `<div style="margin-bottom:10px;color:${brand.accent};font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.18em;">${escapeHtml(highlightLabel)}</div>` : ''}
                   <div style="font-size:30px;line-height:1.2;letter-spacing:0.12em;color:#ffffff;font-weight:800;font-family:Consolas,Monaco,monospace;word-break:break-word;">${escapeHtml(highlight)}</div>
                 </div>` : ''}
 
                 ${actionLabel && actionHref ? `
                 <div style="margin:28px 0;text-align:center;">
-                  <a href="${escapeHtml(actionHref)}" style="display:inline-block;background:#facc15;color:#111111;text-decoration:none;border-radius:12px;padding:14px 22px;font-size:15px;font-weight:800;">${escapeHtml(actionLabel)}</a>
+                  <a href="${escapeHtml(actionHref)}" style="display:inline-block;background:${brand.accent};color:${brand.accentText};text-decoration:none;border-radius:12px;padding:14px 22px;font-size:15px;font-weight:800;">${escapeHtml(actionLabel)}</a>
                 </div>` : ''}
 
                 ${safeDetails.length ? `
@@ -184,15 +188,19 @@ export function collaboratorInviteEmail({
   inviteUrl: string;
 }) {
   return {
-    text: `Has sido invitado a ${organizationName} en KayDTe.\n\nAcepta la invitacion y establece tu contrasena aqui: ${inviteUrl}`,
+    text: `Has sido invitado a ${organizationName} en KayDTe.\n\nAcepta la invitacion y establece tu contrasena aqui: ${inviteUrl}\n\nEste enlace es distinto a una solicitud de acceso publica: no necesitas codigo de verificacion, solo abrir el enlace y crear tu contrasena.`,
     html: renderBrandedEmail({
-      preheader: `Invitacion a ${organizationName} en KayDTe`,
-      title: 'Invitacion a tu equipo',
+      preheader: `Te invitaron a unirte a ${organizationName} en KayDTe`,
+      title: 'Unete al equipo',
       eyebrow: organizationName,
-      intro: 'Tu administrador te ha invitado a Kaiser DTE. Acepta la invitacion y establece tu contrasena para activar tu cuenta.',
+      intro: `Fuiste invitado a ${organizationName} en Kaiser DTE. Abre el enlace, crea tu contrasena y listo: no es una solicitud de acceso publica ni requiere codigo de verificacion.`,
       actionLabel: 'Aceptar invitacion',
       actionHref: inviteUrl,
-      details: ['Este enlace es personal y solo debe usarse una vez.', 'Despues de establecer tu contrasena podras iniciar sesion normalmente.'],
+      details: [
+        'Este enlace es personal y solo debe usarse una vez.',
+        'Despues de establecer tu contrasena podras iniciar sesion normalmente.',
+        'Si ves la pantalla de solicitud de acceso, abre el enlace del correo de invitacion (no uses /signup).',
+      ],
     }),
   };
 }

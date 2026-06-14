@@ -1,4 +1,5 @@
 import * as React from "react";
+import { createPortal } from "react-dom";
 
 import { cn } from "@/lib/utils";
 
@@ -15,24 +16,43 @@ export function Modal({
   className?: string;
   children: React.ReactNode;
 }) {
-  if (!open) return null;
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  React.useEffect(() => {
+    if (!open) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
+
+  if (!open || !mounted) return null;
 
   function handleBackdropClick() {
     if (!disableClose) onClose();
   }
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto overscroll-contain bg-black/40 p-2 sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto overscroll-contain bg-black/40 p-4 sm:items-center"
       onClick={handleBackdropClick}
       role="presentation"
     >
       <div
         className={cn(
-          "relative my-auto w-full max-w-[calc(100vw-1rem)] min-w-0 rounded-xl bg-background p-4 shadow-xl sm:min-w-[320px] sm:p-6",
+          "relative my-auto w-full min-w-0 max-w-md rounded-xl bg-background p-4 shadow-xl sm:p-6",
           className
         )}
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
       >
         <button
           type="button"
@@ -45,6 +65,7 @@ export function Modal({
         </button>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

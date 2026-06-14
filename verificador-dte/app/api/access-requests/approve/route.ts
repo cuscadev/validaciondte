@@ -3,17 +3,11 @@ import { adminDb } from '@/lib/firebase-admin';
 import { getAuth } from 'firebase-admin/auth';
 import { getApp } from 'firebase-admin/app';
 import { Timestamp } from 'firebase-admin/firestore';
+import { getAppBaseUrl } from '@/lib/app-url';
 import { createOrganizationForOwner } from '@/lib/organization-admin';
 import { generateTemporaryPassword, sendAppMail, temporaryPasswordEmail } from '@/lib/server-mail';
 import { requireSuperadmin } from '@/lib/server-auth';
 import { syncAppUserAfterFirestoreWrite } from '@/lib/server-user-sync';
-
-function getAppBaseUrl() {
-  const configured = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL;
-  if (configured) return configured.replace(/\/$/, '');
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  return 'https://verificadordtev2.cuscadev.com';
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -38,7 +32,7 @@ export async function POST(req: NextRequest) {
     const plan = membershipType === 'premium' || membershipType === 'pro' ? membershipType : 'free';
     const auth = getAuth(getApp());
     const temporaryPassword = generateTemporaryPassword();
-    const loginUrl = `${getAppBaseUrl()}/login`;
+    const loginUrl = `${getAppBaseUrl(req)}/login`;
 
     let uid: string;
     if (authUid) {
