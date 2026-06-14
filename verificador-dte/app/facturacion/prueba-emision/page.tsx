@@ -229,7 +229,7 @@ export default function FacturacionPruebaEmisionPage() {
 
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm dark:border-white/10 dark:bg-black">
               <p className="font-semibold">Coleccion Firebase</p>
-              <p className="mt-1 font-mono text-xs text-muted-foreground">facturacionEmisiones</p>
+              <p className="mt-1 font-mono text-xs text-muted-foreground">Supabase (tablas dte_emisiones_*)</p>
             </div>
           </div>
         </section>

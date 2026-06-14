@@ -52,6 +52,12 @@ func Load() Config {
 		poolSize = 1
 	}
 
+	supabaseDBURL := getenv("SUPABASE_DB_URL", "")
+	databaseURL := getenv("DATABASE_URL", "")
+	if databaseURL == "" {
+		databaseURL = supabaseDBURL
+	}
+
 	return Config{
 		Port:                        port,
 		Concurrency:                 concurrency,
@@ -69,7 +75,7 @@ func Load() Config {
 		UseRodScraper:               getenvBool("GO_DTE_USE_ROD", false),
 		UseBrowser:                  getenvBool("GO_DTE_USE_BROWSER", false),
 		HTTPFastPath:                getenvBool("GO_DTE_HTTP_FAST_PATH", false),
-		DatabaseURL:                 getenv("DATABASE_URL", ""),
+		DatabaseURL:                 databaseURL,
 		HaciendaEnvironment:         getenv("HACIENDA_ENV", "test"),
 		HaciendaUserAgent:           getenv("HACIENDA_USER_AGENT", "KaiserDTE"),
 		HaciendaCertificateHome:     getenv("HACIENDA_CERTIFICATE_HOME", getenv("CERTIFICATE_HOME", "")),
@@ -81,7 +87,7 @@ func Load() Config {
 		HaciendaConsultaDteProd:     getenv("HACIENDA_CONSULTA_DTE_URL_PROD", "https://api.dtes.mh.gob.sv/fesv/recepcion/consultadte"),
 		HaciendaConsultaDteLoteTest: getenv("HACIENDA_CONSULTA_DTE_LOTE_URL_TEST", "https://apitest.dtes.mh.gob.sv/fesv/recepcion/consultadtelote"),
 		HaciendaConsultaDteLoteProd: getenv("HACIENDA_CONSULTA_DTE_LOTE_URL_PROD", "https://api.dtes.mh.gob.sv/fesv/recepcion/consultadtelote"),
-		SupabaseDBURL:               getenv("SUPABASE_DB_URL", ""),
+		SupabaseDBURL:               supabaseDBURL,
 		InternalAPIKey:              getenv("GO_DTE_INTERNAL_API_KEY", ""),
 	}
 }

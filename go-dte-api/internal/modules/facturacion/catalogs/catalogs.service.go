@@ -156,7 +156,7 @@ func (s *Service) ListDocumentSpecs() []DocumentSpec {
 
 func (s *Service) ListCatalogs(ctx context.Context) ([]CatalogInfo, error) {
 	if s.db == nil {
-		return nil, errors.New("DATABASE_URL no configurado")
+		return nil, errors.New("SUPABASE_DB_URL no configurado")
 	}
 
 	rows, err := s.db.QueryContext(ctx, `
@@ -242,7 +242,7 @@ func (s *Service) GetCatalogRowByCode(ctx context.Context, key string, codigo st
 
 func (s *Service) resolveCatalogTable(ctx context.Context, key string) (string, error) {
 	if s.db == nil {
-		return "", errors.New("DATABASE_URL no configurado")
+		return "", errors.New("SUPABASE_DB_URL no configurado")
 	}
 
 	normalized := strings.ToLower(strings.TrimSpace(key))

@@ -2,14 +2,14 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+
+import { listEmisionData } from '@/lib/facturacion/emisiones-store';
 import { requireAuth } from '@/lib/server-auth';
 
 type Row = Record<string, unknown>;
-type FirestoreDateLike = { toDate?: () => Date };
 
 function asRecord(value: unknown): Row {
-  return value && typeof value === 'object' && !Array.isArray(value) ? value as Row : {};
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as Row) : {};
 }
 
 function getString(value: unknown) {
@@ -19,9 +19,7 @@ function getString(value: unknown) {
 function dateToIso(value: unknown) {
   if (!value) return null;
   if (value instanceof Date) return value.toISOString();
-  if (typeof (value as FirestoreDateLike).toDate === 'function') {
-    return (value as FirestoreDateLike).toDate!().toISOString();
-  }
+  if (typeof value === 'string') return value;
   return null;
 }
 
@@ -33,14 +31,15 @@ export async function GET(req: NextRequest) {
     }
 
     const limit = Math.max(1, Math.min(100, Number(req.nextUrl.searchParams.get('limit') || 50)));
-    const base = adminDb.collection('facturacionEmisiones');
-    const snapshot = user.role === 'superadmin'
-      ? await base.limit(limit).get()
-      : await base.where('uid', '==', user.uid).limit(limit).get();
+    const rows = await listEmisionData({
+      firebaseUid: user.uid,
+      superadmin: user.role === 'superadmin',
+      tipoDte: '03',
+      limit,
+    });
 
-    const documents = snapshot.docs
-      .map((doc) => {
-        const data = doc.data() || {};
+    const documents = rows
+      .map((data) => {
         const finalPackage = asRecord(data.finalPackage || data);
         const dte = asRecord(finalPackage.dteJson || asRecord(data.documentResponse).dteJson);
         const identificacion = asRecord(dte.identificacion);
@@ -48,12 +47,17 @@ export async function GET(req: NextRequest) {
         const resumen = asRecord(dte.resumen);
         const items = Array.isArray(dte.cuerpoDocumento) ? dte.cuerpoDocumento.map(asRecord) : [];
         return {
-          id: doc.id,
+          id: data.id as string,
           tipoDte: getString(data.tipoDte || identificacion.tipoDte),
           status: getString(data.status),
           codigoGeneracion: getString(data.codigoGeneracion || identificacion.codigoGeneracion),
           numeroControl: getString(data.numeroControl || identificacion.numeroControl),
-          selloRecepcion: getString(data.selloRecepcion || data.selloRecibido || finalPackage.selloRecepcion || finalPackage.selloRecibido),
+          selloRecepcion: getString(
+            data.selloRecepcion ||
+              data.selloRecibido ||
+              finalPackage.selloRecepcion ||
+              finalPackage.selloRecibido,
+          ),
           fechaEmision: getString(identificacion.fecEmi),
           totalPagar: Number(data.totalPagar || resumen.totalPagar || 0),
           receptorId: data.receptorId || null,
@@ -63,15 +67,13 @@ export async function GET(req: NextRequest) {
           createdAt: dateToIso(data.createdAt),
         };
       })
-      .filter((item) => item.tipoDte === '03' && item.codigoGeneracion && item.items.length > 0)
-      .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))
-      .slice(0, limit);
+      .filter((item) => item.tipoDte === '03' && item.codigoGeneracion && item.items.length > 0);
 
     return NextResponse.json({ documents });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'No se pudieron cargar creditos fiscales' },
-      { status: 400 }
+      { status: 400 },
     );
   }
 }

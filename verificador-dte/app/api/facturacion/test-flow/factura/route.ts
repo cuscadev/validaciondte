@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getGoDteApiUrl } from '@/lib/go-dte-api';
-import { adminDb } from '@/lib/firebase-admin';
+import { createEmision, mergeEmision } from '@/lib/facturacion/emisiones-store';
 import { requireAuth } from '@/lib/server-auth';
 import { getHaciendaTokenForUser } from '@/lib/hacienda-auth';
 
@@ -148,7 +148,7 @@ function extractSello(response: unknown): string {
 }
 
 export async function POST(req: NextRequest) {
-  let runRef: FirebaseFirestore.DocumentReference | null = null;
+  let emisionId: string | null = null;
 
   try {
     const user = await requireAuth(req);
@@ -181,16 +181,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    runRef = adminDb.collection('facturacionEmisiones').doc();
-    await runRef.set({
+    emisionId = await createEmision('01', {
       uid: user.uid,
       environment,
       tipoDte: '01',
       nit,
       status: 'started',
       source: 'test-flow-factura',
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
 
     const documentRequest = mockConsumerInvoice(nit, body.mock);
@@ -203,14 +202,14 @@ export async function POST(req: NextRequest) {
     const codigoGeneracion = getString(documentResponse.codigoGeneracion);
     const numeroControl = getString(documentResponse.numeroControl);
 
-    await runRef.set({
+    await mergeEmision(emisionId, {
       status: 'document_created',
       documentRequest,
       documentResponse,
       codigoGeneracion,
       numeroControl,
-      updatedAt: new Date(),
-    }, { merge: true });
+      updatedAt: new Date().toISOString(),
+    });
 
     const signResponse = asRecord(await postGo('/api/facturacion/sign', {
       nit,
@@ -219,14 +218,14 @@ export async function POST(req: NextRequest) {
     }));
     const firma = getString(signResponse.firma);
 
-    await runRef.set({
+    await mergeEmision(emisionId, {
       status: 'signed',
       signResponse: {
         success: signResponse.success,
         firma,
       },
-      updatedAt: new Date(),
-    }, { merge: true });
+      updatedAt: new Date().toISOString(),
+    });
 
     let haciendaResponse: unknown = null;
     let selloRecepcion = '';
@@ -256,21 +255,21 @@ export async function POST(req: NextRequest) {
       selloRecepcion,
       haciendaResponse,
       downloads: {
-        json: `/api/facturacion/test-flow/factura/${runRef.id}/json`,
+        json: `/api/facturacion/test-flow/factura/${emisionId}/json`,
       },
     };
 
-    await runRef.set({
+    await mergeEmision(emisionId, {
       status: selloRecepcion ? 'received' : 'sent_without_seal',
       selloRecepcion,
       haciendaResponse,
       finalPackage,
-      updatedAt: new Date(),
-    }, { merge: true });
+      updatedAt: new Date().toISOString(),
+    });
 
     return NextResponse.json({
       success: true,
-      id: runRef.id,
+      id: emisionId,
       status: selloRecepcion ? 'received' : 'sent_without_seal',
       codigoGeneracion,
       numeroControl,
@@ -280,12 +279,12 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'No se pudo ejecutar el flujo de prueba';
-    if (runRef) {
-      await runRef.set({
+    if (emisionId) {
+      await mergeEmision(emisionId, {
         status: 'error',
         error: message,
-        updatedAt: new Date(),
-      }, { merge: true }).catch(() => {});
+        updatedAt: new Date().toISOString(),
+      }).catch(() => {});
     }
     return NextResponse.json({ error: message }, { status: 500 });
   }

@@ -2,7 +2,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { assertEmisionAccess, mergeEmision } from '@/lib/facturacion/emisiones-store';
 import { requireAuth } from '@/lib/server-auth';
 import { sendAppMail } from '@/lib/server-mail';
 import {
@@ -154,15 +154,7 @@ export async function POST(
       return NextResponse.json({ error: 'Ingresa un correo valido.' }, { status: 400 });
     }
 
-    const snap = await adminDb.collection('facturacionEmisiones').doc(id).get();
-    if (!snap.exists) {
-      return NextResponse.json({ error: 'Emision no encontrada' }, { status: 404 });
-    }
-
-    const data = snap.data() || {};
-    if (user.role !== 'superadmin' && data.uid !== user.uid) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
-    }
+    const data = await assertEmisionAccess(id, user.uid, user.role);
 
     const codigo = getDteCode(data, id);
     const safeName = sanitizeDteFileName(codigo);
@@ -195,7 +187,7 @@ export async function POST(
       ],
     });
 
-    await snap.ref.update({
+    await mergeEmision(id, {
       lastEmailTo: to,
       lastEmailSentAt: new Date().toISOString(),
     });

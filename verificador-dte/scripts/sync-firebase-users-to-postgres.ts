@@ -6,13 +6,14 @@
 // Opciones:
 //   --dry-run                  Solo muestra lo que sincronizaria
 //   SYNC_USERS_LIMIT=100       Limita cantidad de usuarios
-//   DATABASE_URL=postgres://facturacion:facturacion123@localhost:5433/facturacion?sslmode=disable
+//   SUPABASE_DB_URL=postgresql://...   (misma URL que go-dte-api/.env)
 
 import type { QueryDocumentSnapshot } from 'firebase-admin/firestore';
 import { config as loadEnv } from 'dotenv';
 import { Client } from 'pg';
 import { resolve } from 'path';
-import { readFileSync, existsSync } from 'fs';
+
+import { getFacturacionDatabaseUrl } from '../lib/facturacion-database-url';
 
 loadEnv({ path: resolve(process.cwd(), '.env.local') });
 loadEnv({ path: resolve(process.cwd(), '.env') });
@@ -30,17 +31,7 @@ const limit = Number(process.env.SYNC_USERS_LIMIT || 0);
 const batchSize = Number(process.env.SYNC_USERS_BATCH_SIZE || 250);
 
 function databaseURL() {
-  const explicit = process.env.DATABASE_URL || process.env.FACTURACION_DATABASE_URL;
-  if (explicit) return explicit;
-
-  const goEnvPath = resolve(process.cwd(), '..', 'go-dte-api', '.env');
-  if (existsSync(goEnvPath)) {
-    const raw = readFileSync(goEnvPath, 'utf8');
-    const match = raw.match(/^DATABASE_URL=(.+)$/m);
-    if (match?.[1]) return match[1].trim().replace(/^"|"$/g, '');
-  }
-
-  return 'postgres://facturacion:facturacion123@localhost:5433/facturacion?sslmode=disable';
+  return getFacturacionDatabaseUrl();
 }
 
 function asRecord(value: unknown): Record<string, unknown> {

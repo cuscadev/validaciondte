@@ -2,7 +2,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { createEmision, getEmisionDataById, mergeEmision } from '@/lib/facturacion/emisiones-store';
 import { getGoDteApiUrl } from '@/lib/go-dte-api';
 import { getHaciendaTokenForUser } from '@/lib/hacienda-auth';
 import { resolveCertificatePassword } from '@/lib/facturacion/certificate-credentials';
@@ -303,7 +303,7 @@ function estimateTotal(items: ReturnType<typeof validateItems>) {
 }
 
 export async function POST(req: NextRequest) {
-  let runRef: FirebaseFirestore.DocumentReference | null = null;
+  let emisionId: string | null = null;
   let stage = 'inicio';
   const requestStartedAtMs = Date.now();
   const processTiming: ProcessTiming = { startedAt: new Date(requestStartedAtMs).toISOString() };
@@ -333,9 +333,8 @@ export async function POST(req: NextRequest) {
     if (!receptorId) return NextResponse.json({ error: 'Selecciona el receptor de la nota de credito.' }, { status: 400 });
 
     stage = 'buscar credito fiscal relacionado';
-    const relatedSnap = await adminDb.collection('facturacionEmisiones').doc(relatedId).get();
-    if (!relatedSnap.exists) return NextResponse.json({ error: 'Credito fiscal relacionado no encontrado.' }, { status: 404 });
-    const relatedData = relatedSnap.data() || {};
+    const relatedData = await getEmisionDataById(relatedId);
+    if (!relatedData) return NextResponse.json({ error: 'Credito fiscal relacionado no encontrado.' }, { status: 404 });
     if (user.role !== 'superadmin' && relatedData.uid !== user.uid) {
       return NextResponse.json({ error: 'No autorizado para usar este credito fiscal.' }, { status: 403 });
     }
@@ -449,22 +448,22 @@ export async function POST(req: NextRequest) {
       observaciones: nullableString(body.observaciones),
     };
 
-    stage = 'crear registro firebase';
-    runRef = adminDb.collection('facturacionEmisiones').doc();
-    await runRef.set({
+    stage = 'crear registro supabase';
+    emisionId = await createEmision('05', {
       uid: user.uid,
       environment,
       tipoDte: '05',
       nit: emisor.nit,
       receptorId: relatedData.receptorId || null,
       selectedReceptorId: receptorId,
-      relatedEmissionId: relatedId,
+      relatedEmisionId: relatedId,
+      relatedId,
       relatedCodigoGeneracion: relatedCode,
       status: 'started',
       source: 'credit-note',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }, { emisorId: Number(emitter.id) });
 
     stage = 'generar nota en go';
     const documentStartMs = Date.now();
@@ -479,7 +478,7 @@ export async function POST(req: NextRequest) {
     const totalPagar = Number(documentResponse.totalPagar || 0);
 
     stage = 'guardar documento generado';
-    await runRef.set({
+    await mergeEmision(emisionId, {
       status: 'document_created',
       documentRequest,
       documentResponse,
@@ -487,8 +486,8 @@ export async function POST(req: NextRequest) {
       numeroControl,
       totalPagar,
       processTiming,
-      updatedAt: new Date(),
-    }, { merge: true });
+      updatedAt: new Date().toISOString(),
+    });
 
     let firma = '';
     let signResponse: unknown = null;
@@ -505,12 +504,12 @@ export async function POST(req: NextRequest) {
       processTiming.signedAt = new Date(signEndMs).toISOString();
       processTiming.signingMs = signEndMs - signStartMs;
       firma = getString(asRecord(signResponse).firma);
-      await runRef.set({
+      await mergeEmision(emisionId, {
         status: 'signed',
         processTiming,
         signResponse: { success: asRecord(signResponse).success, firma },
-        updatedAt: new Date(),
-      }, { merge: true });
+        updatedAt: new Date().toISOString(),
+      });
     }
 
     if (body.transmitir !== false) {
@@ -564,28 +563,28 @@ export async function POST(req: NextRequest) {
       haciendaResponse,
       processTiming,
       downloads: {
-        json: `/api/facturacion/emissions/${runRef.id}/json`,
-        pdf: `/api/facturacion/emissions/${runRef.id}/pdf`,
+        json: `/api/facturacion/emissions/${emisionId}/json`,
+        pdf: `/api/facturacion/emissions/${emisionId}/pdf`,
       },
     };
     const status = selloRecepcion ? 'received' : firma ? 'signed' : 'document_created';
-    await runRef.set({
+    await mergeEmision(emisionId, {
       status,
       selloRecepcion,
       selloRecibido: selloRecepcion,
       haciendaResponse,
       processTiming,
       finalPackage: final,
-      updatedAt: new Date(),
-    }, { merge: true });
+      updatedAt: new Date().toISOString(),
+    });
 
-    return NextResponse.json({ success: true, id: runRef.id, status, codigoGeneracion, numeroControl, totalPagar, selloRecepcion, processTiming, finalPackage: final });
+    return NextResponse.json({ success: true, id: emisionId, status, codigoGeneracion, numeroControl, totalPagar, selloRecepcion, processTiming, finalPackage: final });
   } catch (error) {
     const rawMessage = error instanceof Error ? error.message : '';
     const message = rawMessage.trim() || `No se pudo emitir nota de credito en etapa: ${stage}`;
     processTiming.totalMs = Date.now() - requestStartedAtMs;
-    if (runRef) {
-      await runRef.set({ status: 'error', error: message, errorStage: stage, processTiming, updatedAt: new Date() }, { merge: true }).catch(() => {});
+    if (emisionId) {
+      await mergeEmision(emisionId, { status: 'error', error: message, errorStage: stage, processTiming, updatedAt: new Date().toISOString() }).catch(() => {});
     }
     return NextResponse.json({ error: message, stage, processTiming }, { status: 500 });
   }

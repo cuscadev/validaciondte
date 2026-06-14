@@ -2,7 +2,8 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+
+import { assertEmisionAccess } from '@/lib/facturacion/emisiones-store';
 import { requireAuth } from '@/lib/server-auth';
 
 function sanitizeFileName(value: string) {
@@ -11,7 +12,7 @@ function sanitizeFileName(value: string) {
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const user = await requireAuth(req);
@@ -20,16 +21,7 @@ export async function GET(
     }
 
     const { id } = await params;
-    const snap = await adminDb.collection('facturacionEmisiones').doc(id).get();
-    if (!snap.exists) {
-      return NextResponse.json({ error: 'Emision no encontrada' }, { status: 404 });
-    }
-
-    const data = snap.data() || {};
-    if (user.role !== 'superadmin' && data.uid !== user.uid) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
-    }
-
+    const data = await assertEmisionAccess(id, user.uid, user.role);
     const finalPackage = data.finalPackage || data;
     const codigo = typeof data.codigoGeneracion === 'string' ? data.codigoGeneracion : id;
     const body = JSON.stringify(finalPackage, null, 2);
@@ -42,9 +34,8 @@ export async function GET(
       },
     });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'No autorizado' },
-      { status: 401 }
-    );
+    const message = error instanceof Error ? error.message : 'No autorizado';
+    const status = message === 'Emision no encontrada' ? 404 : message === 'No autorizado' ? 403 : 401;
+    return NextResponse.json({ error: message }, { status });
   }
 }

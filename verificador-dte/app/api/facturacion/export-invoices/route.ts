@@ -2,7 +2,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { createEmision, mergeEmision } from '@/lib/facturacion/emisiones-store';
 import { getGoDteApiUrl } from '@/lib/go-dte-api';
 import { getHaciendaTokenForUser } from '@/lib/hacienda-auth';
 import { resolveCertificatePassword } from '@/lib/facturacion/certificate-credentials';
@@ -246,7 +246,7 @@ function sumItems(items: ReturnType<typeof validateItems>, flete = 0, seguro = 0
 }
 
 export async function POST(req: NextRequest) {
-  let runRef: FirebaseFirestore.DocumentReference | null = null;
+  let emisionId: string | null = null;
   const requestStartedAtMs = Date.now();
   const processTiming: ProcessTiming = { startedAt: new Date(requestStartedAtMs).toISOString() };
 
@@ -320,17 +320,16 @@ export async function POST(req: NextRequest) {
       observaciones: nullableString(body.observaciones),
     };
 
-    runRef = adminDb.collection('facturacionEmisiones').doc();
-    await runRef.set({
+    emisionId = await createEmision('11', {
       uid: user.uid,
       environment,
       tipoDte: '11',
       nit: emisor.nit,
       status: 'started',
       source: 'export-invoice',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }, { emisorId: Number(emitter.id) });
 
     const documentStartMs = Date.now();
     const documentResponse = asRecord(await postGo('/api/facturacion/documents/factura-exportacion', documentRequest));
@@ -343,7 +342,7 @@ export async function POST(req: NextRequest) {
     const numeroControl = getString(documentResponse.numeroControl);
     const totalPagar = Number(documentResponse.totalPagar || 0);
 
-    await runRef.set({
+    await mergeEmision(emisionId, {
       status: 'document_created',
       documentRequest,
       documentResponse,
@@ -351,8 +350,8 @@ export async function POST(req: NextRequest) {
       numeroControl,
       totalPagar,
       processTiming,
-      updatedAt: new Date(),
-    }, { merge: true });
+      updatedAt: new Date().toISOString(),
+    });
 
     let firma = '';
     let signResponse: unknown = null;
@@ -367,12 +366,12 @@ export async function POST(req: NextRequest) {
       processTiming.signedAt = new Date(signEndMs).toISOString();
       processTiming.signingMs = signEndMs - signStartMs;
       firma = getString(asRecord(signResponse).firma);
-      await runRef.set({
+      await mergeEmision(emisionId, {
         status: 'signed',
         processTiming,
         signResponse: { success: asRecord(signResponse).success, firma },
-        updatedAt: new Date(),
-      }, { merge: true });
+        updatedAt: new Date().toISOString(),
+      });
     }
 
     if (body.transmitir !== false) {
@@ -422,24 +421,24 @@ export async function POST(req: NextRequest) {
       haciendaResponse,
       processTiming,
       downloads: {
-        json: `/api/facturacion/emissions/${runRef.id}/json`,
-        pdf: `/api/facturacion/emissions/${runRef.id}/pdf`,
+        json: `/api/facturacion/emissions/${emisionId}/json`,
+        pdf: `/api/facturacion/emissions/${emisionId}/pdf`,
       },
     };
 
     const status = selloRecepcion ? 'received' : firma ? 'signed' : 'document_created';
-    await runRef.set({
+    await mergeEmision(emisionId, {
       status,
       selloRecepcion,
       haciendaResponse,
       processTiming,
       finalPackage,
-      updatedAt: new Date(),
-    }, { merge: true });
+      updatedAt: new Date().toISOString(),
+    });
 
     return NextResponse.json({
       success: true,
-      id: runRef.id,
+      id: emisionId,
       status,
       codigoGeneracion,
       numeroControl,
@@ -451,13 +450,13 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'No se pudo emitir factura de exportacion';
     processTiming.totalMs = Date.now() - requestStartedAtMs;
-    if (runRef) {
-      await runRef.set({
+    if (emisionId) {
+      await mergeEmision(emisionId, {
         status: 'error',
         error: message,
         processTiming,
-        updatedAt: new Date(),
-      }, { merge: true }).catch(() => {});
+        updatedAt: new Date().toISOString(),
+      }).catch(() => {});
     }
     return NextResponse.json({ error: message, processTiming }, { status: 500 });
   }
