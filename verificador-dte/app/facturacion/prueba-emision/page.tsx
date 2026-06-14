@@ -222,7 +222,7 @@ export default function FacturacionPruebaEmisionPage() {
               <h1 className="text-3xl font-extrabold tracking-tight md:text-5xl">
                 Prueba de emision completa
               </h1>
-              <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600 md:text-base text-muted-foreground">
+              <p className="mt-4 max-w-3xl text-sm leading-6 text-muted-foreground md:text-base">
                 Obtiene token de Hacienda, busca el certificado .crt del servidor, firma el DTE y transmite a Hacienda test.
               </p>
             </div>
@@ -312,7 +312,7 @@ export default function FacturacionPruebaEmisionPage() {
                   />
                 </div>
 
-                <label className="flex cursor-pointer items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm border-border bg-background">
+                <label className="flex cursor-pointer items-center gap-3 rounded-md border border-border bg-muted/40 px-3 py-3 text-sm">
                   <input
                     type="checkbox"
                     checked={transmitir}
@@ -322,7 +322,7 @@ export default function FacturacionPruebaEmisionPage() {
                   <span>Transmitir a Hacienda test</span>
                 </label>
 
-                <div className="grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm border-border bg-background">
+                <div className="grid gap-2 rounded-lg border border-border bg-muted/40 p-3 text-sm">
                   <StatusLine ready={haciendaReady} label="Token Hacienda" />
                   <StatusLine ready={Boolean(passwordPri.trim())} label="Clave privada capturada" />
                 </div>
@@ -371,7 +371,7 @@ export default function FacturacionPruebaEmisionPage() {
             </CardHeader>
             <CardContent>
               {!result ? (
-                <div className="flex min-h-[18rem] items-center justify-center rounded-lg border border-dashed border-slate-300 text-sm text-muted-foreground border-border">
+                <div className="flex min-h-[18rem] items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground">
                   Ejecuta el flujo para ver la respuesta.
                 </div>
               ) : (
@@ -389,7 +389,7 @@ export default function FacturacionPruebaEmisionPage() {
                     </Button>
                   )}
 
-                  <pre className="max-h-[34rem] overflow-auto rounded-lg border border-slate-200 bg-slate-950 p-4 text-xs leading-5 text-slate-100 border-border">
+                  <pre className="max-h-[34rem] overflow-auto rounded-lg border border-border bg-slate-950 p-4 text-xs leading-5 text-slate-100">
                     {stringify(result)}
                   </pre>
                 </div>

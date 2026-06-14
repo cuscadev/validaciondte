@@ -287,7 +287,7 @@ export default function FacturarSujetoExcluidoPage() {
 
   if (!canUse) {
     return (
-      <main className="min-h-[calc(100vh-5rem)] bg-slate-50 p-4 text-slate-950 bg-background text-foreground">
+      <main className="min-h-[calc(100vh-5rem)] bg-background p-4 text-foreground">
         <Card className="mx-auto max-w-xl">
           <CardHeader>
             <CardTitle>Acceso restringido</CardTitle>
@@ -392,7 +392,7 @@ export default function FacturarSujetoExcluidoPage() {
                           </Button>
                         </div>
                         {selectedReceptor && (
-                          <div className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm md:grid-cols-3 border-border bg-background">
+                          <div className="grid gap-3 rounded-lg border border-border bg-muted/40 p-3 text-sm md:grid-cols-3">
                             <Info label="Nombre" value={selectedReceptor.nombre || '-'} />
                             <Info label="Documento" value={selectedReceptor.numeroDocumento || '-'} />
                             <Info label="Actividad" value={selectedReceptor.actividadNombre || selectedReceptor.codigoActividad || '-'} />
@@ -424,7 +424,7 @@ export default function FacturarSujetoExcluidoPage() {
                   {items.map((line, index) => (
                     <div
                       key={index}
-                      className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 md:grid-cols-[7rem_minmax(0,1fr)_6rem_7rem_7rem_8rem_2.5rem] border-border bg-background"
+                      className="grid gap-3 rounded-lg border border-border bg-card p-3 md:grid-cols-[7rem_minmax(0,1fr)_6rem_7rem_7rem_8rem_8rem_2.5rem]"
                     >
                       <div className="grid gap-1">
                         <Label htmlFor={`codigo-${index}`}>Codigo</Label>
@@ -499,7 +499,7 @@ export default function FacturarSujetoExcluidoPage() {
 
                   <div className="grid gap-3 pt-3 lg:grid-cols-[minmax(0,1fr)_28rem]">
                     <div className="grid gap-3 md:grid-cols-[16rem_minmax(0,1fr)]">
-                      <label className="flex cursor-pointer items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm border-border bg-background">
+                      <label className="flex cursor-pointer items-center gap-3 rounded-md border border-border bg-muted/40 px-3 py-3 text-sm">
                         <input
                           type="checkbox"
                           checked={transmitir}
@@ -534,7 +534,7 @@ export default function FacturarSujetoExcluidoPage() {
                       <div className="mb-2 text-right text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                         Resumen del documento
                       </div>
-                      <div className="overflow-hidden rounded-lg border border-slate-200 text-sm border-border">
+                      <div className="overflow-hidden rounded-lg border border-border text-sm">
                         <SummaryRow label="Total compra" value={money(summary.totalCompra)} />
                         <SummaryRow label="Descuento" value={money(0)} />
                         <SummaryRow label="Total descuento" value={money(summary.totalDescu)} />
@@ -595,7 +595,7 @@ export default function FacturarSujetoExcluidoPage() {
               </thead>
               <tbody>
                 {pagedReceptors.map((receptor) => (
-                  <tr key={receptor.id} className="border-b border-slate-200 last:border-0 border-border">
+                  <tr key={receptor.id} className="border-b border-border last:border-0">
                     <td className="px-3 py-3 font-semibold">{receptor.nombre || '-'}</td>
                     <td className="px-3 py-3 font-mono text-xs">{receptor.numeroDocumento || '-'}</td>
                     <td className="px-3 py-3 font-mono text-xs">{receptor.nrc || '-'}</td>
@@ -652,11 +652,11 @@ export default function FacturarSujetoExcluidoPage() {
 
 function SummaryRow({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_9rem] border-b border-slate-200 last:border-0 border-border">
-      <div className={`bg-white px-3 py-2 text-right bg-card ${strong ? 'font-bold' : 'font-semibold'}`}>
+    <div className="grid grid-cols-[minmax(0,1fr)_9rem] border-b border-border last:border-0">
+      <div className={`bg-card px-3 py-2 text-right text-foreground ${strong ? 'font-bold' : 'font-semibold'}`}>
         {label}
       </div>
-      <div className={`bg-slate-50 px-3 py-2 text-right bg-background ${strong ? 'font-bold' : 'font-medium'}`}>
+      <div className={`bg-muted/40 px-3 py-2 text-right text-foreground ${strong ? 'font-bold' : 'font-medium'}`}>
         {value}
       </div>
     </div>

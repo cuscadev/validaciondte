@@ -396,7 +396,7 @@ export default function FacturarConsumidorFinalPage() {
 
   if (!canUse) {
     return (
-      <main className="min-h-[calc(100vh-5rem)] bg-slate-50 p-4 text-slate-950 bg-background text-foreground">
+      <main className="min-h-[calc(100vh-5rem)] bg-background p-4 text-foreground">
         <Card className="mx-auto max-w-xl">
           <CardHeader>
             <CardTitle>Acceso restringido</CardTitle>
@@ -484,7 +484,7 @@ export default function FacturarConsumidorFinalPage() {
                           </Button>
                         </div>
                         {selectedReceptor && (
-                          <div className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm md:grid-cols-3 border-border bg-background">
+                          <div className="grid gap-3 rounded-lg border border-border bg-muted/40 p-3 text-sm md:grid-cols-3">
                             <Info label="Nombre" value={selectedReceptor.nombre || '-'} />
                             <Info label="Documento" value={selectedReceptor.numeroDocumento || '-'} />
                             <Info label="NRC" value={selectedReceptor.nrc || '-'} />
@@ -516,7 +516,7 @@ export default function FacturarConsumidorFinalPage() {
                   {items.map((line, index) => (
                     <div
                       key={index}
-                      className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 md:grid-cols-[7rem_minmax(0,1fr)_6rem_7rem_7rem_8rem_8rem_2.5rem] border-border bg-background"
+                      className="grid gap-3 rounded-lg border border-border bg-card p-3 md:grid-cols-[7rem_minmax(0,1fr)_6rem_7rem_7rem_8rem_8rem_2.5rem]"
                     >
                       <div className="grid gap-1">
                         <Label htmlFor={`codigo-${index}`}>Codigo</Label>
@@ -606,7 +606,7 @@ export default function FacturarConsumidorFinalPage() {
                     <div className="mb-2 text-right text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                       Resumen del documento
                     </div>
-                    <div className="ml-auto w-full max-w-2xl overflow-hidden rounded-lg border border-slate-200 text-sm border-border">
+                    <div className="ml-auto w-full max-w-2xl overflow-hidden rounded-lg border border-border text-sm">
                       <SummaryRow label="Suma de Ventas" value={`${money(summary.totalNoSuj)} / ${money(summary.totalExenta)} / ${money(summary.totalGravada)}`} />
                       <SummaryRow label="Sumatoria de ventas" value={money(summary.subTotalVentas)} />
                       <SummaryRow label="Descuento global a ventas no sujetas" value={money(summary.descuNoSuj)} />
@@ -624,10 +624,10 @@ export default function FacturarConsumidorFinalPage() {
                 </CardContent>
               </Card>
 
-              <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm border-border bg-card">
+              <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
                 <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
                   <div className="grid gap-3 md:grid-cols-[16rem_minmax(0,1fr)]">
-                    <label className="flex cursor-pointer items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm border-border bg-background">
+                    <label className="flex cursor-pointer items-center gap-3 rounded-md border border-border bg-muted/40 px-3 py-3 text-sm">
                       <input
                         type="checkbox"
                         checked={transmitir}
@@ -713,7 +713,7 @@ export default function FacturarConsumidorFinalPage() {
               </thead>
               <tbody>
                 {pagedReceptors.map((receptor) => (
-                  <tr key={receptor.id} className="border-b border-slate-200 last:border-0 border-border">
+                  <tr key={receptor.id} className="border-b border-border last:border-0">
                     <td className="px-3 py-3 font-semibold">{receptor.nombre || '-'}</td>
                     <td className="px-3 py-3 font-mono text-xs">{receptor.numeroDocumento || '-'}</td>
                     <td className="px-3 py-3 font-mono text-xs">{receptor.nrc || '-'}</td>
@@ -776,7 +776,7 @@ function ProcessTimingCard({
   transmitted: boolean;
 }) {
   return (
-    <div className="rounded-md border border-slate-200 bg-white p-3 text-sm border-border bg-card">
+    <div className="rounded-md border border-border bg-card p-3 text-sm">
       <div className="mb-3 flex items-center gap-2 font-semibold">
         <Clock3 className="size-4 text-primary text-primary" />
         Tiempos de emision
@@ -820,11 +820,11 @@ function TimingRow({ label, value, strong }: { label: string; value: string; str
 
 function SummaryRow({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_7.5rem] border-b border-slate-200 last:border-0 border-border">
-      <div className={`bg-white px-3 py-2 text-right bg-card ${strong ? 'font-bold' : 'font-semibold'}`}>
+    <div className="grid grid-cols-[minmax(0,1fr)_7.5rem] border-b border-border last:border-0">
+      <div className={`bg-card px-3 py-2 text-right text-foreground ${strong ? 'font-bold' : 'font-semibold'}`}>
         {label}
       </div>
-      <div className={`bg-slate-50 px-3 py-2 text-right bg-background ${strong ? 'font-bold' : 'font-medium'}`}>
+      <div className={`bg-muted/40 px-3 py-2 text-right text-foreground ${strong ? 'font-bold' : 'font-medium'}`}>
         {value}
       </div>
     </div>

@@ -175,7 +175,7 @@ export default function FacturacionReportePage() {
 
   if (!canUse) {
     return (
-      <main className="min-h-[calc(100vh-5rem)] bg-slate-50 p-4 text-slate-950 bg-background text-foreground">
+      <main className="min-h-[calc(100vh-5rem)] bg-background p-4 text-foreground">
         <Card className="mx-auto max-w-xl">
           <CardHeader>
             <CardTitle>Acceso restringido</CardTitle>
@@ -245,7 +245,7 @@ export default function FacturacionReportePage() {
                 </thead>
                 <tbody>
                   {pagedRows.map((dte) => (
-                    <tr key={dte.id} className="border-b border-slate-200 last:border-0 border-border">
+                    <tr key={dte.id} className="border-b border-border last:border-0">
                       <td className="px-3 py-3 whitespace-nowrap">{formatDate(dte.createdAt)}</td>
                       <td className="px-3 py-3">{tipoLabel(dte.tipoDte)}</td>
                       <td className="px-3 py-3">{dte.status || '-'}</td>

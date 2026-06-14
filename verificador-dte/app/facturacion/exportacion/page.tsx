@@ -185,7 +185,7 @@ export default function FacturaExportacionPage() {
 
   if (!canUse) {
     return (
-      <main className="min-h-[calc(100vh-5rem)] bg-slate-50 p-4 text-slate-950 bg-background text-foreground">
+      <main className="min-h-[calc(100vh-5rem)] bg-background p-4 text-foreground">
         <Card className="mx-auto max-w-xl">
           <CardHeader>
             <CardTitle>Acceso restringido</CardTitle>
@@ -267,7 +267,7 @@ export default function FacturaExportacionPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 {items.map((line, index) => (
-                  <div key={index} className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 md:grid-cols-[7rem_minmax(0,1fr)_6rem_7rem_7rem_7rem_2.5rem] border-border bg-background">
+                  <div key={index} className="grid gap-3 rounded-lg border border-border bg-card p-3 md:grid-cols-[7rem_minmax(0,1fr)_6rem_7rem_7rem_8rem_8rem_2.5rem]">
                     <Field label="Codigo" value={line.codigo} onChange={(value) => updateLine(index, { codigo: value })} />
                     <Field label="Descripcion" value={line.descripcion} onChange={(value) => updateLine(index, { descripcion: value })} />
                     <NumberField label="Cantidad" value={line.cantidad} onChange={(value) => updateLine(index, { cantidad: value })} />
@@ -291,7 +291,7 @@ export default function FacturaExportacionPage() {
                       <NumberField label="Flete" value={flete} onChange={setFlete} />
                       <NumberField label="Seguro" value={seguro} onChange={setSeguro} />
                     </div>
-                    <label className="flex cursor-pointer items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm border-border bg-background">
+                    <label className="flex cursor-pointer items-center gap-3 rounded-md border border-border bg-muted/40 px-3 py-3 text-sm">
                       <input type="checkbox" checked={transmitir} onChange={(event) => setTransmitir(event.target.checked)} className="size-4 accent-primary" />
                       <span>Transmitir a Hacienda test</span>
                     </label>
@@ -299,7 +299,7 @@ export default function FacturaExportacionPage() {
                   </div>
                   <div>
                     <div className="mb-2 text-right text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Resumen del documento</div>
-                    <div className="overflow-hidden rounded-lg border border-slate-200 text-sm border-border">
+                    <div className="overflow-hidden rounded-lg border border-border text-sm">
                       <SummaryRow label="Total exportacion" value={money(subtotal)} />
                       <SummaryRow label="Flete" value={money(flete)} />
                       <SummaryRow label="Seguro" value={money(seguro)} />
@@ -339,9 +339,9 @@ function NumberField({ label, value, onChange }: { label: string; value: number;
 
 function SummaryRow({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_9rem] border-b border-slate-200 last:border-0 border-border">
-      <div className={`bg-white px-3 py-2 text-right bg-card ${strong ? 'font-bold' : 'font-semibold'}`}>{label}</div>
-      <div className={`bg-slate-50 px-3 py-2 text-right bg-background ${strong ? 'font-bold' : 'font-medium'}`}>{value}</div>
+    <div className="grid grid-cols-[minmax(0,1fr)_9rem] border-b border-border last:border-0">
+      <div className={`bg-card px-3 py-2 text-right text-foreground ${strong ? 'font-bold' : 'font-semibold'}`}>{label}</div>
+      <div className={`bg-muted/40 px-3 py-2 text-right text-foreground ${strong ? 'font-bold' : 'font-medium'}`}>{value}</div>
     </div>
   );
 }

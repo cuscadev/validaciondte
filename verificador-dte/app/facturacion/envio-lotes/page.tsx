@@ -398,7 +398,7 @@ export default function EnvioLotesPage() {
 
   if (!canUse) {
     return (
-      <main className="min-h-[calc(100vh-5rem)] bg-slate-50 p-4 text-slate-950 bg-background text-foreground">
+      <main className="min-h-[calc(100vh-5rem)] bg-background p-4 text-foreground">
         <Card className="mx-auto max-w-xl">
           <CardHeader>
             <CardTitle>Acceso restringido</CardTitle>
@@ -554,7 +554,7 @@ export default function EnvioLotesPage() {
                       placeholder="Opcional si ya esta guardada"
                     />
                   </div>
-                  <label className="flex cursor-pointer items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm border-border bg-background">
+                  <label className="flex cursor-pointer items-center gap-3 rounded-md border border-border bg-muted/40 px-3 py-3 text-sm">
                     <input
                       type="checkbox"
                       checked={transmitir}
@@ -620,10 +620,10 @@ export default function EnvioLotesPage() {
                         const consultaKey = `${lote.id}:${selectedCode}`;
 
                         return (
-                          <tr key={lote.id} className="border-b border-slate-200 align-top last:border-0 border-border">
+                          <tr key={lote.id} className="border-b border-border align-top last:border-0">
                             <td className="py-3 pr-3 whitespace-nowrap">{formatDate(lote.createdAt)}</td>
                             <td className="py-3 pr-3">
-                              <span className="inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700 dark:bg-white/10 dark:text-zinc-200">
+                              <span className="inline-flex rounded-full bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground">
                                 {lote.status || '-'}
                               </span>
                             </td>
@@ -703,7 +703,7 @@ export default function EnvioLotesPage() {
                       </thead>
                       <tbody>
                         {rows.map((row) => (
-                          <tr key={row.index} className="border-b border-slate-200 last:border-0 border-border">
+                          <tr key={row.index} className="border-b border-border last:border-0">
                             <td className="py-2 pr-3 font-mono">{row.index}</td>
                             <td className="py-2 pr-3 font-mono">{row.chunk || '-'}</td>
                             <td className="py-2 pr-3">
@@ -736,7 +736,7 @@ export default function EnvioLotesPage() {
               <CardDescription>Pruebas tipo 01 consumidor final.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 border-border bg-background">
+              <div className="rounded-lg border border-border bg-muted/40 p-4">
                 <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Pruebas</p>
                 <p className="mt-1 text-3xl font-black">{Math.max(1, Math.min(1000, Number(batchSize || 1)))}</p>
                 <p className="mt-2 text-sm text-muted-foreground">
@@ -771,7 +771,7 @@ export default function EnvioLotesPage() {
               )}
 
               {rows.length > 0 && (
-                <div className="rounded-md border border-slate-200 bg-white p-3 text-sm border-border bg-card">
+                <div className="rounded-md border border-border bg-card p-3 text-sm">
                   <div className="mb-2 flex items-center gap-2 font-semibold">
                     <ReceiptText className="size-4 text-primary text-primary" />
                     Avance
@@ -785,7 +785,7 @@ export default function EnvioLotesPage() {
                     <span>Tiempo total: {formatMs(batchElapsedMs || undefined)}</span>
                   </div>
                   {chunks.length > 0 && (
-                    <div className="mt-3 grid gap-1 border-t border-slate-200 pt-3 text-xs border-border">
+                    <div className="mt-3 grid gap-1 border-t border-border pt-3 text-xs">
                       {chunks.map((chunk) => (
                         <span key={chunk.index} className="break-all">
                           Chunk {chunk.index}: {chunk.size} docs - {formatMs(chunk.totalMs)} - {chunk.codigoLote || 'sin envio'}
