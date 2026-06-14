@@ -90,18 +90,19 @@ flowchart LR
 
 | Área | Requerido MH | Estado |
 |------|--------------|--------|
-| DTE 01, 03, 05, 06, 11, 14 | Generar + transmitir | Implementado |
-| DTE 04, 07, 08, 09, 15 | Estructuras propias | Endpoints base (estructura CCF); falta dominio/schema oficial por tipo |
+| DTE 01, 03, 05, 06, 11, 14 | Generar + transmitir | Implementado E2E vía Next (ambiente test y prod según `ambiente_codigo`) |
+| DTE 04, 07, 08, 09, 15 | Estructuras propias | Go: endpoints + dominios base; Next/UI sin rutas de emisión dedicadas |
 | `recepciondte` / `recepcionlote` | Transmisión | Go: `transmissions` |
 | `consultadte` / `consultadtelote` | Consulta | Go: `queries` |
 | Auth `seguridad/auth` | Token Bearer | Go: `POST /api/facturacion/hacienda/auth` + Next.js `hacienda-auth` |
-| Certificado XML | Subir, validar, firmar | Go: `certificates` + Storage; cache en memoria al login |
-| Emisor persistente | NIT, dirección, actividad | Postgres + Go `emisores` + Next `profile/emisor` |
-| CAT-005/006/008 | Ubicación 2 dígitos | Validación estricta en `resolve-location.ts` |
-| Eventos invalidación/contingencia/op. especiales/retorno | JSON evento + firma + TX | Go: `events/*` (generador base) |
-| JSON Schema oficial | Pre-firma | Go: `schema/validate` (estructural); falta schemas MH |
-| Correlativos `numeroControl` | Secuencial atómico | Go: `sequences/next` + tabla `dte_control_sequences` |
+| Certificado XML | Subir, validar, firmar | Go: `certificates` + Storage; UI en `/configuraciones` (`CertificateSettingsCard`) |
+| Emisor persistente | NIT, dirección, actividad | Postgres + Go `emisores` + Next `profile/emisor`; BFF usa `GET /api/emisores/me/dte-input` |
+| CAT-005/006/008 | Ubicación 2 dígitos | Validación estricta en `resolve-location.ts` (400 si no existe en catálogo) |
+| Eventos invalidación/contingencia/op. especiales/retorno | JSON evento + firma + TX | Go: `events/*/submit` + rutas Next proxy; reglas de plazo pendientes de codificar |
+| JSON Schema oficial | Pre-firma | Go: `schema/validate` + `svfe-json-schemas/` (estructural + schemas por tipo) |
+| Correlativos `numeroControl` | Secuencial atómico | **Crítico:** Go `sequences/next` integrado en rutas Next; `cod_estable`/`cod_punto_venta` en `emisor_configuracion` |
 | Exportación 11 | Receptor/items extranjero | Go: `receptors` + `items` export |
+| Auth/hardening Go | Solo BFF autorizado | Middleware `X-Go-Dte-Internal-Key` en `/api/facturacion/*`; signer usa password cifrada en Postgres |
 | Contingencia en DTE | `tipoContingencia`, `motivoContin` | Pendiente en generadores |
 | 2026: terceros, fusiones, tributos | Campos nuevos | Pendiente |
 
@@ -238,7 +239,9 @@ Reglas de invalidación a codificar (manual 2026):
 
 ---
 
-### Fase 5 — Correlativos
+### Fase 5 — Correlativos (prioridad crítica pre-producción)
+
+**Bloqueante normativo:** sin `sequences/next` el `numeroControl` no cumple formato MH (`DTE-{tipo}-M{est}P{pto}-{15 dígitos}`).
 
 1. Ejecutar [`go-dte-api/db/dte-sequences-schema.sql`](go-dte-api/db/dte-sequences-schema.sql) en Supabase.
 2. Antes de generar DTE, llamar `POST /api/facturacion/sequences/next`:
@@ -331,7 +334,9 @@ Corregido en [`scripts/init-db.sql`](scripts/init-db.sql) y [`scripts/fix-cat-01
 - [ ] `GO_DTE_API_URL`
 - [ ] `DATABASE_URL` / `SUPABASE_DB_URL`
 - [ ] Usuario completa perfil emisor (dept/muni/distrito validados)
-- [ ] Subir certificado `.crt` desde UI (cuando se agregue campo en Configuraciones)
+- [x] Subir certificado `.crt` desde UI (`/configuraciones` → `CertificateSettingsCard`)
+- [ ] Correlativos: `cod_estable` / `cod_punto_venta` en perfil emisor + `sequences/next` activo
+- [ ] `GO_DTE_INTERNAL_API_KEY` configurado en Go y verificador-dte (rutas facturación protegidas)
 
 ---
 
@@ -340,22 +345,26 @@ Corregido en [`scripts/init-db.sql`](scripts/init-db.sql) y [`scripts/fix-cat-01
 | Riesgo | Mitigación |
 |--------|------------|
 | CAT-008 distritos incompleto | `seed-distritos-default.sql` pone distrito `01` por municipio; importar catálogo oficial completo |
-| PDFs escaneados | Obtener manuales con texto o schemas JSON en repo |
+| PDFs escaneados | Obtener manuales con texto o schemas JSON en repo (`svfe-json-schemas/`) |
 | Generadores 04/07/08/09/15 simplificados | Iterar con schemas MH y pruebas en ambiente 01 (pruebas) |
 | Cache cert en memoria se pierde al reiniciar Go | Warmup automático al login; opcional Redis después |
-| Password cert en Postgres | Solo hash cifrado AES-GCM; nunca `passwordPri` en claro |
+| Password cert en Postgres | Cifrado AES-GCM; signer resuelve desde DB si no llega `passwordPri` |
+| Rutas Go `/api/facturacion/*` expuestas | Middleware `X-Go-Dte-Internal-Key`; Next.js como único cliente autorizado |
+| `GO_DTE_INTERNAL_API_KEY` vacío | Falla de arranque o rechazo 401; nunca dejar key vacía en producción |
+| Correlativo ad-hoc (`Date.now()`) | Integrar `POST /sequences/next` antes de emitir (Fase 5) |
 
 ---
 
 ## 10. Pendientes recomendados (post-implementación base)
 
-1. UI para subir `.crt` en Perfil / Configuraciones (hoy existe API, falta formulario).
-2. Integrar `sequences/next` en rutas de emisión Next.js (hoy usan correlativo ad-hoc).
-3. Copiar `svfe-json-schemas` al repo y conectar validador real en `schema/`.
+1. ~~UI para subir `.crt` en Configuraciones~~ — hecho (`CertificateSettingsCard`).
+2. ~~Integrar `sequences/next` en rutas de emisión Next.js~~ — hecho; verificar `dte-sequences-schema.sql` en Supabase.
+3. ~~Copiar `svfe-json-schemas` al repo~~ — hecho en `go-dte-api/schemas/svfe-json-schemas/`; ampliar con schemas oficiales MH.
 4. Validación catálogos en Go (`codActividad`, `uniMedida`, `formaPago`) contra `cat_*`.
-5. Dominios JSON separados para DTE 04, 07, 08, 09, 15.
+5. ~~Dominios JSON separados para DTE 04, 07, 08, 09, 15~~ — dominios base en Go; iterar con schemas MH.
 6. Campos 2026: venta/compra terceros, fusiones, contingencia en identificación.
-7. Conectar eventos `events/*` → firmar → `transmissions/dte` desde Next.js.
+7. ~~Eventos `events/*/submit` → firmar → `transmissions/dte`~~ — hecho en Go + proxy Next; codificar reglas de plazo invalidación.
+8. Reglas de invalidación 2026 (plazos FE/CCF, NC/ND previas) en validador de eventos.
 
 ---
 
@@ -368,9 +377,13 @@ POST /api/facturacion/hacienda/auth
 POST /api/facturacion/schema/validate
 POST /api/facturacion/sequences/next
 POST /api/facturacion/events/invalidation
+POST /api/facturacion/events/invalidation/submit
 POST /api/facturacion/events/contingency
+POST /api/facturacion/events/contingency/submit
 POST /api/facturacion/events/special-operations
+POST /api/facturacion/events/special-operations/submit
 POST /api/facturacion/events/return
+POST /api/facturacion/events/return/submit
 POST /api/facturacion/documents/nota-remision
 POST /api/facturacion/documents/comprobante-retencion
 POST /api/facturacion/documents/comprobante-liquidacion
@@ -384,4 +397,4 @@ Endpoints existentes previos: `documents/*`, `sign`, `transmissions/*`, `queries
 
 ---
 
-*Última actualización: alineado con la implementación en `go-dte-api` y `verificador-dte` del plan API DTE Hacienda v2.*
+*Última actualización: revisión plan API DTE Hacienda v2 — correlativos, UI certificados, hardening Go, eventos submit, schemas base.*

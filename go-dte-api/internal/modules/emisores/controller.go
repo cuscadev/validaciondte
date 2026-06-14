@@ -43,7 +43,7 @@ func (ct *Controller) GetDteInput(c *fiber.Ctx) error {
 		}
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
-	return c.JSON(fiber.Map{"success": true, "emisor": input})
+	return c.JSON(fiber.Map{"success": true, "emisorId": id, "emisor": input})
 }
 
 func (ct *Controller) GetMeDteInput(c *fiber.Ctx) error {
@@ -51,12 +51,13 @@ func (ct *Controller) GetMeDteInput(c *fiber.Ctx) error {
 	if firebaseUID == "" {
 		firebaseUID = c.Query("firebaseUid")
 	}
-	input, err := ct.service.GetDteInputMe(c.Context(), firebaseUID, c.Get("X-User-Email"))
+	row, err := ct.service.GetMe(c.Context(), firebaseUID, c.Get("X-User-Email"))
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
 			return fiber.NewError(fiber.StatusNotFound, err.Error())
 		}
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
-	return c.JSON(fiber.Map{"success": true, "emisor": input})
+	input := MapToDteInput(row)
+	return c.JSON(fiber.Map{"success": true, "emisorId": row.ID, "emisor": input})
 }

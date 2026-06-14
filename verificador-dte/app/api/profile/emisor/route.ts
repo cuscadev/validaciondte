@@ -36,6 +36,9 @@ type EmitterInput = {
   generadorCodigo?: string;
   prefijoCorrelativo?: string;
   tipoRetencionDefecto?: string;
+  codEstable?: string;
+  codPuntoVenta?: string;
+  tipoEstablecimientoEmision?: string;
 };
 
 function json(data: unknown, init?: ResponseInit) {
@@ -73,7 +76,10 @@ async function upsertEmisorConfiguracion(
     body.tasaIva !== undefined ||
     body.generadorCodigo !== undefined ||
     body.prefijoCorrelativo !== undefined ||
-    body.tipoRetencionDefecto !== undefined;
+    body.tipoRetencionDefecto !== undefined ||
+    body.codEstable !== undefined ||
+    body.codPuntoVenta !== undefined ||
+    body.tipoEstablecimientoEmision !== undefined;
 
   if (!hasConfig) return;
 
@@ -90,9 +96,12 @@ async function upsertEmisorConfiguracion(
         generador_codigo,
         prefijo_correlativo,
         tipo_retencion_defecto,
+        cod_estable,
+        cod_punto_venta,
+        tipo_establecimiento_emision,
         updated_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_TIMESTAMP)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP)
       ON CONFLICT (emisor_id)
       DO UPDATE SET
         metodo_pago_defecto = COALESCE(EXCLUDED.metodo_pago_defecto, emisor_configuracion.metodo_pago_defecto),
@@ -104,6 +113,9 @@ async function upsertEmisorConfiguracion(
         generador_codigo = COALESCE(EXCLUDED.generador_codigo, emisor_configuracion.generador_codigo),
         prefijo_correlativo = COALESCE(EXCLUDED.prefijo_correlativo, emisor_configuracion.prefijo_correlativo),
         tipo_retencion_defecto = COALESCE(EXCLUDED.tipo_retencion_defecto, emisor_configuracion.tipo_retencion_defecto),
+        cod_estable = COALESCE(EXCLUDED.cod_estable, emisor_configuracion.cod_estable),
+        cod_punto_venta = COALESCE(EXCLUDED.cod_punto_venta, emisor_configuracion.cod_punto_venta),
+        tipo_establecimiento_emision = COALESCE(EXCLUDED.tipo_establecimiento_emision, emisor_configuracion.tipo_establecimiento_emision),
         updated_at = CURRENT_TIMESTAMP
     `,
     [
@@ -117,6 +129,9 @@ async function upsertEmisorConfiguracion(
       clean(body.generadorCodigo),
       clean(body.prefijoCorrelativo),
       clean(body.tipoRetencionDefecto),
+      clean(body.codEstable),
+      clean(body.codPuntoVenta),
+      clean(body.tipoEstablecimientoEmision),
     ]
   );
 }
@@ -178,7 +193,10 @@ async function getLinkedEmitter(uid: string, email: string) {
         ec.tasa_iva AS "tasaIva",
         ec.generador_codigo AS "generadorCodigo",
         ec.prefijo_correlativo AS "prefijoCorrelativo",
-        ec.tipo_retencion_defecto AS "tipoRetencionDefecto"
+        ec.tipo_retencion_defecto AS "tipoRetencionDefecto",
+        ec.cod_estable AS "codEstable",
+        ec.cod_punto_venta AS "codPuntoVenta",
+        ec.tipo_establecimiento_emision AS "tipoEstablecimientoEmision"
       FROM usuarios u
       INNER JOIN usuario_emisor ue ON ue.usuario_id = u.id
       INNER JOIN emisores e ON e.id = ue.emisor_id

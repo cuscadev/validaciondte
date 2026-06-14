@@ -4,10 +4,10 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { createEmision, mergeEmision } from '@/lib/facturacion/emisiones-store';
 import {
-  resolveEmitterForDte,
   resolveReceptorDteLocation,
 } from '@/lib/facturacion/build-emisor';
-import { getGoDteApiUrl } from '@/lib/go-dte-api';
+import { prepareEmission, postGo } from '@/lib/facturacion/prepare-emission';
+import { GoFacturacionError } from '@/lib/facturacion/go-facturacion-client';
 import { getHaciendaTokenForUser } from '@/lib/hacienda-auth';
 import { resolveCertificatePassword } from '@/lib/facturacion/certificate-credentials';
 import { getPostgresPool } from '@/lib/postgres';
@@ -41,15 +41,7 @@ type ProcessTiming = {
   totalMs?: number;
 };
 
-class GoApiError extends Error {
-  status: number;
-
-  constructor(message: string, status: number) {
-    super(message);
-    this.name = 'GoApiError';
-    this.status = status;
-  }
-}
+class GoApiError extends GoFacturacionError {}
 
 function asRecord(value: unknown): JsonRecord {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as JsonRecord : {};
@@ -95,37 +87,6 @@ function toNumber(value: unknown, fallback = 0) {
 
 function normalizeHaciendaToken(value: unknown) {
   return getString(value).replace(/^Bearer\s+/i, '').trim();
-}
-
-async function postGo(path: string, body: unknown, init?: RequestInit) {
-  const upstream = await fetch(`${getGoDteApiUrl()}${path}`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      ...(init?.headers || {}),
-    },
-    body: JSON.stringify(body),
-    cache: 'no-store',
-  });
-
-  const text = await upstream.text();
-  let payload: unknown = text;
-  try {
-    payload = text ? JSON.parse(text) : null;
-  } catch {
-    payload = text;
-  }
-
-  if (!upstream.ok) {
-    throw new GoApiError(
-      typeof payload === 'object' && payload && 'error' in payload
-        ? String((payload as { error?: unknown }).error)
-        : text || `Go API respondio HTTP ${upstream.status}`,
-      upstream.status
-    );
-  }
-
-  return payload;
 }
 
 function extractSello(response: unknown): string {
@@ -274,22 +235,16 @@ export async function POST(req: NextRequest) {
       ivaRete?: number;
     };
 
-    const emitter = await getCurrentEmitter(user.uid, user.email);
-    if (!emitter) return NextResponse.json({ error: 'No hay emisor vinculado para este usuario.' }, { status: 404 });
-
     const receptorId = Number(body.receptorId || 0);
     if (!receptorId) return NextResponse.json({ error: 'Selecciona un receptor.' }, { status: 400 });
 
-    const receptor = await getReceptor(Number(emitter.id), receptorId);
+    const prepared = await prepareEmission(user.uid, user.email, '03', body.environment);
+    const { emisor, emisorId, environment, ambiente } = prepared;
+
+    const receptor = await getReceptor(emisorId, receptorId);
     if (!receptor) return NextResponse.json({ error: 'Receptor no encontrado para este emisor.' }, { status: 404 });
 
     const items = validateItems(body.items || []);
-    const environment = body.environment === 'production' ? 'production' : 'test';
-    if (environment !== 'test') {
-      return NextResponse.json({ error: 'Por ahora solo se permite ambiente test.' }, { status: 400 });
-    }
-
-    const { emisor } = await resolveEmitterForDte(emitter);
     const receptorFiscal = await buildTaxCreditReceptor(receptor);
     if (!emisor.codActividad || !emisor.descActividad) {
       return NextResponse.json(
@@ -318,11 +273,12 @@ export async function POST(req: NextRequest) {
     const ivaPerci = toNumber(body.ivaPerci);
     const ivaRete = toNumber(body.ivaRete);
     const documentRequest = {
-      ambiente: '00',
-      correlativo: Date.now() % 999999999999999,
-      establecimientoTipo: 'M',
-      establecimiento: '001',
-      puntoVenta: '001',
+      ambiente,
+      correlativo: prepared.sequenceFields.correlativo,
+      numeroControl: prepared.sequenceFields.numeroControl,
+      establecimientoTipo: prepared.sequenceFields.establecimientoTipo,
+      establecimiento: prepared.sequenceFields.establecimiento,
+      puntoVenta: prepared.sequenceFields.puntoVenta,
       emisor,
       receptor: receptorFiscal,
       items,
@@ -342,7 +298,7 @@ export async function POST(req: NextRequest) {
       source: 'tax-credit-invoice',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-    }, { emisorId: Number(emitter.id) });
+    }, { emisorId });
 
     const documentStartMs = Date.now();
     const documentResponse = asRecord(await postGo('/api/facturacion/documents/credito-fiscal', documentRequest));
@@ -396,7 +352,7 @@ export async function POST(req: NextRequest) {
       processTiming.sentToHaciendaAt = new Date(haciendaStartMs).toISOString();
       const transmissionRequest = {
         environment,
-        ambiente: '00',
+        ambiente,
         idEnvio: Date.now(),
         version: Number(documentResponse.version || asRecord(asRecord(dteJson).identificacion).version || 4),
         tipoDte: '03',

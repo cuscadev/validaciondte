@@ -3,8 +3,10 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createEmision, mergeEmision } from '@/lib/facturacion/emisiones-store';
-import { resolveEmitterForDte } from '@/lib/facturacion/build-emisor';
-import { getGoDteApiUrl } from '@/lib/go-dte-api';
+import {
+  GoFacturacionError,
+} from '@/lib/facturacion/go-facturacion-client';
+import { prepareEmission, postGo } from '@/lib/facturacion/prepare-emission';
 import { getHaciendaTokenForUser } from '@/lib/hacienda-auth';
 import { resolveCertificatePassword } from '@/lib/facturacion/certificate-credentials';
 import { getPostgresPool } from '@/lib/postgres';
@@ -38,15 +40,7 @@ type ProcessTiming = {
   totalMs?: number;
 };
 
-class GoApiError extends Error {
-  status: number;
-
-  constructor(message: string, status: number) {
-    super(message);
-    this.name = 'GoApiError';
-    this.status = status;
-  }
-}
+class GoApiError extends GoFacturacionError {}
 
 function asRecord(value: unknown): JsonRecord {
   return value && typeof value === 'object' && !Array.isArray(value)
@@ -84,37 +78,6 @@ function toNumber(value: unknown, fallback = 0) {
   return Number.isFinite(n) ? n : fallback;
 }
 
-async function postGo(path: string, body: unknown, init?: RequestInit) {
-  const upstream = await fetch(`${getGoDteApiUrl()}${path}`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      ...(init?.headers || {}),
-    },
-    body: JSON.stringify(body),
-    cache: 'no-store',
-  });
-
-  const text = await upstream.text();
-  let payload: unknown = text;
-  try {
-    payload = text ? JSON.parse(text) : null;
-  } catch {
-    payload = text;
-  }
-
-  if (!upstream.ok) {
-    throw new GoApiError(
-      typeof payload === 'object' && payload && 'error' in payload
-        ? String((payload as { error?: unknown }).error)
-        : text || `Go API respondio HTTP ${upstream.status}`,
-      upstream.status
-    );
-  }
-
-  return payload;
-}
-
 function extractSello(response: unknown): string {
   const body = asRecord(response);
   return (
@@ -123,47 +86,6 @@ function extractSello(response: unknown): string {
     getString(asRecord(body.body).selloRecibido) ||
     getString(asRecord(body.body).selloRecepcion)
   );
-}
-
-async function getCurrentEmitter(uid: string, email: string) {
-  const result = await getPostgresPool().query(
-    `
-      SELECT
-        e.id,
-        e.nit,
-        e.nrc,
-        e.nombre,
-        e.nombre_comercial,
-        e.razon_social,
-        e.tipo_establecimiento_codigo,
-        e.codigo_actividad,
-        e.descripcion_actividad,
-        e.departamento_codigo,
-        e.municipio_codigo,
-        e.distrito_codigo,
-        e.complemento_direccion,
-        e.telefono,
-        e.correo,
-        e.ambiente_codigo,
-        m.nombre AS municipio_nombre,
-        a.nombre AS actividad_nombre,
-        ue.rol AS rol_emisor
-      FROM usuarios u
-      INNER JOIN usuario_emisor ue ON ue.usuario_id = u.id
-      INNER JOIN emisores e ON e.id = ue.emisor_id
-      LEFT JOIN cat_006_municipios m ON m.codigo = e.municipio_codigo
-        AND m.departamento_codigo = e.departamento_codigo
-      LEFT JOIN cat_024_codigo_actividad a ON a.codigo = e.codigo_actividad
-      WHERE u.activo = TRUE
-        AND e.activo = TRUE
-        AND (u.firebase_uid = $1 OR lower(u.email) = lower($2))
-      ORDER BY CASE ue.rol WHEN 'propietario' THEN 0 WHEN 'editor' THEN 1 ELSE 2 END, e.id ASC
-      LIMIT 1
-    `,
-    [uid, email]
-  );
-
-  return result.rows[0] ?? null;
 }
 
 async function getReceptor(emisorId: number, receptorId: number) {
@@ -268,53 +190,28 @@ export async function POST(req: NextRequest) {
       haciendaToken?: string;
     };
 
-    const emitter = await getCurrentEmitter(user.uid, user.email);
-    if (!emitter) {
-      return NextResponse.json({ error: 'No hay emisor vinculado para este usuario.' }, { status: 404 });
-    }
+    const prepared = await prepareEmission(user.uid, user.email, '01', body.environment);
+    const { emisor, emisorId, environment, ambiente, sequenceFields } = prepared;
 
     const receptorId = Number(body.receptorId || 0);
     if (!receptorId) {
       return NextResponse.json({ error: 'Selecciona un receptor.' }, { status: 400 });
     }
 
-    const receptor = await getReceptor(Number(emitter.id), receptorId);
+    const receptor = await getReceptor(emisorId, receptorId);
     if (!receptor) {
       return NextResponse.json({ error: 'Receptor no encontrado para este emisor.' }, { status: 404 });
     }
 
     const items = validateItems(body.items || []);
-    const environment = body.environment === 'production' ? 'production' : 'test';
-    if (environment !== 'test') {
-      return NextResponse.json({ error: 'Por ahora solo se permite ambiente test.' }, { status: 400 });
-    }
-
-    const { emisor } = await resolveEmitterForDte(emitter);
-    if (!emisor.codActividad || !emisor.descActividad) {
-      return NextResponse.json(
-        { error: 'Configura el codigo y descripcion de actividad economica del emisor antes de facturar.' },
-        { status: 400 }
-      );
-    }
-    if (!emisor.direccion.departamento || !emisor.direccion.municipio || !emisor.direccion.distrito) {
-      return NextResponse.json(
-        { error: 'Configura departamento, municipio y distrito validos del emisor antes de facturar.' },
-        { status: 400 }
-      );
-    }
-    if (!/^\d{2}$/.test(emisor.direccion.municipio)) {
-      return NextResponse.json(
-        { error: `Municipio del emisor invalido para DTE: ${emisor.direccion.municipio}. Debe tener 2 digitos.` },
-        { status: 400 }
-      );
-    }
 
     const documentRequest = {
-      ambiente: '00',
-      correlativo: Date.now() % 999999999999999,
-      establecimientoTipo: 'M',
-      establecimiento: '001',
-      puntoVenta: '001',
+      ambiente,
+      correlativo: sequenceFields.correlativo,
+      numeroControl: sequenceFields.numeroControl,
+      establecimientoTipo: sequenceFields.establecimientoTipo,
+      establecimiento: sequenceFields.establecimiento,
+      puntoVenta: sequenceFields.puntoVenta,
       emisor,
       receptor: buildReceptor(receptor),
       items,
@@ -337,7 +234,7 @@ export async function POST(req: NextRequest) {
       source: 'consumer-invoice',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-    }, { emisorId: Number(emitter.id) });
+    }, { emisorId });
 
     const documentStartMs = Date.now();
     const documentResponse = asRecord(await postGo(
@@ -408,7 +305,7 @@ export async function POST(req: NextRequest) {
       try {
         const transmissionRequest = {
           environment,
-          ambiente: '00',
+          ambiente,
           idEnvio: Date.now(),
           version: Number(documentResponse.version || asRecord(asRecord(dteJson).identificacion).version || 2),
           tipoDte: '01',

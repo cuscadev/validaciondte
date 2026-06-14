@@ -20,6 +20,7 @@ type EmisorRow struct {
 	CertificadoPath            *string `json:"certificadoPath,omitempty"`
 	CodEstable                 *string `json:"codEstable,omitempty"`
 	CodPuntoVenta              *string `json:"codPuntoVenta,omitempty"`
+	TipoEstablecimientoEmision *string `json:"tipoEstablecimientoEmision,omitempty"`
 }
 
 type DteEmisorInput struct {
@@ -32,8 +33,9 @@ type DteEmisorInput struct {
 	Direccion       Direccion `json:"direccion"`
 	Telefono        string    `json:"telefono"`
 	Correo          string    `json:"correo"`
-	CodEstable      *string   `json:"codEstable,omitempty"`
-	CodPuntoVenta   *string   `json:"codPuntoVenta,omitempty"`
+	CodEstable          *string `json:"codEstable,omitempty"`
+	CodPuntoVenta       *string `json:"codPuntoVenta,omitempty"`
+	TipoEstablecimiento *string `json:"tipoEstablecimiento,omitempty"`
 }
 
 type Direccion struct {

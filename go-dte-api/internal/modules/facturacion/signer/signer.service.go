@@ -36,16 +36,9 @@ func NewService(cfg config.Config) *Service {
 
 func (s *Service) Sign(req dto.SignRequest) (string, error) {
 	nit := strings.TrimSpace(req.NIT)
-	password := strings.TrimSpace(req.PasswordPri)
-
-	if nit == "" {
-		return "", errors.New("NIT es requerido")
-	}
-	if !nitRegex.MatchString(nit) {
-		return "", errors.New("formato de NIT no valido")
-	}
-	if password == "" {
-		return "", errors.New("clave privada es requerida")
+	password, err := s.resolvePassword(nit, req.PasswordPri)
+	if err != nil {
+		return "", err
 	}
 	if len(bytes.TrimSpace(req.DTEJSON)) == 0 {
 		return "", errors.New("dteJson es requerido")
@@ -83,16 +76,9 @@ func (s *Service) Sign(req dto.SignRequest) (string, error) {
 
 func (s *Service) SignBatch(req dto.SignBatchRequest) (dto.SignBatchResponse, error) {
 	nit := strings.TrimSpace(req.NIT)
-	password := strings.TrimSpace(req.PasswordPri)
-
-	if nit == "" {
-		return dto.SignBatchResponse{}, errors.New("NIT es requerido")
-	}
-	if !nitRegex.MatchString(nit) {
-		return dto.SignBatchResponse{}, errors.New("formato de NIT no valido")
-	}
-	if password == "" {
-		return dto.SignBatchResponse{}, errors.New("clave privada es requerida")
+	password, err := s.resolvePassword(nit, req.PasswordPri)
+	if err != nil {
+		return dto.SignBatchResponse{}, err
 	}
 	if len(req.Documentos) == 0 {
 		return dto.SignBatchResponse{}, errors.New("documentos es requerido")
@@ -194,6 +180,28 @@ func (s *Service) loadCertificate(nit string) (*domain.CertificateMH, error) {
 	}
 
 	return nil, nil
+}
+
+func (s *Service) resolvePassword(nit, provided string) (string, error) {
+	nit = strings.TrimSpace(nit)
+	if nit == "" {
+		return "", errors.New("NIT es requerido")
+	}
+	if !nitRegex.MatchString(nit) {
+		return "", errors.New("formato de NIT no valido")
+	}
+	if certService := certificates.SharedService(); certService != nil {
+		if password, err := certService.ResolvePassword(context.Background(), nit, provided); err == nil {
+			return password, nil
+		} else if strings.TrimSpace(provided) != "" {
+			return "", err
+		}
+	}
+	password := strings.TrimSpace(provided)
+	if password == "" {
+		return "", errors.New("clave privada es requerida")
+	}
+	return password, nil
 }
 
 func min(a, b int) int {

@@ -1,5 +1,9 @@
 import { getPostgresPool } from '@/lib/postgres';
 import {
+  fetchEmisorEmissionContext,
+  type DteEmisorInput,
+} from '@/lib/facturacion/go-facturacion-client';
+import {
   resolveEmitterRowLocation,
   resolveLocation,
   toDteLocationCodes,
@@ -40,22 +44,37 @@ export function buildEmisorPayload(
     descActividad:
       getString(row.descripcion_actividad).trim() || getString(row.actividad_nombre).trim(),
     nombreComercial: nullableString(row.nombre_comercial),
-    tipoEstablecimiento: getString(row.tipo_establecimiento_codigo) || '01',
     direccion: {
       ...direccion,
       complemento: getString(row.complemento_direccion),
     },
     telefono: getString(row.telefono),
     correo: getString(row.correo),
-    codEstable: null,
-    codPuntoVenta: null,
+    codEstable: nullableString(row.cod_estable) || '001',
+    codPuntoVenta: nullableString(row.cod_punto_venta) || '001',
+    tipoEstablecimiento:
+      getString(row.tipo_establecimiento_emision) || getString(row.tipo_establecimiento_codigo) || 'M',
   };
+}
+
+export async function fetchEmisorFromGo(firebaseUid: string, email: string) {
+  const context = await fetchEmisorEmissionContext(firebaseUid, email);
+  return { emisor: context.emisor, emisorId: context.emisorId };
 }
 
 export async function resolveEmitterForDte(
   row: Record<string, unknown>,
-  options: { requireDistrito?: boolean } = { requireDistrito: true }
+  options: { requireDistrito?: boolean; firebaseUid?: string; email?: string } = { requireDistrito: true }
 ) {
+  if (options.firebaseUid) {
+    const fromGo = await fetchEmisorFromGo(options.firebaseUid, options.email || '');
+    return {
+      location: await resolveEmitterRowLocation(getPostgresPool(), row, options),
+      emisor: fromGo.emisor,
+      emisorId: fromGo.emisorId,
+    };
+  }
+
   const location = await resolveEmitterRowLocation(getPostgresPool(), row, options);
   return {
     location,

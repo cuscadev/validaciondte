@@ -30,7 +30,10 @@ func (s *Store) GetByFirebaseUID(ctx context.Context, firebaseUID, email string)
 			COALESCE(NULLIF(BTRIM(e.descripcion_actividad), ''), a.nombre) AS descripcion_actividad,
 			e.departamento_codigo, e.municipio_codigo, e.distrito_codigo,
 			e.complemento_direccion, e.telefono, e.correo, e.ambiente_codigo,
-			e.certificado_path, NULL::text AS cod_estable, NULL::text AS cod_punto_venta
+			e.certificado_path,
+			COALESCE(NULLIF(BTRIM(ec.cod_estable), ''), '001') AS cod_estable,
+			COALESCE(NULLIF(BTRIM(ec.cod_punto_venta), ''), '001') AS cod_punto_venta,
+			COALESCE(NULLIF(BTRIM(ec.tipo_establecimiento_emision), ''), NULLIF(BTRIM(e.tipo_establecimiento_codigo), ''), 'M') AS tipo_establecimiento_emision
 		FROM usuarios u
 		INNER JOIN usuario_emisor ue ON ue.usuario_id = u.id
 		INNER JOIN emisores e ON e.id = ue.emisor_id
@@ -48,7 +51,7 @@ func (s *Store) GetByFirebaseUID(ctx context.Context, firebaseUID, email string)
 		&emisor.TipoEstablecimientoCodigo, &emisor.CodigoActividad, &emisor.DescripcionActividad,
 		&emisor.DepartamentoCodigo, &emisor.MunicipioCodigo, &emisor.DistritoCodigo,
 		&emisor.ComplementoDireccion, &emisor.Telefono, &emisor.Correo, &emisor.AmbienteCodigo,
-		&emisor.CertificadoPath, &emisor.CodEstable, &emisor.CodPuntoVenta,
+		&emisor.CertificadoPath, &emisor.CodEstable, &emisor.CodPuntoVenta, &emisor.TipoEstablecimientoEmision,
 	)
 	if err != nil {
 		return nil, ErrNotFound
@@ -63,8 +66,12 @@ func (s *Store) GetByID(ctx context.Context, id int) (*dto.EmisorRow, error) {
 			e.tipo_establecimiento_codigo, e.codigo_actividad, e.descripcion_actividad,
 			e.departamento_codigo, e.municipio_codigo, e.distrito_codigo,
 			e.complemento_direccion, e.telefono, e.correo, e.ambiente_codigo,
-			e.certificado_path, NULL::text, NULL::text
+			e.certificado_path,
+			COALESCE(NULLIF(BTRIM(ec.cod_estable), ''), '001'),
+			COALESCE(NULLIF(BTRIM(ec.cod_punto_venta), ''), '001'),
+			COALESCE(NULLIF(BTRIM(ec.tipo_establecimiento_emision), ''), NULLIF(BTRIM(e.tipo_establecimiento_codigo), ''), 'M')
 		FROM emisores e
+		LEFT JOIN emisor_configuracion ec ON ec.emisor_id = e.id
 		WHERE e.id = $1 AND e.activo = TRUE
 		LIMIT 1
 	`, id)
@@ -75,7 +82,7 @@ func (s *Store) GetByID(ctx context.Context, id int) (*dto.EmisorRow, error) {
 		&emisor.TipoEstablecimientoCodigo, &emisor.CodigoActividad, &emisor.DescripcionActividad,
 		&emisor.DepartamentoCodigo, &emisor.MunicipioCodigo, &emisor.DistritoCodigo,
 		&emisor.ComplementoDireccion, &emisor.Telefono, &emisor.Correo, &emisor.AmbienteCodigo,
-		&emisor.CertificadoPath, &emisor.CodEstable, &emisor.CodPuntoVenta,
+		&emisor.CertificadoPath, &emisor.CodEstable, &emisor.CodPuntoVenta, &emisor.TipoEstablecimientoEmision,
 	)
 	if err != nil {
 		return nil, ErrNotFound
@@ -105,7 +112,8 @@ func MapToDteInput(row *dto.EmisorRow) dto.DteEmisorInput {
 		},
 		Telefono:      ptr(row.Telefono),
 		Correo:        ptr(row.Correo),
-		CodEstable:    row.CodEstable,
-		CodPuntoVenta: row.CodPuntoVenta,
+		CodEstable:          row.CodEstable,
+		CodPuntoVenta:       row.CodPuntoVenta,
+		TipoEstablecimiento: row.TipoEstablecimientoEmision,
 	}
 }

@@ -4,10 +4,10 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { createEmision, getEmisionDataById, mergeEmision } from '@/lib/facturacion/emisiones-store';
 import {
-  resolveEmitterForDte,
   resolveReceptorDteLocation,
 } from '@/lib/facturacion/build-emisor';
-import { getGoDteApiUrl } from '@/lib/go-dte-api';
+import { prepareEmission, postGo } from '@/lib/facturacion/prepare-emission';
+import { GoFacturacionError } from '@/lib/facturacion/go-facturacion-client';
 import { getHaciendaTokenForUser } from '@/lib/hacienda-auth';
 import { resolveCertificatePassword } from '@/lib/facturacion/certificate-credentials';
 import { getPostgresPool } from '@/lib/postgres';
@@ -40,16 +40,6 @@ type ProcessTiming = {
   haciendaMs?: number;
   totalMs?: number;
 };
-
-class GoApiError extends Error {
-  status: number;
-
-  constructor(message: string, status: number) {
-    super(message);
-    this.name = 'GoApiError';
-    this.status = status;
-  }
-}
 
 function asRecord(value: unknown): JsonRecord {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as JsonRecord : {};
@@ -95,36 +85,6 @@ function toNumber(value: unknown, fallback = 0) {
   return Number.isFinite(n) ? n : fallback;
 }
 
-async function postGo(path: string, body: unknown, init?: RequestInit) {
-  const upstream = await fetch(`${getGoDteApiUrl()}${path}`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      ...(init?.headers || {}),
-    },
-    body: JSON.stringify(body),
-    cache: 'no-store',
-  });
-
-  const text = await upstream.text();
-  let payload: unknown = text;
-  try {
-    payload = text ? JSON.parse(text) : null;
-  } catch {
-    payload = text;
-  }
-
-  if (!upstream.ok) {
-    throw new GoApiError(
-      typeof payload === 'object' && payload && 'error' in payload
-        ? String((payload as { error?: unknown }).error)
-        : text || `Go API respondio HTTP ${upstream.status}`,
-      upstream.status
-    );
-  }
-  return payload;
-}
-
 function extractSello(response: unknown): string {
   const parsed = parseMaybeJson(response);
   const direct = asRecord(parsed);
@@ -162,25 +122,6 @@ function deepFind(value: unknown, key: string): unknown {
     if (found != null && found !== '') return found;
   }
   return undefined;
-}
-
-async function getCurrentEmitter(uid: string, email: string) {
-  const result = await getPostgresPool().query(
-    `
-      SELECT e.*, a.nombre AS actividad_nombre
-      FROM usuarios u
-      INNER JOIN usuario_emisor ue ON ue.usuario_id = u.id
-      INNER JOIN emisores e ON e.id = ue.emisor_id
-      LEFT JOIN cat_024_codigo_actividad a ON a.codigo = e.codigo_actividad
-      WHERE u.activo = TRUE
-        AND e.activo = TRUE
-        AND (u.firebase_uid = $1 OR lower(u.email) = lower($2))
-      ORDER BY CASE ue.rol WHEN 'propietario' THEN 0 WHEN 'editor' THEN 1 ELSE 2 END, e.id ASC
-      LIMIT 1
-    `,
-    [uid, email]
-  );
-  return result.rows[0] ?? null;
 }
 
 async function getReceptor(emisorId: number, receptorId: number) {
@@ -336,14 +277,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'El credito fiscal relacionado no tiene codigo o fecha de emision.' }, { status: 400 });
     }
 
-    stage = 'buscar emisor';
-    const emitter = await getCurrentEmitter(user.uid, user.email);
-    if (!emitter) return NextResponse.json({ error: 'No hay emisor vinculado para este usuario.' }, { status: 404 });
-
-    const environment = body.environment === 'production' ? 'production' : 'test';
-    if (environment !== 'test') return NextResponse.json({ error: 'Por ahora solo se permite ambiente test.' }, { status: 400 });
-
-    const { emisor } = await resolveEmitterForDte(emitter);
+    stage = 'preparar emision';
+    const prepared = await prepareEmission(user.uid, user.email, '05', body.environment);
+    const { emisor, emisorId, environment, ambiente, sequenceFields } = prepared;
     if (!emisor.nit || !emisor.nrc || !emisor.nombre || !emisor.codActividad || !emisor.descActividad) {
       return NextResponse.json(
         { error: 'Completa NIT, NRC, nombre y actividad economica del emisor antes de emitir nota de credito.', stage },
@@ -364,7 +300,7 @@ export async function POST(req: NextRequest) {
     }
 
     stage = 'buscar receptor';
-    const receptorRow = await getReceptor(Number(emitter.id), receptorId);
+    const receptorRow = await getReceptor(emisorId, receptorId);
     if (!receptorRow) return NextResponse.json({ error: 'Receptor no encontrado para este emisor.' }, { status: 404 });
     if (relatedData.receptorId && Number(relatedData.receptorId) !== receptorId) {
       return NextResponse.json(
@@ -412,11 +348,12 @@ export async function POST(req: NextRequest) {
     }
 
     const documentRequest = {
-      ambiente: '00',
-      correlativo: Date.now() % 999999999999999,
-      establecimientoTipo: 'M',
-      establecimiento: '001',
-      puntoVenta: '001',
+      ambiente,
+      correlativo: sequenceFields.correlativo,
+      numeroControl: sequenceFields.numeroControl,
+      establecimientoTipo: sequenceFields.establecimientoTipo,
+      establecimiento: sequenceFields.establecimiento,
+      puntoVenta: sequenceFields.puntoVenta,
       emisor,
       receptor,
       documentoRelacionado: [{
@@ -444,7 +381,7 @@ export async function POST(req: NextRequest) {
       source: 'credit-note',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-    }, { emisorId: Number(emitter.id) });
+    }, { emisorId });
 
     stage = 'generar nota en go';
     const documentStartMs = Date.now();
@@ -501,7 +438,7 @@ export async function POST(req: NextRequest) {
       processTiming.sentToHaciendaAt = new Date(haciendaStartMs).toISOString();
       const transmissionRequest = {
         environment,
-        ambiente: '00',
+        ambiente,
         idEnvio: Date.now(),
         version: Number(documentResponse.version || asRecord(asRecord(dteJson).identificacion).version || 4),
         tipoDte: '05',
@@ -514,7 +451,7 @@ export async function POST(req: NextRequest) {
             headers: { Authorization: token },
           });
         } catch (error) {
-          if (!(error instanceof GoApiError) || error.status !== 401) throw error;
+          if (!(error instanceof GoFacturacionError) || error.status !== 401) throw error;
           stage = 'refrescar token hacienda';
           token = await getHaciendaTokenForUser(user.uid, true, environment);
           stage = 'retransmitir nota a go';

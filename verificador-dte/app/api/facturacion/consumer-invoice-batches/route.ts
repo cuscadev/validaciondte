@@ -4,8 +4,8 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'node:crypto';
 import { adminDb } from '@/lib/firebase-admin';
-import { resolveEmitterForDte } from '@/lib/facturacion/build-emisor';
-import { getGoDteApiUrl } from '@/lib/go-dte-api';
+import { prepareEmission, postGo } from '@/lib/facturacion/prepare-emission';
+import { GoFacturacionError } from '@/lib/facturacion/go-facturacion-client';
 import { getHaciendaTokenForUser } from '@/lib/hacienda-auth';
 import { resolveCertificatePassword } from '@/lib/facturacion/certificate-credentials';
 import { getPostgresPool } from '@/lib/postgres';
@@ -25,18 +25,6 @@ type InvoiceItem = {
   ventaGravada?: number;
   tipoItem?: number;
 };
-
-class GoApiError extends Error {
-  status: number;
-  payload: unknown;
-
-  constructor(message: string, status: number, payload?: unknown) {
-    super(message);
-    this.name = 'GoApiError';
-    this.status = status;
-    this.payload = payload;
-  }
-}
 
 function asRecord(value: unknown): JsonRecord {
   return value && typeof value === 'object' && !Array.isArray(value)
@@ -110,18 +98,6 @@ function cleanDigits(value: unknown) {
   return String(value || '').replace(/\D/g, '');
 }
 
-function lastTwoDigits(value: unknown) {
-  const digits = cleanDigits(value);
-  if (!digits) return '';
-  return digits.slice(-2).padStart(2, '0');
-}
-
-function municipioDteCode(departamento: string, municipio: string) {
-  const muniDigits = cleanDigits(municipio);
-  if (!muniDigits) return '';
-  return muniDigits.slice(-2).padStart(2, '0');
-}
-
 function normalizeText(value: unknown) {
   return String(value || '')
     .normalize('NFD')
@@ -140,77 +116,6 @@ function normalizeNrc(value: unknown, required = false) {
 function toNumber(value: unknown, fallback = 0) {
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
-}
-
-async function postGo(path: string, body: unknown, init?: RequestInit) {
-  const upstream = await fetch(`${getGoDteApiUrl()}${path}`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      ...(init?.headers || {}),
-    },
-    body: JSON.stringify(body),
-    cache: 'no-store',
-  });
-
-  const text = await upstream.text();
-  let payload: unknown = text;
-  try {
-    payload = text ? JSON.parse(text) : null;
-  } catch {
-    payload = text;
-  }
-
-  if (!upstream.ok) {
-    const payloadMessage =
-      typeof payload === 'object' && payload
-        ? JSON.stringify(payload)
-        : typeof payload === 'string'
-          ? payload
-          : '';
-    const message = typeof payload === 'object' && payload && 'error' in payload
-      ? String((payload as { error?: unknown }).error)
-      : payloadMessage || text || `Go API respondio HTTP ${upstream.status}`;
-    throw new GoApiError(message || `Go API respondio HTTP ${upstream.status}`, upstream.status, payload);
-  }
-
-  return payload;
-}
-
-async function getCurrentEmitter(uid: string, email: string) {
-  const result = await getPostgresPool().query(
-    `
-      SELECT
-        e.id,
-        e.nit,
-        e.nrc,
-        e.nombre,
-        e.nombre_comercial,
-        e.tipo_establecimiento_codigo,
-        e.codigo_actividad,
-        e.descripcion_actividad,
-        e.departamento_codigo,
-        e.municipio_codigo,
-        e.distrito_codigo,
-        e.complemento_direccion,
-        e.telefono,
-        e.correo,
-        e.ambiente_codigo,
-        a.nombre AS actividad_nombre
-      FROM usuarios u
-      INNER JOIN usuario_emisor ue ON ue.usuario_id = u.id
-      INNER JOIN emisores e ON e.id = ue.emisor_id
-      LEFT JOIN cat_024_codigo_actividad a ON a.codigo = e.codigo_actividad
-      WHERE u.activo = TRUE
-        AND e.activo = TRUE
-        AND (u.firebase_uid = $1 OR lower(u.email) = lower($2))
-      ORDER BY CASE ue.rol WHEN 'propietario' THEN 0 WHEN 'editor' THEN 1 ELSE 2 END, e.id ASC
-      LIMIT 1
-    `,
-    [uid, email]
-  );
-
-  return result.rows[0] ?? null;
 }
 
 async function getReceptor(emisorId: number, receptorId: number) {
@@ -301,6 +206,15 @@ function chunkLoteDocuments<T>(items: T[], chunkSize: number) {
   return chunks;
 }
 
+function buildNumeroControlForCorrelativo(baseNumeroControl: string, correlativo: number) {
+  const suffix = String(Math.max(0, Math.floor(correlativo))).padStart(15, '0').slice(-15);
+  const trimmed = baseNumeroControl.trim();
+  if (trimmed.length >= 15) {
+    return `${trimmed.slice(0, -15)}${suffix}`;
+  }
+  return suffix;
+}
+
 export async function POST(req: NextRequest) {
   let runRef: FirebaseFirestore.DocumentReference | null = null;
   const startedAt = Date.now();
@@ -330,17 +244,10 @@ export async function POST(req: NextRequest) {
       minChunkSize,
       Math.min(batchSize, chunkLimit, Math.floor(Number(body.chunkSize || batchSize)))
     );
-    const environment = body.environment === 'production' ? 'production' : 'test';
-    if (environment !== 'test') {
-      return NextResponse.json({ error: 'Por ahora solo se permite ambiente test.' }, { status: 400 });
-    }
+    const prepared = await prepareEmission(user.uid, user.email, '01', body.environment);
+    const { emisor, emisorId, environment, ambiente, sequenceFields } = prepared;
     if (body.transmitir !== false && batchSize < 2) {
       return NextResponse.json({ error: 'El envio por lote requiere al menos 2 documentos.' }, { status: 400 });
-    }
-
-    const emitter = await getCurrentEmitter(user.uid, user.email);
-    if (!emitter) {
-      return NextResponse.json({ error: 'No hay emisor vinculado para este usuario.' }, { status: 404 });
     }
 
     const receptorId = Number(body.receptorId || 0);
@@ -348,13 +255,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Selecciona un receptor.' }, { status: 400 });
     }
 
-    const receptor = await getReceptor(Number(emitter.id), receptorId);
+    const receptor = await getReceptor(emisorId, receptorId);
     if (!receptor) {
       return NextResponse.json({ error: 'Receptor no encontrado para este emisor.' }, { status: 404 });
     }
 
     const items = validateItems(body.items || []);
-    const { emisor } = await resolveEmitterForDte(emitter);
     if (!emisor.codActividad || !emisor.descActividad) {
       return NextResponse.json(
         { error: 'Configura el codigo y descripcion de actividad economica del emisor antes de facturar.' },
@@ -391,12 +297,14 @@ export async function POST(req: NextRequest) {
 
     const documentStartedAt = Date.now();
     const documents = await Promise.all(Array.from({ length: batchSize }, async (_, index) => {
+      const correlativo = sequenceFields.correlativo + index;
       const request = {
-        ambiente: '00',
-        correlativo: (Date.now() + index) % 999999999999999,
-        establecimientoTipo: 'M',
-        establecimiento: '001',
-        puntoVenta: '001',
+        ambiente,
+        correlativo,
+        numeroControl: buildNumeroControlForCorrelativo(sequenceFields.numeroControl, correlativo),
+        establecimientoTipo: sequenceFields.establecimientoTipo,
+        establecimiento: sequenceFields.establecimiento,
+        puntoVenta: sequenceFields.puntoVenta,
         emisor,
         receptor: buildReceptor(receptor),
         items: items.map((item) => ({
@@ -495,7 +403,7 @@ export async function POST(req: NextRequest) {
         const haciendaStartedAt = Date.now();
         const loteRequest = {
           environment,
-          ambiente: '00',
+          ambiente,
           idEnvio: randomUUID().toUpperCase(),
           version: 1,
           nitEmisor: emisor.nit,
@@ -512,7 +420,7 @@ export async function POST(req: NextRequest) {
               headers: { Authorization: token },
             });
           } catch (error) {
-            if (!(error instanceof GoApiError) || error.status !== 401) {
+            if (!(error instanceof GoFacturacionError) || error.status !== 401) {
               throw error;
             }
             token = validateHaciendaTokenForLote(
@@ -526,18 +434,14 @@ export async function POST(req: NextRequest) {
           }
           codigoLote = getString(asRecord(loteResponse).codigoLote) || getString(asRecord(loteResponse).codigoGeneracion);
         } catch (error) {
-          const statusSuffix = error instanceof GoApiError ? ` HTTP ${error.status}` : '';
+          const statusSuffix = error instanceof GoFacturacionError ? ` HTTP ${error.status}` : '';
           loteResponse = {
             error: error instanceof Error ? error.message : 'No se pudo transmitir chunk',
-            status: error instanceof GoApiError ? error.status : undefined,
-            haciendaPayload: error instanceof GoApiError ? error.payload : undefined,
+            status: error instanceof GoFacturacionError ? error.status : undefined,
           };
-          const payloadDetail = error instanceof GoApiError && error.payload
-            ? ` Respuesta Hacienda/Go: ${typeof error.payload === 'string' ? error.payload : JSON.stringify(error.payload)}`
-            : '';
           throw new Error(
             error instanceof Error
-              ? `No se pudo transmitir chunk ${chunkIndex + 1} a Hacienda${statusSuffix}: ${error.message}.${payloadDetail}`
+              ? `No se pudo transmitir chunk ${chunkIndex + 1} a Hacienda${statusSuffix}: ${error.message}.`
               : `No se pudo transmitir chunk ${chunkIndex + 1} a Hacienda`
           );
         } finally {

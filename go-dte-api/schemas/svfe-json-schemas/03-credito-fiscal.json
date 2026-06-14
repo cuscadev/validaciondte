@@ -1,0 +1,6 @@
+{
+  "tipoDte": "03",
+  "title": "Comprobante credito fiscal",
+  "requiredTopLevel": ["identificacion", "emisor", "receptor", "cuerpoDocumento", "resumen"],
+  "requiredIdentificacion": ["version", "ambiente", "tipoDte", "numeroControl", "codigoGeneracion", "fecEmi", "horEmi"]
+}

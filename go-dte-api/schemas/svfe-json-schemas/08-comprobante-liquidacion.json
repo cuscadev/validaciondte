@@ -1,0 +1,6 @@
+{
+  "tipoDte": "08",
+  "title": "Comprobante de liquidacion",
+  "requiredTopLevel": ["identificacion", "emisor", "receptor", "cuerpoDocumento", "resumen"],
+  "requiredIdentificacion": ["version", "ambiente", "tipoDte", "numeroControl", "codigoGeneracion", "fecEmi", "horEmi"]
+}

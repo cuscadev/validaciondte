@@ -211,3 +211,34 @@ func (s *Service) certificateDirs() []string {
 func certificateFileNames(nit string) []string {
 	return []string{nit + ".crt", "Certificado_" + nit + ".crt", "certificado_" + nit + ".crt"}
 }
+
+func (s *Service) ResolvePassword(ctx context.Context, nit, provided string) (string, error) {
+	password := strings.TrimSpace(provided)
+	if password != "" {
+		return password, nil
+	}
+	if s.pool == nil {
+		return "", errors.New("passwordPri es requerida")
+	}
+
+	var encrypted string
+	err := s.pool.QueryRow(ctx, `
+		SELECT certificado_password_hash
+		FROM emisores
+		WHERE nit = $1 AND activo = TRUE
+		LIMIT 1
+	`, strings.TrimSpace(nit)).Scan(&encrypted)
+	if err != nil || strings.TrimSpace(encrypted) == "" {
+		return "", errors.New("passwordPri es requerida")
+	}
+
+	plain, err := appcrypto.DecryptSecret(encrypted, s.cfg.HaciendaCredentialsEncryptionKey)
+	if err != nil {
+		return "", errors.New("no se pudo descifrar la clave del certificado")
+	}
+	password = strings.TrimSpace(string(plain))
+	if password == "" {
+		return "", errors.New("passwordPri es requerida")
+	}
+	return password, nil
+}

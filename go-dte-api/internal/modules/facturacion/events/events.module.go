@@ -187,9 +187,15 @@ func (ct *Controller) handle(c *fiber.Ctx, eventType string) error {
 func Register(router fiber.Router, cfg config.Config) {
 	service := NewService(cfg)
 	controller := NewController(service)
+	submitService := NewSubmitService(cfg)
+	submitController := NewSubmitController(submitService)
 	group := router.Group("/events")
 	group.Post("/invalidation", controller.Invalidation)
+	group.Post("/invalidation/submit", submitController.Invalidation)
 	group.Post("/contingency", controller.Contingency)
+	group.Post("/contingency/submit", submitController.Contingency)
 	group.Post("/special-operations", controller.SpecialOperations)
+	group.Post("/special-operations/submit", submitController.SpecialOperations)
 	group.Post("/return", controller.Return)
+	group.Post("/return/submit", submitController.Return)
 }

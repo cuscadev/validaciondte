@@ -48,10 +48,19 @@ async function updateAmbiente(emisorId: number, ambienteCodigo: string) {
   );
 }
 
+function goInternalHeaders(extra?: Record<string, string>) {
+  const headers: Record<string, string> = {
+    ...(extra || {}),
+  };
+  const key = process.env.GO_DTE_INTERNAL_API_KEY?.trim();
+  if (key) headers['X-Go-Dte-Internal-Key'] = key;
+  return headers;
+}
+
 async function warmupCertificate(uid: string, emisorId: number, nit: string) {
   await fetch(`${getGoDteApiUrl()}/api/facturacion/certificates/warmup`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: goInternalHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ firebaseUid: uid, emisorId, nit }),
     cache: 'no-store',
   }).catch(() => null);
@@ -112,6 +121,7 @@ export async function POST(req: NextRequest) {
 
     const upstream = await fetch(`${getGoDteApiUrl()}/api/facturacion/certificates/upload`, {
       method: 'POST',
+      headers: goInternalHeaders(),
       body: goForm,
       cache: 'no-store',
     });

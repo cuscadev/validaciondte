@@ -36,7 +36,7 @@ func (s *Service) Validate(req ValidateRequest) (ValidateResponse, error) {
 		return ValidateResponse{}, errors.New("dteJson invalido")
 	}
 
-	errorsList := validateStructure(tipoDte, body)
+	errorsList := validateWithSvfeSchema(tipoDte, body)
 	return ValidateResponse{
 		Success: len(errorsList) == 0,
 		TipoDTE: tipoDte,

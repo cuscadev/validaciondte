@@ -4,6 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	"verificador-dte/go-dte-api/internal/common/config"
+	httpmiddleware "verificador-dte/go-dte-api/internal/common/http"
 	"verificador-dte/go-dte-api/internal/modules/facturacion/catalogs"
 	certificates "verificador-dte/go-dte-api/internal/modules/facturacion/certificates"
 	"verificador-dte/go-dte-api/internal/modules/facturacion/auth"
@@ -22,7 +23,7 @@ import (
 
 func Register(app *fiber.App, cfg config.Config) {
 	api := app.Group("/api")
-	facturacion := api.Group("/facturacion")
+	facturacion := api.Group("/facturacion", httpmiddleware.InternalAuthMiddleware(cfg.InternalAPIKey))
 
 	catalogService := catalogs.NewService(cfg)
 	catalogs.Register(facturacion, catalogService)

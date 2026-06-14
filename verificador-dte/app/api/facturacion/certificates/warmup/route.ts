@@ -28,7 +28,12 @@ export async function POST(req: NextRequest) {
 
     const res = await fetch(`${getGoDteApiUrl()}/api/facturacion/certificates/warmup`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(process.env.GO_DTE_INTERNAL_API_KEY?.trim()
+          ? { 'X-Go-Dte-Internal-Key': process.env.GO_DTE_INTERNAL_API_KEY.trim() }
+          : {}),
+      },
       body: JSON.stringify({
         firebaseUid: body.firebaseUid || user.uid,
         emisorId: body.emisorId || row?.id,

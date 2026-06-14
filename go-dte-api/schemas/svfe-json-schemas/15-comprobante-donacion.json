@@ -1,0 +1,6 @@
+{
+  "tipoDte": "15",
+  "title": "Comprobante de donacion",
+  "requiredTopLevel": ["identificacion", "emisor", "receptor", "cuerpoDocumento", "resumen"],
+  "requiredIdentificacion": ["version", "ambiente", "tipoDte", "numeroControl", "codigoGeneracion", "fecEmi", "horEmi"]
+}
