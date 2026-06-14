@@ -224,7 +224,7 @@ export default function ImportFromMailButton({ tiposDte, onImport, disabled }: P
                   {documents.map((doc) => (
                     <tr
                       key={doc.id}
-                      className="cursor-pointer border-t border-slate-100 hover:bg-slate-50 dark:border-white/5 dark:hover:bg-zinc-900/50"
+                      className="cursor-pointer border-t border-border hover:bg-muted/40"
                       onClick={() => toggle(doc.id)}
                     >
                       <td className="px-3 py-2">

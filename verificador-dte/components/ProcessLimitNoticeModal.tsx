@@ -60,7 +60,7 @@ export default function ProcessLimitNoticeModal({
           </div>
 
           {status.monthlyLimit !== null ? (
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm dark:border-white/10 dark:bg-black">
+            <div className="rounded-lg border border-border bg-muted/40 p-4 text-sm">
               <p className="font-semibold">Limite mensual (aparte)</p>
               <p className="mt-1">
                 Total del ciclo:{' '}

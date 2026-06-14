@@ -46,7 +46,7 @@ export default function GmailJsonVerifyPanel({
 
   const wrapperClass = embedded
     ? 'space-y-3'
-    : 'space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-zinc-900/40';
+    : 'space-y-3 rounded-xl border border-border bg-muted/40 p-4';
 
   return (
     <div className={wrapperClass}>
@@ -66,7 +66,7 @@ export default function GmailJsonVerifyPanel({
       <div className="overflow-x-auto rounded-xl border border-border">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-200 bg-white text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-white/10 dark:bg-zinc-950 dark:text-zinc-400">
+            <tr className="border-b border-border bg-muted/50 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               <th className="p-2">Archivo</th>
               <th className="p-2">Codigo</th>
               <th className="p-2">Fec. Emi</th>

@@ -73,8 +73,8 @@ function CollaboratorInvitationContent() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-10 text-slate-950 dark:bg-black dark:text-white">
-      <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-xl dark:border-white/10 dark:bg-zinc-950">
+    <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10 text-foreground">
+      <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl">
         {loading ? (
           <BrandLoader size="lg" label="Cargando invitacion" />
         ) : error ? (
@@ -143,7 +143,7 @@ export default function CollaboratorInvitationPage() {
   return (
     <Suspense
       fallback={
-        <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-10 text-slate-950 dark:bg-black dark:text-white">
+        <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10 text-foreground">
           <BrandLoader size="lg" label="Cargando invitacion" />
         </main>
       }

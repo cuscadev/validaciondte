@@ -46,14 +46,14 @@ const ACCORDION_ROW_LAYOUT =
   'md:grid md:grid-cols-[minmax(0,2fr)_minmax(0,7.5rem)_minmax(0,1.25fr)_minmax(0,4.5rem)_minmax(0,5.5rem)_minmax(0,4.5rem)_2.5rem] md:items-center md:gap-4';
 
 const ORPHAN_BADGE_CLASS =
-  'border-slate-400/40 bg-slate-500/10 text-muted-foreground';
+  'border-border bg-muted/60 text-muted-foreground';
 
 function AccordionColumnHeaders() {
   return (
     <div
       role="row"
       className={cn(
-        'hidden border-b border-slate-200 bg-slate-100 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-400',
+        'hidden border-b border-border bg-muted/50 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground',
         ACCORDION_ROW_LAYOUT
       )}
     >
@@ -77,7 +77,7 @@ function segmentBadgeClass(segment: ReturnType<typeof getOrgDirectorySegmentFrom
     case 'natural_with_group':
       return 'border-brand-orange/40 bg-brand-orange/10 text-primary dark:text-primary';
     default:
-      return 'border-slate-500/30 bg-slate-500/10 text-slate-800 dark:text-slate-200';
+      return 'border-border bg-muted text-muted-foreground';
   }
 }
 
@@ -205,7 +205,7 @@ export function OrgDirectoryAccordion({
 }: OrgDirectoryAccordionProps) {
   if (rows.length === 0) {
     return (
-      <div className="rounded-lg border border-slate-200 bg-slate-50 p-6 text-center text-muted-foreground dark:border-white/10 dark:bg-black">
+      <div className="rounded-lg border border-border bg-muted/40 p-6 text-center text-muted-foreground">
         No hay organizaciones que coincidan con la búsqueda.
       </div>
     );
@@ -239,7 +239,7 @@ export function OrgDirectoryAccordion({
                   type="button"
                   onClick={() => onToggle(row.organizationId)}
                   className={cn(
-                    'flex w-full flex-col gap-3 p-4 text-left transition hover:bg-slate-50 dark:hover:bg-zinc-900/50',
+                    'flex w-full flex-col gap-3 p-4 text-left transition hover:bg-muted/40',
                     ACCORDION_ROW_LAYOUT
                   )}
                   aria-expanded={isExpanded}

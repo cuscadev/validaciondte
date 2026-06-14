@@ -741,7 +741,7 @@ export default function VentasJsonPage() {
             <div className="overflow-hidden rounded-md border border-border">
               <div className="max-h-[60vh] overflow-auto">
                 <table className="w-full text-sm">
-                  <thead className="sticky top-0 z-10 bg-slate-100 text-slate-950 bg-card dark:text-zinc-100">
+                  <thead className="sticky top-0 z-10 border-b border-border bg-muted/50 text-foreground">
                     <tr>
                       {columnas.map((col) => (
                         <th

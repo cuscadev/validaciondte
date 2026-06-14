@@ -17,7 +17,7 @@ export default function LoadingOverlay({
     <div className="fixed inset-0 z-[100] flex items-center justify-center 
                     bg-black/40 backdrop-blur-sm">
       <div className="w-full max-w-md mx-4 rounded-2xl shadow-2xl
-                      bg-white/90 dark:bg-zinc-900/90 border
+                      bg-background/90 border
                       border-zinc-200/70 dark:border-zinc-800/70 p-6">
         {/* Header */}
         <div className="flex items-center gap-4">
@@ -40,7 +40,7 @@ export default function LoadingOverlay({
         <div className="mt-6 h-2 w-full rounded-full overflow-hidden>
                         bg-zinc-200 dark:bg-zinc-800">
           <div className="h-full w-1/2 rounded-full shimmer 
-                          bg-white/70 dark:bg-white/20" />
+                          bg-muted/70" />
         </div>
 
         {/* Tips / Detalle */}

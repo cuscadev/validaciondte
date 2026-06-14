@@ -599,22 +599,7 @@ export default function ProcessingLogsPage() {
                       changePageSize(event.target.value)
                     }}
                     disabled={isFetching}
-                    className="
-                      h-9
-                      rounded-md
-                      border
-                      border-slate-200
-                      bg-white
-                      px-2
-                      text-sm
-                      shadow-sm
-                      transition-colors
-                      focus:outline-none
-                      focus:ring-2
-                      focus:ring-primary
-                      border-border
-                      bg-card
-                    "
+                    className="h-9 rounded-md border border-border bg-background px-2 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
                   >
                     {[5, 10, 20].map((n) => (
                       <option key={n} value={n}>

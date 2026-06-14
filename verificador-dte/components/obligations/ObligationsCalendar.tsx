@@ -92,7 +92,7 @@ export default function ObligationsCalendar() {
   }, [calendarEvents, selectedDate]);
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-zinc-950">
+    <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
       <style jsx global>{`
         .fc {
           --fc-border-color: rgba(15, 23, 42, 0.12);
@@ -216,7 +216,7 @@ export default function ObligationsCalendar() {
         }
       `}</style>
 
-      <div className="mb-4 flex flex-col gap-3 border-b border-slate-200 pb-4 dark:border-white/10 lg:flex-row lg:items-center lg:justify-between">
+      <div className="mb-4 flex flex-col gap-3 border-b border-border pb-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h2 className="text-base font-bold text-foreground">
             Agenda tributaria
@@ -238,7 +238,7 @@ export default function ObligationsCalendar() {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-black">
+        <div className="overflow-hidden rounded-xl border border-border bg-card p-3">
           {obligationsQuery.isLoading ? (
             <div className="flex min-h-[34rem] items-center justify-center text-sm text-slate-500 dark:text-zinc-400">
               <RefreshCcw className="mr-2 size-4 animate-spin" />
@@ -278,7 +278,7 @@ export default function ObligationsCalendar() {
           )}
         </div>
 
-        <aside className="rounded-xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-black">
+        <aside className="rounded-xl border border-border bg-card p-4">
           <div className="mb-4">
             <p className="flex items-center gap-2 text-sm font-semibold text-primary">
               <CalendarDays className="size-4" />
@@ -296,7 +296,7 @@ export default function ObligationsCalendar() {
           </div>
 
           {selectedObligations.length === 0 ? (
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500 dark:border-white/10 dark:bg-zinc-950 dark:text-zinc-400">
+            <div className="rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
               No hay obligaciones programadas para este día.
             </div>
           ) : (
@@ -304,7 +304,7 @@ export default function ObligationsCalendar() {
               {selectedObligations.map((item) => (
                 <article
                   key={item.id}
-                  className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-zinc-950"
+                  className="rounded-lg border border-border bg-muted/40 p-3"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -348,7 +348,7 @@ export default function ObligationsCalendar() {
             </div>
           )}
 
-          <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-4 dark:border-white/10">
+          <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
             <Button
               type="button"
               variant="outline"

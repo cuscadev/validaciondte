@@ -30,7 +30,7 @@ export function OnboardingProgress({ segments, activeIndex }: OnboardingProgress
             transition={{ duration: prefersReducedMotion ? 0 : 0.35, ease: 'easeOut' }}
             className={[
               'h-1 flex-1 rounded-full',
-              isActive ? 'bg-primary' : 'bg-slate-200 dark:bg-zinc-800',
+              isActive ? 'bg-primary' : 'bg-muted',
             ].join(' ')}
           />
         );

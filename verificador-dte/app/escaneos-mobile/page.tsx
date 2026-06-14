@@ -74,14 +74,14 @@ function statusClass(status?: ScanFolder['status']) {
   if (status === 'processed') return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200';
   if (status === 'processing') return 'bg-primary/15 text-primary';
   if (status === 'error') return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200';
-  return 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-200';
+  return 'bg-muted text-muted-foreground';
 }
 
 function estadoClass(value?: string) {
   if (value === 'EMITIDO') return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200';
   if (value === 'ANULADO') return 'bg-primary/15 text-primary bg-primary/15 text-primary';
   if (value === 'ERROR' || value === 'RECHAZADO') return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200';
-  return 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-200';
+  return 'bg-muted text-muted-foreground';
 }
 
 function formatDate(value?: string) {
@@ -327,7 +327,7 @@ export default function EscaneosMobilePage() {
           <div className="overflow-hidden rounded-md border border-border">
             <Table>
               <TableHeader>
-                <TableRow className="bg-slate-50 bg-card">
+                <TableRow className="bg-card">
                   <TableHead>Carpeta</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Links</TableHead>

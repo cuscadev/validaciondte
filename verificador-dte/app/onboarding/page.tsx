@@ -364,7 +364,7 @@ export default function OnboardingPage() {
     <OnboardingShell>
       <FadeIn className="w-full max-w-xl">
         <div
-          className="w-full rounded-xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/50 sm:p-8 border-border bg-card dark:shadow-none"
+          className="w-full rounded-xl border border-border bg-card p-6 shadow-lg sm:p-8 dark:shadow-none"
           style={{ viewTransitionName: 'onboarding-wizard' }}
         >
           <div className="text-center sm:text-left">
@@ -372,7 +372,7 @@ export default function OnboardingPage() {
               Registro {step + 1} de {wizardSteps.length}
             </p>
             <h1 className="mt-2 text-2xl font-bold tracking-tight">{title}</h1>
-            <p className="mt-2 text-sm text-slate-600 text-muted-foreground">{subtitle}</p>
+            <p className="mt-2 text-sm text-muted-foreground">{subtitle}</p>
           </div>
 
           <OnboardingProgress
@@ -526,7 +526,7 @@ export default function OnboardingPage() {
                   <p><strong>Dirección:</strong> {fiscalAddress}</p>
                 </>
               )}
-              <label className="mt-4 flex items-start gap-3 rounded-lg border border-slate-200 p-3 text-sm border-border">
+              <label className="mt-4 flex items-start gap-3 rounded-lg border border-border p-3 text-sm">
                 <input
                   type="checkbox"
                   checked={termsAccepted}
@@ -535,7 +535,7 @@ export default function OnboardingPage() {
                 />
                 <span>Acepto los terminos y condiciones de uso de la plataforma.</span>
               </label>
-              <label className="flex items-start gap-3 rounded-lg border border-slate-200 p-3 text-sm border-border">
+              <label className="flex items-start gap-3 rounded-lg border border-border p-3 text-sm">
                 <input
                   type="checkbox"
                   checked={privacyAccepted}

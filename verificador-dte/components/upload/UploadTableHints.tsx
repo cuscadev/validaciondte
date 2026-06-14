@@ -18,7 +18,7 @@ export default function UploadTableHints({
   return (
     <section
       className={cn(
-        'flex h-full flex-col rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-950 shadow-sm dark:border-white/10 dark:bg-black dark:text-white',
+        'flex h-full flex-col rounded-lg border border-border bg-muted/40 px-3 py-3 text-sm text-foreground shadow-sm',
         className
       )}
     >

@@ -252,7 +252,7 @@ export default function GmailIntegracionPage() {
     <PlanGate routeKey="integraciones-gmail">
       <main className="w-full max-w-full text-foreground">
         <div className="flex w-full flex-col gap-4">
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6 border-border bg-card">
+          <section className="rounded-2xl border border-border bg-card p-5 shadow-sm md:p-6">
             <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-start">
               <div>
                 <p className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.24em] text-primary text-primary">
@@ -262,7 +262,7 @@ export default function GmailIntegracionPage() {
                 <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">
                   Importar DTE desde correo
                 </h1>
-                <p className="mt-4 text-sm leading-7 text-slate-600 md:text-base text-muted-foreground">
+                <p className="mt-4 text-sm leading-7 text-muted-foreground md:text-base">
                   Conecta Gmail con acceso de solo lectura, importa adjuntos JSON de tipos
                   tributarios relevantes y verifica en Hacienda con el mismo flujo de Verificar
                   JSON.
@@ -292,7 +292,7 @@ export default function GmailIntegracionPage() {
 
           <section className="grid gap-5 xl:grid-cols-[22rem_minmax(0,1fr)]">
             <div className="space-y-5">
-              <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm border-border bg-card">
+              <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <h2 className="text-lg font-bold">Cuenta Gmail</h2>
                   {status?.connected ? (
@@ -301,7 +301,7 @@ export default function GmailIntegracionPage() {
                       Activa
                     </span>
                   ) : (
-                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:bg-zinc-800 text-muted-foreground">
+                    <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
                       Sin conectar
                     </span>
                   )}
@@ -321,7 +321,7 @@ export default function GmailIntegracionPage() {
                       <p className="mt-1 text-xs text-muted-foreground">
                         Conectado el {formatDateTime(status.connectedAt)}
                       </p>
-                      <p className="mt-3 text-xs leading-5 text-slate-600 text-muted-foreground">
+                      <p className="mt-3 text-xs leading-5 text-muted-foreground">
                         Acceso de solo lectura. No enviamos ni modificamos correos.
                       </p>
                     </div>
@@ -361,7 +361,7 @@ export default function GmailIntegracionPage() {
                 )}
               </section>
 
-              <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm border-border bg-card">
+              <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
                 <div className="mb-4 flex items-center gap-2">
                   <CalendarRange className="size-4 text-primary text-primary" />
                   <h2 className="text-lg font-bold">Sincronizacion</h2>
@@ -418,7 +418,7 @@ export default function GmailIntegracionPage() {
                 </Button>
 
                 {job ? (
-                  <div className="mt-4 space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4 border-border bg-card/40">
+                  <div className="mt-4 space-y-3 rounded-xl border border-border bg-muted/40 p-4">
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <SyncStat label="Encontrados" value={job.found_count} />
                       <SyncStat label="Importados" value={job.imported_count} accent />
@@ -448,7 +448,7 @@ export default function GmailIntegracionPage() {
                 </div>
               ) : (
                 <>
-                  <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-5 md:flex-row md:items-center md:justify-between border-border">
+                  <div className="flex flex-col gap-4 border-b border-border px-5 py-5 md:flex-row md:items-center md:justify-between">
                     <div>
                       <h2 className="text-xl font-bold">Catalogo de DTE importados</h2>
                       <p className="mt-1 text-sm text-muted-foreground">
@@ -542,7 +542,7 @@ function MetricCard({
   accent?: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 border-border bg-card/50">
+    <div className="rounded-xl border border-border bg-muted/40 px-4 py-3">
       <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 text-muted-foreground">
         <Icon className="size-3.5" />
         {label}
@@ -568,7 +568,7 @@ function SyncStat({
   accent?: boolean;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 border-border bg-card">
+    <div className="rounded-lg border border-border bg-card px-3 py-2">
       <p className="text-xs text-slate-500 text-muted-foreground">{label}</p>
       <p
         className={`text-lg font-bold ${

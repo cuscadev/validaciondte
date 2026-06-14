@@ -596,7 +596,7 @@ function VerificadorQrContent() {
   return (
     <main className="w-full max-w-full space-y-6 dark:bg-background">
       <section className="overflow-hidden rounded-lg border border-border">
-        <div className="border-b border-slate-200 px-4 py-3 border-border">
+        <div className="border-b border-border px-4 py-3">
           <h1 className="text-lg font-semibold">Escaneo QR DTE</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Escanea codigos QR de consulta publica, normaliza el enlace y verifica con Hacienda.
@@ -606,7 +606,7 @@ function VerificadorQrContent() {
         <div className="grid min-w-0 gap-4 p-3 sm:p-4 xl:grid-cols-2">
           <section
             className={cn(
-              'min-w-0 rounded-xl border border-slate-200 p-3 border-border sm:p-4',
+              'min-w-0 rounded-xl border border-border p-3 sm:p-4',
               cameraExpanded && 'xl:col-span-2'
             )}
           >
@@ -638,7 +638,7 @@ function VerificadorQrContent() {
 
             <div
               ref={cameraFrameRef}
-              className="relative overflow-hidden rounded-xl border border-slate-200 bg-black/90 border-border"
+              className="relative overflow-hidden rounded-xl border border-border bg-black/90"
             >
               <Button
                 type="button"
@@ -741,14 +741,14 @@ function VerificadorQrContent() {
             </div>
 
             {lastScan && (
-              <div className="mt-4 rounded-lg border border-slate-200 bg-muted/20 p-3 border-border">
+              <div className="mt-4 rounded-lg border border-border bg-muted/20 p-3">
                 <p className="text-xs font-medium text-muted-foreground">Ultimo QR leido</p>
                 <p className="mt-1 break-all text-xs">{lastScan}</p>
               </div>
             )}
           </section>
 
-          <section className="min-w-0 rounded-xl border border-slate-200 p-3 border-border sm:p-4">
+          <section className="min-w-0 rounded-xl border border-border p-3 sm:p-4">
             <div className="mb-4 space-y-3">
               <div>
                 <h2 className="font-semibold">Pendientes ({pendingScans.length})</h2>
@@ -787,7 +787,7 @@ function VerificadorQrContent() {
             )}
 
             {pendingScans.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-slate-300 py-10 text-center dark:border-white/15">
+              <div className="rounded-xl border border-dashed border-border py-10 text-center">
                 <p className="text-sm text-muted-foreground">
                   Los DTE escaneados apareceran aqui en tiempo real antes de verificar.
                 </p>
@@ -801,7 +801,7 @@ function VerificadorQrContent() {
                   <article
                     key={item.id}
                     className={cn(
-                      'rounded-lg border border-slate-200 bg-muted/10 p-3 transition-shadow border-border',
+                      'rounded-lg border border-border bg-muted/10 p-3 transition-shadow',
                       highlightedScanId === item.id && 'ring-2 ring-primary'
                     )}
                   >
@@ -927,7 +927,7 @@ function VerificadorQrContent() {
 
           <div className="hidden max-h-[60vh] overflow-auto md:block">
             <table className="w-full text-sm">
-              <thead className="sticky top-0 z-10 bg-slate-100 text-slate-950 bg-card dark:text-zinc-100">
+              <thead className="sticky top-0 z-10 border-b border-border bg-muted/50 text-foreground">
                 <tr>
                   {DTE_RESULT_COLUMNS.map((col) => (
                     <th

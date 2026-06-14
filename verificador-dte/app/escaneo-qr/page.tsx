@@ -257,7 +257,7 @@ export default function EscaneoQRPage() {
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* ESCÁNER */}
-          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 bg-card">
+          <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
             <div className="mb-4 flex items-center gap-3">
               <QrCode className="h-6 w-6 text-primary" />
 
@@ -322,7 +322,7 @@ export default function EscaneoQRPage() {
           </section>
 
           {/* DATOS */}
-          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 bg-card">
+          <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
             <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
                 <FileText className="h-6 w-6 text-blue-500" />

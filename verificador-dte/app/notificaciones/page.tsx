@@ -132,7 +132,7 @@ export default function NotificationsPage() {
               <h1 className="text-3xl font-extrabold tracking-tight md:text-5xl">
                 Notificaciones
               </h1>
-              <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600 md:text-base text-muted-foreground">
+              <p className="mt-4 max-w-3xl text-sm leading-6 text-muted-foreground md:text-base">
                 Revisa los avisos enviados a tu cuenta y marca como leido lo que ya atendiste.
               </p>
             </div>
@@ -145,7 +145,7 @@ export default function NotificationsPage() {
         </section>
 
         <section className="rounded-lg border border-border bg-card shadow-sm">
-          <div className="flex flex-col gap-3 border-b border-slate-200 p-4 border-border md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-3 border-b border-border p-4 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-wrap gap-2">
               <Button
                 type="button"

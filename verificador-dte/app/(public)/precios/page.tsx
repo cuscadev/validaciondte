@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function PreciosPage() {
   return (
-    <main className="min-h-screen bg-slate-50 pt-20 text-slate-950 dark:bg-black dark:text-white">
+    <main className="min-h-screen bg-background pt-20 text-foreground">
       <PublicNavbar />
       <section className="px-4 pb-4 pt-12 text-center sm:px-6 lg:px-16">
         <p className="text-sm font-semibold uppercase tracking-[0.24em] text-primary">

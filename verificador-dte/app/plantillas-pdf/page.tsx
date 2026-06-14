@@ -716,11 +716,11 @@ export default function PlantillasPdfPage() {
                   className={`rounded-lg border p-4 text-left transition ${
                     selectedTemplate === item.id
                       ? 'border-primary bg-primary/10 shadow-sm'
-                      : 'border-slate-200 bg-slate-50 hover:border-primary/60 border-border bg-background'
+                      : 'border-border bg-muted/40 hover:border-primary/60'
                   }`}
                 >
                   <div
-                    className="mb-4 h-28 rounded-md border bg-white p-3"
+                    className="mb-4 h-28 rounded-md border border-border bg-background p-3"
                     style={{ borderColor: item.accent }}
                   >
                     <div className="mb-3 h-5 rounded-sm" style={{ backgroundColor: item.dark }} />
@@ -740,7 +740,7 @@ export default function PlantillasPdfPage() {
             </section>
 
             {selectedTemplate === 'personalizada' && (
-              <section className="rounded-lg border border-slate-200 bg-slate-50 p-4 border-border bg-background">
+              <section className="rounded-lg border border-border bg-muted/40 p-4">
                 <div className="flex items-center gap-2">
                   <Palette className="size-5 text-primary" />
                   <h2 className="font-semibold text-foreground">DiseÃ±o personalizado</h2>
@@ -775,7 +775,7 @@ export default function PlantillasPdfPage() {
                               [field.key]: event.target.value,
                             }))
                           }
-                          className="bg-white font-mono text-sm bg-card"
+                          className="bg-card font-mono text-sm"
                         />
                       </div>
                     </div>
@@ -785,7 +785,7 @@ export default function PlantillasPdfPage() {
             )}
 
             <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">
-              <div className="space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-4 border-border bg-background">
+              <div className="space-y-4 rounded-lg border border-border bg-muted/40 p-4">
                 <div className="flex items-center gap-2">
                   <ImageIcon className="size-5 text-primary" />
                   <h2 className="font-semibold text-foreground">Logo para este PDF</h2>
@@ -807,7 +807,7 @@ export default function PlantillasPdfPage() {
                       className={`min-h-16 rounded-md border px-3 py-2 text-sm font-medium transition ${
                         logoMode === option.key
                           ? 'border-primary bg-primary/10 text-slate-950 dark:bg-primary/10 text-foreground'
-                          : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-100 border-border bg-card dark:text-zinc-200'
+                          : 'border-border bg-card text-foreground hover:bg-muted/60'
                       }`}
                     >
                       {option.label}
@@ -836,7 +836,7 @@ export default function PlantillasPdfPage() {
                 </p>
               </div>
 
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 border-border bg-background">
+              <div className="rounded-lg border border-border bg-muted/40 p-4">
                 <div className="flex items-center gap-2">
                   <Sparkles className="size-5 text-primary" />
                   <h2 className="font-semibold text-foreground">Plantilla seleccionada</h2>
@@ -846,7 +846,7 @@ export default function PlantillasPdfPage() {
               </div>
             </section>
 
-            <section className="rounded-lg border border-slate-200 bg-slate-50 p-4 border-border bg-background">
+            <section className="rounded-lg border border-border bg-muted/40 p-4">
               <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
                 <div className="space-y-2">
                   <Label htmlFor="jsonFiles">JSON DTE</Label>
@@ -857,7 +857,7 @@ export default function PlantillasPdfPage() {
                     accept=".json,application/json"
                     multiple
                     onChange={handleJsonChange}
-                    className="bg-white bg-card"
+                    className="bg-card"
                   />
                   <p className="text-xs text-muted-foreground">
                     Puedes procesar 1 JSON o un lote de hasta {MAX_JSON_FILES} archivos.

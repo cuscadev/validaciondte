@@ -80,11 +80,11 @@ export function UserTable({ rows, onEdit, onDelete, onViewDetails, onViewStats, 
             </tr>
           ) : (
             rows.map((row) => (
-              <tr key={row.uid} className="transition hover:bg-slate-50 dark:hover:bg-black">
+              <tr key={row.uid} className="transition hover:bg-muted/40">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
                     {row.photoURL ? (
-                      <div className="relative h-10 w-10 overflow-hidden rounded-full border border-slate-200 bg-slate-100 dark:border-white/10 dark:bg-zinc-900">
+                      <div className="relative h-10 w-10 overflow-hidden rounded-full border border-border bg-muted">
                         <Image
                           src={row.photoURL}
                           alt={row.displayName || row.email}
@@ -93,7 +93,7 @@ export function UserTable({ rows, onEdit, onDelete, onViewDetails, onViewStats, 
                         />
                       </div>
                     ) : (
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-primary text-xs font-bold text-black dark:border-white/10">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-primary text-xs font-bold text-primary-foreground">
                         {getInitials(row.displayName || row.email)}
                       </div>
                     )}
@@ -112,7 +112,7 @@ export function UserTable({ rows, onEdit, onDelete, onViewDetails, onViewStats, 
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex flex-wrap gap-2">
-                    <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold capitalize text-slate-700 dark:bg-zinc-900 dark:text-zinc-200">
+                    <span className="rounded-full bg-muted px-2 py-1 text-xs font-semibold capitalize text-muted-foreground">
                       {row.role}
                     </span>
                     {row.disabled && (

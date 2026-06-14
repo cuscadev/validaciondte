@@ -315,7 +315,7 @@ export default function Page() {
     <PlanGate routeKey={accessRouteKey}>
       <main className="w-full max-w-full space-y-6 dark:bg-background">
         <section className="overflow-hidden rounded-lg border border-border">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 border-border">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
             <h2 className="text-sm font-semibold text-foreground">
               {t('prrocesardte_detalle', { count: items.length, max: MAX_ITEMS })}
             </h2>
@@ -406,7 +406,7 @@ export default function Page() {
             </UploadTableHints>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 border-t border-slate-200 px-4 py-3 border-border">
+          <div className="flex flex-wrap items-center gap-3 border-t border-border px-4 py-3">
             <Button type="button" onClick={() => void validar()} disabled={loading || items.length === 0}>
               {loading ? t('prrocesardte_validando') : t('prrocesardte_validar')}
             </Button>

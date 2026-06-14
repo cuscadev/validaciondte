@@ -53,7 +53,7 @@ export default function EmailDocumentTablePagination({
           value={PAGE_SIZES.includes(pageSize as (typeof PAGE_SIZES)[number]) ? pageSize : PAGE_SIZES[1]}
           onChange={(e) => onPageSizeChange(Number(e.target.value))}
           disabled={loading}
-          className="h-9 rounded-md border border-slate-200 bg-white px-2 text-sm dark:border-white/10 dark:bg-zinc-900 dark:text-white"
+          className="h-9 rounded-md border border-border bg-background px-2 text-sm"
         >
           {PAGE_SIZES.map((size) => (
             <option key={size} value={size}>

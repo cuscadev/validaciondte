@@ -160,7 +160,7 @@ export default function ReportesPage() {
               <select
                 value={tipo}
                 onChange={(e) => { setTipo(e.target.value as any); setPage(1); }}
-                className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-2 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="rounded-md border border-border bg-background px-2 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
               >
                 <option>Todos</option>
                 <option>Factura</option>
@@ -188,7 +188,7 @@ export default function ReportesPage() {
                 <span className="block text-sm text-gray-600 dark:text-gray-400">
                   Rango de fechas
                 </span>
-                <div className="rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 p-2">
+                <div className="rounded-md border border-border bg-card p-2">
                   <Calendar
                     mode="range"
                     selected={range}
@@ -212,7 +212,7 @@ export default function ReportesPage() {
       </Card>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 shadow-sm">
+      <div className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
         <div className="overflow-auto">
           <table className="min-w-[900px] w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-900/60 text-gray-700 dark:text-gray-300">
@@ -266,7 +266,7 @@ export default function ReportesPage() {
             <select
               value={pageSize}
               onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
-              className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-2 py-1.5 text-sm"
+              className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
             >
               {PAGE_SIZES.map(n => <option key={n} value={n}>{n} / pág</option>)}
             </select>

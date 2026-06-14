@@ -304,7 +304,7 @@ export default function LandingPage() {
 				</div>
 			</section>
 
-			<section className="relative z-10 w-full bg-white px-4 py-16 sm:px-6 md:px-10 md:py-20 lg:px-16 dark:bg-black">
+			<section className="relative z-10 w-full bg-background px-4 py-16 sm:px-6 md:px-10 md:py-20 lg:px-16">
 				<div className="mx-auto max-w-6xl">
 					<div className="max-w-3xl">
 						<p className="mb-3 text-sm font-semibold uppercase tracking-[0.24em] text-primary">
@@ -367,7 +367,7 @@ export default function LandingPage() {
 
 			<PricingSection />
 
-			<section className="relative z-10 w-full overflow-hidden bg-white px-4 py-16 sm:px-6 md:px-10 md:py-20 lg:px-16 dark:bg-black">
+			<section className="relative z-10 w-full overflow-hidden bg-background px-4 py-16 sm:px-6 md:px-10 md:py-20 lg:px-16">
 				<div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_30%,rgba(0,209,255,0.14),transparent_28%),radial-gradient(circle_at_80%_70%,rgba(139,92,246,0.12),transparent_32%)] dark:bg-[radial-gradient(circle_at_18%_30%,rgba(0,209,255,0.16),transparent_28%),radial-gradient(circle_at_80%_70%,rgba(16,185,129,0.1),transparent_32%)]" />
 
 				<div className="relative mx-auto grid max-w-6xl gap-4 md:grid-cols-3">

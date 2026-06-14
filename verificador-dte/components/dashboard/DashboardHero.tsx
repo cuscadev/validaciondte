@@ -172,7 +172,7 @@ export function DashboardHero({
         {isSidebar && (
           <Link
             href="/profile"
-            className="absolute left-3 top-3 z-10 inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white/90 text-slate-600 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900 dark:border-white/10/90 dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-white"
+            className="absolute left-3 top-3 z-10 inline-flex items-center justify-center rounded-lg border border-border bg-card/90 text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground"
             aria-label={
               profileCompletion
                 ? `Editar perfil, ${profileCompletion.progress}% completado`
@@ -207,7 +207,7 @@ export function DashboardHero({
                   <img
                     src={photoURL}
                     alt=""
-                    className="size-28 shrink-0 rounded-2xl border-2 border-slate-200 object-cover shadow-sm dark:border-white/15"
+                    className="size-28 shrink-0 rounded-2xl border-2 border-border object-cover shadow-sm"
                   />
                 ) : (
                   <div className="flex size-28 shrink-0 items-center justify-center rounded-2xl bg-primary text-3xl font-bold text-black shadow-sm">
@@ -283,7 +283,7 @@ export function DashboardHero({
                   <img
                     src={photoURL}
                     alt=""
-                    className="size-16 shrink-0 rounded-2xl border border-slate-200 object-cover dark:border-white/10 md:size-20"
+                    className="size-16 shrink-0 rounded-2xl border border-border object-cover md:size-20"
                   />
                 ) : (
                   <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-primary text-lg font-bold text-black md:size-20 md:text-xl">

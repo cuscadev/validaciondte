@@ -51,7 +51,7 @@ export function MobileAppCard({ variant = 'default', className }: MobileAppCardP
 
           <div
             className={cn(
-              'flex min-h-0 flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white shadow-inner dark:border-white/10 dark:bg-white',
+              'flex min-h-0 flex-1 items-center justify-center rounded-xl border border-border bg-muted/30 shadow-inner',
               isCompact ? 'mt-3 p-3' : 'mt-5 p-5'
             )}
           >

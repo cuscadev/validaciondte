@@ -258,7 +258,7 @@ export default function DesktopLicensesPage() {
               <div className="space-y-2 md:col-span-2 rounded-lg bg-primary/10 p-3 dark:bg-primary/100/10">
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Contraseña generada</label>
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 rounded bg-slate-100 px-2 py-2 font-mono text-sm dark:bg-slate-800">{form.generatedPassword}</code>
+                  <code className="flex-1 rounded bg-muted px-2 py-2 font-mono text-sm">{form.generatedPassword}</code>
                   <Button
                     size="sm"
                     variant="outline"

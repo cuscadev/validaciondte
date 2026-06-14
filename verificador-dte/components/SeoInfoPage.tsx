@@ -26,7 +26,7 @@ export default function SeoInfoPage({
     <main className="min-h-screen bg-background text-foreground">
       <PublicNavbar />
 
-      <section className="border-b border-slate-200 bg-white px-4 pb-16 pt-28 dark:border-white/10 dark:bg-zinc-950 sm:px-6 lg:px-16">
+      <section className="border-b border-border bg-background px-4 pb-16 pt-28 sm:px-6 lg:px-16">
         <div className="mx-auto max-w-6xl">
           <p className="text-sm font-semibold uppercase tracking-[0.24em] text-primary">
             {eyebrow}
@@ -57,7 +57,7 @@ export default function SeoInfoPage({
             {sections.map((section) => (
               <article
                 key={section.title}
-                className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-zinc-950"
+                className="rounded-lg border border-border bg-card p-6 shadow-sm"
               >
                 <h2 className="text-2xl font-bold">{section.title}</h2>
                 <p className="mt-3 leading-7 text-muted-foreground">
@@ -67,7 +67,7 @@ export default function SeoInfoPage({
             ))}
           </div>
 
-          <aside className="h-fit rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-zinc-950">
+          <aside className="h-fit rounded-lg border border-border bg-card p-6 shadow-sm">
             <h2 className="text-xl font-bold">Beneficios clave</h2>
             <div className="mt-5 space-y-4">
               {bullets.map((item) => (

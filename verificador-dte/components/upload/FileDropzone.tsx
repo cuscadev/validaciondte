@@ -86,7 +86,7 @@ export default function FileDropzone({
           onClick={disabled ? undefined : open}
           className={cn(
             'rounded-lg border-2 border-dashed p-6 text-center transition-colors cursor-pointer',
-            'border-slate-300 bg-slate-50 hover:border-primary hover:bg-primary/10/50',
+            'border-border bg-muted/40 hover:border-primary hover:bg-primary/10',
             'dark:border-white/15 dark:bg-black dark:hover:border-primary/60 dark:hover:bg-primary/5',
             isEmpty && !disabled && !isDragActive && 'dropzone-empty-pulse motion-reduce:animate-none',
             isDragActive && !isDragReject && 'border-primary bg-primary/10 dark:bg-primary/10',

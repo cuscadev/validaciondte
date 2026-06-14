@@ -63,7 +63,7 @@ function estadoBadgeClasses(estado?: string) {
     return 'bg-gray-200 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
   if (e.includes('ERROR'))
     return 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300';
-  return 'bg-slate-100 text-slate-800 dark:bg-slate-800/60 dark:text-slate-200';
+  return 'bg-muted text-muted-foreground';
 }
 
 /* ============ Helpers para pegado Excel/CSV (clipboard) ============ */
@@ -323,7 +323,7 @@ export default function Page() {
       </h1>
 
       {/* Entrada */}
-      <section className="mb-8 p-6 border rounded-2xl shadow bg-white border-gray-200 dark:bg-gray-900 dark:border-gray-700">
+      <section className="mb-8 rounded-2xl border border-border bg-card p-6 shadow">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
             {t('prrocesardte_detalle', { count: items.length, max: MAX_ITEMS })}
@@ -363,7 +363,7 @@ export default function Page() {
             <button
               type="button"
               onClick={limpiarResultados}
-              className="bg-slate-200 text-slate-800 py-2 px-4 rounded hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
+              className="rounded bg-muted px-4 py-2 text-foreground transition hover:bg-muted/80"
             >
               {t('prrocesardte_limpiar')}
             </button>
@@ -382,7 +382,7 @@ export default function Page() {
             </thead>
             <tbody>
               {items.map((it, idx) => (
-                <tr key={idx} className="bg-white dark:bg-gray-800">
+                <tr key={idx} className="bg-card">
                   <td className="border px-2 py-1 border-gray-200 dark:border-gray-700">
                     <input
                       type="text"
@@ -449,7 +449,7 @@ export default function Page() {
       </section>
 
       {/* Resultados */}
-      <section className="p-6 border rounded-2xl shadow bg-white border-gray-200 dark:bg-gray-900 dark:border-gray-700">
+      <section className="rounded-2xl border border-border bg-card p-6 shadow">
         <h2 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">{t('prrocesardte_resultados')}</h2>
         <div className="overflow-x-auto">
           <table className="text-center min-w-full table-auto border text-sm border-gray-200 dark:border-gray-700">
@@ -472,7 +472,7 @@ export default function Page() {
               {items.map((it, idx) => {
                 const r = resultados[idx];
                 return (
-                  <tr key={idx} className="bg-white dark:bg-gray-800">
+                  <tr key={idx} className="bg-card">
                     <td className="text-center border px-2 py-1 border-gray-200 dark:border-gray-700">{it.numItem}</td>
                     <td className="text-center border px-2 py-1 border-gray-200 dark:border-gray-700">
                       {r ? (

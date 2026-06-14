@@ -490,7 +490,7 @@ export function EmitterSettingsForm({
       </div>
 
       {form.certificadoPath && (
-        <p className="rounded-xl border border-slate-200 px-4 py-3 text-xs text-muted-foreground dark:border-white/10">
+        <p className="rounded-xl border border-border px-4 py-3 text-xs text-muted-foreground">
           Certificado asociado: {form.certificadoPath}
         </p>
       )}

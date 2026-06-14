@@ -716,7 +716,7 @@ export default function UsersAdminPage() {
               <h1 className="text-3xl font-extrabold tracking-tight md:text-5xl">
                 Usuarios, roles y cupos delegados
               </h1>
-              <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600 md:text-base text-muted-foreground">
+              <p className="mt-4 max-w-3xl text-sm leading-6 text-muted-foreground md:text-base">
                 Administra superadmins, clientes y colaboradores desde una sola vista.
               </p>
             </div>
@@ -729,7 +729,7 @@ export default function UsersAdminPage() {
           </div>
         </section>
 
-        <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm border-border bg-card">
+        <section className="rounded-lg border border-border bg-card p-4 shadow-sm">
           <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 className="text-xl font-bold">Todos los usuarios</h2>
@@ -1011,7 +1011,7 @@ function LimitEditor({
   };
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4 border-border bg-card">
+    <section className="rounded-lg border border-border bg-card p-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
           <h3 className="flex items-center gap-2 text-lg font-bold">
@@ -1063,7 +1063,7 @@ function LimitEditor({
             </p>
             <div className="grid gap-2">
               {group.routes.map((route) => (
-                <div key={route.key} className="grid gap-2 rounded-md border border-slate-200 bg-white p-2 border-border bg-card">
+                <div key={route.key} className="grid gap-2 rounded-md border border-border bg-card p-2">
                   <p className="text-sm font-medium">{route.label}</p>
                   <label className="grid gap-1 text-xs text-muted-foreground">
                     Limite mensual
@@ -1151,7 +1151,7 @@ function UsageAdjustmentPanel({
   onAdjust: (routeKey: string, action: 'increment' | 'decrement' | 'set') => void;
 }) {
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4 border-border bg-card">
+    <section className="rounded-lg border border-border bg-card p-4">
       <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
         <div>
           <h3 className="flex items-center gap-2 text-lg font-bold">
@@ -1162,7 +1162,7 @@ function UsageAdjustmentPanel({
             Cada usuario tiene su propio conteo. Los ajustes modifican el saldo del mes sin borrar el historial.
           </p>
         </div>
-        <div className="rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold border-border">
+        <div className="rounded-md border border-border px-3 py-2 text-sm font-semibold">
           {data
             ? `${data.automaticReset ? 'Automatico' : 'Manual'} · ciclo desde ${formatDate(data.periodStart)}${data.renewalDate ? ` · renovacion ${formatDate(data.renewalDate)}` : ` · dia ${data.resetDayOfMonth}`}`
             : 'Ciclo actual'}
@@ -1170,7 +1170,7 @@ function UsageAdjustmentPanel({
       </div>
 
       {loading ? (
-        <div className="mt-4 rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-muted-foreground dark:border-white/15">
+        <div className="mt-4 rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
           Cargando consumo...
         </div>
       ) : (
@@ -1187,7 +1187,7 @@ function UsageAdjustmentPanel({
                 <th className="px-3 py-2 text-left">Modificar</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-white/10">
+            <tbody className="divide-y divide-border">
               {data?.routes.map((route) => (
                 <tr key={route.key}>
                   <td className="px-3 py-3">
@@ -1285,7 +1285,7 @@ function ClientStatsPanel({
           </div>
 
           <section className="rounded-lg border border-border bg-card">
-            <div className="border-b border-slate-200 px-4 py-3 border-border">
+            <div className="border-b border-border px-4 py-3">
               <h3 className="font-bold">Actividad por usuario</h3>
               <p className="text-sm text-muted-foreground">
                 Titular y colaboradores asociados a este cliente.
@@ -1304,7 +1304,7 @@ function ClientStatsPanel({
                     <th className="px-4 py-3 text-right">Error</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-white/10">
+                <tbody className="divide-y divide-border">
                   {data?.members.length ? (
                     data.members.map((member) => (
                       <tr key={member.uid} className="hover:bg-muted/30">
@@ -1342,7 +1342,7 @@ function ClientStatsPanel({
 
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
             <section className="rounded-lg border border-border bg-card">
-              <div className="border-b border-slate-200 px-4 py-3 border-border">
+              <div className="border-b border-border px-4 py-3">
                 <h3 className="font-bold">DTE por opcion de validacion</h3>
                 <p className="text-sm text-muted-foreground">Modulos mas utilizados por toda la organizacion.</p>
               </div>
@@ -1357,7 +1357,7 @@ function ClientStatsPanel({
                       <th className="px-4 py-3 text-right">Fallidos</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-200 dark:divide-white/10">
+                  <tbody className="divide-y divide-border">
                     {data?.byModule.length ? (
                       data.byModule.map((module) => (
                         <tr key={module.routeKey || module.moduleName}>
@@ -1389,7 +1389,7 @@ function ClientStatsPanel({
               <div className="mt-3 space-y-3">
                 {data?.recent.length ? (
                   data.recent.map((log) => (
-                    <div key={log.id} className="rounded-lg border border-slate-200 bg-white p-3 text-sm border-border bg-card">
+                    <div key={log.id} className="rounded-lg border border-border bg-card p-3 text-sm">
                       <div className="flex items-center justify-between gap-3">
                         <p className="font-semibold">{log.moduleName}</p>
                         <span className={getOutcomeClass(log.outcome)}>{getOutcomeLabel(log.outcome)}</span>
@@ -1401,7 +1401,7 @@ function ClientStatsPanel({
                     </div>
                   ))
                 ) : (
-                  <div className="rounded-lg border border-dashed border-slate-300 p-5 text-center text-sm text-muted-foreground dark:border-white/15">
+                  <div className="rounded-lg border border-dashed border-border p-5 text-center text-sm text-muted-foreground">
                     Sin procesos recientes.
                   </div>
                 )}

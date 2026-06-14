@@ -325,7 +325,7 @@ export default function AvisosAdminPage() {
                 Crear y gestionar avisos para usuarios
               </h1>
 
-              <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600 md:text-base text-muted-foreground">
+              <p className="mt-4 max-w-3xl text-sm leading-6 text-muted-foreground md:text-base">
                 Envía avisos a todos los usuarios o selecciona clientes,
                 colaboradores o superadministradores desde un listado.
               </p>

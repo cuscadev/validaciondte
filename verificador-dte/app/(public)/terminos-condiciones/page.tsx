@@ -102,7 +102,7 @@ export default function TermsPage() {
 			<PublicNavbar />
 
 			<section className="mx-auto w-full max-w-4xl px-4 pb-16 pt-28 sm:px-6 lg:px-8">
-				<div className="border-b border-slate-200 pb-8 dark:border-white/10">
+				<div className="border-b border-border pb-8">
 					<p className="text-sm font-semibold uppercase tracking-[0.22em] text-primary">
 						Kaiser DTE
 					</p>
@@ -131,7 +131,7 @@ export default function TermsPage() {
 						</section>
 					))}
 
-					<section className="space-y-4 border-t border-slate-200 pt-8 dark:border-white/10">
+					<section className="space-y-4 border-t border-border pt-8">
 						<h2 className="text-xl font-bold text-foreground">
 							13. Contacto
 						</h2>
@@ -148,7 +148,7 @@ export default function TermsPage() {
 						<div className="flex flex-wrap gap-3 pt-2">
 							<Link
 								href="/politica-privacidad"
-								className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-100 dark:border-white/15 dark:text-white dark:hover:bg-white/10"
+								className="rounded-md border border-border px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-muted"
 							>
 								Ver politica de privacidad
 							</Link>

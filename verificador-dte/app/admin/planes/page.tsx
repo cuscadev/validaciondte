@@ -233,7 +233,7 @@ export default function PlanesPage() {
               <h1 className="text-3xl font-extrabold tracking-tight md:text-5xl">
                 Configura precios, accesos y visibilidad
               </h1>
-              <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600 md:text-base text-muted-foreground">
+              <p className="mt-4 max-w-3xl text-sm leading-6 text-muted-foreground md:text-base">
                 Los cambios se guardan por plan y aplican inmediatamente en el control de acceso y en la seccion publica de planes.
               </p>
             </div>
@@ -268,7 +268,7 @@ export default function PlanesPage() {
               <article
                 key={plan.id}
                 className={[
-                  'flex min-h-full flex-col overflow-hidden rounded-lg border bg-white shadow-sm bg-card',
+                  'flex min-h-full flex-col overflow-hidden rounded-lg border border-border bg-card shadow-sm',
                   plan.featured
                     ? 'border-primary/60 border-primary/60'
                     : 'border-border',
