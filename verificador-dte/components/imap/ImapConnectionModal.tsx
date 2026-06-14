@@ -102,18 +102,18 @@ export default function ImapConnectionModal({
         </div>
 
         {loadingStatus ? (
-          <div className="flex items-center gap-2 py-8 text-sm text-slate-500">
+          <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin" />
             Cargando estado...
           </div>
         ) : connected && status ? (
           <div className="space-y-4">
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/20">
-              <p className="font-semibold text-slate-900 dark:text-white">{status.email}</p>
+            <div className="rounded-xl border border-[color:var(--brand-success)]/30 bg-[color:var(--brand-success)]/10 p-4">
+              <p className="font-semibold text-foreground">{status.email}</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 {status.host}:{status.port} · conectado el {formatDateTime(status.connectedAt)}
               </p>
-              <p className="mt-2 text-xs text-slate-500 dark:text-zinc-400">
+              <p className="mt-2 text-xs text-muted-foreground">
                 Consentimiento aceptado el {formatDateTime(status.consentAcceptedAt)}
               </p>
             </div>
@@ -142,7 +142,7 @@ export default function ImapConnectionModal({
               <Label htmlFor="modal-imap-provider">Proveedor</Label>
               <select
                 id="modal-imap-provider"
-                className="h-11 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50 dark:bg-input/30 dark:text-white dark:[color-scheme:dark] [&>option]:bg-white [&>option]:text-slate-900 dark:[&>option]:bg-zinc-900 dark:[&>option]:text-white"
+                className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50 [color-scheme:light] dark:[color-scheme:dark]"
                 value={provider}
                 onChange={(event) => onProviderChange(event.target.value)}
               >
@@ -178,7 +178,7 @@ export default function ImapConnectionModal({
                 </div>
               </div>
             ) : (
-              <p className="rounded-lg bg-slate-100 px-3 py-2 text-xs text-slate-600 dark:bg-zinc-900 dark:text-zinc-300">
+              <p className="rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
                 Servidor: <span className="font-mono">{preset?.host}</span> · puerto{' '}
                 <span className="font-mono">{preset?.port}</span> (TLS)
               </p>
@@ -217,7 +217,7 @@ export default function ImapConnectionModal({
                   onChange={(event) => onPasswordChange(event.target.value)}
                 />
                 {preset?.appPasswordHint ? (
-                  <p className="text-xs leading-5 text-slate-500 dark:text-zinc-400">
+                  <p className="text-xs leading-5 text-muted-foreground">
                     <KeyRound className="mr-1 inline size-3" />
                     {preset.appPasswordHint}{' '}
                     {preset.appPasswordHelpUrl ? (
@@ -256,6 +256,7 @@ export default function ImapConnectionModal({
                 type="button"
                 onClick={isOAuthProvider ? onConnectMicrosoft : onConnectPassword}
                 disabled={connecting}
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 {connecting ? (
                   <>

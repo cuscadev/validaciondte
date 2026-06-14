@@ -36,14 +36,12 @@ export const STATUS_LABELS: Record<string, string> = {
 
 const STATUS_STYLES: Record<string, string> = {
   imported:
-    'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200',
-  skipped_duplicate:
-    'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-200',
-  skipped_date:
-    'bg-primary/15 text-primary bg-primary/15 text-primary',
-  skipped_invalid: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200',
+    'bg-[color:var(--brand-success)]/15 text-[color:var(--brand-success)]',
+  skipped_duplicate: 'bg-muted text-muted-foreground',
+  skipped_date: 'bg-primary/15 text-primary',
+  skipped_invalid: 'bg-destructive/15 text-destructive',
   skipped_unsupported_type:
-    'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-200',
+    'bg-[color:var(--brand-orange)]/15 text-[color:var(--brand-orange)]',
 };
 
 type Props = {
@@ -100,7 +98,7 @@ function SortableHead({
       <button
         type="button"
         onClick={() => onSort(sortKey)}
-        className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-white"
+        className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground"
       >
         {label}
         {active ? (
@@ -156,7 +154,7 @@ export default function GmailDocumentTable({
   return (
     <div className="relative overflow-hidden rounded-xl border border-border">
       {loading && documents.length > 0 ? (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/60 dark:bg-zinc-950/60">
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60">
           <Loader2 className="size-6 animate-spin text-primary" />
         </div>
       ) : null}
@@ -169,14 +167,14 @@ export default function GmailDocumentTable({
       >
         <Table className="min-w-[56rem] text-sm">
           <TableHeader>
-            <TableRow className="border-b border-slate-200 bg-slate-50 hover:bg-slate-50 dark:border-white/10 dark:bg-zinc-900/60">
+            <TableRow className="border-b border-border bg-muted/40 hover:bg-muted/40">
               <TableHead className="w-10 px-3 py-3">
                 <input
                   type="checkbox"
                   checked={allSelected}
                   onChange={(e) => onToggleAll(e.target.checked)}
                   aria-label="Seleccionar todos"
-                  className="size-4 rounded border-slate-300"
+                  className="size-4 rounded border-border"
                 />
               </TableHead>
               <SortableHead
@@ -187,7 +185,7 @@ export default function GmailDocumentTable({
                 onSort={onSort}
                 className="min-w-[10rem]"
               />
-              <TableHead className="min-w-[8rem] px-3 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-zinc-400">
+              <TableHead className="min-w-[8rem] px-3 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 De
               </TableHead>
               <SortableHead
@@ -234,14 +232,14 @@ export default function GmailDocumentTable({
                 onSort={onSort}
               />
               {showMailboxColumn ? (
-                <TableHead className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-zinc-400">
+                <TableHead className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Buzon
                 </TableHead>
               ) : null}
-              <TableHead className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-zinc-400">
+              <TableHead className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Enlaces
               </TableHead>
-              <TableHead className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-zinc-400">
+              <TableHead className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Acciones
               </TableHead>
             </TableRow>
@@ -266,47 +264,47 @@ export default function GmailDocumentTable({
                       onChange={() => onToggleSelect(doc.id)}
                       disabled={doc.import_status !== 'imported'}
                       aria-label={`Seleccionar ${doc.file_name}`}
-                      className="size-4 rounded border-slate-300"
+                      className="size-4 rounded border-border"
                     />
                   </TableCell>
                   <TableCell className="max-w-[14rem] px-3 py-3 whitespace-normal">
                     <div
-                      className="line-clamp-2 font-medium text-slate-900 dark:text-white"
+                      className="line-clamp-2 font-medium text-foreground"
                       title={doc.email_subject || undefined}
                     >
                       {doc.email_subject || '—'}
                     </div>
                   </TableCell>
                   <TableCell className="max-w-[10rem] px-3 py-3 whitespace-normal">
-                    <div className="font-medium text-slate-900 dark:text-white">
+                    <div className="font-medium text-foreground">
                       {doc.email_from_name || doc.email_from || '—'}
                     </div>
                     {doc.email_from_name && doc.email_from ? (
-                      <div className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
+                      <div className="mt-0.5 text-xs text-muted-foreground">
                         {doc.email_from}
                       </div>
                     ) : null}
                   </TableCell>
-                  <TableCell className="px-3 py-3 whitespace-nowrap text-slate-700 dark:text-zinc-200">
+                  <TableCell className="px-3 py-3 whitespace-nowrap text-muted-foreground">
                     {formatEmailDate(doc.email_date)}
                   </TableCell>
                   <TableCell className="px-3 py-3 whitespace-normal">
-                    <div className="font-semibold text-slate-900 dark:text-white">
+                    <div className="font-semibold text-foreground">
                       {doc.tipo_dte_label || doc.tipo_dte || '—'}
                     </div>
-                    <div className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
+                    <div className="mt-1 text-xs text-muted-foreground">
                       {doc.numero_control || '—'}
                     </div>
                   </TableCell>
                   <TableCell className="px-3 py-3 whitespace-nowrap">{doc.fec_emi || '—'}</TableCell>
                   <TableCell className="max-w-[10rem] px-3 py-3 whitespace-normal">
                     <div className="font-medium">{doc.emisor_nombre || '—'}</div>
-                    <div className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
+                    <div className="mt-1 text-xs text-muted-foreground">
                       {[doc.emisor_nit, doc.emisor_nrc].filter(Boolean).join(' · ') || '—'}
                     </div>
                   </TableCell>
                   <TableCell className="px-3 py-3 whitespace-normal">
-                    <div className="break-all font-mono text-xs text-slate-700 dark:text-zinc-200">
+                    <div className="break-all font-mono text-xs text-muted-foreground">
                       {doc.codigo_generacion || '—'}
                     </div>
                     {doc.codigo_generacion ? (
@@ -318,10 +316,10 @@ export default function GmailDocumentTable({
                   </TableCell>
                   {showMailboxColumn ? (
                     <TableCell className="max-w-[10rem] px-3 py-3 whitespace-normal">
-                      <div className="text-xs font-medium text-slate-700 dark:text-zinc-200">
+                      <div className="text-xs font-medium text-muted-foreground">
                         {doc.mailbox_email || '—'}
                       </div>
-                      <div className="mt-1 text-[11px] uppercase tracking-wide text-slate-400 dark:text-zinc-500">
+                      <div className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground/70">
                         {doc.source === 'imap' ? 'IMAP' : 'Gmail'}
                       </div>
                     </TableCell>
@@ -338,7 +336,7 @@ export default function GmailDocumentTable({
                         {doc.linked_count}
                       </Button>
                     ) : (
-                      <span className="text-slate-400">—</span>
+                      <span className="text-muted-foreground/50">—</span>
                     )}
                   </TableCell>
                   <TableCell className="px-3 py-3">
@@ -380,7 +378,7 @@ export function StatusBadge({ status }: { status: string }) {
     <span
       className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
         STATUS_STYLES[status] ||
-        'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-200'
+        'bg-muted text-muted-foreground'
       }`}
     >
       {STATUS_LABELS[status] || status}

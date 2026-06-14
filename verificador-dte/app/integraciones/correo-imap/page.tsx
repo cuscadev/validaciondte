@@ -326,17 +326,17 @@ export default function CorreoImapIntegracionPage() {
     <PlanGate routeKey="integraciones-imap">
       <main className="w-full max-w-full text-foreground">
         <div className="flex w-full flex-col gap-4">
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6 border-border bg-card">
+          <section className="rounded-2xl border border-border bg-card p-5 shadow-sm md:p-6">
             <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-start">
               <div>
-                <p className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.24em] text-primary text-primary">
+                <p className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.24em] text-primary">
                   <Mail className="size-4" />
                   Integracion IMAP
                 </p>
                 <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">
                   Importar DTE desde cualquier correo
                 </h1>
-                <p className="mt-4 text-sm leading-7 text-slate-600 md:text-base text-muted-foreground">
+                <p className="mt-4 text-sm leading-7 text-muted-foreground md:text-base">
                   Conecta tu buzon por IMAP con una clave de aplicacion (Gmail, Outlook, Zoho o
                   correo corporativo), importa los adjuntos JSON de DTE y verificalos en Hacienda.
                 </p>
@@ -355,26 +355,26 @@ export default function CorreoImapIntegracionPage() {
             </div>
           </section>
 
-          <section className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between border-border bg-card md:px-5">
+          <section className="flex flex-col gap-3 rounded-2xl border border-border bg-card px-4 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between md:px-5">
             <div className="flex min-w-0 items-center gap-3">
               <div
                 className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${
                   status?.connected
-                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                    : 'bg-slate-100 text-slate-500 dark:bg-zinc-800 text-muted-foreground'
+                    ? 'bg-[color:var(--brand-success)]/15 text-[color:var(--brand-success)]'
+                    : 'bg-muted text-muted-foreground'
                 }`}
               >
                 {status?.connected ? <CheckCircle2 className="size-5" /> : <Plug className="size-5" />}
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-slate-900 text-foreground">
+                <p className="text-sm font-semibold text-foreground">
                   {loadingStatus
                     ? 'Verificando conexion...'
                     : status?.connected
                       ? status.email
                       : 'Sin cuenta conectada'}
                 </p>
-                <p className="truncate text-xs text-slate-500 text-muted-foreground">
+                <p className="truncate text-xs text-muted-foreground">
                   {status?.connected
                     ? `${status.host}:${status.port} · conectado ${formatDateTime(status.connectedAt)}`
                     : 'Conecta tu buzon IMAP para importar DTE desde el correo'}
@@ -409,7 +409,7 @@ export default function CorreoImapIntegracionPage() {
                 <Button
                   type="button"
                   size="sm"
-                  className="h-10"
+                  className="h-10 bg-primary text-primary-foreground hover:bg-primary/90"
                   onClick={() => setConnectionModalOpen(true)}
                   disabled={loadingStatus}
                 >
@@ -421,8 +421,8 @@ export default function CorreoImapIntegracionPage() {
           </section>
 
           {!status?.connected ? (
-            <section className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center shadow-sm border-border bg-card">
-              <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl bg-primary/15 bg-primary/15 text-primary">
+            <section className="rounded-2xl border border-dashed border-border bg-card px-6 py-16 text-center shadow-sm">
+              <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl bg-primary/15 text-primary">
                 <Inbox className="size-8" />
               </div>
               <h2 className="text-xl font-bold">Conecta tu correo para comenzar</h2>
@@ -430,21 +430,25 @@ export default function CorreoImapIntegracionPage() {
                 Configura IMAP con clave de aplicacion. Luego podras importar por rango de fechas,
                 filtrar el catalogo y verificar DTE en Hacienda.
               </p>
-              <Button type="button" className="mt-6" onClick={() => setConnectionModalOpen(true)}>
+              <Button
+                type="button"
+                className="mt-6 bg-primary text-primary-foreground hover:bg-primary/90"
+                onClick={() => setConnectionModalOpen(true)}
+              >
                 <Mail className="mr-2 size-4" />
                 Conectar buzon IMAP
               </Button>
             </section>
           ) : (
             <div className="flex flex-col gap-5">
-              <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm border-border bg-card">
+              <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
                 <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary text-primary">
+                    <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
                       <CalendarRange className="size-4" />
                       Importar del buzon
                     </p>
-                    <p className="mt-1 text-sm text-slate-600 text-muted-foreground">
+                    <p className="mt-1 text-sm text-muted-foreground">
                       {SYNC_CATALOG_HELP}
                     </p>
                   </div>
@@ -452,7 +456,7 @@ export default function CorreoImapIntegracionPage() {
                     type="button"
                     onClick={runSync}
                     disabled={syncing}
-                    className="h-11 shrink-0"
+                    className="h-11 shrink-0 bg-primary text-primary-foreground hover:bg-primary/90"
                   >
                     {syncing ? (
                       <>
@@ -501,7 +505,7 @@ export default function CorreoImapIntegracionPage() {
 
                 {job ? (
                   <div className="mt-4 space-y-2">
-                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 text-muted-foreground">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
                       <span>
                         Rango {job.date_from} — {job.date_to} · estado {job.status}
                       </span>
@@ -512,13 +516,13 @@ export default function CorreoImapIntegracionPage() {
                     <Progress value={progressValue} className="h-2" />
                   </div>
                 ) : (
-                  <p className="mt-3 text-xs text-slate-500 text-muted-foreground">
+                  <p className="mt-3 text-xs text-muted-foreground">
                     Solo se importan DTE 01, 03, 05, 06, 11 y 14. Otros quedan como{' '}
                     <span className="font-medium">{STATUS_LABELS.skipped_unsupported_type}</span>.
                   </p>
                 )}
 
-                <div className="mt-5 border-t border-slate-200 pt-5 border-border">
+                <div className="mt-5 border-t border-border pt-5">
                   <GmailDocumentFilters
                     filters={catalogFilters}
                     onChange={(patch) => setCatalogFilters((prev) => ({ ...prev, ...patch }))}
@@ -529,7 +533,7 @@ export default function CorreoImapIntegracionPage() {
               </section>
 
               <section className="rounded-2xl border border-border bg-card shadow-sm">
-                <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-5 md:flex-row md:items-center md:justify-between border-border">
+                <div className="flex flex-col gap-4 border-b border-border px-5 py-5 md:flex-row md:items-center md:justify-between">
                   <div>
                     <h2 className="text-xl font-bold">Resultados</h2>
                     <p className="mt-1 text-sm text-muted-foreground">
@@ -554,6 +558,7 @@ export default function CorreoImapIntegracionPage() {
                     <Button
                       type="button"
                       disabled={!selectedIds.size || verifyLoading}
+                      className="bg-primary text-primary-foreground hover:bg-primary/90"
                       onClick={() => void verifySelected()}
                     >
                       {verifyLoading ? (
@@ -643,14 +648,14 @@ function MetricCard({
   accent?: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 border-border bg-card/50">
-      <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 text-muted-foreground">
+    <div className="rounded-xl border border-border bg-muted/40 px-4 py-3">
+      <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         <Icon className="size-3.5" />
         {label}
       </div>
       <p
         className={`text-2xl font-extrabold tracking-tight ${
-          accent ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-900 text-foreground'
+          accent ? 'text-[color:var(--brand-success)]' : 'text-foreground'
         }`}
       >
         {value}
@@ -669,11 +674,11 @@ function SyncStat({
   accent?: boolean;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 border-border bg-card">
-      <p className="text-xs text-slate-500 text-muted-foreground">{label}</p>
+    <div className="rounded-lg border border-border bg-card px-3 py-2">
+      <p className="text-xs text-muted-foreground">{label}</p>
       <p
         className={`text-lg font-bold ${
-          accent ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-900 text-foreground'
+          accent ? 'text-[color:var(--brand-success)]' : 'text-foreground'
         }`}
       >
         {value}

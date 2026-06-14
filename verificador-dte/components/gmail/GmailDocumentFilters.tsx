@@ -32,15 +32,15 @@ export default function GmailDocumentFilters({
   mailboxOptions,
 }: Props) {
   return (
-    <div className="rounded-xl border border-border bg-card p-4 dark:border-white/10 dark:bg-zinc-900/40">
-      <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-400">
+    <div className="rounded-xl border border-border bg-card p-4">
+      <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
         Filtros del catalogo
       </p>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="gmail-q">Buscar documento</Label>
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               id="gmail-q"
               className="h-10 pl-9"

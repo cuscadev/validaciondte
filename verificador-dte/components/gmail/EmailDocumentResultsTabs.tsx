@@ -147,7 +147,7 @@ export default function EmailDocumentResultsTabs({
         {activeTab === 'catalog' ? (
           <div className="space-y-5">
             {loadingCatalog && !catalog.length ? (
-              <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
+              <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
                 <Loader2 className="size-4 animate-spin" />
                 Cargando catalogo...
               </div>
@@ -177,9 +177,9 @@ export default function EmailDocumentResultsTabs({
                 />
               </>
             ) : (
-              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-14 text-center dark:border-white/10 dark:bg-zinc-900/30">
-                <FileStack className="mx-auto mb-3 size-8 text-slate-400" />
-                <p className="font-medium text-slate-900 dark:text-white">{emptyCatalogTitle}</p>
+              <div className="rounded-xl border border-dashed border-border bg-muted/30 px-6 py-14 text-center">
+                <FileStack className="mx-auto mb-3 size-8 text-muted-foreground" />
+                <p className="font-medium text-foreground">{emptyCatalogTitle}</p>
                 <p className="mt-2 text-sm text-muted-foreground">
                   {emptyCatalogDescription}
                 </p>
@@ -187,11 +187,11 @@ export default function EmailDocumentResultsTabs({
             )}
 
             {linkedPreview ? (
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-zinc-900/40">
+              <div className="rounded-xl border border-border bg-muted/40 p-4">
                 <div className="mb-3 flex items-start justify-between gap-2">
                   <div>
-                    <p className="text-sm font-semibold">Documentos relacionados</p>
-                    <p className="text-xs text-slate-500 dark:text-zinc-400">
+                    <p className="text-sm font-semibold text-foreground">Documentos relacionados</p>
+                    <p className="text-xs text-muted-foreground">
                       {linkedPreview.doc.tipo_dte_label} · {linkedPreview.doc.codigo_generacion}
                     </p>
                   </div>
@@ -212,13 +212,13 @@ export default function EmailDocumentResultsTabs({
                     {linkedPreview.documents.map((rel) => (
                       <li
                         key={rel.id}
-                        className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-3 dark:border-white/10 dark:bg-zinc-950"
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card px-3 py-3"
                       >
                         <div>
-                          <span className="font-medium">{rel.tipo_dte_label || rel.tipo_dte}</span>
-                          <span className="mx-2 text-slate-400">·</span>
+                          <span className="font-medium text-foreground">{rel.tipo_dte_label || rel.tipo_dte}</span>
+                          <span className="mx-2 text-muted-foreground">·</span>
                           <span className="font-mono text-xs">{rel.codigo_generacion}</span>
-                          <div className="text-xs text-slate-500 dark:text-zinc-400">
+                          <div className="text-xs text-muted-foreground">
                             {rel.fec_emi} · {rel.emisor_nombre || '—'}
                           </div>
                         </div>
@@ -252,9 +252,9 @@ export default function EmailDocumentResultsTabs({
                 embedded
               />
             ) : (
-              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-14 text-center dark:border-white/10 dark:bg-zinc-900/30">
-                <ShieldCheck className="mx-auto mb-3 size-8 text-slate-400" />
-                <p className="font-medium text-slate-900 dark:text-white">
+              <div className="rounded-xl border border-dashed border-border bg-muted/30 px-6 py-14 text-center">
+                <ShieldCheck className="mx-auto mb-3 size-8 text-muted-foreground" />
+                <p className="font-medium text-foreground">
                   Sin verificaciones en Hacienda
                 </p>
                 <p className="mt-2 text-sm text-muted-foreground">
