@@ -235,7 +235,7 @@ export default function AdminObligacionPage() {
 
   return (
     <main className="space-y-4">
-      <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm border-border bg-card">
+      <section className="rounded-lg border border-border bg-card p-4 shadow-sm">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-start gap-3">
             <div className="flex size-11 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
@@ -246,7 +246,7 @@ export default function AdminObligacionPage() {
               <h1 className="text-2xl font-semibold tracking-tight text-foreground">
                 Gestión de obligaciones tributarias
               </h1>
-              <p className="mt-1 text-sm text-slate-600 text-muted-foreground">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Crea obligaciones para todos los clientes o selecciona clientes específicos.
               </p>
             </div>
@@ -264,7 +264,7 @@ export default function AdminObligacionPage() {
       <section className="grid gap-4 xl:grid-cols-[440px_1fr]">
         <form
           onSubmit={handleSubmit}
-          className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm border-border bg-card"
+          className="rounded-xl border border-border bg-card p-4 shadow-sm"
         >
           <h2 className="text-base font-bold text-foreground">
             Nueva obligación
@@ -313,7 +313,7 @@ export default function AdminObligacionPage() {
               placeholder="Recordar días antes. Ej: 1,3,5"
             />
 
-            <label className="flex items-center gap-2 text-sm text-slate-700 text-muted-foreground">
+            <label className="flex items-center gap-2 text-sm text-muted-foreground">
               <input
                 type="checkbox"
                 checked={form.notifyClient}
@@ -329,12 +329,12 @@ export default function AdminObligacionPage() {
 
             {form.targetMode === 'selected' && (
               <div className="rounded-lg border border-border bg-background p-3">
-                <p className="mb-2 text-sm font-semibold text-slate-900 text-foreground">
+                <p className="mb-2 text-sm font-semibold text-foreground">
                   Clientes seleccionados: {selectedUids.length}
                 </p>
 
                 <div className="relative mb-3">
-                  <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                  <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
@@ -361,7 +361,7 @@ export default function AdminObligacionPage() {
                         <p className="font-semibold text-foreground">
                           {user.displayName || user.email || 'Sin nombre'}
                         </p>
-                        <p className="text-xs text-slate-500 text-muted-foreground">
+                        <p className="text-xs text-muted-foreground">
                           {user.email || user.uid}
                         </p>
                       </button>
@@ -380,7 +380,7 @@ export default function AdminObligacionPage() {
         <div className="space-y-4">
           <ObligationsCalendar />
 
-          <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm border-border bg-card">
+          <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-base font-bold text-foreground">
                 Obligaciones registradas
@@ -406,7 +406,7 @@ export default function AdminObligacionPage() {
                     <h3 className="text-sm font-bold text-foreground">
                       {item.title}
                     </h3>
-                    <p className="text-xs text-slate-500 text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       Vence: {item.dueDate} ·{' '}
                       {item.targetMode === 'selected'
                         ? `${item.targetUids?.length ?? 0} cliente(s)`

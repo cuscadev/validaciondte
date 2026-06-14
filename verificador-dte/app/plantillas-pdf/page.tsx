@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { TABLE_HEAD_STICKY } from '@/lib/ui/table-classes'
 import { toast } from 'sonner'
 
 const MAX_JSON_FILES = 25
@@ -916,7 +917,7 @@ export default function PlantillasPdfPage() {
             <div className="overflow-hidden rounded-md border border-border">
               <div className="max-h-[54vh] overflow-auto">
                 <table className="w-full text-sm">
-                  <thead className="sticky top-0 z-10 bg-slate-100 text-slate-950 bg-card dark:text-zinc-100">
+                  <thead className={TABLE_HEAD_STICKY}>
                     <tr>
                       <th className="p-2 text-left font-semibold">Archivo JSON</th>
                       <th className="p-2 text-left font-semibold">Tipo DTE</th>

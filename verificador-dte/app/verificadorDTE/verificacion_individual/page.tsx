@@ -14,6 +14,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { FECHA_DMY_REGEX } from '@/lib/dte-fecha-input';
+import { TABLE_HEAD, TABLE_HEAD_STICKY } from '@/lib/ui/table-classes';
 import { parsePastedItems, UUID_REGEX } from '@/lib/dte-individual-paste';
 import {
   DTE_RESULT_COLUMNS,
@@ -348,7 +349,7 @@ export default function Page() {
           <div className="grid gap-4 p-4 lg:grid-cols-[1fr_16rem]">
             <div className="overflow-x-auto rounded-md border border-border">
               <table className="min-w-full text-sm">
-                <thead className="bg-slate-100 text-slate-950 bg-card dark:text-zinc-100">
+                <thead className={TABLE_HEAD}>
                   <tr>
                     <th className="px-3 py-2 text-left whitespace-nowrap">{t('prrocesardte_item')}</th>
                     <th className="px-3 py-2 text-left whitespace-nowrap">{t('prrocesardte_codigo')}</th>
@@ -356,7 +357,7 @@ export default function Page() {
                     <th className="px-3 py-2 text-center whitespace-nowrap">{t('prrocesardte_acciones')}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-white/10">
+                <tbody className="divide-y divide-border">
                   {items.map((it, idx) => (
                     <tr key={idx} className="hover:bg-muted/30">
                       <td className="px-3 py-2 text-center text-muted-foreground">{it.numItem}</td>
@@ -475,7 +476,7 @@ export default function Page() {
           <div className="mt-4 overflow-hidden rounded-md border border-border">
             <div className="max-h-[60vh] overflow-auto">
               <table className="w-full text-sm">
-                <thead className="sticky top-0 z-10 bg-slate-100 text-slate-950 backdrop-blur supports-[backdrop-filter]:bg-slate-100/90 bg-card dark:text-zinc-100">
+                <thead className={TABLE_HEAD_STICKY}>
                   <tr>
                     {DTE_RESULT_COLUMNS.map((col) => (
                       <th key={col.key} className="whitespace-nowrap p-2 text-left font-semibold">

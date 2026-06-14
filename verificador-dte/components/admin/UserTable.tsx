@@ -2,6 +2,7 @@ import * as React from "react";
 import Image from "next/image";
 import { Ban, BarChart3, Eye, LogOut, MoreHorizontal, Pencil, SlidersHorizontal, Trash2, Unlock } from "lucide-react";
 
+import { TABLE_HEAD } from "@/lib/ui/table-classes";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -48,7 +49,7 @@ function getInitials(label: string) {
 
 export function UserTable({ rows, onEdit, onDelete, onViewDetails, onViewStats, onEditLimits, onForceLogout, onToggleBlock }: UserTableProps) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-950">
+    <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-sm">
       <table className="w-full table-fixed text-sm">
         <colgroup>
           <col className="w-[30%]" />
@@ -59,7 +60,7 @@ export function UserTable({ rows, onEdit, onDelete, onViewDetails, onViewStats, 
           <col className="w-[10%]" />
           <col className="w-[12%]" />
         </colgroup>
-        <thead className="bg-slate-100 text-slate-950 dark:bg-zinc-900 dark:text-zinc-100">
+        <thead className={TABLE_HEAD}>
           <tr>
             <th className="px-4 py-3 text-left font-semibold">Usuario</th>
             <th className="px-4 py-3 text-left font-semibold">UID</th>
@@ -70,7 +71,7 @@ export function UserTable({ rows, onEdit, onDelete, onViewDetails, onViewStats, 
             <th className="px-4 py-3 text-center font-semibold">Acciones</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-200 dark:divide-white/10">
+        <tbody className="divide-y divide-border">
           {rows.length === 0 ? (
             <tr>
               <td colSpan={7} className="py-10 text-center text-muted-foreground">

@@ -120,7 +120,7 @@ export default function NotificationsPage() {
   const loading = notificationsQuery.isPending && !notificationsQuery.data;
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-950 bg-background text-foreground">
+    <main className="min-h-screen bg-background text-foreground">
       <div className="flex w-full flex-col gap-4 p-0">
         <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -207,7 +207,7 @@ export default function NotificationsPage() {
                   <article
                     key={notification.id}
                     className={cn(
-                      'grid gap-3 p-4 transition hover:bg-slate-50 dark:hover:bg-black md:grid-cols-[minmax(0,1fr)_auto] md:items-start',
+                      'grid gap-3 p-4 transition hover:bg-muted/30 md:grid-cols-[minmax(0,1fr)_auto] md:items-start',
                       isUnread && 'bg-primary/5'
                     )}
                   >
@@ -217,14 +217,14 @@ export default function NotificationsPage() {
                           'mt-1 flex size-10 shrink-0 items-center justify-center rounded-lg border',
                           isUnread
                             ? 'border-primary bg-primary text-primary-foreground'
-                            : 'border-slate-200 bg-slate-100 text-slate-600 border-border bg-card text-muted-foreground'
+                            : 'border-border bg-muted text-muted-foreground'
                         )}
                       >
                         <Bell className="size-5" />
                       </div>
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold bg-card">
+                          <span className="rounded-full bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground">
                             {getTypeLabel(notification.type)}
                           </span>
                           {isUnread ? (
@@ -294,7 +294,7 @@ function SummaryCard({
   accent?: boolean;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 border-border bg-background">
+    <div className="rounded-lg border border-border bg-muted/40 p-4">
       <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
       <p className={cn('mt-2 text-3xl font-extrabold', accent && 'text-primary text-primary')}>
         {value}
@@ -309,17 +309,17 @@ function NotificationsSkeleton() {
       {Array.from({ length: 5 }).map((_, index) => (
         <div key={index} className="grid gap-3 p-4 md:grid-cols-[minmax(0,1fr)_10rem]">
           <div className="flex gap-3">
-            <div className="size-10 shrink-0 animate-pulse rounded-lg bg-slate-200 dark:bg-zinc-800" />
+            <div className="size-10 shrink-0 animate-pulse rounded-lg bg-muted" />
             <div className="min-w-0 flex-1 space-y-3">
-              <div className="h-4 w-28 animate-pulse rounded bg-slate-200 dark:bg-zinc-800" />
-              <div className="h-5 w-3/5 animate-pulse rounded bg-slate-200 dark:bg-zinc-800" />
-              <div className="h-4 w-full animate-pulse rounded bg-slate-200 dark:bg-zinc-800" />
-              <div className="h-4 w-2/3 animate-pulse rounded bg-slate-200 dark:bg-zinc-800" />
+              <div className="h-4 w-28 animate-pulse rounded bg-muted" />
+              <div className="h-5 w-3/5 animate-pulse rounded bg-muted" />
+              <div className="h-4 w-full animate-pulse rounded bg-muted" />
+              <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
             </div>
           </div>
           <div className="flex gap-2 md:justify-end">
-            <div className="h-9 w-20 animate-pulse rounded-md bg-slate-200 dark:bg-zinc-800" />
-            <div className="h-9 w-28 animate-pulse rounded-md bg-slate-200 dark:bg-zinc-800" />
+            <div className="h-9 w-20 animate-pulse rounded-md bg-muted" />
+            <div className="h-9 w-28 animate-pulse rounded-md bg-muted" />
           </div>
         </div>
       ))}
@@ -330,7 +330,7 @@ function NotificationsSkeleton() {
 function EmptyState({ filter }: { filter: 'all' | 'unread' }) {
   return (
     <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
-      <div className="flex size-14 items-center justify-center rounded-xl bg-slate-100 text-slate-500 bg-card text-muted-foreground">
+      <div className="flex size-14 items-center justify-center rounded-xl bg-muted text-muted-foreground">
         <Inbox className="size-7" />
       </div>
       <h2 className="mt-4 text-lg font-bold">

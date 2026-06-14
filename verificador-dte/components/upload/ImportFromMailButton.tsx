@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Modal } from '@/components/ui/modal';
+import { TABLE_HEAD_STICKY } from '@/lib/ui/table-classes';
 import { auth } from '@/lib/firebase';
 import type { GmailDocumentRow } from '@/lib/gmail/types';
 
@@ -201,7 +202,7 @@ export default function ImportFromMailButton({ tiposDte, onImport, disabled }: P
               </div>
             ) : documents.length ? (
               <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500 dark:bg-zinc-900 dark:text-zinc-400">
+                <thead className={`${TABLE_HEAD_STICKY} text-left text-xs uppercase tracking-wide text-muted-foreground`}>
                   <tr>
                     <th className="px-3 py-2">
                       <input

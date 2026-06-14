@@ -596,7 +596,7 @@ export default function EnvioLotesPage() {
                 </CardHeader>
                 <CardContent className="overflow-x-auto">
                   <table className="w-full min-w-[860px] text-sm">
-                    <thead className="border-b text-left text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                    <thead className="border-b border-border bg-muted/40 text-left text-xs uppercase tracking-[0.14em] text-muted-foreground">
                       <tr>
                         <th className="py-2 pr-3">Fecha</th>
                         <th className="py-2 pr-3">Estado</th>
@@ -688,7 +688,7 @@ export default function EnvioLotesPage() {
                   </CardHeader>
                   <CardContent className="overflow-x-auto">
                     <table className="w-full min-w-[760px] text-sm">
-                      <thead className="border-b text-left text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                      <thead className="border-b border-border bg-muted/40 text-left text-xs uppercase tracking-[0.14em] text-muted-foreground">
                         <tr>
                           <th className="py-2 pr-3">#</th>
                           <th className="py-2 pr-3">Chunk</th>

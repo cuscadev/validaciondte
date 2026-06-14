@@ -311,7 +311,7 @@ export default function AvisosAdminPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-950 bg-background text-foreground">
+    <main className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex w-full max-w-[92rem] flex-col gap-4 p-0">
         <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
           <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
@@ -332,7 +332,7 @@ export default function AvisosAdminPage() {
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[28rem]">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 border-border bg-background">
+              <div className="rounded-lg border border-border bg-muted/40 p-4">
                 <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                   Total
                 </p>
@@ -342,7 +342,7 @@ export default function AvisosAdminPage() {
                 </p>
               </div>
 
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 border-border bg-background">
+              <div className="rounded-lg border border-border bg-muted/40 p-4">
                 <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                   Estado
                 </p>
@@ -435,10 +435,10 @@ export default function AvisosAdminPage() {
                   <section className="space-y-3 rounded-lg border border-border bg-background p-3">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-sm font-semibold text-slate-900 text-foreground">
+                        <p className="text-sm font-semibold text-foreground">
                           Seleccionar usuario
                         </p>
-                        <p className="text-xs text-slate-500 text-muted-foreground">
+                        <p className="text-xs text-muted-foreground">
                           El aviso se enviará únicamente al usuario seleccionado.
                         </p>
                       </div>
@@ -470,7 +470,7 @@ export default function AvisosAdminPage() {
                     </div>
 
                     {usersQuery.isLoading ? (
-                      <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-white p-3 text-sm text-slate-500 border-border bg-card text-muted-foreground">
+                      <div className="flex items-center gap-2 rounded-md border border-border bg-card p-3 text-sm text-muted-foreground">
                         <RefreshCcw className="h-4 w-4 animate-spin" />
                         Cargando usuarios...
                       </div>
@@ -481,7 +481,7 @@ export default function AvisosAdminPage() {
                           : 'No se pudieron cargar los usuarios.'}
                       </div>
                     ) : filteredUsers.length === 0 ? (
-                      <div className="rounded-md border border-slate-200 bg-white p-3 text-sm text-slate-500 border-border bg-card text-muted-foreground">
+                      <div className="rounded-md border border-border bg-card p-3 text-sm text-muted-foreground">
                         No hay usuarios para este filtro.
                       </div>
                     ) : (
@@ -507,11 +507,11 @@ export default function AvisosAdminPage() {
                             >
                               <div className="flex items-start justify-between gap-3">
                                 <div>
-                                  <p className="text-sm font-semibold text-slate-900 text-foreground">
+                                  <p className="text-sm font-semibold text-foreground">
                                     {user.displayName || 'Sin nombre'}
                                   </p>
 
-                                  <p className="mt-1 text-xs text-slate-500 text-muted-foreground">
+                                  <p className="mt-1 text-xs text-muted-foreground">
                                     {user.email || 'Sin correo'}
                                   </p>
 
@@ -520,7 +520,7 @@ export default function AvisosAdminPage() {
                                   </p>
                                 </div>
 
-                                <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold uppercase text-slate-600 dark:bg-zinc-800 text-muted-foreground">
+                                <span className="rounded-full bg-muted px-2 py-1 text-[11px] font-semibold uppercase text-muted-foreground">
                                   {user.role || form.targetRole}
                                 </span>
                               </div>
@@ -611,7 +611,7 @@ export default function AvisosAdminPage() {
                       return (
                         <div
                         key={notif.id}
-                        className="rounded-lg border border-slate-200 bg-slate-50 p-4 border-border bg-card"
+                        className="rounded-lg border border-border bg-muted/40 p-4"
                         >
                         
                           <div className="flex items-start justify-between gap-3">
@@ -624,7 +624,7 @@ export default function AvisosAdminPage() {
                                 />
                             )}
 
-                            <p className="text-sm font-semibold text-slate-900 text-foreground">
+                            <p className="text-sm font-semibold text-foreground">
                                 {notif.title}
                             </p>
                             </div>
@@ -634,7 +634,7 @@ export default function AvisosAdminPage() {
                               </p>
                             </div>
 
-                            <span className="rounded-full bg-slate-200 px-2 py-1 text-[11px] font-semibold uppercase text-slate-700 dark:bg-zinc-800 dark:text-slate-200">
+                            <span className="rounded-full bg-muted px-2 py-1 text-[11px] font-semibold uppercase text-muted-foreground">
                               {notif.targetUid
                                 ? 'Usuario'
                                 : notif.targetRole ?? 'all'}
@@ -646,7 +646,7 @@ export default function AvisosAdminPage() {
                           </p>
 
                           {notif.metadata?.targetUserEmail && (
-                            <p className="mt-2 text-xs text-slate-500 text-muted-foreground">
+                            <p className="mt-2 text-xs text-muted-foreground">
                               Destinatario: {notif.metadata.targetUserName || 'Usuario'} —{' '}
                               {notif.metadata.targetUserEmail}
                             </p>
@@ -691,7 +691,7 @@ export default function AvisosAdminPage() {
                     })}
                   </div>
 
-                  <div className="mt-5 flex flex-col gap-3 border-t border-slate-200 pt-4 border-border sm:flex-row sm:items-center sm:justify-between">
+                  <div className="mt-5 flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-sm text-slate-500 text-muted-foreground">
                       Página {Math.min(page, totalPages)} de {totalPages} —{' '}
                       {notifications.length} avisos en total

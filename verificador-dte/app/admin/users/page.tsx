@@ -30,6 +30,7 @@ import {
   type OrgMembersDetail,
 } from '@/components/admin/OrgMembersPanel';
 import { Modal } from '@/components/ui/modal';
+import { TABLE_HEAD } from '@/lib/ui/table-classes';
 import { Button } from '@/components/ui/button';
 import {
   AppUser,
@@ -703,7 +704,7 @@ export default function UsersAdminPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-950 bg-background text-foreground">
+    <main className="min-h-screen bg-background text-foreground">
       <div className="flex w-full flex-col gap-4 p-0">
         <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
           <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
@@ -984,7 +985,7 @@ function StatCard({
   value: number;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 border-border bg-background">
+    <div className="rounded-lg border border-border bg-muted/40 p-4">
       <Icon className="mb-3 size-5 text-primary text-primary" />
       <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
       <p className="mt-1 text-sm font-bold">{value}</p>
@@ -1175,7 +1176,7 @@ function UsageAdjustmentPanel({
       ) : (
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[860px] text-sm">
-            <thead className="bg-slate-100 text-slate-950 bg-card dark:text-zinc-100">
+            <thead className={TABLE_HEAD}>
               <tr>
                 <th className="px-3 py-2 text-left">Modulo</th>
                 <th className="px-3 py-2 text-right">Usado</th>
@@ -1261,7 +1262,7 @@ function ClientStatsPanel({
             Metricas de DTE procesados por la organizacion y sus colaboradores.
           </p>
         </div>
-        <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm border-border bg-background">
+        <div className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm">
           <p className="font-semibold">Ultimos 30 dias</p>
           <p className="text-xs text-muted-foreground">
             {data ? `${formatDate(data.period.from)} - ${formatDate(data.period.to)}` : 'Cargando periodo'}
@@ -1270,7 +1271,7 @@ function ClientStatsPanel({
       </div>
 
       {loading ? (
-        <div className="rounded-lg border border-slate-200 bg-slate-50 p-8 text-center text-sm text-muted-foreground border-border bg-background">
+        <div className="rounded-lg border border-border bg-muted/40 p-8 text-center text-sm text-muted-foreground">
           Cargando estadisticas...
         </div>
       ) : (
@@ -1292,7 +1293,7 @@ function ClientStatsPanel({
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[760px] text-sm">
-                <thead className="bg-slate-100 text-slate-950 bg-card dark:text-zinc-100">
+                <thead className={TABLE_HEAD}>
                   <tr>
                     <th className="px-4 py-3 text-left">Usuario</th>
                     <th className="px-4 py-3 text-left">Rol</th>
@@ -1306,13 +1307,13 @@ function ClientStatsPanel({
                 <tbody className="divide-y divide-slate-200 dark:divide-white/10">
                   {data?.members.length ? (
                     data.members.map((member) => (
-                      <tr key={member.uid} className="hover:bg-slate-50 dark:hover:bg-black">
+                      <tr key={member.uid} className="hover:bg-muted/30">
                         <td className="px-4 py-3">
                           <div className="font-semibold">{member.displayName || member.email}</div>
                           <div className="text-xs text-muted-foreground">{member.email}</div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold capitalize bg-card">
+                          <span className="rounded-full bg-muted px-2 py-1 text-xs font-semibold capitalize text-muted-foreground">
                             {member.role === 'cliente' ? 'Cliente' : member.orgRole === 'administrador' ? 'Delegado admin' : 'Colaborador'}
                           </span>
                         </td>
@@ -1347,7 +1348,7 @@ function ClientStatsPanel({
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[620px] text-sm">
-                  <thead className="bg-slate-100 text-slate-950 bg-card dark:text-zinc-100">
+                  <thead className={TABLE_HEAD}>
                     <tr>
                       <th className="px-4 py-3 text-left">Modulo</th>
                       <th className="px-4 py-3 text-right">Procesos</th>
@@ -1383,7 +1384,7 @@ function ClientStatsPanel({
               </div>
             </section>
 
-            <section className="rounded-lg border border-slate-200 bg-slate-50 p-4 border-border bg-background">
+            <section className="rounded-lg border border-border bg-muted/40 p-4">
               <h3 className="font-bold">Procesos recientes</h3>
               <div className="mt-3 space-y-3">
                 {data?.recent.length ? (
@@ -1423,7 +1424,7 @@ function StatsMetricCard({
   value: number | string;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 border-border bg-background">
+    <div className="rounded-lg border border-border bg-muted/40 p-4">
       <Icon className="mb-3 size-5 text-primary text-primary" />
       <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
       <p className="mt-1 text-2xl font-extrabold">{value}</p>

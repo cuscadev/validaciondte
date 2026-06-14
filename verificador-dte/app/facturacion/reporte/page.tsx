@@ -231,7 +231,7 @@ export default function FacturacionReportePage() {
 
             <div className="overflow-x-auto rounded-lg border border-border">
               <table className="w-full min-w-[980px] text-sm">
-                <thead className="border-b bg-slate-50 text-left text-xs uppercase tracking-[0.14em] text-muted-foreground border-border bg-background">
+                <thead className="border-b border-border bg-muted/40 text-left text-xs uppercase tracking-[0.14em] text-muted-foreground">
                   <tr>
                     <th className="px-3 py-3">Fecha</th>
                     <th className="px-3 py-3">Tipo</th>

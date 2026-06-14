@@ -221,7 +221,7 @@ export default function PlanesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-950 bg-background text-foreground">
+    <main className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex w-full max-w-[92rem] flex-col gap-4 p-0">
         <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
           <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
@@ -239,17 +239,17 @@ export default function PlanesPage() {
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[34rem]">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 border-border bg-background">
+              <div className="rounded-lg border border-border bg-muted/40 p-4">
                 <Eye className="mb-3 size-5 text-primary text-primary" />
                 <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Landing</p>
                 <p className="mt-1 text-sm font-bold">{summary.visible} visibles</p>
               </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 border-border bg-background">
+              <div className="rounded-lg border border-border bg-muted/40 p-4">
                 <Infinity className="mb-3 size-5 text-primary text-primary" />
                 <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Ilimitados</p>
                 <p className="mt-1 text-sm font-bold">{summary.unlimited} planes</p>
               </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 border-border bg-background">
+              <div className="rounded-lg border border-border bg-muted/40 p-4">
                 <BadgeCheck className="mb-3 size-5 text-primary text-primary" />
                 <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Accesos</p>
                 <p className="mt-1 text-sm font-bold">{summary.routes} activos</p>
@@ -274,7 +274,7 @@ export default function PlanesPage() {
                     : 'border-border',
                 ].join(' ')}
               >
-                <header className="border-b border-slate-200 bg-slate-50 p-5 border-border bg-background">
+                <header className="border-b border-border bg-muted/50 p-5">
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <div className="flex items-center gap-2">
@@ -303,7 +303,7 @@ export default function PlanesPage() {
                       <select
                         value={cfg.currency}
                         onChange={e => update(plan.id, 'currency', e.target.value)}
-                        className="border-r border-slate-200 bg-slate-100 px-2 py-2 text-sm outline-none border-border bg-background"
+                        className="border-r border-border bg-muted/50 px-2 py-2 text-sm outline-none"
                       >
                         <option>USD</option>
                         <option>EUR</option>
@@ -327,7 +327,7 @@ export default function PlanesPage() {
                     <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                       Ciclo de facturacion
                     </p>
-                    <div className="grid grid-cols-3 overflow-hidden rounded-md border border-slate-200 text-sm border-border">
+                    <div className="grid grid-cols-3 overflow-hidden rounded-md border border-border text-sm">
                       {(['mensual', 'anual', 'personalizado'] as BillingCycle[]).map(cycle => (
                         <button
                           key={cycle}
@@ -336,7 +336,7 @@ export default function PlanesPage() {
                           className={`px-2 py-2 transition ${
                             cfg.billingCycle === cycle
                               ? 'bg-primary font-bold text-black'
-                              : 'text-slate-600 hover:bg-slate-50 text-muted-foreground dark:hover:bg-black'
+                              : 'text-muted-foreground hover:bg-muted/50'
                           }`}
                         >
                           {cycleLabel(cycle)}
@@ -394,7 +394,7 @@ export default function PlanesPage() {
                                   className={`flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 text-sm transition ${
                                     checked
                                       ? 'border-primary bg-primary/10 text-foreground'
-                                      : 'border-slate-200 text-slate-600 hover:bg-slate-50 border-border text-muted-foreground dark:hover:bg-black'
+                                      : 'border-border text-muted-foreground hover:bg-muted/50'
                                   }`}
                                 >
                                   <input
@@ -486,7 +486,7 @@ export default function PlanesPage() {
                     </p>
                   </section>
 
-                  <section className="mt-auto flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 border-border bg-background">
+                  <section className="mt-auto flex items-center justify-between rounded-lg border border-border bg-muted/40 px-4 py-3">
                     <div>
                       <p className="flex items-center gap-2 text-sm font-semibold">
                         {cfg.visibleInLanding ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
@@ -502,7 +502,7 @@ export default function PlanesPage() {
                   </section>
                 </div>
 
-                <footer className="border-t border-slate-200 p-5 border-border">
+                <footer className="border-t border-border p-5">
                   <Button
                     onClick={() => handleSave(plan.id)}
                     disabled={isSaving}
