@@ -283,7 +283,9 @@ function ProtectedAppShellContent({ children }: { children: React.ReactNode }) {
                   <Menu className="w-4 h-4" />
                 )}
               </button>
-              <AppBreadcrumb />
+              <div className="hidden min-w-0 flex-1 md:block">
+                <AppBreadcrumb />
+              </div>
               <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
                 <div className="hidden sm:block">
                   <LanguageSwitcher />
