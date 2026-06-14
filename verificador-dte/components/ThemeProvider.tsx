@@ -1,9 +1,19 @@
 'use client'
 
 import { ThemeProvider as NextThemesProvider } from 'next-themes'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useTheme } from 'next-themes'
 import { cn } from '@/lib/utils'
+
+function useMountedThemeScope(isDarkWhenResolved: boolean) {
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  return mounted ? isDarkWhenResolved : false
+}
 
 export function ThemeProvider({
   children,
@@ -42,10 +52,13 @@ export function PublicThemeScope({
   className?: string
 }) {
   const { resolvedTheme } = useTheme()
-  const isDark = resolvedTheme === 'dark'
+  const isDark = useMountedThemeScope(resolvedTheme === 'dark')
 
   return (
-    <div className={cn('private-app min-h-full w-full', isDark && 'dark', className)}>
+    <div
+      suppressHydrationWarning
+      className={cn('private-app min-h-full w-full', isDark && 'dark', className)}
+    >
       {children}
     </div>
   )
@@ -76,14 +89,17 @@ export function PrivateThemeScope({
   className?: string
 }) {
   const { resolvedTheme } = useTheme()
-  const isDark = resolvedTheme === 'dark'
+  const isDark = useMountedThemeScope(resolvedTheme === 'dark')
 
   useEffect(() => {
     document.documentElement.classList.remove('dark')
   }, [resolvedTheme])
 
   return (
-    <div className={cn('private-app min-h-full w-full', isDark && 'dark', className)}>
+    <div
+      suppressHydrationWarning
+      className={cn('private-app min-h-full w-full', isDark && 'dark', className)}
+    >
       {children}
     </div>
   )
