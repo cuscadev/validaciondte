@@ -343,8 +343,6 @@ function SidebarSectionPanel({
   );
 }
 
-const SHORTCUT_OVERFLOW_COUNT = 8;
-
 function SidebarShortcutBar({
   items,
   pathname,
@@ -367,9 +365,6 @@ function SidebarShortcutBar({
   t: (key: string) => string;
 }) {
   if (items.length === 0) return null;
-
-  const railItems = items.slice(0, SHORTCUT_OVERFLOW_COUNT);
-  const overflowItems = items.slice(SHORTCUT_OVERFLOW_COUNT);
 
   const renderShortcut = (item: Item) => {
     const { href, label, icon: Icon, children } = item;
@@ -465,45 +460,8 @@ function SidebarShortcutBar({
           collapsed ? 'items-start' : 'items-center',
         )}
       >
-        {railItems.map(renderShortcut)}
+        {items.map(renderShortcut)}
       </div>
-
-      {overflowItems.length > 0 ? (
-        <div className={cn('shrink-0 pt-1', collapsed ? 'self-start' : 'self-center')}>
-          <DropdownMenu modal={false}>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className={cn(
-                  collapsed ? collapsedItemClass(false) : 'inline-flex size-9 items-center justify-center rounded-lg text-sidebar-foreground/70 transition hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                )}
-                aria-label="Más secciones"
-              >
-                <ChevronDown className="size-4" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent side="right" align="start" sideOffset={8} className="min-w-48">
-              <DropdownMenuLabel className="text-xs uppercase tracking-wide text-muted-foreground">
-                Más secciones
-              </DropdownMenuLabel>
-              {overflowItems.map((item) => {
-                const { href, label, icon: Icon } = item;
-                const active = selectedHref === href;
-                return (
-                  <DropdownMenuItem
-                    key={href}
-                    onClick={() => onSelectSection(href)}
-                    className={active ? 'bg-sidebar-accent text-primary' : undefined}
-                  >
-                    <Icon className="size-4" />
-                    {t(label)}
-                  </DropdownMenuItem>
-                );
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      ) : null}
     </div>
   );
 
@@ -511,36 +469,7 @@ function SidebarShortcutBar({
     return (
       <CollapsedNavRail>
         <div className="flex w-full flex-col items-start gap-1.5">
-          {railItems.map(renderShortcut)}
-          {overflowItems.length > 0 ? (
-            <div className={collapsedItemWrap}>
-              <DropdownMenu modal={false}>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    className={collapsedItemClass(false)}
-                    aria-label="Más secciones"
-                  >
-                    <ChevronDown className="size-4" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent side="right" align="start" sideOffset={8} className="min-w-48">
-                  <DropdownMenuLabel className="text-xs uppercase tracking-wide text-muted-foreground">
-                    Más secciones
-                  </DropdownMenuLabel>
-                  {overflowItems.map((item) => {
-                    const { href, label, icon: Icon } = item;
-                    return (
-                      <DropdownMenuItem key={href} onClick={() => onSelectSection(href)}>
-                        <Icon className="size-4" />
-                        {t(label)}
-                      </DropdownMenuItem>
-                    );
-                  })}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          ) : null}
+          {items.map(renderShortcut)}
         </div>
       </CollapsedNavRail>
     );
