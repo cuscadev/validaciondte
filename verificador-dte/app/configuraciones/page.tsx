@@ -15,6 +15,7 @@ import { Label } from '../../components/ui/label';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
 import { useTranslation } from 'react-i18next';
+import { CertificateSettingsCard } from '@/components/configuraciones/CertificateSettingsCard';
 
 interface SmtpForm {
   host: string;
@@ -295,7 +296,9 @@ export default function ConfiguracionesPage() {
           </div>
           <Switch id="notif" checked={notif} onCheckedChange={setNotif} />
         </CardContent>
-      </Card>    
+      </Card>
+
+      {appUser && <CertificateSettingsCard />}
 
       {canShowHaciendaCard && (
       <Card>
