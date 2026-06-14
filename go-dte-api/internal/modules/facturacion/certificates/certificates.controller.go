@@ -1,6 +1,7 @@
 package certificates
 
 import (
+	"io"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
@@ -27,9 +28,12 @@ func (ct *Controller) Upload(c *fiber.Ctx) error {
 	}
 	defer opened.Close()
 
-	data := make([]byte, file.Size)
-	if _, err := opened.Read(data); err != nil {
+	data, err := io.ReadAll(opened)
+	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	if len(data) == 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "certificado vacio")
 	}
 
 	req := dto.UploadRequest{

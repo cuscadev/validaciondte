@@ -118,8 +118,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const fileBytes = Buffer.from(await file.arrayBuffer());
+    if (fileBytes.length === 0) {
+      return NextResponse.json(
+        { error: 'El archivo del certificado esta vacio o no se pudo leer.' },
+        { status: 400 }
+      );
+    }
+
     const goForm = new FormData();
-    goForm.append('file', file, file.name);
+    goForm.append(
+      'file',
+      new Blob([fileBytes], { type: file.type || 'application/octet-stream' }),
+      file.name
+    );
     goForm.append('nit', emitter.nit);
     goForm.append('passwordPri', passwordPri);
     goForm.append('emisorId', String(emitter.id));
