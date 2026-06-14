@@ -27,7 +27,7 @@ type Props = {
   onPageSizeChange: (size: number) => void;
   selectedIds: Set<string>;
   onToggleSelect: (id: string) => void;
-  onToggleAll: () => void;
+  onToggleAll: (checked: boolean) => void;
   sortBy: EmailDocumentSortBy;
   sortDir: EmailDocumentSortDir;
   onSort: (column: EmailDocumentSortBy) => void;
