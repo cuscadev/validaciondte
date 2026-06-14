@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const defaultListenHost = "0.0.0.0"
@@ -39,6 +40,13 @@ type Config struct {
 	HaciendaConsultaDteLoteTest string
 	HaciendaConsultaDteLoteProd string
 	SupabaseDBURL               string
+	SupabaseURL                 string
+	SupabaseServiceRoleKey      string
+	SupabaseCertificatesBucket  string
+	HaciendaAuthURLTest         string
+	HaciendaAuthURLProd         string
+	HaciendaCredentialsEncryptionKey string
+	CertificateCacheTTLSeconds  int
 	InternalAPIKey              string
 }
 
@@ -88,8 +96,22 @@ func Load() Config {
 		HaciendaConsultaDteLoteTest: getenv("HACIENDA_CONSULTA_DTE_LOTE_URL_TEST", "https://apitest.dtes.mh.gob.sv/fesv/recepcion/consultadtelote"),
 		HaciendaConsultaDteLoteProd: getenv("HACIENDA_CONSULTA_DTE_LOTE_URL_PROD", "https://api.dtes.mh.gob.sv/fesv/recepcion/consultadtelote"),
 		SupabaseDBURL:               supabaseDBURL,
+		SupabaseURL:                 getenv("SUPABASE_URL", ""),
+		SupabaseServiceRoleKey:      getenv("SUPABASE_SERVICE_ROLE_KEY", ""),
+		SupabaseCertificatesBucket:  getenv("SUPABASE_CERTIFICATES_BUCKET", "certificates"),
+		HaciendaAuthURLTest:         getenv("HACIENDA_AUTH_URL_TEST", "https://apitest.dtes.mh.gob.sv/seguridad/auth"),
+		HaciendaAuthURLProd:         getenv("HACIENDA_AUTH_URL_PROD", "https://api.dtes.mh.gob.sv/seguridad/auth"),
+		HaciendaCredentialsEncryptionKey: getenv("HACIENDA_CREDENTIALS_ENCRYPTION_KEY", ""),
+		CertificateCacheTTLSeconds:  getenvInt("HACIENDA_CERTIFICATE_CACHE_TTL", 3600),
 		InternalAPIKey:              getenv("GO_DTE_INTERNAL_API_KEY", ""),
 	}
+}
+
+func (c Config) CertificateCacheTTL() time.Duration {
+	if c.CertificateCacheTTLSeconds <= 0 {
+		return time.Hour
+	}
+	return time.Duration(c.CertificateCacheTTLSeconds) * time.Second
 }
 
 func (c Config) Addr() string {

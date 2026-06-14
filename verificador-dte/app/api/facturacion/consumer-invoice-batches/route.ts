@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'node:crypto';
 import { adminDb } from '@/lib/firebase-admin';
+import { resolveEmitterForDte } from '@/lib/facturacion/build-emisor';
 import { getGoDteApiUrl } from '@/lib/go-dte-api';
 import { getHaciendaTokenForUser } from '@/lib/hacienda-auth';
 import { resolveCertificatePassword } from '@/lib/facturacion/certificate-credentials';
@@ -231,92 +232,6 @@ async function getReceptor(emisorId: number, receptorId: number) {
   return result.rows[0] ?? null;
 }
 
-async function resolveDistrito(row: Record<string, unknown>) {
-  const departamento = getString(row.departamento_codigo);
-  const rawMunicipio = lastTwoDigits(row.municipio_codigo);
-  const rawDistrito = lastTwoDigits(row.distrito_codigo);
-  const pool = getPostgresPool();
-  const municipio = await pool.query<{ id: number }>(
-    `
-      SELECT id
-      FROM cat_006_municipios
-      WHERE codigo = $1
-        AND departamento_codigo = $2
-        AND COALESCE(activo, TRUE) = TRUE
-      LIMIT 1
-    `,
-    [rawMunicipio, departamento]
-  );
-
-  let municipioId: number | undefined = municipio.rows[0]?.id;
-  if (!municipioId) {
-    const candidates = await pool.query<{ id: number; nombre: string }>(
-      `
-        SELECT id, nombre
-        FROM cat_006_municipios
-        WHERE departamento_codigo = $1
-          AND COALESCE(activo, TRUE) = TRUE
-      `,
-      [departamento]
-    );
-    municipioId = candidates.rows.find((candidate) =>
-      normalizeText(row.complemento_direccion).includes(normalizeText(candidate.nombre))
-    )?.id;
-  }
-
-  if (!municipioId) return rawDistrito;
-
-  const valid = await pool.query<{ codigo: string }>(
-    `
-      SELECT codigo
-      FROM cat_008_distritos
-      WHERE municipio_id = $1
-        AND departamento_codigo = $2
-        AND codigo = $3
-        AND COALESCE(activo, TRUE) = TRUE
-      LIMIT 1
-    `,
-    [municipioId, departamento, rawDistrito]
-  );
-  if (valid.rows[0]) return valid.rows[0].codigo;
-
-  const fallback = await pool.query<{ codigo: string }>(
-    `
-      SELECT codigo
-      FROM cat_008_distritos
-      WHERE municipio_id = $1
-        AND departamento_codigo = $2
-        AND COALESCE(activo, TRUE) = TRUE
-      ORDER BY codigo
-      LIMIT 1
-    `,
-    [municipioId, departamento]
-  );
-  return fallback.rows[0]?.codigo || rawDistrito;
-}
-
-async function buildEmitter(row: Record<string, unknown>) {
-  return {
-    nit: cleanDigits(row.nit),
-    nrc: normalizeNrc(row.nrc, true),
-    nombre: getString(row.nombre),
-    codActividad: getString(row.codigo_actividad),
-    descActividad: getString(row.descripcion_actividad).trim() || getString(row.actividad_nombre).trim(),
-    nombreComercial: nullableString(row.nombre_comercial),
-    tipoEstablecimiento: getString(row.tipo_establecimiento_codigo) || '01',
-    direccion: {
-      departamento: getString(row.departamento_codigo),
-      municipio: municipioDteCode(getString(row.departamento_codigo), getString(row.municipio_codigo)),
-      distrito: await resolveDistrito(row),
-      complemento: getString(row.complemento_direccion),
-    },
-    telefono: getString(row.telefono),
-    correo: getString(row.correo),
-    codEstable: null,
-    codPuntoVenta: null,
-  };
-}
-
 function buildReceptor(row: Record<string, unknown>) {
   return {
     tipoDocumento: nullableString(row.tipo_documento_codigo),
@@ -439,7 +354,7 @@ export async function POST(req: NextRequest) {
     }
 
     const items = validateItems(body.items || []);
-    const emisor = await buildEmitter(emitter);
+    const { emisor } = await resolveEmitterForDte(emitter);
     if (!emisor.codActividad || !emisor.descActividad) {
       return NextResponse.json(
         { error: 'Configura el codigo y descripcion de actividad economica del emisor antes de facturar.' },

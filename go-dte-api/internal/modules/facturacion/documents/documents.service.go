@@ -550,6 +550,12 @@ func validateEmisor(emisor dto.EmisorInput) error {
 	if strings.TrimSpace(emisor.Direccion.Complemento) == "" {
 		return errors.New("emisor.direccion.complemento es requerido")
 	}
+	if strings.TrimSpace(emisor.Direccion.Departamento) == "" {
+		return errors.New("emisor.direccion.departamento es requerido")
+	}
+	if strings.TrimSpace(emisor.Direccion.Municipio) == "" {
+		return errors.New("emisor.direccion.municipio es requerido")
+	}
 	if strings.TrimSpace(emisor.Telefono) == "" {
 		return errors.New("emisor.telefono es requerido")
 	}
@@ -1300,4 +1306,62 @@ func round2(value float64) float64 {
 
 func round8(value float64) float64 {
 	return math.Round(value*100000000) / 100000000
+}
+
+func (s *Service) CreateExtendedTaxDocument(req dto.CreateTaxCreditInvoiceRequest, tipoDte string) (dto.CreateTaxCreditInvoiceResponse, error) {
+	if err := validateTaxCreditInvoiceRequest(req); err != nil {
+		return dto.CreateTaxCreditInvoiceResponse{}, err
+	}
+	spec, err := s.catalogs.GetDocumentSpec(tipoDte)
+	if err != nil {
+		return dto.CreateTaxCreditInvoiceResponse{}, err
+	}
+
+	now := time.Now()
+	fecEmi := firstNonEmpty(req.FecEmi, now.Format("2006-01-02"))
+	horEmi := firstNonEmpty(req.HorEmi, now.Format("15:04:05"))
+	ambiente := firstNonEmpty(req.Ambiente, ambienteTest)
+	codigoGeneracion := strings.ToUpper(firstNonEmpty(req.CodigoGeneracion, uuid.NewString()))
+	numeroControl := firstNonEmpty(req.NumeroControl, buildNumeroControlByTipo(tipoDte, req.EstablecimientoTipo, req.Establecimiento, req.PuntoVenta, req.Correlativo))
+
+	cuerpo, resumen := buildCreditoFiscalItemsAndResumen(req.Items, req.IVAPerci, req.IVARete)
+	resumen.Pagos = normalizePagos(req.Pagos, resumen.TotalPagar)
+	resumen.Observaciones = req.Observaciones
+	resumen.TotalLetras = totalEnLetras(resumen.TotalPagar)
+
+	dte := domain.ComprobanteCreditoFiscal{
+		Identificacion: domain.Identificacion{
+			Version:          spec.Version,
+			Ambiente:         ambiente,
+			TipoDTE:          tipoDte,
+			NumeroControl:    numeroControl,
+			CodigoGeneracion: codigoGeneracion,
+			TipoModelo:       defaultInt(req.TipoModelo, modeloPrevio),
+			TipoOperacion:    defaultInt(req.TipoOperacion, operacionNormal),
+			TipoContingencia: nil,
+			MotivoContin:     nil,
+			FecEmi:           fecEmi,
+			HorEmi:           horEmi,
+			TipoMoneda:       monedaUSD,
+		},
+		Emisor:          mapEmisor(req.Emisor),
+		Receptor:        mapTaxCreditReceptor(req.Receptor),
+		CuerpoDocumento: cuerpo,
+		Resumen:         resumen,
+		Apendice:        mapApendice(req.Apendice),
+	}
+
+	raw, err := json.Marshal(dte)
+	if err != nil {
+		return dto.CreateTaxCreditInvoiceResponse{}, err
+	}
+
+	return dto.CreateTaxCreditInvoiceResponse{
+		Success:          true,
+		TipoDTE:          tipoDte,
+		CodigoGeneracion: codigoGeneracion,
+		NumeroControl:    numeroControl,
+		TotalPagar:       resumen.TotalPagar,
+		DTEJSON:          raw,
+	}, nil
 }

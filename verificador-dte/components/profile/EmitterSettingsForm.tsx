@@ -92,8 +92,8 @@ const emptyCatalogs: ProfileCatalogs = {
 };
 
 const environmentOptions: SearchableSelectOption[] = [
-  { value: '00', label: '00 - Pruebas' },
-  { value: '01', label: '01 - Produccion' },
+  { value: '00', label: '00 - Produccion' },
+  { value: '01', label: '01 - Pruebas' },
 ];
 
 function emitterToForm(data: Partial<EmitterForm>): EmitterForm {
@@ -423,9 +423,12 @@ export function EmitterSettingsForm({
             id="emitter-distrito"
             name="distritoCodigo"
             value={form.distritoCodigo}
+            disabled={!form.municipioCodigo}
             options={options.distritos}
             onValueChange={(value) => setField('distritoCodigo', value)}
-            placeholder="Seleccionar distrito"
+            placeholder={
+              form.municipioCodigo ? 'Seleccionar distrito' : 'Selecciona municipio primero'
+            }
             searchPlaceholder="Buscar distrito"
             clearable
           />

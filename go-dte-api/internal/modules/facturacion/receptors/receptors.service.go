@@ -125,6 +125,37 @@ func (s *Service) buildByKind(kind string, input dto.BuildReceptorRequest) (any,
 			Telefono:      input.Telefono,
 			Correo:        input.Correo,
 		}, nil
+	case catalogs.ReceptorExportacion:
+		nombre := strings.TrimSpace(ptrString(input.Nombre))
+		codPais := strings.TrimSpace(ptrString(input.CodPais))
+		nombrePais := strings.TrimSpace(ptrString(input.NombrePais))
+		complemento := strings.TrimSpace(ptrString(input.ComplementoExt))
+		if complemento == "" && input.Direccion != nil {
+			complemento = strings.TrimSpace(input.Direccion.Complemento)
+		}
+		if nombre == "" {
+			return nil, errors.New("nombre es requerido para exportacion")
+		}
+		if codPais == "" || nombrePais == "" || complemento == "" {
+			return nil, errors.New("codPais, nombrePais y complemento son requeridos para exportacion")
+		}
+		tipoPersona := 2
+		if input.TipoPersona != nil {
+			tipoPersona = *input.TipoPersona
+		}
+		return domain.ReceptorExportacion{
+			TipoDocumento:   input.TipoDocumento,
+			NumDocumento:    input.NumDocumento,
+			TipoPersona:     tipoPersona,
+			Nombre:          nombre,
+			NombreComercial: input.NombreComercial,
+			CodPais:         codPais,
+			NombrePais:      nombrePais,
+			Complemento:     complemento,
+			DescActividad:   input.DescActividad,
+			Telefono:        input.Telefono,
+			Correo:          input.Correo,
+		}, nil
 	default:
 		return nil, fmt.Errorf("tipo de receptor no soportado: %s", kind)
 	}

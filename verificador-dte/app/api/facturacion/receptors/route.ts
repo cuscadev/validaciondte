@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { getPostgresPool } from '@/lib/postgres';
+import {
+  LocationValidationError,
+  resolveLocation,
+} from '@/lib/facturacion/resolve-location';
 
 export const runtime = 'nodejs';
 
@@ -37,7 +41,33 @@ function clean(value: unknown) {
 
 function cleanLastTwoDigits(value: unknown) {
   const trimmed = clean(value);
-  return trimmed && trimmed.length > 2 ? trimmed.slice(-2) : trimmed;
+  return trimmed && trimmed.length > 2 ? trimmed.slice(-2).padStart(2, '0') : trimmed;
+}
+
+async function resolveReceptorLocation(body: ReceptorInput) {
+  if (!body.departamentoCodigo && !body.municipioCodigo) {
+    return {
+      departamentoCodigo: null as string | null,
+      municipioCodigo: null as string | null,
+      distritoCodigo: null as string | null,
+    };
+  }
+
+  const location = await resolveLocation(
+    getPostgresPool(),
+    {
+      departamentoCodigo: body.departamentoCodigo,
+      municipioCodigo: body.municipioCodigo,
+      distritoCodigo: body.distritoCodigo,
+    },
+    { requireDistrito: Boolean(body.distritoCodigo) }
+  );
+
+  return {
+    departamentoCodigo: location?.departamentoCodigo ?? null,
+    municipioCodigo: location?.municipioCodigo ?? null,
+    distritoCodigo: location?.distritoCodigo ?? null,
+  };
 }
 
 function required(value: unknown) {
@@ -199,8 +229,6 @@ export async function POST(req: NextRequest) {
     const tipoDocumento = required(body.tipoDocumentoCodigo);
     const numeroDocumento = required(body.numeroDocumento);
     const nombre = required(body.nombre);
-    const municipioCodigo = cleanLastTwoDigits(body.municipioCodigo);
-    const distritoCodigo = cleanLastTwoDigits(body.distritoCodigo);
 
     if (!tipoDocumento || !numeroDocumento || !nombre) {
       return NextResponse.json(
@@ -208,6 +236,19 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    let location: Awaited<ReturnType<typeof resolveReceptorLocation>>;
+    try {
+      location = await resolveReceptorLocation(body);
+    } catch (error) {
+      if (error instanceof LocationValidationError) {
+        return NextResponse.json({ error: error.message }, { status: error.status });
+      }
+      throw error;
+    }
+
+    const municipioCodigo = location.municipioCodigo;
+    const distritoCodigo = location.distritoCodigo;
 
     const datosCompletados = Boolean(
       body.datosCompletados ??
@@ -252,7 +293,7 @@ export async function POST(req: NextRequest) {
           clean(body.razonSocial),
           clean(body.telefono),
           clean(body.correo),
-          clean(body.departamentoCodigo),
+          location.departamentoCodigo,
           municipioCodigo,
           distritoCodigo,
           clean(body.complementoDireccion),

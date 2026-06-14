@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createEmision, mergeEmision } from '@/lib/facturacion/emisiones-store';
+import { resolveEmitterForDte } from '@/lib/facturacion/build-emisor';
 import { getGoDteApiUrl } from '@/lib/go-dte-api';
 import { getHaciendaTokenForUser } from '@/lib/hacienda-auth';
 import { resolveCertificatePassword } from '@/lib/facturacion/certificate-credentials';
@@ -23,12 +24,6 @@ type InvoiceItem = {
   ventaGravada?: number;
   noGravado?: number;
   tipoItem?: number;
-};
-
-type ResolvedLocation = {
-  departamento: string;
-  municipio: string;
-  distrito: string;
 };
 
 type ProcessTiming = {
@@ -75,114 +70,6 @@ function nullableString(value: unknown) {
 
 function cleanDigits(value: unknown) {
   return String(value || '').replace(/\D/g, '');
-}
-
-function lastTwoDigits(value: unknown) {
-  const digits = cleanDigits(value);
-  if (!digits) return '';
-  return digits.slice(-2).padStart(2, '0');
-}
-
-function normalizeText(value: unknown) {
-  return String(value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toUpperCase()
-    .trim();
-}
-
-function normalizeMunicipioCodigo(value: unknown) {
-  return lastTwoDigits(value);
-}
-
-function municipioDteCode(departamento: string, municipio: string) {
-  const muniDigits = cleanDigits(municipio);
-  if (!muniDigits) return '';
-  return muniDigits.slice(-2).padStart(2, '0');
-}
-
-async function resolveEmitterLocation(row: Record<string, unknown>): Promise<ResolvedLocation> {
-  const departamento = getString(row.departamento_codigo);
-  const rawMunicipio = normalizeMunicipioCodigo(
-    row.municipio_codigo
-  );
-  const complemento = normalizeText(row.complemento_direccion);
-  const pool = getPostgresPool();
-
-  let resolvedMunicipio: { id: number; codigo: string; nombre: string } | undefined;
-  const municipio = await pool.query<{ id: number; codigo: string; nombre: string }>(
-    `
-      SELECT id, codigo, nombre
-      FROM cat_006_municipios
-      WHERE codigo = $1
-        AND departamento_codigo = $2
-        AND COALESCE(activo, TRUE) = TRUE
-      LIMIT 1
-    `,
-    [rawMunicipio, departamento]
-  );
-  resolvedMunicipio = municipio.rows[0];
-
-  if (!resolvedMunicipio) {
-    const candidates = await pool.query<{ id: number; codigo: string; nombre: string }>(
-      `
-        SELECT id, codigo, nombre
-        FROM cat_006_municipios
-        WHERE departamento_codigo = $1
-          AND COALESCE(activo, TRUE) = TRUE
-        ORDER BY codigo
-      `,
-      [departamento]
-    );
-    const matched = candidates.rows.find((candidate) =>
-      complemento.includes(normalizeText(candidate.nombre))
-    );
-    if (matched) {
-      resolvedMunicipio = matched;
-    }
-  }
-
-  const rawDistrito = lastTwoDigits(row.distrito_codigo);
-  let distrito = '';
-
-  if (resolvedMunicipio) {
-    const validDistrito = await pool.query<{ codigo: string }>(
-      `
-        SELECT codigo
-        FROM cat_008_distritos
-        WHERE municipio_id = $1
-          AND departamento_codigo = $2
-          AND codigo = $3
-          AND COALESCE(activo, TRUE) = TRUE
-        LIMIT 1
-      `,
-      [resolvedMunicipio.id, departamento, rawDistrito]
-    );
-
-    if (validDistrito.rows[0]) {
-      distrito = validDistrito.rows[0].codigo;
-    } else {
-      const fallbackDistrito = await pool.query<{ codigo: string }>(
-        `
-          SELECT codigo
-          FROM cat_008_distritos
-          WHERE municipio_id = $1
-            AND departamento_codigo = $2
-            AND COALESCE(activo, TRUE) = TRUE
-          ORDER BY codigo
-          LIMIT 1
-        `,
-        [resolvedMunicipio.id, departamento]
-      );
-      distrito = fallbackDistrito.rows[0]?.codigo || '';
-    }
-  }
-
-  return {
-    departamento,
-    municipio: resolvedMunicipio ? municipioDteCode(departamento, resolvedMunicipio.codigo) : '',
-    distrito,
-  };
 }
 
 function normalizeNrc(value: unknown, required = false) {
@@ -298,28 +185,6 @@ async function getReceptor(emisorId: number, receptorId: number) {
   return result.rows[0] ?? null;
 }
 
-function buildEmitter(row: Record<string, unknown>, location: ResolvedLocation) {
-  return {
-    nit: cleanDigits(row.nit),
-    nrc: normalizeNrc(row.nrc, true),
-    nombre: getString(row.nombre),
-    codActividad: getString(row.codigo_actividad),
-    descActividad: getString(row.descripcion_actividad).trim() || getString(row.actividad_nombre).trim(),
-    nombreComercial: nullableString(row.nombre_comercial),
-    tipoEstablecimiento: getString(row.tipo_establecimiento_codigo) || '01',
-    direccion: {
-      departamento: location.departamento,
-      municipio: location.municipio,
-      distrito: location.distrito,
-      complemento: getString(row.complemento_direccion),
-    },
-    telefono: getString(row.telefono),
-    correo: getString(row.correo),
-    codEstable: null,
-    codPuntoVenta: null,
-  };
-}
-
 function buildReceptor(row: Record<string, unknown>) {
   return {
     tipoDocumento: nullableString(row.tipo_documento_codigo),
@@ -424,7 +289,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Por ahora solo se permite ambiente test.' }, { status: 400 });
     }
 
-    const emisor = buildEmitter(emitter, await resolveEmitterLocation(emitter));
+    const { emisor } = await resolveEmitterForDte(emitter);
     if (!emisor.codActividad || !emisor.descActividad) {
       return NextResponse.json(
         { error: 'Configura el codigo y descripcion de actividad economica del emisor antes de facturar.' },

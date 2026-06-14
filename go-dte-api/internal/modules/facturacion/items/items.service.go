@@ -72,6 +72,12 @@ func (s *Service) buildByKind(kind string, input dto.BuildItemsRequest) (any, fl
 		}
 		cuerpo, total := buildSujetoExcluidoItems(input.SujetoExcluidoItems)
 		return cuerpo, total, nil
+	case catalogs.ItemsExportacion:
+		if err := validateItems(input.Items); err != nil {
+			return nil, 0, err
+		}
+		cuerpo, total := buildExportItems(input.Items)
+		return cuerpo, total, nil
 	default:
 		return nil, 0, fmt.Errorf("tipo de items no soportado: %s", kind)
 	}
@@ -173,6 +179,30 @@ func buildNotaItems(items []dto.ItemInput, defaultRelatedDocument string, ivaPer
 		})
 	}
 	return cuerpo, round2(total + ivaPerci - ivaRete)
+}
+
+func buildExportItems(items []dto.ItemInput) ([]domain.CuerpoDocumentoExportacion, float64) {
+	cuerpo := make([]domain.CuerpoDocumentoExportacion, 0, len(items))
+	var total float64
+	for i, item := range items {
+		ventaGravada := round2(item.VentaGravada)
+		if ventaGravada == 0 {
+			ventaGravada = round2(item.Cantidad*item.PrecioUni - item.MontoDescu)
+		}
+		total += ventaGravada + round2(item.NoGravado)
+		cuerpo = append(cuerpo, domain.CuerpoDocumentoExportacion{
+			NumItem:      i + 1,
+			Cantidad:     round8(item.Cantidad),
+			Codigo:       item.Codigo,
+			UniMedida:    defaultInt(item.UniMedida, 59),
+			Descripcion:  item.Descripcion,
+			PrecioUni:    round8(item.PrecioUni),
+			MontoDescu:   round2(item.MontoDescu),
+			VentaGravada: ventaGravada,
+			NoGravado:    round2(item.NoGravado),
+		})
+	}
+	return cuerpo, round2(total)
 }
 
 func buildSujetoExcluidoItems(items []dto.ExcludedSubjectItemInput) ([]domain.CuerpoDocumentoSujetoExcluido, float64) {

@@ -13,6 +13,7 @@ import (
 	dtemodule "verificador-dte/go-dte-api/internal/modules/dte"
 	"verificador-dte/go-dte-api/internal/modules/dte/shared"
 	appusers "verificador-dte/go-dte-api/internal/modules/app_users"
+	emisores "verificador-dte/go-dte-api/internal/modules/emisores"
 	emaildocuments "verificador-dte/go-dte-api/internal/modules/email_documents"
 	facturacionmodule "verificador-dte/go-dte-api/internal/modules/facturacion"
 	haciendamodule "verificador-dte/go-dte-api/internal/modules/hacienda"
@@ -49,6 +50,7 @@ func New(cfg config.Config) *fiber.App {
 	haciendamodule.Register(app, cfg)
 	emaildocuments.Register(app, cfg)
 	appusers.Register(app, cfg)
+	emisores.Register(app, cfg)
 	facturacionmodule.Register(app, cfg)
 
 	return app

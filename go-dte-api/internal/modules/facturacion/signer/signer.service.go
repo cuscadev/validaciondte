@@ -2,6 +2,7 @@ package signer
 
 import (
 	"bytes"
+	"context"
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
@@ -10,7 +11,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
-	"encoding/xml"
 	"errors"
 	"fmt"
 	"os"
@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"verificador-dte/go-dte-api/internal/common/config"
+	certificates "verificador-dte/go-dte-api/internal/modules/facturacion/certificates"
 	"verificador-dte/go-dte-api/internal/modules/facturacion/signer/domain"
 	"verificador-dte/go-dte-api/internal/modules/facturacion/signer/dto"
 )
@@ -65,7 +66,6 @@ func (s *Service) Sign(req dto.SignRequest) (string, error) {
 	if cert.NIT != "" && cert.NIT != nit {
 		return "", fmt.Errorf("el certificado no corresponde al NIT solicitado. Esperado: %s, Encontrado: %s", nit, cert.NIT)
 	}
-	fmt.Printf("[DEBUG] Certificado activo: %v\n", cert.Activo)
 	if !cert.Activo {
 		return "", errors.New("el certificado no esta activo")
 	}
@@ -165,50 +165,35 @@ func (s *Service) SignBatch(req dto.SignBatchRequest) (dto.SignBatchResponse, er
 }
 
 func (s *Service) loadCertificate(nit string) (*domain.CertificateMH, error) {
-	fmt.Printf("[DEBUG] Buscando certificado para NIT: %s\n", nit)
-	fmt.Printf("[DEBUG] Directorios de búsqueda:\n")
-	for i, dir := range s.certificateDirs() {
-		fmt.Printf("[DEBUG]   %d: %s\n", i, dir)
+	if certService := certificates.SharedService(); certService != nil {
+		cert, err := certService.LoadCertificate(context.Background(), nit)
+		if err != nil {
+			return nil, err
+		}
+		if cert != nil {
+			return cert, nil
+		}
 	}
 
 	for _, dir := range s.certificateDirs() {
 		for _, name := range certificateFileNames(nit) {
 			path := filepath.Join(dir, name)
-			fmt.Printf("[DEBUG] Buscando: %s\n", path)
 			data, err := os.ReadFile(path)
 			if err != nil {
-				fmt.Printf("[DEBUG]   No encontrado: %v\n", err)
 				continue
 			}
-
-			fmt.Printf("[DEBUG] ✓ Archivo encontrado! Tamaño: %d bytes\n", len(data))
-
-			if len(data) == 0 {
-				fmt.Printf("[DEBUG] ⚠️  Advertencia: Archivo vacío!\n")
-				continue
+			cert, err := certificates.ParseCertificateXML(data)
+			if err != nil {
+				return nil, err
 			}
-
-			// Limpiar espacios en blanco y saltos de línea alrededor del contenido
-			cleanedData := bytes.TrimSpace(data)
-			fmt.Printf("[DEBUG] Primeros 200 chars del certificado:\n%s\n", string(cleanedData[:min(200, len(cleanedData))]))
-
-			var cert domain.CertificateMH
-			if err := xml.Unmarshal(cleanedData, &cert); err != nil {
-				fmt.Printf("[DEBUG]   Error al parsear XML: %v\n", err)
-				fmt.Printf("[DEBUG]   Contenido completo del archivo:\n%s\n", string(cleanedData))
-				return nil, fmt.Errorf("certificado XML invalido: %w", err)
+			if certService := certificates.SharedService(); certService != nil {
+				certService.Cache().Set(nit, cert)
 			}
-			fmt.Printf("[DEBUG] ✓ XML parseado correctamente\n")
-			fmt.Printf("[DEBUG]   NIT en certificado: %s\n", cert.NIT)
-			fmt.Printf("[DEBUG]   Activo: %v\n", cert.Activo)
-			if len(cert.PrivateKey.Clave) > 0 {
-				fmt.Printf("[DEBUG]   PrivateKey.Clave (primeros 20 chars): %s...\n", cert.PrivateKey.Clave[:min(20, len(cert.PrivateKey.Clave))])
-			}
-			return &cert, nil
+			return cert, nil
 		}
 	}
 
-	return nil, nil // Retorna nil sin error si no encuentra
+	return nil, nil
 }
 
 func min(a, b int) int {

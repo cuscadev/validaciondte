@@ -3,6 +3,10 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createEmision, getEmisionDataById, mergeEmision } from '@/lib/facturacion/emisiones-store';
+import {
+  resolveEmitterForDte,
+  resolveReceptorDteLocation,
+} from '@/lib/facturacion/build-emisor';
 import { getGoDteApiUrl } from '@/lib/go-dte-api';
 import { getHaciendaTokenForUser } from '@/lib/hacienda-auth';
 import { resolveCertificatePassword } from '@/lib/facturacion/certificate-credentials';
@@ -195,28 +199,6 @@ async function getReceptor(emisorId: number, receptorId: number) {
   return result.rows[0] ?? null;
 }
 
-function buildEmitter(row: Record<string, unknown>) {
-  return {
-    nit: cleanDigits(row.nit),
-    nrc: normalizeNrc(row.nrc, true),
-    nombre: getString(row.nombre),
-    codActividad: getString(row.codigo_actividad),
-    descActividad: getString(row.descripcion_actividad).trim() || getString(row.actividad_nombre).trim(),
-    nombreComercial: nullableString(row.nombre_comercial),
-    tipoEstablecimiento: getString(row.tipo_establecimiento_codigo) || '01',
-    direccion: {
-      departamento: getString(row.departamento_codigo),
-      municipio: municipioDteCode(getString(row.departamento_codigo), getString(row.municipio_codigo)),
-      distrito: lastTwoDigits(row.distrito_codigo),
-      complemento: getString(row.complemento_direccion),
-    },
-    telefono: getString(row.telefono),
-    correo: getString(row.correo),
-    codEstable: null,
-    codPuntoVenta: null,
-  };
-}
-
 function buildNoteReceptorFromDte(receptor: JsonRecord) {
   const nit = cleanDigits(receptor.nit || receptor.numDocumento);
   const direccion = asRecord(receptor.direccion);
@@ -239,8 +221,9 @@ function buildNoteReceptorFromDte(receptor: JsonRecord) {
   };
 }
 
-function buildNoteReceptorFromDb(row: Record<string, unknown>) {
+async function buildNoteReceptorFromDb(row: Record<string, unknown>) {
   const nit = cleanDigits(row.numero_documento);
+  const direccion = await resolveReceptorDteLocation(row);
   return {
     tipoDocumento: '36',
     numDocumento: nit,
@@ -250,9 +233,7 @@ function buildNoteReceptorFromDb(row: Record<string, unknown>) {
     descActividad: getString(row.actividad_nombre),
     nombreComercial: nullableString(row.nombre_comercial),
     direccion: {
-      departamento: getString(row.departamento_codigo),
-      municipio: municipioDteCode(getString(row.departamento_codigo), getString(row.municipio_codigo)),
-      distrito: lastTwoDigits(row.distrito_codigo),
+      ...direccion,
       complemento: getString(row.complemento_direccion),
     },
     telefono: nullableString(row.telefono),
@@ -348,7 +329,7 @@ export async function POST(req: NextRequest) {
     const environment = body.environment === 'production' ? 'production' : 'test';
     if (environment !== 'test') return NextResponse.json({ error: 'Por ahora solo se permite ambiente test.' }, { status: 400 });
 
-    const emisor = buildEmitter(emitter);
+    const { emisor } = await resolveEmitterForDte(emitter);
     if (!emisor.nit || !emisor.nrc || !emisor.nombre || !emisor.codActividad || !emisor.descActividad) {
       return NextResponse.json(
         { error: 'Completa NIT, NRC, nombre y actividad economica del emisor antes de emitir nota de debito.', stage },
@@ -379,7 +360,7 @@ export async function POST(req: NextRequest) {
     }
 
     stage = 'armar receptor';
-    const receptor = buildNoteReceptorFromDb(receptorRow);
+    const receptor = await buildNoteReceptorFromDb(receptorRow);
     const receptorRelacionado = buildNoteReceptorFromDte(asRecord(relatedDte.receptor));
     if (receptorRelacionado.numDocumento && receptorRelacionado.numDocumento !== receptor.numDocumento) {
       return NextResponse.json(

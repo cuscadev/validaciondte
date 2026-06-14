@@ -3,6 +3,10 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createEmision, mergeEmision } from '@/lib/facturacion/emisiones-store';
+import {
+  resolveEmitterForDte,
+  resolveReceptorDteLocation,
+} from '@/lib/facturacion/build-emisor';
 import { getGoDteApiUrl } from '@/lib/go-dte-api';
 import { getHaciendaTokenForUser } from '@/lib/hacienda-auth';
 import { resolveCertificatePassword } from '@/lib/facturacion/certificate-credentials';
@@ -173,27 +177,8 @@ async function getReceptor(emisorId: number, receptorId: number) {
   return result.rows[0] ?? null;
 }
 
-function buildEmitter(row: Record<string, unknown>) {
-  return {
-    nit: cleanDigits(row.nit),
-    nrc: normalizeNrc(row.nrc, true),
-    nombre: getString(row.nombre),
-    codActividad: getString(row.codigo_actividad),
-    descActividad: getString(row.descripcion_actividad).trim() || getString(row.actividad_nombre).trim(),
-    direccion: {
-      departamento: getString(row.departamento_codigo),
-      municipio: municipioDteCode(row.municipio_codigo),
-      distrito: lastTwoDigits(row.distrito_codigo),
-      complemento: getString(row.complemento_direccion),
-    },
-    telefono: getString(row.telefono),
-    correo: getString(row.correo),
-    codEstable: null,
-    codPuntoVenta: null,
-  };
-}
-
-function buildExcludedSubjectReceptor(row: Record<string, unknown>) {
+async function buildExcludedSubjectReceptor(row: Record<string, unknown>) {
+  const direccion = await resolveReceptorDteLocation(row);
   const receptor = {
     tipoDocumento: nullableString(row.tipo_documento_codigo) || inferTipoDocumento(row.numero_documento),
     numDocumento: cleanDigits(row.numero_documento),
@@ -201,9 +186,7 @@ function buildExcludedSubjectReceptor(row: Record<string, unknown>) {
     codActividad: nullableString(row.codigo_actividad),
     descActividad: nullableString(row.actividad_nombre),
     direccion: {
-      departamento: getString(row.departamento_codigo),
-      municipio: municipioDteCode(row.municipio_codigo),
-      distrito: lastTwoDigits(row.distrito_codigo),
+      ...direccion,
       complemento: getString(row.complemento_direccion),
     },
     telefono: nullableString(row.telefono),
@@ -298,7 +281,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Por ahora solo se permite ambiente test.' }, { status: 400 });
     }
 
-    const emisor = buildEmitter(emitter);
+    const { emisor } = await resolveEmitterForDte(emitter, { requireDistrito: true });
     if (!emisor.codActividad || !emisor.descActividad) {
       return NextResponse.json(
         { error: 'Configura el codigo y descripcion de actividad economica del emisor antes de emitir.' },
@@ -328,7 +311,7 @@ export async function POST(req: NextRequest) {
       establecimiento: '001',
       puntoVenta: '001',
       emisor,
-      receptor: buildExcludedSubjectReceptor(receptor),
+      receptor: await buildExcludedSubjectReceptor(receptor),
       items,
       pagos: [{ codigo: '01', montoPago: totalPagarEstimado }],
       reteRenta,

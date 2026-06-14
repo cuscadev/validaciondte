@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createEmision, mergeEmision } from '@/lib/facturacion/emisiones-store';
+import { resolveEmitterForDte } from '@/lib/facturacion/build-emisor';
 import { getGoDteApiUrl } from '@/lib/go-dte-api';
 import { getHaciendaTokenForUser } from '@/lib/hacienda-auth';
 import { resolveCertificatePassword } from '@/lib/facturacion/certificate-credentials';
@@ -155,28 +156,6 @@ async function getCurrentEmitter(uid: string, email: string) {
   return result.rows[0] ?? null;
 }
 
-function buildEmitter(row: Record<string, unknown>) {
-  return {
-    nit: cleanDigits(row.nit),
-    nrc: normalizeNrc(row.nrc, true),
-    nombre: getString(row.nombre),
-    codActividad: getString(row.codigo_actividad),
-    descActividad: getString(row.descripcion_actividad).trim() || getString(row.actividad_nombre).trim(),
-    nombreComercial: nullableString(row.nombre_comercial),
-    tipoEstablecimiento: getString(row.tipo_establecimiento_codigo) || '01',
-    direccion: {
-      departamento: getString(row.departamento_codigo),
-      municipio: municipioDteCode(getString(row.departamento_codigo), getString(row.municipio_codigo)),
-      distrito: lastTwoDigits(row.distrito_codigo),
-      complemento: getString(row.complemento_direccion),
-    },
-    telefono: getString(row.telefono),
-    correo: getString(row.correo),
-    codEstable: null,
-    codPuntoVenta: null,
-  };
-}
-
 function buildExportReceptor(input: JsonRecord) {
   const nombre = getString(input.nombre).trim();
   const codPais = getString(input.codPais).trim().toUpperCase();
@@ -279,7 +258,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Por ahora solo se permite ambiente test.' }, { status: 400 });
     }
 
-    const emisor = buildEmitter(emitter);
+    const { emisor } = await resolveEmitterForDte(emitter);
     const receptorExportacion = buildExportReceptor(asRecord(body.receptor));
     if (!emisor.codActividad || !emisor.descActividad) {
       return NextResponse.json(

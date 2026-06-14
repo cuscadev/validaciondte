@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import {
+  LocationValidationError,
+  resolveLocation,
+} from '@/lib/facturacion/resolve-location';
 import { getPostgresPool } from '@/lib/postgres';
 
 export const runtime = 'nodejs';
@@ -53,6 +57,68 @@ function cleanLastTwoDigits(value: unknown) {
   const digits = value.replace(/\D/g, '');
   if (!digits) return null;
   return digits.slice(-2).padStart(2, '0');
+}
+
+async function upsertEmisorConfiguracion(
+  emisorId: number,
+  body: EmitterInput
+) {
+  const pool = getPostgresPool();
+  const hasConfig =
+    body.metodoPagoDefecto !== undefined ||
+    body.formaPagoDefecto !== undefined ||
+    body.plazoCredito !== undefined ||
+    body.tipoVentaDefecto !== undefined ||
+    body.monedaDefecto !== undefined ||
+    body.tasaIva !== undefined ||
+    body.generadorCodigo !== undefined ||
+    body.prefijoCorrelativo !== undefined ||
+    body.tipoRetencionDefecto !== undefined;
+
+  if (!hasConfig) return;
+
+  await pool.query(
+    `
+      INSERT INTO emisor_configuracion (
+        emisor_id,
+        metodo_pago_defecto,
+        forma_pago_defecto,
+        plazo_credito_defecto,
+        tipo_venta_defecto,
+        moneda_defecto,
+        tasa_iva,
+        generador_codigo,
+        prefijo_correlativo,
+        tipo_retencion_defecto,
+        updated_at
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_TIMESTAMP)
+      ON CONFLICT (emisor_id)
+      DO UPDATE SET
+        metodo_pago_defecto = COALESCE(EXCLUDED.metodo_pago_defecto, emisor_configuracion.metodo_pago_defecto),
+        forma_pago_defecto = COALESCE(EXCLUDED.forma_pago_defecto, emisor_configuracion.forma_pago_defecto),
+        plazo_credito_defecto = COALESCE(EXCLUDED.plazo_credito_defecto, emisor_configuracion.plazo_credito_defecto),
+        tipo_venta_defecto = COALESCE(EXCLUDED.tipo_venta_defecto, emisor_configuracion.tipo_venta_defecto),
+        moneda_defecto = COALESCE(EXCLUDED.moneda_defecto, emisor_configuracion.moneda_defecto),
+        tasa_iva = COALESCE(EXCLUDED.tasa_iva, emisor_configuracion.tasa_iva),
+        generador_codigo = COALESCE(EXCLUDED.generador_codigo, emisor_configuracion.generador_codigo),
+        prefijo_correlativo = COALESCE(EXCLUDED.prefijo_correlativo, emisor_configuracion.prefijo_correlativo),
+        tipo_retencion_defecto = COALESCE(EXCLUDED.tipo_retencion_defecto, emisor_configuracion.tipo_retencion_defecto),
+        updated_at = CURRENT_TIMESTAMP
+    `,
+    [
+      emisorId,
+      clean(body.metodoPagoDefecto),
+      clean(body.formaPagoDefecto),
+      clean(body.plazoCredito),
+      clean(body.tipoVentaDefecto),
+      clean(body.monedaDefecto),
+      typeof body.tasaIva === 'number' && Number.isFinite(body.tasaIva) ? body.tasaIva : null,
+      clean(body.generadorCodigo),
+      clean(body.prefijoCorrelativo),
+      clean(body.tipoRetencionDefecto),
+    ]
+  );
 }
 
 async function getIdentity(req: NextRequest) {
@@ -198,8 +264,6 @@ export async function PUT(req: NextRequest) {
     const nit = cleanRequired(body.nit);
     const nrc = cleanRequired(body.nrc);
     const nombre = cleanRequired(body.nombre);
-    const municipioCodigo = cleanLastTwoDigits(body.municipioCodigo);
-    const distritoCodigo = cleanLastTwoDigits(body.distritoCodigo);
 
     if (!nit || !nrc || !nombre) {
       return json(
@@ -209,6 +273,30 @@ export async function PUT(req: NextRequest) {
     }
 
     const pool = getPostgresPool();
+    let location = null as Awaited<ReturnType<typeof resolveLocation>>;
+
+    if (body.departamentoCodigo || body.municipioCodigo) {
+      try {
+        location = await resolveLocation(
+          pool,
+          {
+            departamentoCodigo: body.departamentoCodigo,
+            municipioCodigo: body.municipioCodigo,
+            distritoCodigo: body.distritoCodigo,
+          },
+          { requireDistrito: Boolean(body.distritoCodigo) }
+        );
+      } catch (error) {
+        if (error instanceof LocationValidationError) {
+          return json({ error: error.message }, { status: error.status });
+        }
+        throw error;
+      }
+    }
+
+    const municipioCodigo = location?.municipioCodigo ?? cleanLastTwoDigits(body.municipioCodigo);
+    const distritoCodigo = location?.distritoCodigo ?? cleanLastTwoDigits(body.distritoCodigo);
+    const departamentoCodigo = location?.departamentoCodigo ?? clean(body.departamentoCodigo);
 
     let current = await getLinkedEmitter(identity.uid, identity.email);
     if (!current) {
@@ -280,7 +368,7 @@ export async function PUT(req: NextRequest) {
           clean(body.tipoEstablecimientoCodigo),
           clean(body.codigoActividad),
           clean(body.descripcionActividad),
-          clean(body.departamentoCodigo),
+          departamentoCodigo,
           municipioCodigo,
           distritoCodigo,
           clean(body.complementoDireccion),
@@ -317,7 +405,7 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    const updated = await pool.query(
+    await pool.query(
       `
         UPDATE emisores
         SET
@@ -372,7 +460,7 @@ export async function PUT(req: NextRequest) {
         clean(body.tipoEstablecimientoCodigo),
         clean(body.codigoActividad),
         clean(body.descripcionActividad),
-        clean(body.departamentoCodigo),
+        departamentoCodigo,
         municipioCodigo,
         distritoCodigo,
         clean(body.complementoDireccion),
@@ -385,9 +473,13 @@ export async function PUT(req: NextRequest) {
       ]
     );
 
+    await upsertEmisorConfiguracion(Number(current.id), body);
+
+    const emitter = await getLinkedEmitter(identity.uid, identity.email);
+
     return json({
       emitter: {
-        ...updated.rows[0],
+        ...emitter,
         rolEmisor: current.rolEmisor,
       },
     });

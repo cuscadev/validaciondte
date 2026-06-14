@@ -111,3 +111,35 @@ func (ct *Controller) CreateExcludedSubjectInvoice(c *fiber.Ctx) error {
 
 	return c.JSON(resp)
 }
+
+func (ct *Controller) createExtendedTaxCredit(c *fiber.Ctx, tipoDte string) error {
+	var req dto.CreateTaxCreditInvoiceRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "JSON invalido")
+	}
+	resp, err := ct.service.CreateExtendedTaxDocument(req, tipoDte)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+	return c.JSON(resp)
+}
+
+func (ct *Controller) CreateNotaRemision(c *fiber.Ctx) error {
+	return ct.createExtendedTaxCredit(c, "04")
+}
+
+func (ct *Controller) CreateComprobanteRetencion(c *fiber.Ctx) error {
+	return ct.createExtendedTaxCredit(c, "07")
+}
+
+func (ct *Controller) CreateComprobanteLiquidacion(c *fiber.Ctx) error {
+	return ct.createExtendedTaxCredit(c, "08")
+}
+
+func (ct *Controller) CreateDocumentoContableLiquidacion(c *fiber.Ctx) error {
+	return ct.createExtendedTaxCredit(c, "09")
+}
+
+func (ct *Controller) CreateComprobanteDonacion(c *fiber.Ctx) error {
+	return ct.createExtendedTaxCredit(c, "15")
+}

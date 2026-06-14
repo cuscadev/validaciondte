@@ -20,6 +20,10 @@ type BuildReceptorRequest struct {
 	Direccion       *Direccion `json:"direccion"`
 	Telefono        *string    `json:"telefono"`
 	Correo          *string    `json:"correo"`
+	CodPais         *string    `json:"codPais"`
+	NombrePais      *string    `json:"nombrePais"`
+	ComplementoExt  *string    `json:"complementoExt"`
+	TipoPersona     *int       `json:"tipoPersona"`
 }
 
 type BuildReceptorResponse struct {

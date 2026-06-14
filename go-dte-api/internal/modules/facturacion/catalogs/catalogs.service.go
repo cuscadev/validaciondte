@@ -49,6 +49,11 @@ const (
 	TipoDTENotaDebito     = "06"
 	TipoDTEExportacion    = "11"
 	TipoDTESujetoExcluido = "14"
+	TipoDTENotaRemision   = "04"
+	TipoDTERetencion      = "07"
+	TipoDTELiquidacion    = "08"
+	TipoDTEDocContable    = "09"
+	TipoDTEDonacion       = "15"
 
 	ReceptorConsumidorFinal = "consumer"
 	ReceptorContribuyente   = "taxpayer"
@@ -117,6 +122,46 @@ func NewService(cfg config.Config) *Service {
 			ReceptorKind:  ReceptorSujetoExcluido,
 			ItemsKind:     ItemsSujetoExcluido,
 			SchemaVersion: "v2",
+		},
+		TipoDTENotaRemision: {
+			TipoDTE:       TipoDTENotaRemision,
+			Version:       3,
+			Nombre:        "Nota de remision",
+			ReceptorKind:  ReceptorContribuyente,
+			ItemsKind:     ItemsCreditoFiscal,
+			SchemaVersion: "v3",
+		},
+		TipoDTERetencion: {
+			TipoDTE:       TipoDTERetencion,
+			Version:       1,
+			Nombre:        "Comprobante de retencion",
+			ReceptorKind:  ReceptorContribuyente,
+			ItemsKind:     ItemsCreditoFiscal,
+			SchemaVersion: "v1",
+		},
+		TipoDTELiquidacion: {
+			TipoDTE:       TipoDTELiquidacion,
+			Version:       1,
+			Nombre:        "Comprobante de liquidacion",
+			ReceptorKind:  ReceptorContribuyente,
+			ItemsKind:     ItemsCreditoFiscal,
+			SchemaVersion: "v1",
+		},
+		TipoDTEDocContable: {
+			TipoDTE:       TipoDTEDocContable,
+			Version:       1,
+			Nombre:        "Documento contable de liquidacion",
+			ReceptorKind:  ReceptorContribuyente,
+			ItemsKind:     ItemsCreditoFiscal,
+			SchemaVersion: "v1",
+		},
+		TipoDTEDonacion: {
+			TipoDTE:       TipoDTEDonacion,
+			Version:       1,
+			Nombre:        "Comprobante de donacion",
+			ReceptorKind:  ReceptorConsumidorFinal,
+			ItemsKind:     ItemsFactura,
+			SchemaVersion: "v1",
 		},
 	}
 

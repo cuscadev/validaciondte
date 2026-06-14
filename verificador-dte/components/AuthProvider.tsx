@@ -109,6 +109,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }).catch(() => {
             // Hacienda auth is opportunistic; missing credentials should not block app login.
           });
+
+          fetch('/api/facturacion/certificates/warmup', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ firebaseUid: user.uid }),
+          }).catch(() => {
+            // Certificate warmup is opportunistic for faster signing.
+          });
         }
       } else {
         console.info('[auth-provider] No Firebase user in session', {
