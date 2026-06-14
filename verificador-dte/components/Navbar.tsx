@@ -51,6 +51,7 @@ export default function Navbar({ onToggleSidebar }: { onToggleSidebar: () => voi
     <>
       <button
         onClick={toggleTheme}
+        data-tour="navbar-theme"
         className="hidden rounded-md bg-muted p-2 text-sm text-foreground hover:bg-accent sm:inline-flex"
         aria-label={darkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
         title={darkMode ? 'Modo claro' : 'Modo oscuro'}
@@ -59,7 +60,7 @@ export default function Navbar({ onToggleSidebar }: { onToggleSidebar: () => voi
       </button>
 
       {/* Campana de notificaciones */}
-      <div className="relative ml-1 sm:ml-3" ref={bellRef}>
+      <div className="relative ml-1 sm:ml-3" ref={bellRef} data-tour="navbar-notifications">
         <button
           onClick={() => setBellOpen(o => !o)}
           className="relative rounded-full bg-muted p-2 flex items-center justify-center text-foreground hover:bg-accent"

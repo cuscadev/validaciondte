@@ -1,6 +1,8 @@
 'use client';
 
 import PlanGate from '@/components/PlanGate';
+import { useUploadVerifierTourResultsReady } from '@/lib/product-tours/hooks/useUploadVerifierTourResultsReady';
+import { VERIFICADOR_QR_TOUR_ID } from '@/lib/product-tours/tours/verificador-tours';
 import UploadResultsReveal from '@/components/upload/UploadResultsReveal';
 import UploadTableToolbar from '@/components/upload/UploadTableToolbar';
 import UploadTableBasicFilters, {
@@ -170,6 +172,11 @@ function VerificadorQrContent() {
   const [progressTotal, setProgressTotal] = useState(0);
   const { resultsVisible, resetResultsVisibility, onResultsReveal } =
     useUploadResultsReveal();
+
+  useUploadVerifierTourResultsReady(
+    VERIFICADOR_QR_TOUR_ID,
+    resultsVisible && data.length > 0,
+  );
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const cameraFrameRef = useRef<HTMLDivElement>(null);
@@ -605,6 +612,7 @@ function VerificadorQrContent() {
 
         <div className="grid min-w-0 gap-4 p-3 sm:p-4 xl:grid-cols-2">
           <section
+            data-tour="verificador-qr-camera"
             className={cn(
               'min-w-0 rounded-xl border border-border p-3 sm:p-4',
               cameraExpanded && 'xl:col-span-2'
@@ -748,7 +756,7 @@ function VerificadorQrContent() {
             )}
           </section>
 
-          <section className="min-w-0 rounded-xl border border-border p-3 sm:p-4">
+          <section data-tour="verificador-qr-pending" className="min-w-0 rounded-xl border border-border p-3 sm:p-4">
             <div className="mb-4 space-y-3">
               <div>
                 <h2 className="font-semibold">Pendientes ({pendingScans.length})</h2>
@@ -771,6 +779,7 @@ function VerificadorQrContent() {
                 </Button>
                 <Button
                   type="button"
+                  data-tour="verificador-submit"
                   onClick={() => void verificarEscaneos()}
                   disabled={loading || !pendingScans.length}
                   className="w-full sm:w-auto"
@@ -847,6 +856,7 @@ function VerificadorQrContent() {
         <UploadTableToolbar
           className="min-w-0"
           resultCount={{ filtered: filtered.length, total: data.length }}
+          exportDataTour="verificador-export"
           export={{
             excel: {
               href: downloadHref,
@@ -874,6 +884,7 @@ function VerificadorQrContent() {
             },
           }}
           filters={{
+            dataTour: 'verificador-filters',
             activeCount: countBasicFilters(search, rowsPerPage),
             onClear: () => {
               setSearch('');
@@ -898,7 +909,7 @@ function VerificadorQrContent() {
           }}
         />
 
-        <div className="mt-4 overflow-hidden rounded-md border border-border">
+        <div data-tour="verificador-results-table" className="mt-4 overflow-hidden rounded-md border border-border">
           <div className="divide-y md:hidden">
             {paginatedData.length === 0 ? (
               <div className="p-6 text-center text-sm text-muted-foreground">

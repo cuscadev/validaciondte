@@ -3,10 +3,11 @@
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
-import { Check, ChevronDown, Languages, LogOut, Moon, Settings, Sun, User, UserRound } from 'lucide-react';
+import { Check, ChevronDown, CircleHelp, Languages, LogOut, Moon, Settings, Sun, User, UserRound } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { useAuth } from '@/components/AuthProvider';
+import { useProductTour } from '@/components/tours/ProductTourProvider';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,6 +36,7 @@ export default function UserAvatarMenu({
   const { i18n, t } = useTranslation();
   const router = useRouter();
   const { firebaseUser, appUser } = useAuth();
+  const productTour = useProductTour();
 
   const email = appUser?.email ?? firebaseUser?.email ?? null;
   const photoURL = appUser?.photoURL ?? firebaseUser?.photoURL ?? null;
@@ -62,6 +64,7 @@ export default function UserAvatarMenu({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
+          data-tour="user-menu-trigger"
           aria-label={`${t('common.account', 'Cuenta')}: ${displayName}`}
           className="ml-1 flex max-w-[min(100%,12rem)] items-center gap-2 rounded-full border border-primary/30 bg-primary/5 py-1 pl-1 pr-1.5 transition-colors hover:border-primary/45 hover:bg-primary/10 sm:ml-4 sm:max-w-none sm:pr-3"
         >
@@ -151,6 +154,18 @@ export default function UserAvatarMenu({
             })}
           </div>
         </div>
+        {productTour?.currentTour ? (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={productTour.restartCurrentTour}
+              className="cursor-pointer"
+            >
+              <CircleHelp className="mr-2 size-4" />
+              Ver guía de ayuda
+            </DropdownMenuItem>
+          </>
+        ) : null}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={handleLogout}

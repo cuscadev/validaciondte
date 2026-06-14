@@ -22,6 +22,7 @@ export function SecurityTotpCard({
   return (
     <FadeIn delay={0.14} className={cn('h-full', className)}>
       <Card
+        data-tour="dashboard-mfa"
         className={cn(
           'h-full border-border/60 py-0 shadow-sm',
           totpEnabled

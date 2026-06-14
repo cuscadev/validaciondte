@@ -26,6 +26,8 @@ import { useOrganizationMe } from '@/hooks/useOrganizationMe';
 
 import { canManageOrgUsers } from '@/lib/firestoreUser';
 
+import { useRegisterDashboardTourContext } from '@/lib/product-tours/page-tour-registry';
+
 
 
 type OrgKyc = {
@@ -115,6 +117,13 @@ export default function DashboardPage() {
   const membership = appUser?.membership?.type ?? 'free';
 
   const totpEnabled = Boolean(appUser?.totpEnabled);
+
+  const dashboardTourContext = useMemo(
+    () => ({ totpEnabled }),
+    [totpEnabled],
+  );
+
+  useRegisterDashboardTourContext(dashboardTourContext);
 
   const isCliente = appUser?.role === 'cliente';
 
@@ -227,6 +236,10 @@ export default function DashboardPage() {
 
         <section className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_minmax(15rem,17rem)] 2xl:grid-rows-[auto_auto] 2xl:items-stretch">
 
+          <div
+            data-tour="dashboard-activity"
+            className="order-1 h-full min-h-[18rem] 2xl:order-none 2xl:col-start-1 2xl:row-start-1 2xl:min-h-[20rem]"
+          >
           <ActivityPeriodChart
 
             daily={daily}
@@ -243,12 +256,17 @@ export default function DashboardPage() {
 
             isRefetching={isRefetching}
 
-            className="order-1 h-full min-h-[18rem] 2xl:order-none 2xl:col-start-1 2xl:row-start-1 2xl:min-h-[20rem]"
+            className="h-full"
 
           />
+          </div>
 
 
 
+          <div
+            data-tour="dashboard-hero"
+            className="order-3 min-h-[20rem] 2xl:order-none 2xl:col-start-2 2xl:row-start-1 2xl:row-span-2 2xl:min-h-0"
+          >
           <DashboardHero
 
             displayName={displayName}
@@ -283,43 +301,53 @@ export default function DashboardPage() {
 
             }}
 
-            className="order-3 min-h-[20rem] 2xl:order-none 2xl:col-start-2 2xl:row-start-1 2xl:row-span-2 2xl:min-h-0"
+            className="h-full"
 
           />
+          </div>
 
 
 
+          <div
+            data-tour="dashboard-modules"
+            className="order-2 2xl:order-none 2xl:col-start-1 2xl:row-start-2"
+          >
           <ModuleBreakdown
 
             byModule={byModule}
 
             loading={showStatsSkeleton}
 
-            className="order-2 2xl:order-none 2xl:col-start-1 2xl:row-start-2"
-
           />
+          </div>
 
         </section>
 
 
 
-        <DashboardUsersRow
+        {showUserStats ? (
+          <div data-tour="dashboard-users">
+            <DashboardUsersRow
 
-          users={stats?.users}
+              users={stats?.users}
 
-          showSkeleton={showStatsSkeleton && showUserStats}
+              showSkeleton={showStatsSkeleton && showUserStats}
 
-          manageHref={userManageHref}
+              manageHref={userManageHref}
 
-        />
+            />
+          </div>
+        ) : null}
 
 
 
+        <div data-tour="dashboard-actions">
         <DashboardActionsBento
           recent={recent}
           totpEnabled={totpEnabled}
           loading={showStatsSkeleton}
         />
+        </div>
 
       </div>
 

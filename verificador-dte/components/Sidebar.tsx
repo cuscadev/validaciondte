@@ -39,6 +39,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import {
+  SIDEBAR_TOUR_SELECT_SECTION_EVENT,
+  sidebarTourSlug,
+} from '@/lib/product-tours/sidebar-tour-events';
+import { useRegisterSidebarTourItems } from '@/lib/product-tours/sidebar-tour-registry';
 
 type NavChild = {
   href: string;
@@ -106,6 +111,7 @@ function SidebarSubmenuFlyout({
   t,
   open,
   onOpenChange,
+  navTourId,
 }: {
   itemLabel: string;
   active: boolean;
@@ -116,6 +122,7 @@ function SidebarSubmenuFlyout({
   t: (key: string) => string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  navTourId?: string;
 }) {
   return (
     <div className={collapsedItemWrap}>
@@ -123,6 +130,7 @@ function SidebarSubmenuFlyout({
         <DropdownMenuTrigger asChild>
           <button
             type="button"
+            data-tour={navTourId}
             className={collapsedItemClass(active || open)}
             aria-label={itemLabel}
             aria-expanded={open}
@@ -268,7 +276,10 @@ function SidebarSectionPanel({
   const { icon: Icon, children, href } = item;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+    <div
+      data-tour="sidebar-submenu-panel"
+      className="flex min-h-0 flex-1 flex-col overflow-hidden"
+    >
       <div className="mb-2 flex shrink-0 items-center gap-2 px-1">
         <Icon className="size-3.5 shrink-0 text-sidebar-foreground/50" aria-hidden />
         <p className="truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-sidebar-foreground/50">
@@ -369,6 +380,7 @@ function SidebarShortcutBar({
     const { href, label, icon: Icon, children } = item;
     const active = selectedHref === href || openFlyoutHref === href;
     const itemLabel = t(label);
+    const navTourId = `sidebar-nav-${sidebarTourSlug(href)}`;
 
     const className = cn(
       collapsed ? collapsedItemClass(active) : 'inline-flex size-9 shrink-0 items-center justify-center rounded-lg transition',
@@ -396,6 +408,7 @@ function SidebarShortcutBar({
             t={t}
             open={openFlyoutHref === href}
             onOpenChange={(next) => onFlyoutChange(next ? href : null)}
+            navTourId={navTourId}
           >
             {children}
           </SidebarSubmenuFlyout>
@@ -409,6 +422,7 @@ function SidebarShortcutBar({
           {wrapWithTooltip(
             <Link
               href={href}
+              data-tour={navTourId}
               onClick={() => {
                 onSelectSection(href);
                 onNavigate?.();
@@ -429,6 +443,7 @@ function SidebarShortcutBar({
         {wrapWithTooltip(
           <button
             type="button"
+            data-tour={navTourId}
             className={className}
             aria-label={itemLabel}
             aria-current={active ? 'true' : undefined}
@@ -444,6 +459,7 @@ function SidebarShortcutBar({
 
   const rail = (
     <div
+      data-tour="sidebar-nav-rail"
       className={cn(
         'flex shrink-0 flex-col border-sidebar-border',
         collapsed
@@ -975,6 +991,33 @@ export default function Sidebar({
     setActiveSectionHref(href);
     setOpenFlyoutHref(null);
   }, []);
+
+  const sidebarTourItems = useMemo(
+    () =>
+      items.map((item) => ({
+        href: item.href,
+        label: t(item.label),
+        children: item.children?.map((child) => ({
+          href: child.href,
+          label: t(child.label),
+          group: child.group,
+        })),
+      })),
+    [items, t],
+  );
+
+  useRegisterSidebarTourItems(sidebarTourItems);
+
+  useEffect(() => {
+    function handleSelectSection(event: Event) {
+      const href = (event as CustomEvent<{ href?: string }>).detail?.href;
+      if (!href) return;
+      selectSection(href);
+    }
+
+    window.addEventListener(SIDEBAR_TOUR_SELECT_SECTION_EVENT, handleSelectSection);
+    return () => window.removeEventListener(SIDEBAR_TOUR_SELECT_SECTION_EVENT, handleSelectSection);
+  }, [selectSection]);
 
   const brandName = t('app.brandName', 'KAYDTE');
 

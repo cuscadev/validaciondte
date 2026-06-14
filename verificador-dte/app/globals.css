@@ -410,3 +410,51 @@
     @apply bg-background text-foreground font-sans;
   }
 }
+
+.driver-popover.kaydte-driver-popover {
+  background: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+  max-width: min(22rem, calc(100vw - 2rem));
+}
+
+.driver-popover.kaydte-driver-popover .driver-popover-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.driver-popover.kaydte-driver-popover .driver-popover-description {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+  white-space: pre-line;
+}
+
+.driver-popover.kaydte-driver-popover .driver-popover-progress-text {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+
+.driver-popover.kaydte-driver-popover button {
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-shadow: none;
+}
+
+.driver-popover.kaydte-driver-popover .driver-popover-next-btn,
+.driver-popover.kaydte-driver-popover .driver-popover-done-btn {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border: none;
+}
+
+.driver-popover.kaydte-driver-popover .driver-popover-prev-btn,
+.driver-popover.kaydte-driver-popover .driver-popover-close-btn {
+  background: transparent;
+  color: var(--muted-foreground);
+  border: 1px solid var(--border);
+}

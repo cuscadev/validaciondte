@@ -18,7 +18,7 @@ export function MobileAppCard({ variant = 'default', className }: MobileAppCardP
 
   return (
     <FadeIn delay={0.2} className={cn('h-full', className)}>
-      <Card className="h-full border-border/60 bg-muted/10 py-0 shadow-sm">
+      <Card data-tour="dashboard-mobile-app" className="h-full border-border/60 bg-muted/10 py-0 shadow-sm">
         <CardContent
           className={cn('flex h-full flex-col', isCompact ? 'p-4' : 'p-5')}
         >

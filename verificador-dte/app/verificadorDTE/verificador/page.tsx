@@ -20,6 +20,8 @@ import { auth } from '@/lib/firebase'
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { recordProcessingLog } from '@/lib/client-processing-log'
+import { useUploadVerifierTourResultsReady } from '@/lib/product-tours/hooks/useUploadVerifierTourResultsReady'
+import { VERIFICADOR_LINKS_TOUR_ID } from '@/lib/product-tours/tours/verificador-tours'
 import { summarizeFiles, summarizeResults } from '@/lib/processing-log'
 import { summarizeDteUploadResults } from '@/lib/upload-dte-stats'
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
@@ -303,6 +305,11 @@ export default function HomePage() {
     setCurrentPage(1)
   }, [search])
 
+  useUploadVerifierTourResultsReady(
+    VERIFICADOR_LINKS_TOUR_ID,
+    resultsVisible && data.length > 0,
+  )
+
   const paginatedData = useMemo(() => {
     const start = (currentPage - 1) * rowsPerPage
     return filtered.slice(start, start + rowsPerPage)
@@ -330,7 +337,7 @@ export default function HomePage() {
   return (
     <PlanGate routeKey="verificador">
     <main className="w-full max-w-full space-y-6 dark:bg-background">
-          <form onSubmit={onSubmit} className="overflow-hidden rounded-lg border border-border">
+          <form onSubmit={onSubmit} className="overflow-hidden rounded-lg border border-border" data-tour="verificador-upload">
             <UploadFormAccordion
               accordionApiRef={accordionApiRef}
               onResultsReveal={onResultsReveal}
@@ -338,6 +345,7 @@ export default function HomePage() {
             <UploadFormSection
               label="Archivos CSV o Excel"
               briefHint="CSV o Excel con enlaces MH"
+              submitDataTour="verificador-submit"
               helpContent={
                 <>
                   <p>
@@ -348,7 +356,9 @@ export default function HomePage() {
               }
               helpTooltip={<HelpTooltip content={FORMAT_HELP} side="top" />}
               labelActions={
-                <UploadTemplateDownloadButton href="/api/procesar/plantilla" />
+                <span data-tour="verificador-template" className="inline-flex">
+                  <UploadTemplateDownloadButton href="/api/procesar/plantilla" />
+                </span>
               }
               files={selectedFiles}
               onFilesChange={setSelectedFiles}
@@ -391,8 +401,10 @@ export default function HomePage() {
           ) : null}
 
           <UploadResultsReveal visible={resultsVisible && data.length > 0}>
+          <div className="space-y-3">
           <UploadTableToolbar
             resultCount={{ filtered: filtered.length, total: data.length }}
+            exportDataTour="verificador-export"
             export={{
               excel: {
                 href: downloadHref,
@@ -420,6 +432,7 @@ export default function HomePage() {
               },
             }}
             filters={{
+              dataTour: 'verificador-filters',
               activeCount: countBasicFilters(search, rowsPerPage),
               onClear: () => {
                 setSearch('')
@@ -445,7 +458,7 @@ export default function HomePage() {
           />
 
           {/* Tabla */}
-          <div className="overflow-hidden rounded-md border border-border">
+          <div data-tour="verificador-results-table" className="overflow-hidden rounded-md border border-border">
             <div className="max-h-[60vh] overflow-auto">
               <table className="w-full text-sm">
                 <thead className="sticky top-0 z-10 border-b border-border bg-muted/50 text-foreground backdrop-blur supports-[backdrop-filter]:bg-muted/40">
@@ -573,6 +586,7 @@ export default function HomePage() {
                 </Button>
               </div>
             </div>
+          </div>
           </div>
           </UploadResultsReveal>
     </main>

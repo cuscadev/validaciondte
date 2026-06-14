@@ -9,12 +9,14 @@ type UploadTableFilterButtonProps = {
   onClick: () => void;
   activeCount?: number;
   className?: string;
+  dataTour?: string;
 };
 
 export default function UploadTableFilterButton({
   onClick,
   activeCount = 0,
   className,
+  dataTour,
 }: UploadTableFilterButtonProps) {
   const hasActive = activeCount > 0;
 
@@ -23,6 +25,7 @@ export default function UploadTableFilterButton({
       type="button"
       variant="outline"
       size="sm"
+      data-tour={dataTour}
       className={cn('relative h-9 shrink-0 gap-1.5 px-3', className)}
       onClick={onClick}
       aria-label="Filtrar"

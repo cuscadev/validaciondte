@@ -1,6 +1,8 @@
 'use client'
 
 import PlanGate from '@/components/PlanGate'
+import { useUploadVerifierTourResultsReady } from '@/lib/product-tours/hooks/useUploadVerifierTourResultsReady'
+import { VERIFICADOR_CODIGO_FECHA_TOUR_ID } from '@/lib/product-tours/tours/verificador-tours'
 import UploadFormSection from '@/components/upload/UploadFormSection'
 import UploadFormAccordion from '@/components/upload/UploadFormAccordion'
 import UploadResultsReveal from '@/components/upload/UploadResultsReveal'
@@ -122,6 +124,11 @@ export default function VerificarPorCodigoYFechaPage() {
     resetResultsVisibility,
     onResultsReveal,
   } = useUploadResultsReveal()
+
+  useUploadVerifierTourResultsReady(
+    VERIFICADOR_CODIGO_FECHA_TOUR_ID,
+    resultsVisible && data.length > 0,
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -327,7 +334,7 @@ export default function VerificarPorCodigoYFechaPage() {
   return (
     <PlanGate routeKey={accessRouteKey}>
     <main className="w-full max-w-full space-y-6">
-          <form onSubmit={onSubmit} className="overflow-hidden rounded-lg border border-border">
+          <form onSubmit={onSubmit} className="overflow-hidden rounded-lg border border-border" data-tour="verificador-upload">
             <UploadFormAccordion
               accordionApiRef={accordionApiRef}
               onResultsReveal={onResultsReveal}
@@ -337,10 +344,13 @@ export default function VerificarPorCodigoYFechaPage() {
             <UploadFormSection
               label="Archivos (.xlsx, .csv, .txt)"
               briefHint="Columna A = codGen, B = fecha"
+              submitDataTour="verificador-submit"
               helpContent="Sube archivos Excel, CSV o TXT con columna A = codGen y columna B = fecha. Veras los resultados y podras descargar el Excel consolidado."
               helpTooltip={<HelpTooltip content={FORMAT_HELP} side="top" />}
               labelActions={
-                <UploadTemplateDownloadButton href="/api/verificarcodyfecha" />
+                <span data-tour="verificador-template" className="inline-flex">
+                  <UploadTemplateDownloadButton href="/api/verificarcodyfecha" />
+                </span>
               }
               files={selectedFiles}
               onFilesChange={setSelectedFiles}
@@ -370,6 +380,7 @@ export default function VerificarPorCodigoYFechaPage() {
           <UploadResultsReveal visible={resultsVisible && data.length > 0}>
           <UploadTableToolbar
             resultCount={{ filtered: filtered.length, total: data.length }}
+            exportDataTour="verificador-export"
             export={{
               excel: {
                 href: downloadHref,
@@ -397,6 +408,7 @@ export default function VerificarPorCodigoYFechaPage() {
               },
             }}
             filters={{
+              dataTour: 'verificador-filters',
               activeCount: countBasicFilters(search, rowsPerPage),
               onClear: () => {
                 setSearch('')
@@ -421,7 +433,7 @@ export default function VerificarPorCodigoYFechaPage() {
             }}
           />
 
-          <div className="overflow-hidden rounded-md border border-border">
+          <div data-tour="verificador-results-table" className="overflow-hidden rounded-md border border-border">
             <div className="max-h-[60vh] overflow-auto">
               <table className="w-full text-sm">
                 <thead className="sticky top-0 z-10 border-b border-border bg-muted/50 text-foreground backdrop-blur supports-[backdrop-filter]:bg-muted/40">

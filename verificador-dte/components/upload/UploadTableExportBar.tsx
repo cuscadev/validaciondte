@@ -23,6 +23,7 @@ export type UploadTableExportBarProps = {
   csv: ExportAction;
   pdf: ExportAction;
   className?: string;
+  dataTour?: string;
 };
 
 export default function UploadTableExportBar({
@@ -30,6 +31,7 @@ export default function UploadTableExportBar({
   csv,
   pdf,
   className,
+  dataTour,
 }: UploadTableExportBarProps) {
   const hasExcel = Boolean(excel?.href || excel?.onClick);
 
@@ -55,6 +57,7 @@ export default function UploadTableExportBar({
           type="button"
           variant="outline"
           size="sm"
+          data-tour={dataTour}
           className={cn('h-9 shrink-0 gap-1.5 px-3', className)}
           aria-label="Exportar a"
           title="Exportar a"

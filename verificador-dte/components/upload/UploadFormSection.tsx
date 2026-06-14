@@ -31,6 +31,7 @@ export type UploadFormSectionProps = {
   submitLabel?: string;
   loadingLabel?: string;
   submitClassName?: string;
+  submitDataTour?: string;
   className?: string;
 };
 
@@ -54,6 +55,7 @@ export default function UploadFormSection({
   submitLabel = 'Procesar',
   loadingLabel = 'Procesando…',
   submitClassName = 'w-full bg-primary font-bold text-black hover:bg-primary/90 sm:w-auto',
+  submitDataTour,
   className,
 }: UploadFormSectionProps) {
   const accordion = useUploadFormAccordion();
@@ -86,7 +88,12 @@ export default function UploadFormSection({
       />
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <Button type="submit" disabled={isDisabled} className={submitClassName}>
+        <Button
+          type="submit"
+          disabled={isDisabled}
+          className={submitClassName}
+          data-tour={submitDataTour}
+        >
           {loading ? (
             loadingLabel
           ) : (

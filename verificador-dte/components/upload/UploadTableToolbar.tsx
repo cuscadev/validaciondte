@@ -12,10 +12,12 @@ import { cn } from '@/lib/utils';
 type UploadTableToolbarProps = {
   resultCount: { filtered: number; total?: number };
   export: UploadTableExportBarProps;
+  exportDataTour?: string;
   filters?: {
     children: React.ReactNode;
     onClear?: () => void;
     activeCount?: number;
+    dataTour?: string;
   };
   className?: string;
 };
@@ -23,6 +25,7 @@ type UploadTableToolbarProps = {
 export default function UploadTableToolbar({
   resultCount,
   export: exportProps,
+  exportDataTour,
   filters,
   className,
 }: UploadTableToolbarProps) {
@@ -45,11 +48,12 @@ export default function UploadTableToolbar({
         </div>
 
         <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2 sm:flex sm:items-center">
-          <UploadTableExportBar {...exportProps} className="w-full sm:w-auto" />
+          <UploadTableExportBar {...exportProps} dataTour={exportDataTour} className="w-full sm:w-auto" />
           {filters && (
             <UploadTableFilterButton
               onClick={() => setFiltersOpen(true)}
               activeCount={filters.activeCount}
+              dataTour={filters.dataTour}
               className="w-full sm:w-auto"
             />
           )}

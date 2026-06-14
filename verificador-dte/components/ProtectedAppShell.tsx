@@ -13,6 +13,8 @@ import { auth } from '@/lib/firebase'
 import { useOrganizationMe } from '@/hooks/useOrganizationMe'
 import { Button } from '@/components/ui/button'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { ProductTourProvider } from '@/components/tours/ProductTourProvider'
+import { SIDEBAR_TOUR_ENSURE_EXPANDED_EVENT } from '@/lib/product-tours/sidebar-tour-events'
 import { AuthProvider, useAuth } from '@/components/AuthProvider'
 import { PrivateThemeProvider, PrivateThemeScope } from '@/components/ThemeProvider'
 import { isAccountUsable } from '@/lib/firestoreUser'
@@ -77,6 +79,16 @@ function ProtectedAppShellContent({ children }: { children: React.ReactNode }) {
   const pendingOnboarding =
     !isSuperadmin &&
     userNeedsOnboardingPath(appUser, orgSnapshot)
+
+  useEffect(() => {
+    function handleSidebarTourEnsureExpanded() {
+      setSidebarOpen(true)
+      setMobileSidebarOpen(true)
+    }
+
+    window.addEventListener(SIDEBAR_TOUR_ENSURE_EXPANDED_EVENT, handleSidebarTourEnsureExpanded)
+    return () => window.removeEventListener(SIDEBAR_TOUR_ENSURE_EXPANDED_EVENT, handleSidebarTourEnsureExpanded)
+  }, [])
 
   useEffect(() => {
     if (!authChecked) return
@@ -219,6 +231,7 @@ function ProtectedAppShellContent({ children }: { children: React.ReactNode }) {
     <PrivateThemeProvider>
       <PrivateThemeScope className="relative flex h-screen overflow-hidden">
       <TooltipProvider skipDelayDuration={300}>
+        <ProductTourProvider>
         <aside
           className={[
             'hidden md:block fixed z-30 top-0 left-0 h-screen bg-sidebar border-r border-sidebar-border shadow-lg',
@@ -257,6 +270,7 @@ function ProtectedAppShellContent({ children }: { children: React.ReactNode }) {
         >
           <div className="sticky top-0 z-20 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
             <div className="flex min-w-0 items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3">
+              <div className="flex shrink-0 items-center gap-0.5" data-tour="navbar-sidebar-toggle">
               <button
                 type="button"
                 onClick={() => setMobileSidebarOpen((value) => !value)}
@@ -283,11 +297,12 @@ function ProtectedAppShellContent({ children }: { children: React.ReactNode }) {
                   <Menu className="w-4 h-4" />
                 )}
               </button>
-              <div className="hidden min-w-0 flex-1 md:block">
+              </div>
+              <div className="hidden min-w-0 flex-1 md:block" data-tour="navbar-breadcrumb">
                 <AppBreadcrumb />
               </div>
-              <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
-                <div className="hidden sm:block">
+              <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2" data-tour="navbar-actions">
+                <div className="hidden sm:block" data-tour="navbar-language">
                   <LanguageSwitcher />
                 </div>
                 <Navbar onToggleSidebar={toggleSidebar} />
@@ -297,6 +312,7 @@ function ProtectedAppShellContent({ children }: { children: React.ReactNode }) {
 
           <div className="min-w-0 p-3 sm:p-4">{children}</div>
         </main>
+        </ProductTourProvider>
       </TooltipProvider>
       </PrivateThemeScope>
     </PrivateThemeProvider>

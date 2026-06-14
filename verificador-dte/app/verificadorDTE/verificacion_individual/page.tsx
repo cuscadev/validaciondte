@@ -1,6 +1,8 @@
 'use client';
 
 import PlanGate from '@/components/PlanGate';
+import { useUploadVerifierTourResultsReady } from '@/lib/product-tours/hooks/useUploadVerifierTourResultsReady';
+import { VERIFICADOR_INDIVIDUAL_TOUR_ID } from '@/lib/product-tours/tours/verificador-tours';
 import FechaEmiInput from '@/components/dte/FechaEmiInput';
 import UploadResultsReveal from '@/components/upload/UploadResultsReveal';
 import UploadTableToolbar from '@/components/upload/UploadTableToolbar';
@@ -77,6 +79,11 @@ export default function Page() {
   const [progressDone, setProgressDone] = useState(0);
   const [progressTotal, setProgressTotal] = useState(0);
   const { resultsVisible, resetResultsVisibility, onResultsReveal } = useUploadResultsReveal();
+
+  useUploadVerifierTourResultsReady(
+    VERIFICADOR_INDIVIDUAL_TOUR_ID,
+    resultsVisible && data.length > 0,
+  );
 
   useEffect(() => {
     const batch = consumeVerifyBatch();
@@ -314,7 +321,7 @@ export default function Page() {
   return (
     <PlanGate routeKey={accessRouteKey}>
       <main className="w-full max-w-full space-y-6 dark:bg-background">
-        <section className="overflow-hidden rounded-lg border border-border">
+        <section className="overflow-hidden rounded-lg border border-border" data-tour="verificador-input">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
             <h2 className="text-sm font-semibold text-foreground">
               {t('prrocesardte_detalle', { count: items.length, max: MAX_ITEMS })}
@@ -407,7 +414,12 @@ export default function Page() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3 border-t border-border px-4 py-3">
-            <Button type="button" onClick={() => void validar()} disabled={loading || items.length === 0}>
+            <Button
+              type="button"
+              data-tour="verificador-submit"
+              onClick={() => void validar()}
+              disabled={loading || items.length === 0}
+            >
               {loading ? t('prrocesardte_validando') : t('prrocesardte_validar')}
             </Button>
             {loading && progressTotal > 0 && (
@@ -422,6 +434,7 @@ export default function Page() {
         <UploadResultsReveal visible={resultsVisible && data.length > 0}>
           <UploadTableToolbar
             resultCount={{ filtered: filtered.length, total: data.length }}
+            exportDataTour="verificador-export"
             export={{
               excel: {
                 href: downloadHref,
@@ -449,6 +462,7 @@ export default function Page() {
               },
             }}
             filters={{
+              dataTour: 'verificador-filters',
               activeCount: countBasicFilters(search, rowsPerPage),
               onClear: () => {
                 setSearch('');
@@ -473,7 +487,7 @@ export default function Page() {
             }}
           />
 
-          <div className="mt-4 overflow-hidden rounded-md border border-border">
+          <div data-tour="verificador-results-table" className="mt-4 overflow-hidden rounded-md border border-border">
             <div className="max-h-[60vh] overflow-auto">
               <table className="w-full text-sm">
                 <thead className={TABLE_HEAD_STICKY}>

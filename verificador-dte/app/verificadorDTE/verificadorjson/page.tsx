@@ -1,6 +1,8 @@
 'use client'
 
 import PlanGate from '@/components/PlanGate'
+import { useUploadVerifierTourResultsReady } from '@/lib/product-tours/hooks/useUploadVerifierTourResultsReady'
+import { VERIFICADOR_JSON_TOUR_ID } from '@/lib/product-tours/tours/verificador-tours'
 import UploadFormSection from '@/components/upload/UploadFormSection'
 import UploadFormAccordion from '@/components/upload/UploadFormAccordion'
 import UploadResultsReveal from '@/components/upload/UploadResultsReveal'
@@ -127,6 +129,11 @@ export default function Page() {
     resetResultsVisibility,
     onResultsReveal,
   } = useUploadResultsReveal()
+
+  useUploadVerifierTourResultsReady(
+    VERIFICADOR_JSON_TOUR_ID,
+    resultsVisible && data.length > 0,
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -387,7 +394,7 @@ export default function Page() {
   return (
     <PlanGate routeKey="verificadorjson">
     <main className="w-full max-w-full space-y-6">
-          <form onSubmit={onSubmit} className="overflow-hidden rounded-lg border border-border">
+          <form onSubmit={onSubmit} className="overflow-hidden rounded-lg border border-border" data-tour="verificador-upload">
             <UploadFormAccordion
               accordionApiRef={accordionApiRef}
               onResultsReveal={onResultsReveal}
@@ -397,6 +404,7 @@ export default function Page() {
             <UploadFormSection
               label="Archivos JSON"
               briefHint="JSON con codigoGeneracion y fecEmi"
+              submitDataTour="verificador-submit"
               helpContent={
                 <>
                   <p>
@@ -444,6 +452,7 @@ export default function Page() {
           <UploadResultsReveal visible={resultsVisible && data.length > 0}>
           <UploadTableToolbar
             resultCount={{ filtered: filtered.length, total: data.length }}
+            exportDataTour="verificador-export"
             export={{
               excel: {
                 href: downloadHref,
@@ -471,6 +480,7 @@ export default function Page() {
               },
             }}
             filters={{
+              dataTour: 'verificador-filters',
               activeCount: countBasicFilters(search, rowsPerPage),
               onClear: () => {
                 setSearch('')
@@ -496,7 +506,7 @@ export default function Page() {
           />
 
           {/* Tabla */}
-          <div className="overflow-hidden rounded-md border border-border">
+          <div data-tour="verificador-results-table" className="overflow-hidden rounded-md border border-border">
             <div className="max-h-[60vh] overflow-auto">
               <table className="w-full text-sm">
                 <thead className="sticky top-0 z-10 border-b border-border bg-muted/50 text-foreground backdrop-blur supports-[backdrop-filter]:bg-muted/40">
