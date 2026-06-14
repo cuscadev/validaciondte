@@ -9,6 +9,8 @@ export type MembershipType = 'free' | 'premium' | 'pro';
 export type OrgRole = 'administrador' | 'miembro';
 export type AccountStatus = 'active' | 'inactive' | 'blocked';
 
+import type { RouteAccessOverride } from '@/lib/route-access-overrides';
+
 export interface Membership {
   type: MembershipType;
   expiresAt: string; // ISO date
@@ -44,6 +46,7 @@ export interface AppUser {
   blockedAt?: unknown;
   limits?: UsageLimits;
   limitNotices?: Record<string, LimitNoticeAcknowledgment>;
+  routeAccess?: RouteAccessOverride;
 }
 
 export interface LimitNoticeAcknowledgment {

@@ -26,7 +26,7 @@ export function UserForm({
   onCancel,
 }: UserFormProps) {
   return (
-    <form onSubmit={onSubmit} className="w-full min-w-[340px] max-w-lg">
+    <form onSubmit={onSubmit} className="w-full min-w-0">
       <div className="mb-5 flex items-start gap-3">
         <div className="flex size-11 items-center justify-center rounded-md bg-primary text-black">
           {editMode ? <Save className="size-5" /> : <UserPlus className="size-5" />}
@@ -114,12 +114,12 @@ export function UserForm({
         </div>
       </div>
 
-      <div className="mt-6 flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
+      <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <Button type="button" variant="outline" onClick={onCancel} className="w-full sm:w-auto">
           <X className="size-4" />
           Cancelar
         </Button>
-        <Button type="submit" className="bg-primary font-bold text-black hover:bg-primary/90">
+        <Button type="submit" className="w-full bg-primary font-bold text-black hover:bg-primary/90 sm:w-auto">
           <Save className="size-4" />
           {editMode ? "Guardar cambios" : "Crear usuario"}
         </Button>

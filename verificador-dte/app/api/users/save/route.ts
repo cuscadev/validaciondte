@@ -3,6 +3,7 @@ import { adminDb } from '@/lib/firebase-admin';
 import { requireSuperadmin } from '@/lib/server-auth';
 import { syncAppUserAfterFirestoreWrite } from '@/lib/server-user-sync';
 import { sanitizeUsageLimits } from '@/lib/usage-limits';
+import { sanitizeRouteAccessOverride } from '@/lib/route-access-overrides';
 
 interface SaveUserBody {
   uid: string;
@@ -13,6 +14,7 @@ interface SaveUserBody {
     expiresAt: string;
   };
   limits?: unknown;
+  routeAccess?: unknown;
 }
 
 export async function POST(req: NextRequest) {
@@ -38,6 +40,10 @@ export async function POST(req: NextRequest) {
 
     if ('limits' in body) {
       payload.limits = sanitizeUsageLimits(body.limits);
+    }
+
+    if ('routeAccess' in body) {
+      payload.routeAccess = sanitizeRouteAccessOverride(body.routeAccess) ?? null;
     }
 
     await adminDb.collection('users').doc(uid).set(payload, { merge: true });

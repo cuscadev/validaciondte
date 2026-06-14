@@ -2,40 +2,28 @@ import { adminDb } from '@/lib/firebase-admin';
 import type { AuthUser } from '@/lib/server-auth';
 import type { MembershipType } from '@/lib/firestoreUser';
 import {
+  ALL_PLAN_ROUTE_KEYS,
   DEFAULT_FREE_ROUTES,
-  DEFAULT_PREMIUM_ROUTES,
-  DEFAULT_PRO_ROUTES,
+  FALLBACK_PLAN_ROUTES,
+  getFallbackRoutesForPlan,
   PLAN_ROUTE_GROUPS,
 } from '@/lib/plan-routes';
+import { resolveEffectiveRoutes } from '@/lib/route-access-overrides';
 
 type PlanConfig = {
   allowedRoutes?: string[];
 };
 
-const DEFAULT_ROUTE_CONFIGS: Record<MembershipType, PlanConfig> = {
-  free: { allowedRoutes: DEFAULT_FREE_ROUTES },
-  premium: { allowedRoutes: DEFAULT_PREMIUM_ROUTES },
-  pro: { allowedRoutes: DEFAULT_PRO_ROUTES },
-};
-
-const ALL_PLAN_ROUTE_KEYS = PLAN_ROUTE_GROUPS.flatMap((group) =>
-  group.routes.map((route) => route.key)
-);
-
 const ROUTE_LABELS = new Map(
   PLAN_ROUTE_GROUPS.flatMap((group) =>
-    group.routes.map((route) => [route.key, route.label] as const)
-  )
+    group.routes.map((route) => [route.key, route.label] as const),
+  ),
 );
-
-function fallbackConfigFor(planType: string): PlanConfig {
-  return DEFAULT_ROUTE_CONFIGS[planType as MembershipType] ?? DEFAULT_ROUTE_CONFIGS.free;
-}
 
 async function getPlanConfig(membershipType: MembershipType): Promise<PlanConfig> {
   const snap = await adminDb.doc('config/plans').get();
   const plans = snap.data() as Record<string, PlanConfig> | undefined;
-  return plans?.[membershipType] ?? fallbackConfigFor(membershipType);
+  return plans?.[membershipType] ?? { allowedRoutes: getFallbackRoutesForPlan(membershipType) };
 }
 
 export function getRouteLabel(routeKey: string): string {
@@ -49,5 +37,8 @@ export async function resolveAllowedRoutes(user: AuthUser): Promise<string[]> {
 
   const membershipType = (user.membership?.type || 'free') as MembershipType;
   const plan = await getPlanConfig(membershipType);
-  return plan.allowedRoutes ?? fallbackConfigFor(membershipType).allowedRoutes ?? [];
+  const planRoutes =
+    plan.allowedRoutes ?? FALLBACK_PLAN_ROUTES[membershipType] ?? DEFAULT_FREE_ROUTES;
+
+  return resolveEffectiveRoutes(planRoutes, user.routeAccess);
 }

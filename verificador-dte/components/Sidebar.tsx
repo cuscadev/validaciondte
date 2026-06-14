@@ -617,42 +617,52 @@ export default function Sidebar({
       {
         href: '/facturacion/consumidor-final',
         label: 'Facturar consumidor final',
+        routeKey: 'facturacion-consumidor-final',
       },
       {
         href: '/facturacion/credito-fiscal',
         label: 'Emitir credito fiscal',
+        routeKey: 'facturacion-credito-fiscal',
       },
       {
         href: '/facturacion/exportacion',
         label: 'Factura de exportacion',
+        routeKey: 'facturacion-exportacion',
       },
       {
         href: '/facturacion/nota-credito',
         label: 'Nota de credito',
+        routeKey: 'facturacion-nota-credito',
       },
       {
         href: '/facturacion/nota-debito',
         label: 'Nota de debito',
+        routeKey: 'facturacion-nota-debito',
       },
       {
         href: '/facturacion/sujeto-excluido',
         label: 'Facturar sujeto excluido',
+        routeKey: 'facturacion-sujeto-excluido',
       },
       {
         href: '/facturacion/envio-lotes',
         label: 'Envio de lotes',
+        routeKey: 'facturacion-envio-lotes',
       },
       {
         href: '/facturacion/reporte',
         label: 'Reporte',
+        routeKey: 'facturacion-reporte',
       },
       {
         href: '/facturacion/prueba-emision',
         label: 'Prueba de emision',
+        routeKey: 'facturacion-prueba-emision',
       },
       {
         href: '/facturacion/receptores',
         label: 'Receptores',
+        routeKey: 'facturacion-receptores',
       },
     ],
     [],
@@ -729,10 +739,42 @@ export default function Sidebar({
         {
           href: '/facturacion/receptores',
           label: 'Receptores',
+          routeKey: 'facturacion-receptores',
         },
       ],
     }),
     [],
+  );
+
+  const filterItemByPlan = useCallback(
+    (item: Item): Item | null => {
+      if (isSuperadmin) return item;
+
+      const allowed = new Set(allowedRoutes);
+      if (item.children) {
+        const children = item.children.filter(
+          (child) => !child.routeKey || allowed.has(child.routeKey),
+        );
+        return children.length > 0 ? { ...item, children } : null;
+      }
+
+      if (item.routeKey && !allowed.has(item.routeKey)) {
+        return null;
+      }
+
+      return item;
+    },
+    [allowedRoutes, isSuperadmin],
+  );
+
+  const filteredFacturacionItem = useMemo(
+    () => filterItemByPlan(facturacionItem),
+    [facturacionItem, filterItemByPlan],
+  );
+
+  const filteredFacturacionReceptoresItem = useMemo(
+    () => filterItemByPlan(facturacionReceptoresItem),
+    [facturacionReceptoresItem, filterItemByPlan],
   );
 
   const orgUsersItem = useMemo<Item>(
@@ -853,7 +895,7 @@ export default function Sidebar({
 
     if (isSuperadmin) {
       return [
-        ...withFacturacion(planFilteredBaseItems, facturacionItem),
+        ...withFacturacion(planFilteredBaseItems, filteredFacturacionItem),
         accessRequestsItem,
         adminItem,
         planesItem,
@@ -869,14 +911,14 @@ export default function Sidebar({
         ? [
             ...withFacturacion(
               [...planFilteredBaseItems, orgKycItem, orgUsersItem],
-              facturacionItem,
+              filteredFacturacionItem,
             ),
             notificationsItem,
           ]
         : [
             ...withFacturacion(
               [...planFilteredBaseItems, orgUsersItem],
-              facturacionReceptoresItem,
+              filteredFacturacionReceptoresItem,
             ),
             notificationsItem,
           ];
@@ -884,14 +926,14 @@ export default function Sidebar({
 
     if (isCliente) {
       return [
-        ...withFacturacion(planFilteredBaseItems, facturacionItem),
+        ...withFacturacion(planFilteredBaseItems, filteredFacturacionItem),
         orgKycItem,
         notificationsItem,
       ];
     }
 
     return [
-      ...withFacturacion(planFilteredBaseItems, facturacionReceptoresItem),
+      ...withFacturacion(planFilteredBaseItems, filteredFacturacionReceptoresItem),
       notificationsItem,
     ];
   }, [
@@ -900,8 +942,8 @@ export default function Sidebar({
     isCliente,
     planFilteredBaseItems,
     accessRequestsItem,
-    facturacionItem,
-    facturacionReceptoresItem,
+    filteredFacturacionItem,
+    filteredFacturacionReceptoresItem,
     adminItem,
     planesItem,
     avisosItem,

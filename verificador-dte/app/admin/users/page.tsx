@@ -23,6 +23,7 @@ import {
 import { toast } from 'sonner';
 
 import { UserForm } from '@/components/admin/UserForm';
+import { PlanRouteSelector } from '@/components/admin/PlanRouteSelector';
 import { UserTable, type UserTableRow } from '@/components/admin/UserTable';
 import { UserTableSearch } from '@/components/admin/UserTableExtras';
 import {
@@ -40,7 +41,8 @@ import {
   getAllUsers,
   getUser,
 } from '@/lib/firestoreUser';
-import { PLAN_ROUTE_GROUPS } from '@/lib/plan-routes';
+import { PLAN_ROUTE_GROUPS, getFallbackRoutesForPlan } from '@/lib/plan-routes';
+import type { RouteAccessOverride } from '@/lib/route-access-overrides';
 import { auth } from '@/lib/firebase';
 import { QUERY_CACHE_MS } from '@/components/QueryProvider';
 import {
@@ -146,6 +148,7 @@ type AdminUsageLimitsResponse = {
 };
 
 const ORGANIZATIONS_QUERY_KEY = ['admin', 'organizations'] as const;
+const PLANS_QUERY_KEY = ['admin', 'plans'] as const;
 const ROLE_FILTERS = [
   { id: 'all', label: 'Todos' },
   { id: 'superadmin', label: 'Superadmin' },
@@ -239,9 +242,11 @@ export default function UsersAdminPage() {
   const [delegateUser, setDelegateUser] = useState<UserTableRow | null>(null);
   const [statsUser, setStatsUser] = useState<UserTableRow | null>(null);
   const [limitsUser, setLimitsUser] = useState<UserTableRow | null>(null);
+  const [permissionsUser, setPermissionsUser] = useState<UserTableRow | null>(null);
   const [delegateLimit, setDelegateLimit] = useState('');
   const [orgLimitDraft, setOrgLimitDraft] = useState<LimitDraft>({});
   const [userLimitDraft, setUserLimitDraft] = useState<LimitDraft>({});
+  const [userRouteAccessDraft, setUserRouteAccessDraft] = useState<RouteAccessOverride | undefined>();
   const [usageAdjustments, setUsageAdjustments] = useState<Record<string, string>>({});
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -253,6 +258,12 @@ export default function UsersAdminPage() {
     overrides: {
       select: (data) => data.clients ?? [],
     },
+  });
+
+  const plansQuery = useGetQuery<Record<string, { allowedRoutes?: string[] }>>({
+    queryKey: PLANS_QUERY_KEY,
+    path: '/api/planes',
+    enabled: !checkingRole,
   });
 
   const orgClients = orgsQuery.data ?? [];
@@ -505,6 +516,13 @@ export default function UsersAdminPage() {
     setUsageAdjustments({});
   }
 
+  function openUserPermissions(row: UserTableRow) {
+    if (row.role === 'superadmin') return;
+    setPermissionsUser(row);
+    const user = users.find((item) => item.uid === row.uid);
+    setUserRouteAccessDraft(user?.routeAccess);
+  }
+
   function handleEditDetailMember(uid: string) {
     const row = tableRows.find((item) => item.uid === uid);
     if (!row) {
@@ -604,6 +622,46 @@ export default function UsersAdminPage() {
     toast.success('Limites de usuario actualizados');
   }
 
+  const planRoutesForPermissionsUser = useMemo(() => {
+    if (!permissionsUser) return [];
+    const planType = permissionsUser.membershipType || 'free';
+    const planConfig = plansQuery.data?.[planType];
+    return planConfig?.allowedRoutes ?? getFallbackRoutesForPlan(planType);
+  }, [permissionsUser, plansQuery.data]);
+
+  async function saveUserRouteAccess() {
+    if (!permissionsUser) return;
+    const user = users.find((item) => item.uid === permissionsUser.uid);
+    if (!user) {
+      toast.error('No se encontro el usuario.');
+      return;
+    }
+
+    const token = await auth.currentUser?.getIdToken();
+    const res = await fetch('/api/users/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        uid: user.uid,
+        email: user.email,
+        role: user.role,
+        membership: user.membership,
+        routeAccess: userRouteAccessDraft ?? null,
+      }),
+    });
+    const data = await res.json().catch(() => ({})) as { error?: string };
+    if (!res.ok) {
+      toast.error(data.error || 'No se pudieron actualizar los permisos');
+      return;
+    }
+    await queryClient.invalidateQueries({ queryKey: ['users'] });
+    await queryClient.invalidateQueries({ queryKey: ['users', user.uid] });
+    await fetchUsers();
+    setPermissionsUser(null);
+    setUserRouteAccessDraft(undefined);
+    toast.success('Permisos de vistas actualizados');
+  }
+
   async function adjustUserUsage(
     routeKey: string,
     action: 'increment' | 'decrement' | 'set',
@@ -651,6 +709,7 @@ export default function UsersAdminPage() {
           collaboratorCount: org?.organization?.collaboratorCount,
           maxCollaborators: org?.organization?.maxCollaborators,
           limits: user.limits,
+          routeAccess: user.routeAccess,
         };
       }),
     [orgByOwnerUid, users]
@@ -798,6 +857,7 @@ export default function UsersAdminPage() {
             onViewDetails={openDelegateLimit}
             onViewStats={openClientStats}
             onEditLimits={openUserLimits}
+            onEditPermissions={openUserPermissions}
             onForceLogout={(uid) => handleSessionAction(uid, 'forceLogout')}
             onToggleBlock={(row) => handleSessionAction(row.uid, row.disabled ? 'unblock' : 'block')}
           />
@@ -852,6 +912,7 @@ export default function UsersAdminPage() {
           setForm({});
           setEditMode(null);
         }}
+        className="w-[min(100%,24rem)] max-w-md sm:w-[min(100%,28rem)] sm:max-w-lg"
       >
         <UserForm
           form={form}
@@ -945,6 +1006,55 @@ export default function UsersAdminPage() {
           data={orgStatsQuery.data ?? null}
           loading={orgStatsQuery.isFetching && !orgStatsQuery.data}
         />
+      </Modal>
+
+      <Modal
+        open={permissionsUser !== null}
+        onClose={() => {
+          setPermissionsUser(null);
+          setUserRouteAccessDraft(undefined);
+        }}
+        className="max-h-[90vh] w-[min(96vw,42rem)] overflow-y-auto"
+      >
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-xl font-bold">Permisos de vistas</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {permissionsUser?.displayName || permissionsUser?.email} · plan{' '}
+              <span className="font-semibold capitalize">{permissionsUser?.membershipType || 'free'}</span>
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Marca o desmarca cada vista. Los cambios se aplican sobre lo que incluye el plan del usuario.
+            </p>
+          </div>
+
+          <PlanRouteSelector
+            mode="override"
+            planRoutes={planRoutesForPermissionsUser}
+            override={userRouteAccessDraft}
+            onOverrideChange={setUserRouteAccessDraft}
+          />
+
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setPermissionsUser(null);
+                setUserRouteAccessDraft(undefined);
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              className="bg-primary font-bold text-black hover:bg-primary/90"
+              onClick={saveUserRouteAccess}
+            >
+              Guardar permisos
+            </Button>
+          </div>
+        </div>
       </Modal>
 
       <Modal

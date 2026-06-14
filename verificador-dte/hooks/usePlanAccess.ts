@@ -11,7 +11,10 @@ import {
   DEFAULT_FREE_ROUTES,
   DEFAULT_PREMIUM_ROUTES,
   DEFAULT_PRO_ROUTES,
+  ALL_PLAN_ROUTE_KEYS,
 } from '@/lib/plan-routes';
+import { resolveEffectiveRoutes } from '@/lib/route-access-overrides';
+import type { RouteAccessOverride } from '@/lib/route-access-overrides';
 
 interface PlanConfig {
   allowedRoutes: string[];
@@ -75,9 +78,21 @@ interface CurrentPlanConfigResult {
   isSuperadmin: boolean;
 }
 
-function hasRouteAccess(config: PlanConfig | null, routeKey: string) {
+function hasRouteAccess(
+  config: PlanConfig | null,
+  routeKey: string,
+  routeAccess?: RouteAccessOverride,
+) {
   if (!config) return false;
-  return config.allowedRoutes.includes(routeKey);
+  return resolveEffectiveRoutes(config.allowedRoutes, routeAccess).includes(routeKey);
+}
+
+function getEffectiveRoutes(
+  config: PlanConfig | null,
+  routeAccess?: RouteAccessOverride,
+) {
+  if (!config) return [];
+  return resolveEffectiveRoutes(config.allowedRoutes, routeAccess);
 }
 
 function fallbackConfigFor(planType: string) {
@@ -96,14 +111,22 @@ export function usePlanAccess(routeKey: string): PlanAccessResult {
   const [membershipType, setMembershipType] = useState<string | null>(null);
   const [planConfig, setPlanConfig] = useState<PlanConfig | null>(null);
   const [isSuperadmin, setIsSuperadmin] = useState(false);
+  const [routeAccessOverride, setRouteAccessOverride] = useState<RouteAccessOverride | undefined>();
 
   useEffect(() => {
     let unsubPlan: (() => void) | null = null;
+    let unsubUser: (() => void) | null = null;
 
     const unsubAuth = onAuthStateChanged(auth, async (user) => {
+      unsubPlan?.();
+      unsubUser?.();
+      unsubPlan = null;
+      unsubUser = null;
+
       if (!user) {
         setAllowed(false);
         setIsSuperadmin(false);
+        setRouteAccessOverride(undefined);
         setLoading(false);
         return;
       }
@@ -115,12 +138,12 @@ export function usePlanAccess(routeKey: string): PlanAccessResult {
         gcTime: QUERY_CACHE_MS,
       });
 
-      // superadmin siempre tiene acceso
       if (appUser?.role === 'superadmin') {
         setIsSuperadmin(true);
         setAllowed(true);
         setQueryLimit(null);
         setMembershipType('superadmin');
+        setRouteAccessOverride(undefined);
         setLoading(false);
         return;
       }
@@ -129,33 +152,22 @@ export function usePlanAccess(routeKey: string): PlanAccessResult {
 
       const planType = appUser?.membership?.type ?? 'free';
       setMembershipType(planType);
+      setRouteAccessOverride(appUser?.routeAccess);
 
-      // Suscripción en tiempo real al config de planes
+      unsubUser = onSnapshot(doc(db, 'users', user.uid), (snap) => {
+        const data = snap.data() as { routeAccess?: RouteAccessOverride } | undefined;
+        setRouteAccessOverride(data?.routeAccess);
+      });
+
       unsubPlan = onSnapshot(doc(db, 'config', 'plans'), (snap) => {
-        if (!snap.exists()) {
-          const fallbackCfg = fallbackConfigFor(planType);
-          setPlanConfig(fallbackCfg);
-          setQueryLimit(fallbackCfg.queryLimit);
-          setAllowed(hasRouteAccess(fallbackCfg, routeKey));
-          setLoading(false);
-          return;
-        }
-
-        const data = snap.data();
-        const cfg = data[planType] as PlanConfig | undefined;
         const fallbackCfg = fallbackConfigFor(planType);
-
-        if (!cfg) {
-          setPlanConfig(fallbackCfg);
-          setQueryLimit(fallbackCfg.queryLimit);
-          setAllowed(hasRouteAccess(fallbackCfg, routeKey));
-          setLoading(false);
-          return;
-        }
+        const cfg = snap.exists()
+          ? ((snap.data()[planType] as PlanConfig | undefined) ?? fallbackCfg)
+          : fallbackCfg;
 
         setPlanConfig(cfg);
         setQueryLimit(cfg.queryLimit);
-        setAllowed(hasRouteAccess(cfg, routeKey));
+        setAllowed(hasRouteAccess(cfg, routeKey, appUser?.routeAccess));
         setLoading(false);
       });
     });
@@ -163,8 +175,14 @@ export function usePlanAccess(routeKey: string): PlanAccessResult {
     return () => {
       unsubAuth();
       unsubPlan?.();
+      unsubUser?.();
     };
   }, [queryClient, routeKey]);
+
+  useEffect(() => {
+    if (isSuperadmin || !planConfig) return;
+    setAllowed(hasRouteAccess(planConfig, routeKey, routeAccessOverride));
+  }, [isSuperadmin, planConfig, routeAccessOverride, routeKey]);
 
   return { loading, allowed, queryLimit, membershipType, planConfig, isSuperadmin };
 }
@@ -176,16 +194,26 @@ export function useCurrentPlanConfig(): CurrentPlanConfigResult {
   const [membershipType, setMembershipType] = useState<string | null>(null);
   const [planConfig, setPlanConfig] = useState<PlanConfig | null>(null);
   const [isSuperadmin, setIsSuperadmin] = useState(false);
+  const [routeAccessOverride, setRouteAccessOverride] = useState<RouteAccessOverride | undefined>();
+  const [allowedRoutes, setAllowedRoutes] = useState<string[]>([]);
 
   useEffect(() => {
     let unsubPlan: (() => void) | null = null;
+    let unsubUser: (() => void) | null = null;
 
     const unsubAuth = onAuthStateChanged(auth, async (user) => {
+      unsubPlan?.();
+      unsubUser?.();
+      unsubPlan = null;
+      unsubUser = null;
+
       if (!user) {
         setIsSuperadmin(false);
         setPlanConfig(null);
         setQueryLimit(null);
         setMembershipType(null);
+        setRouteAccessOverride(undefined);
+        setAllowedRoutes([]);
         setLoading(false);
         return;
       }
@@ -202,6 +230,8 @@ export function useCurrentPlanConfig(): CurrentPlanConfigResult {
         setPlanConfig(null);
         setQueryLimit(null);
         setMembershipType('superadmin');
+        setRouteAccessOverride(undefined);
+        setAllowedRoutes(ALL_PLAN_ROUTE_KEYS);
         setLoading(false);
         return;
       }
@@ -209,21 +239,22 @@ export function useCurrentPlanConfig(): CurrentPlanConfigResult {
       setIsSuperadmin(false);
       const planType = appUser?.membership?.type ?? 'free';
       setMembershipType(planType);
+      setRouteAccessOverride(appUser?.routeAccess);
+
+      unsubUser = onSnapshot(doc(db, 'users', user.uid), (snap) => {
+        const data = snap.data() as { routeAccess?: RouteAccessOverride } | undefined;
+        setRouteAccessOverride(data?.routeAccess);
+      });
 
       unsubPlan = onSnapshot(doc(db, 'config', 'plans'), (snap) => {
         const fallbackCfg = fallbackConfigFor(planType);
+        const cfg = snap.exists()
+          ? ((snap.data()[planType] as PlanConfig | undefined) ?? fallbackCfg)
+          : fallbackCfg;
 
-        if (!snap.exists()) {
-          setPlanConfig(fallbackCfg);
-          setQueryLimit(fallbackCfg.queryLimit);
-          setLoading(false);
-          return;
-        }
-
-        const data = snap.data();
-        const cfg = (data[planType] as PlanConfig | undefined) ?? fallbackCfg;
         setPlanConfig(cfg);
         setQueryLimit(cfg.queryLimit);
+        setAllowedRoutes(getEffectiveRoutes(cfg, appUser?.routeAccess));
         setLoading(false);
       });
     });
@@ -231,12 +262,25 @@ export function useCurrentPlanConfig(): CurrentPlanConfigResult {
     return () => {
       unsubAuth();
       unsubPlan?.();
+      unsubUser?.();
     };
   }, [queryClient]);
 
+  useEffect(() => {
+    if (isSuperadmin) {
+      setAllowedRoutes(ALL_PLAN_ROUTE_KEYS);
+      return;
+    }
+    if (!planConfig) {
+      setAllowedRoutes([]);
+      return;
+    }
+    setAllowedRoutes(getEffectiveRoutes(planConfig, routeAccessOverride));
+  }, [isSuperadmin, planConfig, routeAccessOverride]);
+
   return {
     loading,
-    allowedRoutes: planConfig?.allowedRoutes ?? [],
+    allowedRoutes,
     queryLimit,
     membershipType,
     planConfig,

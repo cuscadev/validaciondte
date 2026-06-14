@@ -23,8 +23,8 @@ import {
   DEFAULT_FREE_ROUTES,
   DEFAULT_PREMIUM_ROUTES,
   DEFAULT_PRO_ROUTES,
-  PLAN_ROUTE_GROUPS,
 } from '@/lib/plan-routes';
+import { PlanRouteSelector } from '@/components/admin/PlanRouteSelector';
 
 const PLANS = [
   { id: 'free', label: 'Free', description: 'Acceso inicial para probar la plataforma.' },
@@ -164,16 +164,6 @@ export default function PlanesPage() {
       }
 
       return { ...prev, [planId]: updated };
-    });
-  };
-
-  const toggleRoute = (planId: string, routeKey: string) => {
-    setPlans(prev => {
-      const current = prev[planId].allowedRoutes;
-      const updated = current.includes(routeKey)
-        ? current.filter(r => r !== routeKey)
-        : [...current, routeKey];
-      return { ...prev, [planId]: { ...prev[planId], allowedRoutes: updated } };
     });
   };
 
@@ -379,38 +369,13 @@ export default function PlanesPage() {
                     <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                       Herramientas con acceso
                     </p>
-                    <div className="grid gap-2">
-                      {PLAN_ROUTE_GROUPS.map(group => (
-                        <div key={group.key}>
-                          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-zinc-500">
-                            {group.label}
-                          </p>
-                          <div className="grid gap-2">
-                            {group.routes.map(route => {
-                              const checked = cfg.allowedRoutes.includes(route.key);
-                              return (
-                                <label
-                                  key={route.key}
-                                  className={`flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 text-sm transition ${
-                                    checked
-                                      ? 'border-primary bg-primary/10 text-foreground'
-                                      : 'border-border text-muted-foreground hover:bg-muted/50'
-                                  }`}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={checked}
-                                    onChange={() => toggleRoute(plan.id, route.key)}
-                                    className="size-4 rounded accent-primary"
-                                  />
-                                  <span>{route.label}</span>
-                                </label>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    <PlanRouteSelector
+                      mode="plan"
+                      selectedRoutes={cfg.allowedRoutes}
+                      onSelectedRoutesChange={(routes) =>
+                        update(plan.id, 'allowedRoutes', routes)
+                      }
+                    />
                   </section>
 
                   <section>

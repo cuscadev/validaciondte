@@ -1,6 +1,6 @@
 import * as React from "react";
 import Image from "next/image";
-import { Ban, BarChart3, Eye, LogOut, MoreHorizontal, Pencil, SlidersHorizontal, Trash2, Unlock } from "lucide-react";
+import { Ban, BarChart3, Eye, KeyRound, LogOut, MoreHorizontal, Pencil, SlidersHorizontal, Trash2, Unlock } from "lucide-react";
 
 import { TABLE_HEAD } from "@/lib/ui/table-classes";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import type { RouteAccessOverride } from "@/lib/route-access-overrides";
 
 export interface UserTableRow {
   uid: string;
@@ -29,6 +30,7 @@ export interface UserTableRow {
     routeLimits?: Record<string, number | null>;
     mobileScanFolderLimit?: number | null;
   };
+  routeAccess?: RouteAccessOverride;
 }
 
 interface UserTableProps {
@@ -38,6 +40,7 @@ interface UserTableProps {
   onViewDetails: (row: UserTableRow) => void;
   onViewStats?: (row: UserTableRow) => void;
   onEditLimits?: (row: UserTableRow) => void;
+  onEditPermissions?: (row: UserTableRow) => void;
   onForceLogout: (uid: string) => void;
   onToggleBlock: (row: UserTableRow) => void;
 }
@@ -90,6 +93,7 @@ function UserTableActions({
   onViewDetails,
   onViewStats,
   onEditLimits,
+  onEditPermissions,
   onForceLogout,
   onToggleBlock,
   align = "end",
@@ -119,10 +123,16 @@ function UserTableActions({
           Editar
         </DropdownMenuItem>
         {row.role !== "superadmin" && (
-          <DropdownMenuItem onClick={() => onEditLimits?.(row)}>
-            <SlidersHorizontal className="size-4" />
-            Configurar limites
-          </DropdownMenuItem>
+          <>
+            <DropdownMenuItem onClick={() => onEditPermissions?.(row)}>
+              <KeyRound className="size-4" />
+              Permisos de vistas
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onEditLimits?.(row)}>
+              <SlidersHorizontal className="size-4" />
+              Configurar limites
+            </DropdownMenuItem>
+          </>
         )}
         <DropdownMenuItem onClick={() => onForceLogout(row.uid)}>
           <LogOut className="size-4" />
@@ -197,6 +207,7 @@ export function UserTable({
   onViewDetails,
   onViewStats,
   onEditLimits,
+  onEditPermissions,
   onForceLogout,
   onToggleBlock,
 }: UserTableProps) {
@@ -221,6 +232,7 @@ export function UserTable({
             onViewDetails={onViewDetails}
             onViewStats={onViewStats}
             onEditLimits={onEditLimits}
+            onEditPermissions={onEditPermissions}
             onForceLogout={onForceLogout}
             onToggleBlock={onToggleBlock}
           />
@@ -283,6 +295,7 @@ export function UserTable({
                       onViewDetails={onViewDetails}
                       onViewStats={onViewStats}
                       onEditLimits={onEditLimits}
+                      onEditPermissions={onEditPermissions}
                       onForceLogout={onForceLogout}
                       onToggleBlock={onToggleBlock}
                     />
