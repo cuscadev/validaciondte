@@ -21,7 +21,6 @@ import {
   UserCheck,
   ReceiptText,
   FileSearch,
-  FileDown,
 } from 'lucide-react';
 
 import { useAuth } from '@/components/AuthProvider';
@@ -226,8 +225,8 @@ function CollapsedNavRail({ children }: { children: React.ReactNode }) {
   );
 }
 
-function insertItemAfterExtraer(items: Item[], insert: Item): Item[] {
-  const index = items.findIndex((item) => item.href === '/extraer');
+function insertItemAfterVerificarConsultar(items: Item[], insert: Item): Item[] {
+  const index = items.findIndex((item) => item.href === '/verificar-consultar');
   if (index === -1) return [...items, insert];
   return [...items.slice(0, index + 1), insert, ...items.slice(index + 1)];
 }
@@ -488,7 +487,9 @@ export default function Sidebar({
   const { t } = useTranslation();
   const pathname = usePathname();
 
-  const [activeSectionHref, setActiveSectionHref] = useState<string | null>(null);
+  const [activeSectionHref, setActiveSectionHref] = useState<string | null>(
+    '/verificar-consultar',
+  );
   const [openFlyoutHref, setOpenFlyoutHref] = useState<string | null>(null);
 
   const { appUser } = useAuth();
@@ -570,11 +571,6 @@ export default function Sidebar({
     [],
   );
 
-  const verificarConsultarChildren = useMemo(
-    () => [...verificadorChildren, ...consultasLotesChildren],
-    [consultasLotesChildren, verificadorChildren],
-  );
-
   const extraerChildren = useMemo<NavChild[]>(
     () => [
       {
@@ -602,12 +598,6 @@ export default function Sidebar({
         group: 'Extraer datos',
       },
       {
-        href: '/extraer/qr-pdf',
-        label: 'QR PDF',
-        routeKey: 'qr-pdf',
-        group: 'Extraer datos',
-      },
-      {
         href: '/escaneos-mobile',
         label: 'Escaneo desde la app',
         routeKey: 'escaneos-mobile',
@@ -615,6 +605,11 @@ export default function Sidebar({
       },
     ],
     [],
+  );
+
+  const verificarConsultarChildren = useMemo(
+    () => [...verificadorChildren, ...consultasLotesChildren, ...extraerChildren],
+    [consultasLotesChildren, extraerChildren, verificadorChildren],
   );
 
   const facturacionChildren = useMemo<NavChild[]>(
@@ -672,12 +667,6 @@ export default function Sidebar({
         children: verificarConsultarChildren,
       },
       {
-        href: '/extraer',
-        label: 'sidebar.extraer',
-        icon: FileDown,
-        children: extraerChildren,
-      },
-      {
         href: '/plantillas-pdf',
         label: 'Plantillas PDF',
         icon: Palette,
@@ -689,14 +678,8 @@ export default function Sidebar({
         icon: CalendarDays,
       },
       {
-        href: '/integraciones/gmail',
-        label: 'Importar desde Gmail',
-        icon: Mail,
-        routeKey: 'integraciones-gmail',
-      },
-      {
         href: '/integraciones/correo-imap',
-        label: 'Importar desde correo (IMAP)',
+        label: 'Importar desde correo',
         icon: Mail,
         routeKey: 'integraciones-imap',
       },
@@ -706,7 +689,7 @@ export default function Sidebar({
         icon: Settings,
       },
     ],
-    [extraerChildren, verificarConsultarChildren],
+    [verificarConsultarChildren],
   );
 
   const adminItem = useMemo<Item>(
@@ -866,7 +849,7 @@ export default function Sidebar({
 
   const items = useMemo(() => {
     const withFacturacion = (list: Item[], facturacion: Item | null) =>
-      facturacion ? insertItemAfterExtraer(list, facturacion) : list;
+      facturacion ? insertItemAfterVerificarConsultar(list, facturacion) : list;
 
     if (isSuperadmin) {
       return [
@@ -932,7 +915,7 @@ export default function Sidebar({
   useEffect(() => {
     setOpenFlyoutHref(null);
     if (pathname === '/dashboard') {
-      setActiveSectionHref(null);
+      setActiveSectionHref('/verificar-consultar');
       return;
     }
     const matched = findActiveSectionHref(items, pathname);

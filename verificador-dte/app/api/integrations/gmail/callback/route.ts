@@ -17,7 +17,7 @@ import {
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const UI_PATH = '/integraciones/gmail';
+const UI_PATH = '/integraciones/correo-imap';
 
 function uiRedirect(req: NextRequest, returnOrigin: string | undefined, query: string) {
   const base = resolveReturnOrigin(returnOrigin, req.nextUrl.origin);

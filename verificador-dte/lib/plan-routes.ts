@@ -37,8 +37,7 @@ export const STANDALONE_PLAN_ROUTES: PlanRoute[] = [
   { key: 'plantillas-pdf', label: 'Plantillas PDF' },
   { key: 'escaneos-mobile', label: 'Escaneo desde la app' },
   { key: 'hacienda-credentials', label: 'Card Ministerio de Hacienda' },
-  { key: 'integraciones-gmail', label: 'Importar desde Gmail' },
-  { key: 'integraciones-imap', label: 'Importar desde correo (IMAP)' },
+  { key: 'integraciones-imap', label: 'Importar desde correo' },
 ];
 
 export const PLAN_ROUTE_GROUPS: PlanRouteGroup[] = [
