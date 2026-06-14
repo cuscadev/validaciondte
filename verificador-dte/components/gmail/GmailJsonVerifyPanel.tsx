@@ -1,6 +1,6 @@
 'use client';
 
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import type { GmailJsonVerifyResult } from '@/lib/gmail/json-verify-result';
@@ -10,6 +10,7 @@ type Props = {
   downloadHref: string | null;
   filename: string;
   loading?: boolean;
+  embedded?: boolean;
 };
 
 function estadoClass(estado?: string) {
@@ -30,19 +31,25 @@ export default function GmailJsonVerifyPanel({
   downloadHref,
   filename,
   loading,
+  embedded = false,
 }: Props) {
   if (loading) {
     return (
-      <p className="py-4 text-sm text-muted-foreground">
+      <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
+        <Loader2 className="size-4 animate-spin" />
         Verificando JSON importados en Hacienda...
-      </p>
+      </div>
     );
   }
 
   if (!results.length) return null;
 
+  const wrapperClass = embedded
+    ? 'space-y-3'
+    : 'space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-zinc-900/40';
+
   return (
-    <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-zinc-900/40">
+    <div className={wrapperClass}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-semibold text-slate-900 dark:text-white">
           Resultados de verificacion JSON ({results.length})

@@ -2,7 +2,9 @@
 
 import { Button } from '@/components/ui/button';
 
-const PAGE_SIZES = [25, 50, 100] as const;
+export const EMAIL_DOCUMENT_PAGE_SIZES = [2, 10, 30, 40, 50] as const;
+
+const PAGE_SIZES = EMAIL_DOCUMENT_PAGE_SIZES;
 
 type Props = {
   page: number;
@@ -48,7 +50,7 @@ export default function EmailDocumentTablePagination({
 
       <div className="flex flex-wrap items-center gap-2">
         <select
-          value={pageSize}
+          value={PAGE_SIZES.includes(pageSize as (typeof PAGE_SIZES)[number]) ? pageSize : PAGE_SIZES[1]}
           onChange={(e) => onPageSizeChange(Number(e.target.value))}
           disabled={loading}
           className="h-9 rounded-md border border-slate-200 bg-white px-2 text-sm dark:border-white/10 dark:bg-zinc-900 dark:text-white"

@@ -12,14 +12,12 @@ import {
   RefreshCw,
   ShieldCheck,
   Unplug,
-  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import GmailDocumentFilters from '@/components/gmail/GmailDocumentFilters';
-import EmailDocumentTablePagination from '@/components/gmail/EmailDocumentTablePagination';
-import GmailDocumentTable, { STATUS_LABELS } from '@/components/gmail/GmailDocumentTable';
-import GmailJsonVerifyPanel from '@/components/gmail/GmailJsonVerifyPanel';
+import EmailDocumentResultsTabs from '@/components/gmail/EmailDocumentResultsTabs';
+import { STATUS_LABELS } from '@/components/gmail/GmailDocumentTable';
 import PlanGate from '@/components/PlanGate';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -252,8 +250,8 @@ export default function GmailIntegracionPage() {
 
   return (
     <PlanGate routeKey="integraciones-gmail">
-      <main className="min-h-screen bg-slate-50 text-slate-950 dark:bg-black dark:text-white">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 p-4 md:p-6">
+      <main className="w-full max-w-full text-slate-950 dark:text-white">
+        <div className="flex w-full flex-col gap-4">
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6 dark:border-white/10 dark:bg-zinc-950">
             <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-start">
               <div>
@@ -264,14 +262,14 @@ export default function GmailIntegracionPage() {
                 <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">
                   Importar DTE desde correo
                 </h1>
-                <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600 md:text-base dark:text-zinc-300">
+                <p className="mt-4 text-sm leading-7 text-slate-600 md:text-base dark:text-zinc-300">
                   Conecta Gmail con acceso de solo lectura, importa adjuntos JSON de tipos
                   tributarios relevantes y verifica en Hacienda con el mismo flujo de Verificar
                   JSON.
                 </p>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[28rem]">
+              <div className="grid gap-3 sm:grid-cols-3 lg:w-auto lg:shrink-0">
                 <MetricCard
                   icon={CheckCircle2}
                   label="Estado"
@@ -494,113 +492,33 @@ export default function GmailIntegracionPage() {
                       disabled={loadingCatalog}
                       mailboxOptions={mailboxOptions}
                     />
-
-                    {loadingCatalog && !catalog.length ? (
-                      <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
-                        <Loader2 className="size-4 animate-spin" />
-                        Cargando catalogo...
-                      </div>
-                    ) : catalog.length ? (
-                      <>
-                        <GmailDocumentTable
-                          documents={catalog}
-                          selectedIds={selectedIds}
-                          onToggleSelect={toggleSelect}
-                          onToggleAll={toggleAll}
-                          onViewLinks={(doc) => void viewLinks(doc)}
-                          onViewJson={(doc) => void viewJson(doc)}
-                          sortBy={sortBy}
-                          sortDir={sortDir}
-                          onSort={handleSort}
-                          showMailboxColumn={showMailboxColumn}
-                          loading={loadingCatalog}
-                        />
-                        <EmailDocumentTablePagination
-                          page={page}
-                          pageSize={pageSize}
-                          total={catalogTotal}
-                          totalPages={totalPages}
-                          loading={loadingCatalog}
-                          onPageChange={setPage}
-                          onPageSizeChange={setPageSize}
-                        />
-                      </>
-                    ) : (
-                      <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-14 text-center dark:border-white/10 dark:bg-zinc-900/30">
-                        <FileStack className="mx-auto mb-3 size-8 text-slate-400" />
-                        <p className="font-medium text-slate-900 dark:text-white">
-                          Sin documentos importados
-                        </p>
-                        <p className="mt-2 text-sm text-slate-600 dark:text-zinc-300">
-                          Ejecuta una sincronizacion o amplia el rango de fechas del buzon.
-                        </p>
-                      </div>
-                    )}
-
-                    <GmailJsonVerifyPanel
-                      results={verifyResults}
-                      downloadHref={verifyDownloadHref}
-                      filename={verifyFilename}
-                      loading={verifyLoading}
+                    <EmailDocumentResultsTabs
+                      catalog={catalog}
+                      catalogTotal={catalogTotal}
+                      loadingCatalog={loadingCatalog}
+                      page={page}
+                      pageSize={pageSize}
+                      totalPages={totalPages}
+                      onPageChange={setPage}
+                      onPageSizeChange={setPageSize}
+                      selectedIds={selectedIds}
+                      onToggleSelect={toggleSelect}
+                      onToggleAll={toggleAll}
+                      sortBy={sortBy}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                      showMailboxColumn={showMailboxColumn}
+                      onViewLinks={(doc) => void viewLinks(doc)}
+                      onViewJson={(doc) => void viewJson(doc)}
+                      verifyResults={verifyResults}
+                      verifyDownloadHref={verifyDownloadHref}
+                      verifyFilename={verifyFilename}
+                      verifyLoading={verifyLoading}
+                      linkedPreview={linkedPreview}
+                      onCloseLinkedPreview={() => setLinkedPreview(null)}
+                      loadingLinks={loadingLinks}
+                      onViewLinksFromPreview={(rel) => void viewLinks(rel)}
                     />
-
-                    {linkedPreview ? (
-                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-zinc-900/40">
-                        <div className="mb-3 flex items-start justify-between gap-2">
-                          <div>
-                            <p className="text-sm font-semibold">Documentos relacionados</p>
-                            <p className="text-xs text-slate-500 dark:text-zinc-400">
-                              {linkedPreview.doc.tipo_dte_label} ·{' '}
-                              {linkedPreview.doc.codigo_generacion}
-                            </p>
-                          </div>
-                          <Button
-                            type="button"
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => setLinkedPreview(null)}
-                            aria-label="Cerrar panel"
-                          >
-                            <X className="size-4" />
-                          </Button>
-                        </div>
-                        {loadingLinks ? (
-                          <Loader2 className="size-4 animate-spin" />
-                        ) : linkedPreview.documents.length ? (
-                          <ul className="space-y-2 text-sm">
-                            {linkedPreview.documents.map((rel) => (
-                              <li
-                                key={rel.id}
-                                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-3 dark:border-white/10 dark:bg-zinc-950"
-                              >
-                                <div>
-                                  <span className="font-medium">
-                                    {rel.tipo_dte_label || rel.tipo_dte}
-                                  </span>
-                                  <span className="mx-2 text-slate-400">·</span>
-                                  <span className="font-mono text-xs">{rel.codigo_generacion}</span>
-                                  <div className="text-xs text-slate-500 dark:text-zinc-400">
-                                    {rel.fec_emi} · {rel.emisor_nombre || '—'}
-                                  </div>
-                                </div>
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => void viewLinks(rel)}
-                                >
-                                  Ver enlaces
-                                </Button>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-sm text-slate-600 dark:text-zinc-300">
-                            Sin documentos vinculados.
-                          </p>
-                        )}
-                      </div>
-                    ) : null}
                   </div>
                 </>
               )}

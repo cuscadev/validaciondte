@@ -19,7 +19,7 @@ import type { GmailDocumentRow } from '@/lib/gmail/types';
 
 export { authFetch } from '@/lib/email-import/auth-fetch';
 
-export const DEFAULT_CATALOG_PAGE_SIZE = 25;
+export const DEFAULT_CATALOG_PAGE_SIZE = 10;
 
 export type LinkedPreview = {
   doc: GmailDocumentRow;
