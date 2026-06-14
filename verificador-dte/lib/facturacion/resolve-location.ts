@@ -6,6 +6,7 @@ export type ResolvedLocation = {
   distritoCodigo: string | null;
   departamento: string;
   municipio: string;
+  municipioDte: string;
   distrito: string;
   municipioId: number;
 };
@@ -42,8 +43,17 @@ export function sanitizeLocationCodeForForm(value: unknown): string {
   return normalized === '00' ? '' : normalized;
 }
 
-/** CAT-013: municipio en JSON DTE = 2 digitos depto + 2 digitos municipio (4 total). */
-export function toDteMunicipioCode(departamento: unknown, municipio: unknown): string {
+/** CAT-013: municipio en JSON DTE = codigo oficial de 4 digitos (depto + municipio). */
+export function toDteMunicipioCode(
+  departamento: unknown,
+  municipio: unknown,
+  codigoDte?: unknown
+): string {
+  const official = cleanDigits(codigoDte);
+  if (official.length >= 4) {
+    return official.slice(-4).padStart(4, '0');
+  }
+
   const dept = normalizeLocationCode(departamento);
   const digits = cleanDigits(municipio);
   if (!dept || !digits) return '';
@@ -64,13 +74,14 @@ export function isValidDteMunicipioCode(value: unknown): boolean {
 }
 
 export function normalizeDteDireccion<T extends { departamento: string; municipio: string; distrito: string }>(
-  direccion: T
+  direccion: T,
+  municipioDte?: string
 ): T {
   const departamento = normalizeLocationCode(direccion.departamento);
   return {
     ...direccion,
     departamento,
-    municipio: toDteMunicipioCode(departamento, direccion.municipio),
+    municipio: toDteMunicipioCode(departamento, direccion.municipio, municipioDte),
     distrito: normalizeLocationCode(direccion.distrito),
   };
 }
@@ -79,7 +90,7 @@ export function toDteLocationCodes(location: ResolvedLocation) {
   const departamento = normalizeLocationCode(location.departamento);
   return {
     departamento,
-    municipio: toDteMunicipioCode(departamento, location.municipio),
+    municipio: location.municipioDte || toDteMunicipioCode(departamento, location.municipio),
     distrito: normalizeLocationCode(location.distrito),
   };
 }
@@ -125,9 +136,9 @@ export async function resolveLocation(
     throw new LocationValidationError(`Departamento invalido: ${departamentoCodigo}.`);
   }
 
-  const municipio = await pool.query<{ id: number; codigo: string }>(
+  const municipio = await pool.query<{ id: number; codigo: string; codigo_dte: string | null }>(
     `
-      SELECT id, codigo
+      SELECT id, codigo, codigo_dte
       FROM cat_006_municipios
       WHERE codigo = $1
         AND departamento_codigo = $2
@@ -143,6 +154,11 @@ export async function resolveLocation(
   }
 
   const municipioId = municipio.rows[0].id;
+  const municipioDte = toDteMunicipioCode(
+    departamentoCodigo,
+    municipio.rows[0].codigo,
+    municipio.rows[0].codigo_dte
+  );
   let resolvedDistrito = distritoCodigo;
 
   if (resolvedDistrito) {
@@ -174,6 +190,7 @@ export async function resolveLocation(
     distritoCodigo: resolvedDistrito || null,
     departamento: departamentoCodigo,
     municipio: municipio.rows[0].codigo,
+    municipioDte,
     distrito: resolvedDistrito,
     municipioId,
   };

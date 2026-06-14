@@ -2,8 +2,11 @@ package location
 
 import "strings"
 
-// DteMunicipioCode builds the CAT-013 value for DTE JSON (dept 2 digits + municipio 2 digits).
-func DteMunicipioCode(departamento, municipio string) string {
+// DteMunicipioCode builds the CAT-013 value for DTE JSON (4 digits).
+func DteMunicipioCode(departamento, municipio, codigoDte string) string {
+	if code := LeftPadDigits(DigitsOnly(codigoDte), 4); len(DigitsOnly(codigoDte)) >= 4 {
+		return code
+	}
 	dept := LeftPadDigits(departamento, 2)
 	digits := DigitsOnly(municipio)
 	if dept == "" || digits == "" {
@@ -39,7 +42,12 @@ func LeftPadDigits(value string, width int) string {
 	return clean
 }
 
-func MapDteDireccion(departamento, municipio, distrito, complemento string) (string, string, string, string) {
+func MapDteDireccion(departamento, municipio, distrito, complemento, codigoDte string) (string, string, string, string) {
 	dept := LeftPadDigits(departamento, 2)
-	return dept, DteMunicipioCode(dept, municipio), LeftPadDigits(distrito, 2), strings.TrimSpace(complemento)
+	return dept, DteMunicipioCode(dept, municipio, codigoDte), LeftPadDigits(distrito, 2), strings.TrimSpace(complemento)
+}
+
+func MapEmisorDteDireccion(departamento, municipio, complemento, codigoDte string) (string, string, string) {
+	dept := LeftPadDigits(departamento, 2)
+	return dept, DteMunicipioCode(dept, municipio, codigoDte), strings.TrimSpace(complemento)
 }

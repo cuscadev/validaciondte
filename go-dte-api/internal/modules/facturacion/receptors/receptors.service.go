@@ -184,6 +184,7 @@ func mapDireccion(input dto.Direccion) domain.Direccion {
 		input.Municipio,
 		input.Distrito,
 		input.Complemento,
+		input.Municipio,
 	)
 	return domain.Direccion{
 		Departamento: dept,

@@ -12,6 +12,7 @@ type EmisorRow struct {
 	DescripcionActividad       *string `json:"descripcionActividad,omitempty"`
 	DepartamentoCodigo         *string `json:"departamentoCodigo,omitempty"`
 	MunicipioCodigo            *string `json:"municipioCodigo,omitempty"`
+	MunicipioCodigoDte         *string `json:"municipioCodigoDte,omitempty"`
 	DistritoCodigo             *string `json:"distritoCodigo,omitempty"`
 	ComplementoDireccion       *string `json:"complementoDireccion,omitempty"`
 	Telefono                   *string `json:"telefono,omitempty"`

@@ -4,18 +4,18 @@ import "testing"
 
 func TestDteMunicipioCode(t *testing.T) {
 	tests := []struct {
-		dept, muni, want string
+		dept, muni, official, want string
 	}{
-		{"06", "14", "0614"},
-		{"05", "04", "0504"},
-		{"6", "4", "0604"},
-		{"06", "0614", "0614"},
-		{"05", "0504", "0504"},
+		{"05", "01", "0511", "0511"},
+		{"05", "01", "", "0501"},
+		{"06", "14", "", "0614"},
+		{"06", "01", "0614", "0614"},
+		{"05", "0504", "", "0504"},
 	}
 	for _, tc := range tests {
-		got := DteMunicipioCode(tc.dept, tc.muni)
+		got := DteMunicipioCode(tc.dept, tc.muni, tc.official)
 		if got != tc.want {
-			t.Fatalf("DteMunicipioCode(%q, %q) = %q, want %q", tc.dept, tc.muni, got, tc.want)
+			t.Fatalf("DteMunicipioCode(%q, %q, %q) = %q, want %q", tc.dept, tc.muni, tc.official, got, tc.want)
 		}
 	}
 }

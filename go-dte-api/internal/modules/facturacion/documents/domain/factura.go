@@ -56,7 +56,7 @@ type Receptor struct {
 type Direccion struct {
 	Departamento string `json:"departamento"`
 	Municipio    string `json:"municipio"`
-	Distrito     string `json:"distrito"`
+	Distrito     string `json:"distrito,omitempty"`
 	Complemento  string `json:"complemento"`
 }
 
