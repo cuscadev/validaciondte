@@ -17,6 +17,7 @@ import { setSessionCookie as writeSessionCookie } from '@/lib/session-cookie';
 import PublicNavbar from '@/components/PublicNavbar';
 
 import { Button } from '@/components/ui/button';
+import { PUBLIC_AUTH_GRADIENT, PUBLIC_AUTH_GRID } from '@/lib/ui/public-backdrop-classes';
 
 import {
 	Card,
@@ -125,14 +126,14 @@ export default function TotpVerifyPage() {
 	};
 
 	return (
-		<main className="relative min-h-screen overflow-x-hidden bg-slate-50 text-slate-950 transition-colors dark:bg-black dark:text-white">
+		<main className="relative min-h-screen overflow-x-hidden bg-background text-foreground">
 			<div className="fixed left-0 top-0 z-30 w-full">
 				<PublicNavbar />
 			</div>
 
-			<div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_18%_22%,rgba(234,179,8,0.20),transparent_30%),radial-gradient(circle_at_84%_20%,rgba(59,130,246,0.14),transparent_34%),linear-gradient(135deg,#fff7ed_0%,#f8fafc_52%,#eef2ff_100%)] dark:bg-[radial-gradient(circle_at_18%_22%,rgba(250,204,21,0.2),transparent_30%),radial-gradient(circle_at_84%_20%,rgba(239,68,68,0.18),transparent_34%),linear-gradient(135deg,#030303_0%,#111111_52%,#1c0f0b_100%)]" />
+			<div className={`absolute inset-0 z-0 ${PUBLIC_AUTH_GRADIENT}`} />
 
-			<div className="absolute inset-0 z-0 opacity-50 [background-image:linear-gradient(rgba(15,23,42,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(15,23,42,0.07)_1px,transparent_1px)] [background-size:72px_72px] dark:opacity-40 dark:[background-image:linear-gradient(rgba(255,255,255,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.07)_1px,transparent_1px)]" />
+			<div className={`absolute inset-0 z-0 ${PUBLIC_AUTH_GRID}`} />
 
 			<section className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl items-center justify-center px-4 pb-8 pt-24 sm:px-6 sm:pt-28 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(24rem,28rem)] lg:items-center lg:gap-16 lg:px-12 xl:gap-24 xl:px-16">
 				<div className="hidden w-full max-w-2xl lg:block lg:pl-4 xl:pl-8">
@@ -140,7 +141,7 @@ export default function TotpVerifyPage() {
 						VERIFICACION SEGURA
 					</p>
 
-					<h1 className="text-5xl font-extrabold leading-tight text-slate-950 xl:text-[3.5rem] dark:text-white">
+					<h1 className="text-5xl font-extrabold leading-tight text-foreground xl:text-[3.5rem]">
 						Confirma que eres tu antes de entrar.
 					</h1>
 
@@ -149,7 +150,7 @@ export default function TotpVerifyPage() {
 					</p>
 
 					<div className="mt-10 grid gap-4 sm:grid-cols-2">
-						<div className="rounded-xl border border-slate-200 bg-white/75 p-5 shadow-sm backdrop-blur dark:border-white/10 dark:bg-zinc-950/70">
+						<div className="rounded-xl border border-border bg-card/75 p-5 shadow-sm backdrop-blur">
 							<ShieldCheck className="mb-3 size-6 text-primary" />
 
 							<p className="text-sm font-semibold text-foreground">
@@ -161,7 +162,7 @@ export default function TotpVerifyPage() {
 							</p>
 						</div>
 
-						<div className="rounded-xl border border-slate-200 bg-white/75 p-5 shadow-sm backdrop-blur dark:border-white/10 dark:bg-zinc-950/70">
+						<div className="rounded-xl border border-border bg-card/75 p-5 shadow-sm backdrop-blur">
 							<KeyRound className="mb-3 size-6 text-primary" />
 
 							<p className="text-sm font-semibold text-foreground">
@@ -175,14 +176,14 @@ export default function TotpVerifyPage() {
 					</div>
 				</div>
 
-				<Card className="mx-auto w-full max-w-md rounded-2xl border border-slate-200 bg-white/90 text-slate-950 shadow-2xl shadow-black/10 backdrop-blur transition-colors dark:border-white/10 dark:bg-zinc-950/90 dark:text-white dark:shadow-black/40">
+				<Card className="mx-auto w-full max-w-md rounded-2xl border border-border bg-card/90 text-foreground shadow-2xl shadow-black/10 backdrop-blur transition-colors dark:shadow-black/40">
 					<CardHeader className="space-y-4 p-5 sm:p-6">
 						<div className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20 sm:size-14">
 							<ShieldCheck className="size-6 sm:size-7" />
 						</div>
 
 						<div>
-							<CardTitle className="text-2xl font-bold text-slate-950 sm:text-3xl dark:text-white">
+							<CardTitle className="text-2xl font-bold text-foreground sm:text-3xl">
 								Verificacion en dos pasos
 							</CardTitle>
 
@@ -225,7 +226,7 @@ export default function TotpVerifyPage() {
 									minLength={6}
 									pattern="[0-9]{6}"
 									disabled={loading}
-									className="h-14 rounded-xl border-slate-200 bg-white text-center text-2xl font-bold tracking-[0.35em] text-slate-950 placeholder:text-slate-400 dark:border-white/10 dark:bg-black/50 dark:text-white dark:placeholder:text-zinc-600"
+									className="h-14 rounded-xl text-center text-2xl font-bold tracking-[0.35em]"
 								/>
 							</div>
 
@@ -258,7 +259,7 @@ export default function TotpVerifyPage() {
 								<Button
 									type="button"
 									variant="outline"
-									className="h-12 rounded-xl border-slate-300 bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-950 dark:border-white/10 dark:bg-transparent dark:text-zinc-200 dark:hover:bg-white/10 dark:hover:text-white"
+									className="h-12 rounded-xl"
 									onClick={handleCancel}
 									disabled={loading}
 								>

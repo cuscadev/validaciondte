@@ -10,6 +10,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, FileCheck2, LockKeyhole, ShieldCheck } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { PUBLIC_AUTH_GRADIENT, PUBLIC_AUTH_GRID } from '@/lib/ui/public-backdrop-classes';
 import {
 	Card,
 	CardContent,
@@ -247,9 +248,9 @@ export default function LoginPage() {
 				<PublicNavbar />
 			</div>
 
-			<div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_16%_22%,rgba(234,179,8,0.2),transparent_30%),radial-gradient(circle_at_86%_18%,rgba(59,130,246,0.14),transparent_32%),linear-gradient(135deg,#fff7ed_0%,#f8fafc_50%,#eef2ff_100%)] dark:bg-[radial-gradient(circle_at_16%_22%,rgba(250,204,21,0.2),transparent_30%),radial-gradient(circle_at_86%_18%,rgba(239,68,68,0.18),transparent_32%),linear-gradient(135deg,#030303_0%,#111111_50%,#1c0f0b_100%)]" />
+			<div className={`absolute inset-0 z-0 ${PUBLIC_AUTH_GRADIENT}`} />
 
-			<div className="absolute inset-0 z-0 opacity-50 [background-image:linear-gradient(rgba(15,23,42,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(15,23,42,0.07)_1px,transparent_1px)] [background-size:72px_72px] dark:opacity-40 dark:[background-image:linear-gradient(rgba(255,255,255,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.07)_1px,transparent_1px)]" />
+			<div className={`absolute inset-0 z-0 ${PUBLIC_AUTH_GRID}`} />
 
 			<section className="relative z-10 mx-auto grid min-h-screen w-full max-w-7xl items-center px-4 pb-8 pt-24 sm:px-6 sm:pt-28 lg:grid-cols-[minmax(0,1fr)_minmax(24rem,28rem)] lg:gap-16 lg:px-12 xl:gap-24 xl:px-16">
 				<div className="hidden w-full max-w-2xl lg:block lg:pl-4 xl:pl-8">
@@ -257,7 +258,7 @@ export default function LoginPage() {
 						ACCESO SEGURO DTE
 					</p>
 
-					<h1 className="text-5xl font-extrabold leading-tight text-slate-950 xl:text-[3.4rem] dark:text-white">
+					<h1 className="text-5xl font-extrabold leading-tight text-foreground xl:text-[3.4rem]">
 						Entra a tu centro de verificación tributaria.
 					</h1>
 
@@ -267,31 +268,31 @@ export default function LoginPage() {
 					</p>
 
 					<div className="mt-10 grid grid-cols-3 gap-4">
-						<div className="rounded-xl border border-slate-200 bg-white/70 p-4 text-left shadow-sm backdrop-blur dark:border-white/10 dark:bg-zinc-950/70">
+						<div className="rounded-xl border border-border bg-card/75 p-4 text-left shadow-sm backdrop-blur">
 							<FileCheck2 className="mb-3 size-6 text-primary" />
 							<p className="text-sm font-semibold">DTE centralizados</p>
 						</div>
 
-						<div className="rounded-xl border border-slate-200 bg-white/70 p-4 text-left shadow-sm backdrop-blur dark:border-white/10 dark:bg-zinc-950/70">
+						<div className="rounded-xl border border-border bg-card/75 p-4 text-left shadow-sm backdrop-blur">
 							<ShieldCheck className="mb-3 size-6 text-primary" />
 							<p className="text-sm font-semibold">MFA disponible</p>
 						</div>
 
-						<div className="rounded-xl border border-slate-200 bg-white/70 p-4 text-left shadow-sm backdrop-blur dark:border-white/10 dark:bg-zinc-950/70">
+						<div className="rounded-xl border border-border bg-card/75 p-4 text-left shadow-sm backdrop-blur">
 							<LockKeyhole className="mb-3 size-6 text-primary" />
 							<p className="text-sm font-semibold">Control de acceso</p>
 						</div>
 					</div>
 				</div>
 
-				<Card className="mx-auto w-full max-w-md rounded-2xl border border-slate-200 bg-white/90 text-slate-950 shadow-2xl shadow-black/20 backdrop-blur lg:mx-0 lg:justify-self-center xl:justify-self-start dark:border-white/10 dark:bg-zinc-950/90 dark:text-white dark:shadow-black/40">
+				<Card className="mx-auto w-full max-w-md rounded-2xl border border-border bg-card/90 text-foreground shadow-2xl shadow-black/20 backdrop-blur lg:mx-0 lg:justify-self-center xl:justify-self-start dark:shadow-black/40">
 					<CardHeader className="space-y-4 p-5 sm:p-6">
 						<div className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20 sm:size-14">
 							<LockKeyhole className="size-6 sm:size-7" />
 						</div>
 
 						<div>
-							<CardTitle className="text-2xl font-bold text-slate-950 sm:text-3xl dark:text-white">
+							<CardTitle className="text-2xl font-bold text-foreground sm:text-3xl">
 								{t('loginTitle')}
 							</CardTitle>
 
@@ -318,7 +319,7 @@ export default function LoginPage() {
 									placeholder={t('emailPlaceholder')}
 									value={email}
 									onChange={(e) => setEmail(e.target.value)}
-									className="h-12 rounded-xl border-slate-200 bg-white text-slate-950 placeholder:text-slate-400 dark:border-white/10 dark:bg-black/50 dark:text-white dark:placeholder:text-zinc-500"
+									className="h-12 rounded-xl"
 									required
 								/>
 							</div>
@@ -338,7 +339,7 @@ export default function LoginPage() {
 									placeholder={t('loginPasswordPlaceholder')}
 									value={password}
 									onChange={(e) => setPassword(e.target.value)}
-									className="h-12 rounded-xl border-slate-200 bg-white text-slate-950 placeholder:text-slate-400 dark:border-white/10 dark:bg-black/50 dark:text-white dark:placeholder:text-zinc-500"
+									className="h-12 rounded-xl"
 									required
 								/>
 							</div>
@@ -348,7 +349,7 @@ export default function LoginPage() {
 									type="checkbox"
 									checked={showPassword}
 									onChange={(e) => setShowPassword(e.target.checked)}
-									className="size-4 rounded border-slate-300 accent-primary dark:border-white/20"
+									className="size-4 rounded border-border accent-primary"
 								/>
 								Mostrar contrasena
 							</label>
@@ -369,7 +370,7 @@ export default function LoginPage() {
 							</Button>
 						</form>
 
-						<div className="mt-6 text-center text-sm text-slate-500 dark:text-zinc-400">
+						<div className="mt-6 text-center text-sm text-muted-foreground">
 							<Link
 								href="/signup"
 								className="font-semibold text-primary transition-colors hover:text-primary/80"
@@ -380,7 +381,7 @@ export default function LoginPage() {
 							<div className="mt-3">
 								<Link
 									href="/reset-password"
-									className="font-medium text-slate-600 transition-colors hover:text-slate-950 dark:text-zinc-300 dark:hover:text-white"
+									className="font-medium text-muted-foreground transition-colors hover:text-foreground"
 								>
 									Olvide mi contrasena
 								</Link>
