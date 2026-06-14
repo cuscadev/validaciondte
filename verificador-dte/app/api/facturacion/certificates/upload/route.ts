@@ -7,6 +7,7 @@ import {
   goInternalHeaders,
   parseGoUpstreamError,
 } from '@/lib/facturacion/go-facturacion-client';
+import { buildMultipartBody } from '@/lib/facturacion/multipart-body';
 import { getPostgresPool } from '@/lib/postgres';
 import { requireAuth } from '@/lib/server-auth';
 
@@ -121,25 +122,29 @@ export async function POST(req: NextRequest) {
     const fileBytes = Buffer.from(await file.arrayBuffer());
     if (fileBytes.length === 0) {
       return NextResponse.json(
-        { error: 'El archivo del certificado esta vacio o no se pudo leer.' },
+        { error: 'El archivo del certificado esta vacio o no se pudo leer en el servidor.' },
         { status: 400 }
       );
     }
 
-    const goForm = new FormData();
-    goForm.append(
-      'file',
-      new Blob([fileBytes], { type: file.type || 'application/octet-stream' }),
-      file.name
+    const { body, contentType } = buildMultipartBody(
+      {
+        nit: emitter.nit,
+        passwordPri,
+        emisorId: String(emitter.id),
+      },
+      {
+        fieldName: 'file',
+        filename: file.name,
+        content: fileBytes,
+        contentType: file.type || 'application/octet-stream',
+      }
     );
-    goForm.append('nit', emitter.nit);
-    goForm.append('passwordPri', passwordPri);
-    goForm.append('emisorId', String(emitter.id));
 
     const upstream = await fetch(`${getGoDteApiUrl()}/api/facturacion/certificates/upload`, {
       method: 'POST',
-      headers: goInternalHeaders(),
-      body: goForm,
+      headers: goInternalHeaders({ 'Content-Type': contentType }),
+      body,
       cache: 'no-store',
     });
 
