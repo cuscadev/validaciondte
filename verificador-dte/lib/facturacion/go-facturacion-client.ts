@@ -43,6 +43,27 @@ export class GoFacturacionError extends Error {
   }
 }
 
+export function goInternalHeaders(extra?: Record<string, string>): Record<string, string> {
+  const headers: Record<string, string> = { ...(extra || {}) };
+  const key = process.env.GO_DTE_INTERNAL_API_KEY?.trim();
+  if (key) headers['X-Go-Dte-Internal-Key'] = key;
+  return headers;
+}
+
+export function parseGoUpstreamError(
+  payload: unknown,
+  fallback: string,
+  status: number
+): string {
+  const record = asRecord(payload);
+  const message = getString(record.message);
+  const error = getString(record.error);
+  if (message) return message;
+  if (error && error !== 'true') return error;
+  if (typeof payload === 'string' && payload.trim()) return payload.trim();
+  return fallback || `Go API respondio HTTP ${status}`;
+}
+
 function internalHeaders(extra?: HeadersInit): HeadersInit {
   const headers: Record<string, string> = {
     'content-type': 'application/json',

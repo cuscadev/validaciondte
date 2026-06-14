@@ -3,6 +3,10 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getGoDteApiUrl } from '@/lib/go-dte-api';
+import {
+  goInternalHeaders,
+  parseGoUpstreamError,
+} from '@/lib/facturacion/go-facturacion-client';
 import { getPostgresPool } from '@/lib/postgres';
 import { requireAuth } from '@/lib/server-auth';
 
@@ -28,12 +32,7 @@ export async function POST(req: NextRequest) {
 
     const res = await fetch(`${getGoDteApiUrl()}/api/facturacion/certificates/warmup`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(process.env.GO_DTE_INTERNAL_API_KEY?.trim()
-          ? { 'X-Go-Dte-Internal-Key': process.env.GO_DTE_INTERNAL_API_KEY.trim() }
-          : {}),
-      },
+      headers: goInternalHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({
         firebaseUid: body.firebaseUid || user.uid,
         emisorId: body.emisorId || row?.id,
@@ -41,10 +40,18 @@ export async function POST(req: NextRequest) {
       }),
       cache: 'no-store',
     });
-    const data = await res.json().catch(() => ({}));
+    const text = await res.text();
+    let data: unknown = {};
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {
+      data = text;
+    }
     if (!res.ok) {
       return NextResponse.json(
-        { error: typeof data.error === 'string' ? data.error : 'Warmup fallo' },
+        {
+          error: parseGoUpstreamError(data, 'Warmup fallo', res.status),
+        },
         { status: res.status }
       );
     }

@@ -3,6 +3,10 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getGoDteApiUrl } from '@/lib/go-dte-api';
+import {
+  goInternalHeaders,
+  parseGoUpstreamError,
+} from '@/lib/facturacion/go-facturacion-client';
 import { getPostgresPool } from '@/lib/postgres';
 import { requireAuth } from '@/lib/server-auth';
 
@@ -46,15 +50,6 @@ async function updateAmbiente(emisorId: number, ambienteCodigo: string) {
     `,
     [ambienteCodigo, emisorId]
   );
-}
-
-function goInternalHeaders(extra?: Record<string, string>) {
-  const headers: Record<string, string> = {
-    ...(extra || {}),
-  };
-  const key = process.env.GO_DTE_INTERNAL_API_KEY?.trim();
-  if (key) headers['X-Go-Dte-Internal-Key'] = key;
-  return headers;
 }
 
 async function warmupCertificate(uid: string, emisorId: number, nit: string) {
@@ -113,6 +108,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!process.env.GO_DTE_INTERNAL_API_KEY?.trim()) {
+      return NextResponse.json(
+        {
+          error:
+            'GO_DTE_INTERNAL_API_KEY no esta configurada en verificador-dte. Debe coincidir con go-dte-api.',
+        },
+        { status: 500 }
+      );
+    }
+
     const goForm = new FormData();
     goForm.append('file', file, file.name);
     goForm.append('nit', emitter.nit);
@@ -126,25 +131,35 @@ export async function POST(req: NextRequest) {
       cache: 'no-store',
     });
 
-    const data = (await upstream.json().catch(() => ({}))) as {
-      error?: string;
-      path?: string;
-      success?: boolean;
-    };
+    const upstreamText = await upstream.text();
+    let data: unknown = {};
+    try {
+      data = upstreamText ? JSON.parse(upstreamText) : {};
+    } catch {
+      data = upstreamText;
+    }
 
     if (!upstream.ok) {
       return NextResponse.json(
-        { error: typeof data.error === 'string' ? data.error : 'No se pudo subir el certificado' },
+        {
+          error: parseGoUpstreamError(
+            data,
+            'No se pudo subir el certificado',
+            upstream.status
+          ),
+        },
         { status: upstream.status }
       );
     }
+
+    const payload = data as { path?: string };
 
     await warmupCertificate(user.uid, emitter.id, emitter.nit);
 
     return NextResponse.json({
       success: true,
       nit: emitter.nit,
-      path: data.path,
+      path: payload.path,
       ambienteCodigo: ambienteCodigo || undefined,
     });
   } catch (error) {
