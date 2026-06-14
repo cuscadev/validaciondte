@@ -7,12 +7,9 @@ import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react'
 import { useTranslation } from 'react-i18next';
 import {
   type LucideIcon,
-  Home,
-  FileText,
   Settings,
   ChevronDown,
   ChevronUp,
-  ChevronRight,
   Users,
   ClipboardList,
   CreditCard,
@@ -20,10 +17,11 @@ import {
   Activity,
   Bell,
   Palette,
-  Smartphone,
   Mail,
   UserCheck,
   ReceiptText,
+  FileSearch,
+  FileDown,
 } from 'lucide-react';
 
 import { useAuth } from '@/components/AuthProvider';
@@ -47,6 +45,7 @@ type NavChild = {
   href: string;
   label: string;
   routeKey?: string;
+  group?: string;
 };
 
 type Item = {
@@ -79,17 +78,19 @@ function SidebarTooltip({
   collapsed,
   label,
   children,
+  side,
 }: {
   collapsed: boolean;
   label: string;
   children: React.ReactElement;
+  side?: 'left' | 'right';
 }) {
-  if (!collapsed) return children;
+  const tooltipSide = side ?? (collapsed ? 'right' : 'left');
 
   return (
     <Tooltip>
       <TooltipTrigger asChild>{children}</TooltipTrigger>
-      <TooltipContent side="right" sideOffset={8}>
+      <TooltipContent side={tooltipSide} sideOffset={8}>
         {label}
       </TooltipContent>
     </Tooltip>
@@ -225,6 +226,329 @@ function CollapsedNavRail({ children }: { children: React.ReactNode }) {
   );
 }
 
+function insertItemAfterExtraer(items: Item[], insert: Item): Item[] {
+  const index = items.findIndex((item) => item.href === '/extraer');
+  if (index === -1) return [...items, insert];
+  return [...items.slice(0, index + 1), insert, ...items.slice(index + 1)];
+}
+
+function findActiveSectionHref(items: Item[], pathname: string): string | null {
+  for (const item of items) {
+    if (item.children?.some((c) => isActivePath(pathname, c.href))) {
+      return item.href;
+    }
+  }
+
+  for (const item of items) {
+    if (pathname === item.href) {
+      return item.href;
+    }
+  }
+
+  for (const item of items) {
+    if (!item.children && isActivePath(pathname, item.href)) {
+      return item.href;
+    }
+  }
+
+  return items[0]?.href ?? null;
+}
+
+function SidebarSectionPanel({
+  item,
+  pathname,
+  onNavigate,
+  t,
+}: {
+  item: Item;
+  pathname: string;
+  onNavigate?: () => void;
+  t: (key: string) => string;
+}) {
+  const itemLabel = t(item.label);
+  const { icon: Icon, children, href } = item;
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="mb-2 flex shrink-0 items-center gap-2 px-1">
+        <Icon className="size-3.5 shrink-0 text-sidebar-foreground/50" aria-hidden />
+        <p className="truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-sidebar-foreground/50">
+          {itemLabel}
+        </p>
+      </div>
+
+      <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto overflow-x-hidden pr-1">
+        {children ? (
+          children.map((c, index) => {
+            const childActive = isActivePath(pathname, c.href);
+            const prevGroup = index > 0 ? children[index - 1]?.group : undefined;
+            const showGroupHeader = Boolean(c.group && c.group !== prevGroup);
+
+            return (
+              <React.Fragment key={c.href}>
+                {showGroupHeader ? (
+                  <p className="mt-2 px-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/40 first:mt-0 first:pt-0">
+                    {c.group}
+                  </p>
+                ) : null}
+                <Link
+                  href={c.href}
+                  onClick={onNavigate}
+                  aria-current={childActive ? 'page' : undefined}
+                  className={cn(
+                    'flex items-center gap-2 rounded-md py-1.5 pl-2 pr-2 text-sm transition',
+                    childActive
+                      ? 'bg-sidebar-accent font-medium text-primary'
+                      : 'text-sidebar-foreground/75 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'size-1.5 shrink-0 rounded-full',
+                      childActive ? 'bg-primary shadow-[0_0_8px_rgba(0,209,255,0.6)]' : 'bg-sidebar-foreground/25',
+                    )}
+                    aria-hidden
+                  />
+                  <span className="min-w-0 truncate">{t(c.label)}</span>
+                </Link>
+              </React.Fragment>
+            );
+          })
+        ) : (
+          <Link
+            href={href}
+            onClick={onNavigate}
+            aria-current={isActivePath(pathname, href) ? 'page' : undefined}
+            className={cn(
+              'flex items-center gap-2 rounded-md py-1.5 pl-2 pr-2 text-sm transition',
+              isActivePath(pathname, href)
+                ? 'bg-sidebar-accent font-medium text-primary'
+                : 'text-sidebar-foreground/75 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground',
+            )}
+          >
+            <span
+              className={cn(
+                'size-1.5 shrink-0 rounded-full',
+                isActivePath(pathname, href)
+                  ? 'bg-primary shadow-[0_0_8px_rgba(0,209,255,0.6)]'
+                  : 'bg-sidebar-foreground/25',
+              )}
+              aria-hidden
+            />
+            <span>{itemLabel}</span>
+          </Link>
+        )}
+      </nav>
+    </div>
+  );
+}
+
+const SHORTCUT_OVERFLOW_COUNT = 8;
+
+function SidebarShortcutBar({
+  items,
+  pathname,
+  collapsed,
+  selectedHref,
+  openFlyoutHref,
+  onNavigate,
+  onSelectSection,
+  onFlyoutChange,
+  t,
+}: {
+  items: Item[];
+  pathname: string;
+  collapsed: boolean;
+  selectedHref: string | null;
+  openFlyoutHref: string | null;
+  onNavigate?: () => void;
+  onSelectSection: (href: string) => void;
+  onFlyoutChange: (href: string | null) => void;
+  t: (key: string) => string;
+}) {
+  if (items.length === 0) return null;
+
+  const railItems = items.slice(0, SHORTCUT_OVERFLOW_COUNT);
+  const overflowItems = items.slice(SHORTCUT_OVERFLOW_COUNT);
+
+  const renderShortcut = (item: Item) => {
+    const { href, label, icon: Icon, children } = item;
+    const active = selectedHref === href || openFlyoutHref === href;
+    const itemLabel = t(label);
+
+    const className = cn(
+      collapsed ? collapsedItemClass(active) : 'inline-flex size-9 shrink-0 items-center justify-center rounded-lg transition',
+      !collapsed &&
+        (active
+          ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm shadow-primary/20'
+          : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground'),
+    );
+
+    const wrapWithTooltip = (node: React.ReactElement) => (
+      <SidebarTooltip collapsed={collapsed} label={itemLabel} side={collapsed ? 'right' : 'right'}>
+        {node}
+      </SidebarTooltip>
+    );
+
+    if (collapsed && children) {
+      return (
+        <div key={href} className={collapsedItemWrap}>
+          <SidebarSubmenuFlyout
+            itemLabel={itemLabel}
+            active={active}
+            icon={Icon}
+            pathname={pathname}
+            onNavigate={onNavigate}
+            t={t}
+            open={openFlyoutHref === href}
+            onOpenChange={(next) => onFlyoutChange(next ? href : null)}
+          >
+            {children}
+          </SidebarSubmenuFlyout>
+        </div>
+      );
+    }
+
+    if (collapsed && !children) {
+      return (
+        <div key={href} className={collapsedItemWrap}>
+          {wrapWithTooltip(
+            <Link
+              href={href}
+              onClick={() => {
+                onSelectSection(href);
+                onNavigate?.();
+              }}
+              aria-current={active ? 'page' : undefined}
+              aria-label={itemLabel}
+              className={className}
+            >
+              <Icon className="size-[1.15rem] shrink-0" />
+            </Link>,
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div key={href} className="flex shrink-0 justify-center">
+        {wrapWithTooltip(
+          <button
+            type="button"
+            className={className}
+            aria-label={itemLabel}
+            aria-current={active ? 'true' : undefined}
+            aria-expanded={selectedHref === href}
+            onClick={() => onSelectSection(href)}
+          >
+            <Icon className="size-[1.15rem] shrink-0" />
+          </button>,
+        )}
+      </div>
+    );
+  };
+
+  const rail = (
+    <div
+      className={cn(
+        'flex shrink-0 flex-col border-sidebar-border',
+        collapsed
+          ? 'min-h-0 w-full flex-1 items-start pl-0.5'
+          : 'w-11 border-r py-1 pr-1',
+      )}
+      role="toolbar"
+      aria-label="Atajos de navegación"
+    >
+      <div
+        className={cn(
+          'flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+          collapsed ? 'items-start' : 'items-center',
+        )}
+      >
+        {railItems.map(renderShortcut)}
+      </div>
+
+      {overflowItems.length > 0 ? (
+        <div className={cn('shrink-0 pt-1', collapsed ? 'self-start' : 'self-center')}>
+          <DropdownMenu modal={false}>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className={cn(
+                  collapsed ? collapsedItemClass(false) : 'inline-flex size-9 items-center justify-center rounded-lg text-sidebar-foreground/70 transition hover:bg-sidebar-accent hover:text-sidebar-foreground',
+                )}
+                aria-label="Más secciones"
+              >
+                <ChevronDown className="size-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="right" align="start" sideOffset={8} className="min-w-48">
+              <DropdownMenuLabel className="text-xs uppercase tracking-wide text-muted-foreground">
+                Más secciones
+              </DropdownMenuLabel>
+              {overflowItems.map((item) => {
+                const { href, label, icon: Icon } = item;
+                const active = selectedHref === href;
+                return (
+                  <DropdownMenuItem
+                    key={href}
+                    onClick={() => onSelectSection(href)}
+                    className={active ? 'bg-sidebar-accent text-primary' : undefined}
+                  >
+                    <Icon className="size-4" />
+                    {t(label)}
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ) : null}
+    </div>
+  );
+
+  if (collapsed) {
+    return (
+      <CollapsedNavRail>
+        <div className="flex w-full flex-col items-start gap-1.5">
+          {railItems.map(renderShortcut)}
+          {overflowItems.length > 0 ? (
+            <div className={collapsedItemWrap}>
+              <DropdownMenu modal={false}>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className={collapsedItemClass(false)}
+                    aria-label="Más secciones"
+                  >
+                    <ChevronDown className="size-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="right" align="start" sideOffset={8} className="min-w-48">
+                  <DropdownMenuLabel className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Más secciones
+                  </DropdownMenuLabel>
+                  {overflowItems.map((item) => {
+                    const { href, label, icon: Icon } = item;
+                    return (
+                      <DropdownMenuItem key={href} onClick={() => onSelectSection(href)}>
+                        <Icon className="size-4" />
+                        {t(label)}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          ) : null}
+        </div>
+      </CollapsedNavRail>
+    );
+  }
+
+  return rail;
+}
+
 export default function Sidebar({
   collapsed = false,
   onNavigate,
@@ -235,7 +559,7 @@ export default function Sidebar({
   const { t } = useTranslation();
   const pathname = usePathname();
 
-  const [openHref, setOpenHref] = useState<string | null>(null);
+  const [activeSectionHref, setActiveSectionHref] = useState<string | null>(null);
   const [openFlyoutHref, setOpenFlyoutHref] = useState<string | null>(null);
 
   const { appUser } = useAuth();
@@ -251,26 +575,31 @@ export default function Sidebar({
         href: '/verificadorDTE/verificador',
         label: 'sidebar.verificadorLinks',
         routeKey: 'verificador',
+        group: 'Verificar DTEs',
       },
       {
         href: '/verificadorDTE/verificarodyfecha',
         label: 'sidebar.verificadorCodigoFecha',
         routeKey: 'verificarodyfecha',
+        group: 'Verificar DTEs',
       },
       {
         href: '/verificadorDTE/verificadorjson',
         label: 'sidebar.verificadorJSON',
         routeKey: 'verificadorjson',
+        group: 'Verificar DTEs',
       },
       {
         href: '/verificadorDTE/verificacion_individual',
         label: 'sidebar.verificacionIndividual',
         routeKey: 'verificacion_individual',
+        group: 'Verificar DTEs',
       },
       {
         href: '/verificadorDTE/verificador-qr',
         label: 'sidebar.verificadorQR',
         routeKey: 'verificador_qr',
+        group: 'Verificar DTEs',
       },
     ],
     [],
@@ -282,29 +611,39 @@ export default function Sidebar({
         href: '/consultas-lotes/codigo-lote',
         label: 'Consulta por codigo de lote',
         routeKey: 'consulta_lote_codigo',
+        group: 'Consultas lotes',
       },
       {
         href: '/consultas-lotes/excel-codigo-fecha',
         label: 'Excel codigo y fecha',
         routeKey: 'consultas_lotes_excel_codigo_fecha',
+        group: 'Consultas lotes',
       },
       {
         href: '/consultas-lotes/json',
         label: 'Subir JSON',
         routeKey: 'consultas_lotes_json',
+        group: 'Consultas lotes',
       },
       {
         href: '/consultas-lotes/individual',
         label: 'Consulta individual',
         routeKey: 'consultas_lotes_individual',
+        group: 'Consultas lotes',
       },
       {
         href: '/consultas-lotes/qr-pdf',
         label: 'QR PDF',
         routeKey: 'consultas_lotes_qr_pdf',
+        group: 'Consultas lotes',
       },
     ],
     [],
+  );
+
+  const verificarConsultarChildren = useMemo(
+    () => [...verificadorChildren, ...consultasLotesChildren],
+    [consultasLotesChildren, verificadorChildren],
   );
 
   const extraerChildren = useMemo<NavChild[]>(
@@ -313,26 +652,37 @@ export default function Sidebar({
         href: '/extraer/compras-json',
         label: 'Compras JSON',
         routeKey: 'compras-json',
+        group: 'Extraer datos',
       },
       {
         href: '/extraer/ventas-json',
         label: 'Ventas JSON',
         routeKey: 'ventas-json',
+        group: 'Extraer datos',
       },
       {
         href: '/extraer/sujetos-excluidos',
         label: 'Sujetos Excluidos JSON',
         routeKey: 'sujetos-excluidos',
+        group: 'Extraer datos',
       },
       {
         href: '/extraer/liquidacion-json',
         label: 'Liquidaciones JSON',
         routeKey: 'liquidacion-json',
+        group: 'Extraer datos',
       },
       {
         href: '/extraer/qr-pdf',
         label: 'QR PDF',
         routeKey: 'qr-pdf',
+        group: 'Extraer datos',
+      },
+      {
+        href: '/escaneos-mobile',
+        label: 'Escaneo desde la app',
+        routeKey: 'escaneos-mobile',
+        group: 'Escaneo movil',
       },
     ],
     [],
@@ -387,26 +737,15 @@ export default function Sidebar({
   const baseItems = useMemo<Item[]>(
     () => [
       {
-        href: '/dashboard',
-        label: 'sidebar.inicio',
-        icon: Home,
-      },
-      {
-        href: '/verificadorDTE',
-        label: 'sidebar.verificarDTEs',
-        icon: FileText,
-        children: verificadorChildren,
-      },
-      {
-        href: '/consultas-lotes',
-        label: 'Consultas lotes',
-        icon: ClipboardList,
-        children: consultasLotesChildren,
+        href: '/verificar-consultar',
+        label: 'Verificar y consultar',
+        icon: FileSearch,
+        children: verificarConsultarChildren,
       },
       {
         href: '/extraer',
         label: 'sidebar.extraer',
-        icon: FileText,
+        icon: FileDown,
         children: extraerChildren,
       },
       {
@@ -414,12 +753,6 @@ export default function Sidebar({
         label: 'Plantillas PDF',
         icon: Palette,
         routeKey: 'plantillas-pdf',
-      },
-      {
-        href: '/escaneos-mobile',
-        label: 'Escaneo desde la app',
-        icon: Smartphone,
-        routeKey: 'escaneos-mobile',
       },
       {
         href: '/tributario',
@@ -444,7 +777,7 @@ export default function Sidebar({
         icon: Settings,
       },
     ],
-    [consultasLotesChildren, extraerChildren, verificadorChildren],
+    [extraerChildren, verificarConsultarChildren],
   );
 
   const adminItem = useMemo<Item>(
@@ -603,11 +936,13 @@ export default function Sidebar({
   }, [allowedRoutes, baseItems, isSuperadmin]);
 
   const items = useMemo(() => {
+    const withFacturacion = (list: Item[], facturacion: Item | null) =>
+      facturacion ? insertItemAfterExtraer(list, facturacion) : list;
+
     if (isSuperadmin) {
       return [
-        ...planFilteredBaseItems,
+        ...withFacturacion(planFilteredBaseItems, facturacionItem),
         accessRequestsItem,
-        facturacionItem,
         adminItem,
         planesItem,
         avisosItem,
@@ -620,30 +955,33 @@ export default function Sidebar({
     if (showOrgUsers) {
       return isCliente
         ? [
-            ...planFilteredBaseItems,
-            orgKycItem,
-            facturacionItem,
-            orgUsersItem,
+            ...withFacturacion(
+              [...planFilteredBaseItems, orgKycItem, orgUsersItem],
+              facturacionItem,
+            ),
             notificationsItem,
           ]
         : [
-            ...planFilteredBaseItems,
-            facturacionReceptoresItem,
-            orgUsersItem,
+            ...withFacturacion(
+              [...planFilteredBaseItems, orgUsersItem],
+              facturacionReceptoresItem,
+            ),
             notificationsItem,
           ];
     }
 
     if (isCliente) {
       return [
-        ...planFilteredBaseItems,
+        ...withFacturacion(planFilteredBaseItems, facturacionItem),
         orgKycItem,
-        facturacionItem,
         notificationsItem,
       ];
     }
 
-    return [...planFilteredBaseItems, facturacionReceptoresItem, notificationsItem];
+    return [
+      ...withFacturacion(planFilteredBaseItems, facturacionReceptoresItem),
+      notificationsItem,
+    ];
   }, [
     isSuperadmin,
     showOrgUsers,
@@ -664,23 +1002,25 @@ export default function Sidebar({
 
   useEffect(() => {
     setOpenFlyoutHref(null);
-  }, [pathname]);
-
-  useEffect(() => {
-    const activeParent = items.find((item) =>
-      item.children?.some((child) =>
-        isActivePath(pathname, child.href)
-      )
-    );
-
-    if (activeParent) {
-      setOpenHref(activeParent.href);
+    if (pathname === '/dashboard') {
+      setActiveSectionHref(null);
+      return;
     }
-  }, [items, pathname]);
+    const matched = findActiveSectionHref(items, pathname);
+    if (matched) {
+      setActiveSectionHref(matched);
+    }
+  }, [pathname, items]);
 
-  const toggleOpen = (href: string) => {
-    setOpenHref((current) => (current === href ? null : href));
-  };
+  const activeSection = useMemo(() => {
+    if (!activeSectionHref) return null;
+    return items.find((item) => item.href === activeSectionHref) ?? null;
+  }, [activeSectionHref, items]);
+
+  const selectSection = useCallback((href: string) => {
+    setActiveSectionHref(href);
+    setOpenFlyoutHref(null);
+  }, []);
 
   const brandName = t('app.brandName', 'KAYDTE');
 
@@ -694,7 +1034,7 @@ export default function Sidebar({
       <div
         className={cn(
           'border-b border-sidebar-border',
-          collapsed ? 'mb-3 flex justify-center pb-3' : 'mb-6 pb-5',
+          collapsed ? 'mb-3 flex justify-center pb-3' : 'mb-4 pb-4',
         )}
       >
         <div className={cn(collapsed && collapsedItemWrap)}>
@@ -741,154 +1081,30 @@ export default function Sidebar({
         </div>
       </div>
 
-      {collapsed ? (
-        <CollapsedNavRail>
-          {items.map(({ href, label, icon: Icon, children }) => {
-            const isParentActive = isActivePath(pathname, href);
-            const isChildActive = children?.some((c) =>
-              isActivePath(pathname, c.href),
-            );
-            const active = isChildActive || isParentActive;
-            const itemLabel = t(label);
+      <div className="flex min-h-0 flex-1 flex-row overflow-hidden">
+        <SidebarShortcutBar
+          items={items}
+          pathname={pathname}
+          collapsed={collapsed}
+          selectedHref={activeSectionHref}
+          openFlyoutHref={openFlyoutHref}
+          onNavigate={onNavigate}
+          onSelectSection={selectSection}
+          onFlyoutChange={setOpenFlyoutHref}
+          t={t}
+        />
 
-            if (!children) {
-              const link = (
-                <Link
-                  href={href}
-                  onClick={onNavigate}
-                  aria-current={active ? 'page' : undefined}
-                  className={collapsedItemClass(active)}
-                >
-                  <Icon className="h-5 w-5 shrink-0" />
-                </Link>
-              );
-
-              return (
-                <div key={href} className={collapsedItemWrap}>
-                  <SidebarTooltip collapsed label={itemLabel}>
-                    {link}
-                  </SidebarTooltip>
-                </div>
-              );
-            }
-
-            return (
-              <SidebarSubmenuFlyout
-                key={href}
-                itemLabel={itemLabel}
-                active={active}
-                icon={Icon}
-                pathname={pathname}
-                onNavigate={onNavigate}
-                t={t}
-                open={openFlyoutHref === href}
-                onOpenChange={(next) => setOpenFlyoutHref(next ? href : null)}
-              >
-                {children}
-              </SidebarSubmenuFlyout>
-            );
-          })}
-        </CollapsedNavRail>
-      ) : (
-      <nav className="flex-1 min-h-0 space-y-2 overflow-y-auto overflow-x-hidden pr-1">
-        {items.map(({ href, label, icon: Icon, children }) => {
-          const isParentActive = isActivePath(pathname, href);
-
-          const isChildActive = children?.some((c) =>
-            isActivePath(pathname, c.href)
-          );
-
-          const active = isChildActive || isParentActive;
-          const itemLabel = t(label);
-
-          if (!children) {
-            const link = (
-              <Link
-                href={href}
-                onClick={onNavigate}
-                aria-current={active ? 'page' : undefined}
-                className={cn(
-                  'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition',
-                  active
-                    ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm shadow-primary/20'
-                    : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                )}
-              >
-                <Icon className="h-5 w-5 shrink-0" />
-                <span>{itemLabel}</span>
-              </Link>
-            );
-
-            return <div key={href}>{link}</div>;
-          }
-
-          const isOpen = openHref === href;
-
-          return (
-            <div key={href}>
-              <button
-                type="button"
-                onClick={() => toggleOpen(href)}
-                className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-sm font-medium transition ${
-                  active
-                    ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm shadow-primary/20'
-                    : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <Icon className="h-5 w-5 shrink-0" />
-                  <span>{itemLabel}</span>
-                </div>
-
-                {isOpen ? (
-                  <ChevronDown className="h-4 w-4" />
-                ) : (
-                  <ChevronRight className="h-4 w-4" />
-                )}
-              </button>
-
-              {isOpen && (
-                <div className="ml-4 mt-2 space-y-1 border-l border-primary/30 pl-3">
-                  {children.map((c) => {
-                    const childActive = isActivePath(
-                      pathname,
-                      c.href
-                    );
-
-                    return (
-                      <Link
-                        key={c.href}
-                        href={c.href}
-                        onClick={onNavigate}
-                        aria-current={
-                          childActive ? 'page' : undefined
-                        }
-                        className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition ${
-                          childActive
-                            ? 'text-primary'
-                            : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-primary'
-                        }`}
-                      >
-                        <span
-                          className={`h-2 w-2 rounded-full transition ${
-                            childActive
-                              ? 'bg-primary shadow-[0_0_10px_rgba(0,209,255,0.7)]'
-                              : 'bg-white/20'
-                          }`}
-                          aria-hidden
-                        />
-
-                        <span>{t(c.label)}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </nav>
-      )}
+        {!collapsed && activeSection ? (
+          <div className="min-w-0 flex-1 overflow-hidden pl-2">
+            <SidebarSectionPanel
+              item={activeSection}
+              pathname={pathname}
+              onNavigate={onNavigate}
+              t={t}
+            />
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
