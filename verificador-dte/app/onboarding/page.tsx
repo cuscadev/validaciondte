@@ -364,15 +364,15 @@ export default function OnboardingPage() {
     <OnboardingShell>
       <FadeIn className="w-full max-w-xl">
         <div
-          className="w-full rounded-xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/50 sm:p-8 dark:border-white/10 dark:bg-zinc-950 dark:shadow-none"
+          className="w-full rounded-xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/50 sm:p-8 border-border bg-card dark:shadow-none"
           style={{ viewTransitionName: 'onboarding-wizard' }}
         >
           <div className="text-center sm:text-left">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 dark:text-yellow-400">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary text-primary">
               Registro {step + 1} de {wizardSteps.length}
             </p>
             <h1 className="mt-2 text-2xl font-bold tracking-tight">{title}</h1>
-            <p className="mt-2 text-sm text-slate-600 dark:text-zinc-400">{subtitle}</p>
+            <p className="mt-2 text-sm text-slate-600 text-muted-foreground">{subtitle}</p>
           </div>
 
           <OnboardingProgress
@@ -395,7 +395,7 @@ export default function OnboardingPage() {
               <button
                 type="button"
                 onClick={() => setPersonType('natural')}
-                className={`rounded-lg border p-4 text-left ${personType === 'natural' ? 'border-yellow-400 bg-yellow-400/10' : 'border-slate-200 dark:border-white/10'}`}
+                className={`rounded-lg border p-4 text-left ${personType === 'natural' ? 'border-primary bg-primary/10' : 'border-border'}`}
               >
                 <p className="font-semibold">Persona natural</p>
                 <p className="mt-1 text-xs text-muted-foreground">Contribuyente individual</p>
@@ -403,7 +403,7 @@ export default function OnboardingPage() {
               <button
                 type="button"
                 onClick={() => setPersonType('juridica')}
-                className={`rounded-lg border p-4 text-left ${personType === 'juridica' ? 'border-yellow-400 bg-yellow-400/10' : 'border-slate-200 dark:border-white/10'}`}
+                className={`rounded-lg border p-4 text-left ${personType === 'juridica' ? 'border-primary bg-primary/10' : 'border-border'}`}
               >
                 <p className="font-semibold">Persona jurídica</p>
                 <p className="mt-1 text-xs text-muted-foreground">Empresa u organización</p>
@@ -526,7 +526,7 @@ export default function OnboardingPage() {
                   <p><strong>Dirección:</strong> {fiscalAddress}</p>
                 </>
               )}
-              <label className="mt-4 flex items-start gap-3 rounded-lg border border-slate-200 p-3 text-sm dark:border-white/10">
+              <label className="mt-4 flex items-start gap-3 rounded-lg border border-slate-200 p-3 text-sm border-border">
                 <input
                   type="checkbox"
                   checked={termsAccepted}
@@ -535,7 +535,7 @@ export default function OnboardingPage() {
                 />
                 <span>Acepto los terminos y condiciones de uso de la plataforma.</span>
               </label>
-              <label className="flex items-start gap-3 rounded-lg border border-slate-200 p-3 text-sm dark:border-white/10">
+              <label className="flex items-start gap-3 rounded-lg border border-slate-200 p-3 text-sm border-border">
                 <input
                   type="checkbox"
                   checked={privacyAccepted}
@@ -568,13 +568,13 @@ export default function OnboardingPage() {
               Atrás
             </Button>
             {!isLastStep ? (
-              <Button type="button" className="bg-yellow-400 font-bold text-black hover:bg-yellow-300" onClick={nextKyc}>
+              <Button type="button" className="bg-primary font-bold text-black hover:bg-primary/90" onClick={nextKyc}>
                 Siguiente
               </Button>
             ) : (
               <Button
                 type="button"
-                className="bg-yellow-400 font-bold text-black hover:bg-yellow-300"
+                className="bg-primary font-bold text-black hover:bg-primary/90"
                 disabled={submitLoading}
                 onClick={finishKyc}
               >

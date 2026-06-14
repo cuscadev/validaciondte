@@ -46,7 +46,7 @@ const ACCORDION_ROW_LAYOUT =
   'md:grid md:grid-cols-[minmax(0,2fr)_minmax(0,7.5rem)_minmax(0,1.25fr)_minmax(0,4.5rem)_minmax(0,5.5rem)_minmax(0,4.5rem)_2.5rem] md:items-center md:gap-4';
 
 const ORPHAN_BADGE_CLASS =
-  'border-slate-400/40 bg-slate-500/10 text-slate-700 dark:text-slate-300';
+  'border-slate-400/40 bg-slate-500/10 text-muted-foreground';
 
 function AccordionColumnHeaders() {
   return (
@@ -75,7 +75,7 @@ function segmentBadgeClass(segment: ReturnType<typeof getOrgDirectorySegmentFrom
     case 'juridica':
       return 'border-blue-500/40 bg-blue-500/10 text-blue-800 dark:text-blue-200';
     case 'natural_with_group':
-      return 'border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-100';
+      return 'border-brand-orange/40 bg-brand-orange/10 text-primary dark:text-primary';
     default:
       return 'border-slate-500/30 bg-slate-500/10 text-slate-800 dark:text-slate-200';
   }
@@ -215,7 +215,7 @@ export function OrgDirectoryAccordion({
     <div
       role="table"
       aria-label="Directorio de organizaciones"
-      className="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10"
+      className="overflow-hidden rounded-lg border border-border"
     >
       <AccordionColumnHeaders />
       <div className="divide-y divide-slate-200 dark:divide-white/10">
@@ -231,7 +231,7 @@ export function OrgDirectoryAccordion({
               role="row"
               className={cn(
                 'overflow-hidden bg-background',
-                isExpanded && 'bg-amber-500/[0.03] ring-1 ring-inset ring-amber-500/25'
+                isExpanded && 'bg-primary/[0.03] ring-1 ring-inset ring-primary/25'
               )}
             >
               {hasOrg ? (

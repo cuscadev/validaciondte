@@ -15,7 +15,7 @@ export function OnboardingShell({
   showFooter = true,
 }: OnboardingShellProps) {
   return (
-    <main className="flex min-h-screen flex-col bg-slate-50 dark:bg-black">
+    <main className="flex min-h-screen flex-col bg-background text-foreground">
       <div className="flex flex-1 flex-col items-center justify-center px-4 py-8 sm:py-12">
         {showLogo && (
           <div className="mb-6 flex justify-center">
@@ -32,14 +32,14 @@ export function OnboardingShell({
         {children}
       </div>
       {showFooter ? (
-        <footer className="shrink-0 border-t border-slate-200/80 px-4 py-4 text-center dark:border-white/10">
-          <p className="text-xs text-slate-500 dark:text-zinc-500">
+        <footer className="shrink-0 border-t border-border px-4 py-4 text-center">
+          <p className="text-xs text-muted-foreground">
             Desarrollado por{' '}
             <a
               href="https://cuscadev.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-medium text-amber-600 underline-offset-2 transition hover:text-amber-500 hover:underline dark:text-yellow-400 dark:hover:text-yellow-300"
+              className="font-medium text-primary underline-offset-2 transition hover:underline"
             >
               cuscadev.com
             </a>

@@ -371,7 +371,7 @@ export default function NotaDebitoPage() {
 
   if (!canUse) {
     return (
-      <main className="min-h-[calc(100vh-5rem)] bg-slate-50 p-4 text-slate-950 dark:bg-black dark:text-white">
+      <main className="min-h-[calc(100vh-5rem)] bg-slate-50 p-4 text-slate-950 bg-background text-foreground">
         <Card className="mx-auto max-w-xl">
           <CardHeader>
             <CardTitle>Acceso restringido</CardTitle>
@@ -383,20 +383,20 @@ export default function NotaDebitoPage() {
   }
 
   return (
-    <main className="min-h-[calc(100vh-5rem)] bg-slate-50 text-slate-950 dark:bg-black dark:text-white">
+    <main className="min-h-[calc(100vh-5rem)] bg-background text-foreground">
       <section className="space-y-4">
-        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-950">
-          <p className="mb-2 text-sm font-semibold uppercase tracking-[0.22em] text-amber-600 dark:text-yellow-300">
+        <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
+          <p className="mb-2 text-sm font-semibold uppercase tracking-[0.22em] text-primary text-primary">
             Facturacion electronica
           </p>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <h1 className="text-3xl font-extrabold tracking-tight">Nota de debito</h1>
-              <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600 dark:text-zinc-300">
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
                 Documento tipo 06 para aumentar o cargar diferencias sobre un comprobante de credito fiscal emitido al mismo receptor.
               </p>
             </div>
-            <Button disabled={loading || submitting} onClick={submitNote} className="h-11 bg-yellow-400 font-bold text-black hover:bg-yellow-300 lg:min-w-52">
+            <Button disabled={loading || submitting} onClick={submitNote} className="h-11 bg-primary font-bold text-black hover:bg-primary/90 lg:min-w-52">
               {submitting ? <><Loader2 className="size-4 animate-spin" /> Procesando</> : 'Firma y envio'}
             </Button>
           </div>
@@ -405,7 +405,7 @@ export default function NotaDebitoPage() {
         {loading ? (
           <Card>
             <CardContent className="flex min-h-64 items-center justify-center">
-              <Loader2 className="size-7 animate-spin text-amber-600 dark:text-yellow-300" />
+              <Loader2 className="size-7 animate-spin text-primary text-primary" />
             </CardContent>
           </Card>
         ) : (
@@ -449,7 +449,7 @@ export default function NotaDebitoPage() {
                           className="h-auto min-h-11 justify-start gap-3 px-3 py-2 text-left"
                           onClick={() => setReceptorModalOpen(true)}
                         >
-                          <UserRoundSearch className="size-5 shrink-0 text-amber-600 dark:text-yellow-300" />
+                          <UserRoundSearch className="size-5 shrink-0 text-primary text-primary" />
                           <span className="min-w-0">
                             <span className="block truncate font-semibold">
                               {selectedReceptor?.nombre || 'Seleccionar receptor'}
@@ -463,7 +463,7 @@ export default function NotaDebitoPage() {
                         </Button>
                       </div>
                       {selectedReceptor && (
-                        <div className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm md:grid-cols-3 dark:border-white/10 dark:bg-black">
+                        <div className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm md:grid-cols-3 border-border bg-background">
                           <Info label="Nombre" value={selectedReceptor.nombre || '-'} />
                           <Info label="NIT" value={selectedReceptor.numeroDocumento || '-'} />
                           <Info label="NRC" value={selectedReceptor.nrc || '-'} />
@@ -490,7 +490,7 @@ export default function NotaDebitoPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <Button type="button" variant="outline" className="h-auto min-h-11 justify-start gap-3 px-3 py-2 text-left" onClick={() => setModalOpen(true)}>
-                  <FileSearch className="size-5 shrink-0 text-amber-600 dark:text-yellow-300" />
+                  <FileSearch className="size-5 shrink-0 text-primary text-primary" />
                   <span className="min-w-0">
                     <span className="block truncate font-semibold">{selectedDocument?.numeroControl || 'Seleccionar credito fiscal'}</span>
                     <span className="block truncate text-xs text-muted-foreground">
@@ -499,7 +499,7 @@ export default function NotaDebitoPage() {
                   </span>
                 </Button>
                 {selectedDocument && (
-                  <div className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm md:grid-cols-3 dark:border-white/10 dark:bg-black">
+                  <div className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm md:grid-cols-3 border-border bg-background">
                     <Info label="Receptor" value={asString(selectedDocument.receptor?.nombre) || '-'} />
                     <Info label="NIT / NRC" value={`${asString(selectedDocument.receptor?.nit) || '-'} / ${asString(selectedDocument.receptor?.nrc) || '-'}`} />
                     <Info label="Fecha" value={selectedDocument.fechaEmision || '-'} />
@@ -523,7 +523,7 @@ export default function NotaDebitoPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 {items.map((line, index) => (
-                  <div key={index} className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 md:grid-cols-[7rem_minmax(0,1fr)_6rem_7rem_7rem_8rem_8rem_2.5rem] dark:border-white/10 dark:bg-black">
+                  <div key={index} className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 md:grid-cols-[7rem_minmax(0,1fr)_6rem_7rem_7rem_8rem_8rem_2.5rem] border-border bg-background">
                     <div className="grid gap-1">
                       <Label>Codigo</Label>
                       <Input value={line.codigo} onChange={(event) => updateLine(index, { codigo: event.target.value })} />
@@ -565,8 +565,8 @@ export default function NotaDebitoPage() {
 
                 <div className="grid gap-3 pt-3 lg:grid-cols-[minmax(0,1fr)_34rem]">
                   <div className="grid gap-3">
-                    <label className="flex cursor-pointer items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm dark:border-white/10 dark:bg-black">
-                      <input type="checkbox" checked={transmitir} onChange={(event) => setTransmitir(event.target.checked)} className="size-4 accent-yellow-400" />
+                    <label className="flex cursor-pointer items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm border-border bg-background">
+                      <input type="checkbox" checked={transmitir} onChange={(event) => setTransmitir(event.target.checked)} className="size-4 accent-primary" />
                       <span>Transmitir a Hacienda test</span>
                     </label>
                     <div className="grid gap-2">
@@ -576,7 +576,7 @@ export default function NotaDebitoPage() {
                   </div>
                   <div>
                     <div className="mb-2 text-right text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Resumen del documento</div>
-                    <div className="overflow-hidden rounded-lg border border-slate-200 text-sm dark:border-white/10">
+                    <div className="overflow-hidden rounded-lg border border-slate-200 text-sm border-border">
                       <SummaryRow label="Total CCF relacionado" value={money(selectedDocument?.totalPagar || 0)} />
                       <SummaryRow label="Sumatoria de ventas" value={money(summary.subTotalVentas)} />
                       <SummaryRow label="Valor del Tributo IVA" value={money(summary.ivaTributo)} />
@@ -607,9 +607,9 @@ export default function NotaDebitoPage() {
               <Input value={receptorSearch} onChange={(event) => setReceptorSearch(event.target.value)} placeholder="Buscar receptor" className="pl-9" autoFocus />
             </div>
           </div>
-          <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-white/10">
+          <div className="overflow-x-auto rounded-lg border border-border">
             <table className="w-full min-w-[820px] text-sm">
-              <thead className="border-b bg-slate-50 text-left text-xs uppercase tracking-[0.14em] text-muted-foreground dark:border-white/10 dark:bg-black">
+              <thead className="border-b bg-slate-50 text-left text-xs uppercase tracking-[0.14em] text-muted-foreground border-border bg-background">
                 <tr>
                   <th className="px-3 py-3">Nombre</th>
                   <th className="px-3 py-3">NIT</th>
@@ -621,7 +621,7 @@ export default function NotaDebitoPage() {
               </thead>
               <tbody>
                 {pagedReceptors.map((receptor) => (
-                  <tr key={receptor.id} className="border-b border-slate-200 last:border-0 dark:border-white/10">
+                  <tr key={receptor.id} className="border-b border-slate-200 last:border-0 border-border">
                     <td className="px-3 py-3 font-semibold">{receptor.nombre || '-'}</td>
                     <td className="px-3 py-3 font-mono text-xs">{receptor.numeroDocumento || '-'}</td>
                     <td className="px-3 py-3 font-mono text-xs">{receptor.nrc || '-'}</td>
@@ -662,9 +662,9 @@ export default function NotaDebitoPage() {
               <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar CCF" className="pl-9" autoFocus />
             </div>
           </div>
-          <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-white/10">
+          <div className="overflow-x-auto rounded-lg border border-border">
             <table className="w-full min-w-[860px] text-sm">
-              <thead className="border-b bg-slate-50 text-left text-xs uppercase tracking-[0.14em] text-muted-foreground dark:border-white/10 dark:bg-black">
+              <thead className="border-b bg-slate-50 text-left text-xs uppercase tracking-[0.14em] text-muted-foreground border-border bg-background">
                 <tr>
                   <th className="px-3 py-3">Fecha</th>
                   <th className="px-3 py-3">Receptor</th>
@@ -676,7 +676,7 @@ export default function NotaDebitoPage() {
               </thead>
               <tbody>
                 {paged.map((doc) => (
-                  <tr key={doc.id} className="border-b border-slate-200 last:border-0 dark:border-white/10">
+                  <tr key={doc.id} className="border-b border-slate-200 last:border-0 border-border">
                     <td className="px-3 py-3 whitespace-nowrap">{formatDate(doc.createdAt)}</td>
                     <td className="px-3 py-3">{asString(doc.receptor?.nombre) || '-'}</td>
                     <td className="px-3 py-3 break-all font-mono text-xs">{doc.codigoGeneracion}</td>
@@ -710,9 +710,9 @@ export default function NotaDebitoPage() {
 
 function SummaryRow({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_9rem] border-b border-slate-200 last:border-0 dark:border-white/10">
-      <div className={`bg-white px-3 py-2 text-right dark:bg-zinc-950 ${strong ? 'font-bold' : 'font-semibold'}`}>{label}</div>
-      <div className={`bg-slate-50 px-3 py-2 text-right dark:bg-black ${strong ? 'font-bold' : 'font-medium'}`}>{value}</div>
+    <div className="grid grid-cols-[minmax(0,1fr)_9rem] border-b border-slate-200 last:border-0 border-border">
+      <div className={`bg-white px-3 py-2 text-right bg-card ${strong ? 'font-bold' : 'font-semibold'}`}>{label}</div>
+      <div className={`bg-slate-50 px-3 py-2 text-right bg-background ${strong ? 'font-bold' : 'font-medium'}`}>{value}</div>
     </div>
   );
 }

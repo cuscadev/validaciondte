@@ -321,8 +321,8 @@ export function EmitterSettingsForm({
 
   if (loading) {
     return (
-      <div className="flex min-h-40 items-center justify-center rounded-xl border border-slate-200 dark:border-white/10">
-        <Loader2 className="size-6 animate-spin text-amber-600 dark:text-yellow-300" />
+      <div className="flex min-h-40 items-center justify-center rounded-xl border border-border">
+        <Loader2 className="size-6 animate-spin text-primary" />
       </div>
     );
   }
@@ -504,7 +504,7 @@ export function EmitterSettingsForm({
       <Button
         type="submit"
         disabled={saving}
-        className="h-12 w-full rounded-xl bg-yellow-400 font-bold text-black hover:bg-yellow-300"
+        className="h-12 w-full rounded-xl bg-primary font-bold text-black hover:bg-primary/90"
       >
         {saving ? (
           <>

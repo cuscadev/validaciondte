@@ -3,6 +3,7 @@
 import { Sun, Moon, Bell, CheckCheck } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from 'next/navigation';
+import { useTheme } from 'next-themes';
 import { useNotifications } from '@/hooks/useNotifications';
 import { AppNotification } from '@/lib/notifications';
 import UserAvatarMenu from '@/components/nav/UserAvatarMenu';
@@ -17,7 +18,8 @@ function timeAgo(createdAt?: { seconds: number }) {
 }
 
 export default function Navbar({ onToggleSidebar }: { onToggleSidebar: () => void }) {
-  const [darkMode, setDarkMode] = useState(false);
+  const { resolvedTheme, setTheme } = useTheme();
+  const darkMode = resolvedTheme === 'dark';
   const [bellOpen, setBellOpen] = useState(false);
   const bellRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -33,16 +35,8 @@ export default function Navbar({ onToggleSidebar }: { onToggleSidebar: () => voi
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    const isDark = document.documentElement.classList.contains("dark");
-    setDarkMode(isDark);
-  }, []);
-
   const toggleTheme = () => {
-    const next = !darkMode;
-    setDarkMode(next);
-    document.documentElement.classList.toggle("dark", next);
-    localStorage.setItem("theme", next ? "dark" : "light");
+    setTheme(darkMode ? 'light' : 'dark');
   };
 
   const handleNotifClick = (notif: AppNotification) => {
@@ -57,7 +51,7 @@ export default function Navbar({ onToggleSidebar }: { onToggleSidebar: () => voi
     <>
       <button
         onClick={toggleTheme}
-        className="hidden rounded-md bg-zinc-200 p-2 text-sm hover:bg-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 sm:inline-flex"
+        className="hidden rounded-md bg-muted p-2 text-sm text-foreground hover:bg-accent sm:inline-flex"
         aria-label={darkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
         title={darkMode ? 'Modo claro' : 'Modo oscuro'}
       >
@@ -68,9 +62,9 @@ export default function Navbar({ onToggleSidebar }: { onToggleSidebar: () => voi
       <div className="relative ml-1 sm:ml-3" ref={bellRef}>
         <button
           onClick={() => setBellOpen(o => !o)}
-          className="relative rounded-full bg-zinc-200 dark:bg-zinc-800 p-2 flex items-center justify-center hover:bg-zinc-300 dark:hover:bg-zinc-700"
+          className="relative rounded-full bg-muted p-2 flex items-center justify-center text-foreground hover:bg-accent"
         >
-          <Bell className="w-5 h-5 text-zinc-700 dark:text-zinc-200" />
+          <Bell className="w-5 h-5" />
           {unread.length > 0 && (
             <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
               {unread.length > 9 ? '9+' : unread.length}

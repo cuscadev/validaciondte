@@ -12,7 +12,7 @@ export default function TributarioPage() {
       <section className="rounded-lg border bg-background p-4 shadow-sm">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-start gap-3">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-md bg-yellow-400 text-black">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
               <CalendarDays className="size-5" />
             </div>
 
@@ -26,7 +26,7 @@ export default function TributarioPage() {
             </div>
           </div>
 
-          <Button asChild className="bg-yellow-400 font-semibold text-black hover:bg-yellow-300">
+          <Button asChild className="bg-primary font-semibold text-black hover:bg-primary/90">
             <a href={TAX_CALENDAR_URL} target="_blank" rel="noopener noreferrer">
               Abrir PDF
               <ExternalLink className="ml-2 size-4" />

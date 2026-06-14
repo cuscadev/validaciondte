@@ -22,8 +22,8 @@ export default function UploadTableHints({
         className
       )}
     >
-      <h2 className="text-xs font-semibold text-amber-600 dark:text-yellow-300">{title}</h2>
-      <div className="mt-1.5 text-xs leading-snug text-slate-600 dark:text-zinc-300">{children}</div>
+      <h2 className="text-xs font-semibold text-primary">{title}</h2>
+      <div className="mt-1.5 text-xs leading-snug text-muted-foreground">{children}</div>
     </section>
   );
 }

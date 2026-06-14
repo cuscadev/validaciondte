@@ -86,17 +86,17 @@ export default function FileDropzone({
           onClick={disabled ? undefined : open}
           className={cn(
             'rounded-lg border-2 border-dashed p-6 text-center transition-colors cursor-pointer',
-            'border-slate-300 bg-slate-50 hover:border-yellow-400 hover:bg-yellow-50/50',
-            'dark:border-white/15 dark:bg-black dark:hover:border-yellow-400/60 dark:hover:bg-yellow-400/5',
+            'border-slate-300 bg-slate-50 hover:border-primary hover:bg-primary/10/50',
+            'dark:border-white/15 dark:bg-black dark:hover:border-primary/60 dark:hover:bg-primary/5',
             isEmpty && !disabled && !isDragActive && 'dropzone-empty-pulse motion-reduce:animate-none',
-            isDragActive && !isDragReject && 'border-yellow-400 bg-yellow-50 dark:bg-yellow-400/10',
+            isDragActive && !isDragReject && 'border-primary bg-primary/10 dark:bg-primary/10',
             isDragReject && 'border-red-400 bg-red-50 dark:bg-red-950/20',
             disabled && 'pointer-events-none opacity-50 cursor-not-allowed',
             sidePanel && 'h-full min-h-[9.5rem]'
           )}
         >
           <input {...getInputProps()} />
-          <UploadCloud className="mx-auto mb-3 size-8 text-yellow-600 dark:text-yellow-300" />
+          <UploadCloud className="mx-auto mb-3 size-8 text-primary" />
           <p className="text-sm font-medium text-slate-900 dark:text-white">{emptyText}</p>
           {hint ? (
             <p className="mt-1 text-xs text-muted-foreground">{hint}</p>

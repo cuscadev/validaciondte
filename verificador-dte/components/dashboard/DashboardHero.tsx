@@ -59,7 +59,7 @@ function StatPill({ label, value, icon: Icon, accent, compact }: StatPillProps) 
   return (
     <div
       className={cn(
-        'flex items-center rounded-xl border border-slate-200 bg-slate-50/80 dark:border-white/10 dark:bg-black/40',
+        'flex items-center rounded-xl border border-border bg-card',
         compact ? 'gap-2 p-2' : 'gap-3 p-3'
       )}
     >
@@ -75,7 +75,7 @@ function StatPill({ label, value, icon: Icon, accent, compact }: StatPillProps) 
       <div className="min-w-0">
         <p
           className={cn(
-            'font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-500',
+            'font-semibold uppercase tracking-[0.18em] text-muted-foreground',
             compact ? 'text-[9px]' : 'text-[10px]'
           )}
         >
@@ -99,7 +99,7 @@ type ActivityMetricProps = {
 
 function ActivityMetric({ label, value, icon: Icon, accent, loading }: ActivityMetricProps) {
   return (
-    <div className="flex w-full items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/80 p-2 dark:border-white/10 dark:bg-black/40">
+    <div className="flex w-full items-center gap-2 rounded-lg border border-border bg-card p-2">
       <span
         className={cn(
           'flex size-8 shrink-0 items-center justify-center rounded-md',
@@ -109,7 +109,7 @@ function ActivityMetric({ label, value, icon: Icon, accent, loading }: ActivityM
         <Icon className="size-4" />
       </span>
       <div className="min-w-0">
-        <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-zinc-500">
+        <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
           {label}
         </p>
         {loading ? (
@@ -165,14 +165,14 @@ export function DashboardHero({
     <FadeIn className={cn('h-full', className)}>
       <Card
         className={cn(
-          'h-full overflow-hidden border-slate-200 bg-white py-0 shadow-sm dark:border-white/10 dark:bg-zinc-950',
+          'h-full overflow-hidden border-border bg-card py-0 shadow-sm',
           isSidebar && 'relative flex flex-col'
         )}
       >
         {isSidebar && (
           <Link
             href="/profile"
-            className="absolute left-3 top-3 z-10 inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white/90 text-slate-600 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900 dark:border-white/10 dark:bg-zinc-950/90 dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-white"
+            className="absolute left-3 top-3 z-10 inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white/90 text-slate-600 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900 dark:border-white/10/90 dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-white"
             aria-label={
               profileCompletion
                 ? `Editar perfil, ${profileCompletion.progress}% completado`
@@ -187,7 +187,7 @@ export function DashboardHero({
             <span className="relative inline-flex size-8 items-center justify-center">
               <Pencil className="size-3.5" />
               {profileCompletion && (
-                <span className="absolute -bottom-1.5 -right-2 rounded-full bg-yellow-400 px-1 py-px text-[8px] font-extrabold leading-none text-black shadow-sm">
+                <span className="absolute -bottom-1.5 -right-2 rounded-full bg-primary px-1 py-px text-[8px] font-extrabold leading-none text-black shadow-sm">
                   {profileCompletion.progress}%
                 </span>
               )}
@@ -210,7 +210,7 @@ export function DashboardHero({
                     className="size-28 shrink-0 rounded-2xl border-2 border-slate-200 object-cover shadow-sm dark:border-white/15"
                   />
                 ) : (
-                  <div className="flex size-28 shrink-0 items-center justify-center rounded-2xl bg-yellow-400 text-3xl font-bold text-black shadow-sm">
+                  <div className="flex size-28 shrink-0 items-center justify-center rounded-2xl bg-primary text-3xl font-bold text-black shadow-sm">
                     {getInitials(displayName)}
                   </div>
                 )}
@@ -222,10 +222,10 @@ export function DashboardHero({
                     className="block sm:inline"
                   />
                 </h1>
-                <p className="mt-1.5 text-sm font-semibold capitalize text-slate-500 dark:text-zinc-400">
+                <p className="mt-1.5 text-sm font-semibold capitalize text-muted-foreground">
                   {role ?? 'usuario'}
                 </p>
-                <p className="mt-2 text-[11px] leading-5 text-slate-600 dark:text-zinc-300">
+                <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
                   Resumen de tu actividad y acceso rapido a tus herramientas DTE.
                 </p>
               </div>
@@ -236,7 +236,7 @@ export function DashboardHero({
                     label="DTEs 30d"
                     value={stats.records ?? 0}
                     icon={FileStack}
-                    accent="bg-yellow-500/15 text-yellow-600 dark:text-yellow-400"
+                    accent="bg-primary/15 text-primary"
                     loading={stats.loading}
                   />
                   <ActivityMetric
@@ -263,12 +263,12 @@ export function DashboardHero({
                 </div>
               )}
 
-              <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 p-2.5 dark:border-white/10 dark:bg-black/40">
+              <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-2.5">
                 <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/15 text-blue-600 dark:text-blue-400">
                   <BadgeCheck className="size-4" />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-zinc-500">
+                  <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                     Plan
                   </p>
                   <p className="truncate text-sm font-bold capitalize">{membership}</p>
@@ -286,7 +286,7 @@ export function DashboardHero({
                     className="size-16 shrink-0 rounded-2xl border border-slate-200 object-cover dark:border-white/10 md:size-20"
                   />
                 ) : (
-                  <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-yellow-400 text-lg font-bold text-black md:size-20 md:text-xl">
+                  <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-primary text-lg font-bold text-black md:size-20 md:text-xl">
                     {getInitials(displayName)}
                   </div>
                 )}
@@ -295,10 +295,10 @@ export function DashboardHero({
                   <h1 className="text-2xl font-extrabold tracking-tight md:text-4xl">
                     <DashboardRgbName name={displayName} chartsLoading={chartsLoading} />
                   </h1>
-                  <p className="mt-1.5 text-sm font-semibold capitalize text-slate-500 dark:text-zinc-400">
+                  <p className="mt-1.5 text-sm font-semibold capitalize text-muted-foreground">
                     {role ?? 'usuario'}
                   </p>
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-zinc-300">
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
                     Accede rapido a tus herramientas DTE, revisa tu actividad y
                     refuerza la seguridad de tu cuenta desde un solo lugar.
                   </p>

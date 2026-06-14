@@ -115,7 +115,7 @@ export default function LoginLogsPage() {
       <section className="rounded-lg border bg-background p-5 shadow-sm">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-yellow-600">Monitoreo</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">Monitoreo</p>
             <h1 className="mt-1 text-2xl font-semibold tracking-tight">Inicios de sesion</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               Intentos exitosos y fallidos. No se guardan contrasenas.

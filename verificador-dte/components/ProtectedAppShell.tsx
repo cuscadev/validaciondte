@@ -14,7 +14,7 @@ import { useOrganizationMe } from '@/hooks/useOrganizationMe'
 import { Button } from '@/components/ui/button'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { AuthProvider, useAuth } from '@/components/AuthProvider'
-import { ThemeProvider } from '@/components/ThemeProvider'
+import { PrivateThemeProvider, PrivateThemeScope } from '@/components/ThemeProvider'
 import { isAccountUsable } from '@/lib/firestoreUser'
 import {
   clientNeedsSetup,
@@ -33,7 +33,11 @@ export default function ProtectedAppShell({ children }: { children: React.ReactN
 }
 
 function OnboardingOnlyLayout({ children }: { children: React.ReactNode }) {
-  return <ThemeProvider>{children}</ThemeProvider>
+  return (
+    <PrivateThemeProvider>
+      <PrivateThemeScope className="min-h-screen">{children}</PrivateThemeScope>
+    </PrivateThemeProvider>
+  )
 }
 
 function ProtectedAppShellContent({ children }: { children: React.ReactNode }) {
@@ -177,8 +181,8 @@ function ProtectedAppShellContent({ children }: { children: React.ReactNode }) {
 
   if (orgGate === 'blocked' || (appUser && !isAccountUsable(appUser))) {
     return (
-      <ThemeProvider>
-        <div className="flex min-h-screen items-center justify-center p-6">
+      <PrivateThemeProvider>
+        <PrivateThemeScope className="flex min-h-screen items-center justify-center p-6">
           <div className="max-w-md rounded-xl border p-8 text-center">
             <h2 className="text-xl font-bold">Cuenta no disponible</h2>
             <p className="mt-3 text-sm text-muted-foreground">
@@ -188,15 +192,15 @@ function ProtectedAppShellContent({ children }: { children: React.ReactNode }) {
               Cerrar sesión
             </Button>
           </div>
-        </div>
-      </ThemeProvider>
+        </PrivateThemeScope>
+      </PrivateThemeProvider>
     )
   }
 
   function SetupSpinner() {
     return (
       <OnboardingOnlyLayout>
-        <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-black">
+        <div className="flex min-h-screen items-center justify-center bg-background">
           <BrandLoader size="lg" label="Verificando cuenta" />
         </div>
       </OnboardingOnlyLayout>
@@ -212,12 +216,12 @@ function ProtectedAppShellContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <ThemeProvider>
+    <PrivateThemeProvider>
+      <PrivateThemeScope className="relative flex h-screen overflow-hidden">
       <TooltipProvider skipDelayDuration={300}>
-      <div className="relative flex h-screen overflow-hidden">
         <aside
           className={[
-            'hidden md:block fixed z-30 top-0 left-0 h-screen bg-black border-r border-white/10 shadow-lg',
+            'hidden md:block fixed z-30 top-0 left-0 h-screen bg-sidebar border-r border-sidebar-border shadow-lg',
             'transition-[width] duration-300 ease-in-out overflow-y-auto overflow-x-visible',
             sidebarOpen ? 'w-64' : 'w-16',
           ].join(' ')}
@@ -227,7 +231,7 @@ function ProtectedAppShellContent({ children }: { children: React.ReactNode }) {
 
         <aside
           className={[
-            'md:hidden fixed z-40 top-0 left-0 h-screen w-64 bg-black border-r border-white/10 shadow-lg',
+            'md:hidden fixed z-40 top-0 left-0 h-screen w-64 bg-sidebar border-r border-sidebar-border shadow-lg',
             'transition-transform duration-300 ease-in-out',
             mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full',
           ].join(' ')}
@@ -246,17 +250,17 @@ function ProtectedAppShellContent({ children }: { children: React.ReactNode }) {
 
         <main
           className={[
-            'relative flex-1 h-screen overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable]',
+            'relative flex-1 h-screen overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable] bg-background',
             'transition-[margin] duration-300 ease-in-out',
             sidebarOpen ? 'md:ml-64' : 'md:ml-16',
           ].join(' ')}
         >
-          <div className="sticky top-0 z-20 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+          <div className="sticky top-0 z-20 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
             <div className="flex min-w-0 items-center gap-1 px-2 py-2 sm:gap-2 sm:px-3">
               <button
                 type="button"
                 onClick={() => setMobileSidebarOpen((value) => !value)}
-                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border text-sm hover:bg-muted md:hidden"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-border text-sm hover:bg-muted md:hidden"
                 aria-label={mobileSidebarOpen ? t('hideMenu') : t('showMenu')}
                 title={mobileSidebarOpen ? t('hideMenu') : t('showMenu')}
               >
@@ -269,7 +273,7 @@ function ProtectedAppShellContent({ children }: { children: React.ReactNode }) {
               <button
                 type="button"
                 onClick={() => setSidebarOpen((value) => !value)}
-                className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-md border text-sm hover:bg-muted md:inline-flex"
+                className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-md border border-border text-sm hover:bg-muted md:inline-flex"
                 aria-label={sidebarOpen ? t('hideMenu') : t('showMenu')}
                 title={sidebarOpen ? t('hideMenu') : t('showMenu')}
               >
@@ -291,8 +295,8 @@ function ProtectedAppShellContent({ children }: { children: React.ReactNode }) {
 
           <div className="min-w-0 p-3 sm:p-4">{children}</div>
         </main>
-      </div>
       </TooltipProvider>
-    </ThemeProvider>
+      </PrivateThemeScope>
+    </PrivateThemeProvider>
   )
 }

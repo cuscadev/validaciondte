@@ -242,7 +242,7 @@ export default function LoginPage() {
 	};
 
 	return (
-		<main className="relative min-h-screen overflow-x-hidden bg-slate-50 text-slate-950 dark:bg-black dark:text-white">
+		<main className="relative min-h-screen overflow-x-hidden bg-background text-foreground">
 			<div className="fixed left-0 top-0 z-30 w-full">
 				<PublicNavbar />
 			</div>
@@ -253,7 +253,7 @@ export default function LoginPage() {
 
 			<section className="relative z-10 mx-auto grid min-h-screen w-full max-w-7xl items-center px-4 pb-8 pt-24 sm:px-6 sm:pt-28 lg:grid-cols-[minmax(0,1fr)_minmax(24rem,28rem)] lg:gap-16 lg:px-12 xl:gap-24 xl:px-16">
 				<div className="hidden w-full max-w-2xl lg:block lg:pl-4 xl:pl-8">
-					<p className="mb-5 text-sm font-semibold uppercase tracking-[0.32em] text-amber-500 dark:text-yellow-300">
+					<p className="mb-5 text-sm font-semibold uppercase tracking-[0.32em] text-primary">
 						ACCESO SEGURO DTE
 					</p>
 
@@ -261,24 +261,24 @@ export default function LoginPage() {
 						Entra a tu centro de verificación tributaria.
 					</h1>
 
-					<p className="mt-6 max-w-xl text-lg leading-7 text-slate-600 dark:text-zinc-300">
+					<p className="mt-6 max-w-xl text-lg leading-7 text-muted-foreground">
 						Valida documentos, revisa reportes y administra procesos fiscales
 						desde una plataforma protegida para tu equipo.
 					</p>
 
 					<div className="mt-10 grid grid-cols-3 gap-4">
 						<div className="rounded-xl border border-slate-200 bg-white/70 p-4 text-left shadow-sm backdrop-blur dark:border-white/10 dark:bg-zinc-950/70">
-							<FileCheck2 className="mb-3 size-6 text-amber-500 dark:text-yellow-300" />
+							<FileCheck2 className="mb-3 size-6 text-primary" />
 							<p className="text-sm font-semibold">DTE centralizados</p>
 						</div>
 
 						<div className="rounded-xl border border-slate-200 bg-white/70 p-4 text-left shadow-sm backdrop-blur dark:border-white/10 dark:bg-zinc-950/70">
-							<ShieldCheck className="mb-3 size-6 text-amber-500 dark:text-yellow-300" />
+							<ShieldCheck className="mb-3 size-6 text-primary" />
 							<p className="text-sm font-semibold">MFA disponible</p>
 						</div>
 
 						<div className="rounded-xl border border-slate-200 bg-white/70 p-4 text-left shadow-sm backdrop-blur dark:border-white/10 dark:bg-zinc-950/70">
-							<LockKeyhole className="mb-3 size-6 text-amber-500 dark:text-yellow-300" />
+							<LockKeyhole className="mb-3 size-6 text-primary" />
 							<p className="text-sm font-semibold">Control de acceso</p>
 						</div>
 					</div>
@@ -286,7 +286,7 @@ export default function LoginPage() {
 
 				<Card className="mx-auto w-full max-w-md rounded-2xl border border-slate-200 bg-white/90 text-slate-950 shadow-2xl shadow-black/20 backdrop-blur lg:mx-0 lg:justify-self-center xl:justify-self-start dark:border-white/10 dark:bg-zinc-950/90 dark:text-white dark:shadow-black/40">
 					<CardHeader className="space-y-4 p-5 sm:p-6">
-						<div className="flex size-12 items-center justify-center rounded-xl bg-yellow-400 text-black shadow-lg shadow-yellow-500/20 sm:size-14">
+						<div className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20 sm:size-14">
 							<LockKeyhole className="size-6 sm:size-7" />
 						</div>
 
@@ -295,7 +295,7 @@ export default function LoginPage() {
 								{t('loginTitle')}
 							</CardTitle>
 
-							<CardDescription className="mt-2 text-sm leading-6 text-slate-600 dark:text-zinc-300">
+							<CardDescription className="mt-2 text-sm leading-6 text-muted-foreground">
 								{t('loginDescription')}
 							</CardDescription>
 						</div>
@@ -306,7 +306,7 @@ export default function LoginPage() {
 							<div className="space-y-2">
 								<Label
 									htmlFor="email"
-									className="text-slate-700 dark:text-zinc-200"
+									className="text-muted-foreground"
 								>
 									{t('email')}
 								</Label>
@@ -326,7 +326,7 @@ export default function LoginPage() {
 							<div className="space-y-2">
 								<Label
 									htmlFor="password"
-									className="text-slate-700 dark:text-zinc-200"
+									className="text-muted-foreground"
 								>
 									{t('password')}
 								</Label>
@@ -343,12 +343,12 @@ export default function LoginPage() {
 								/>
 							</div>
 
-							<label className="flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-zinc-300">
+							<label className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
 								<input
 									type="checkbox"
 									checked={showPassword}
 									onChange={(e) => setShowPassword(e.target.checked)}
-									className="size-4 rounded border-slate-300 accent-yellow-400 dark:border-white/20"
+									className="size-4 rounded border-slate-300 accent-primary dark:border-white/20"
 								/>
 								Mostrar contrasena
 							</label>
@@ -361,7 +361,7 @@ export default function LoginPage() {
 
 							<Button
 								type="submit"
-								className="h-12 w-full rounded-xl bg-yellow-400 font-bold text-black transition-all hover:bg-yellow-300"
+								className="h-12 w-full rounded-xl bg-primary font-bold text-primary-foreground transition-all hover:bg-primary/90"
 								disabled={loading}
 							>
 								{loading ? t('loading') : t('loginButton')}
@@ -372,7 +372,7 @@ export default function LoginPage() {
 						<div className="mt-6 text-center text-sm text-slate-500 dark:text-zinc-400">
 							<Link
 								href="/signup"
-								className="font-semibold text-amber-500 transition-colors hover:text-amber-400 dark:text-yellow-300 dark:hover:text-yellow-200"
+								className="font-semibold text-primary transition-colors hover:text-primary/80"
 							>
 								{t('noAccount')}
 							</Link>

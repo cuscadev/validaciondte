@@ -52,7 +52,7 @@ export default function OrganizationKycPage() {
   if (!authChecked || isLoading) {
     return (
       <main className="flex min-h-[calc(100vh-5rem)] items-center justify-center">
-        <Loader2 className="size-8 animate-spin text-amber-500" />
+        <Loader2 className="size-8 animate-spin text-primary" />
       </main>
     );
   }
@@ -78,7 +78,7 @@ export default function OrganizationKycPage() {
               Volver al panel
             </Link>
           </Button>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 dark:text-yellow-400">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary text-primary">
             Conoce a tu cliente
           </p>
           <h1 className="mt-2 text-2xl font-bold tracking-tight">Datos fiscales (KYC)</h1>
@@ -90,7 +90,7 @@ export default function OrganizationKycPage() {
         <Card className="rounded-2xl border border-border shadow-xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
-              <Building2 className="size-5 text-amber-600 dark:text-yellow-400" />
+              <Building2 className="size-5 text-primary text-primary" />
               {display?.displayTitle || org.name}
             </CardTitle>
             {display?.displaySubtitle && (

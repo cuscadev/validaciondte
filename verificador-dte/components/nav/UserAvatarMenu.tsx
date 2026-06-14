@@ -63,9 +63,9 @@ export default function UserAvatarMenu({
         <button
           type="button"
           aria-label={`${t('common.account', 'Cuenta')}: ${displayName}`}
-          className="ml-1 flex max-w-[min(100%,12rem)] items-center gap-2 rounded-full border border-yellow-200 bg-yellow-50/40 py-1 pl-1 pr-1.5 transition-colors hover:border-yellow-300 hover:bg-yellow-50/70 dark:border-yellow-400/30 dark:bg-yellow-400/5 dark:hover:border-yellow-400/45 dark:hover:bg-yellow-400/10 sm:ml-4 sm:max-w-none sm:pr-3"
+          className="ml-1 flex max-w-[min(100%,12rem)] items-center gap-2 rounded-full border border-primary/30 bg-primary/5 py-1 pl-1 pr-1.5 transition-colors hover:border-primary/45 hover:bg-primary/10 sm:ml-4 sm:max-w-none sm:pr-3"
         >
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-yellow-200/80 bg-yellow-50 dark:border-yellow-400/25 dark:bg-zinc-800">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-primary/25 bg-primary/10">
             {photoURL ? (
               <Image
                 src={photoURL}
@@ -75,13 +75,13 @@ export default function UserAvatarMenu({
                 className="h-full w-full object-cover"
               />
             ) : (
-              <User className="h-5 w-5 text-yellow-700 dark:text-yellow-300" />
+              <User className="h-5 w-5 text-primary" />
             )}
           </span>
-          <span className="hidden min-w-0 truncate text-sm font-medium text-zinc-900 dark:text-yellow-50 sm:block">
+          <span className="hidden min-w-0 truncate text-sm font-medium text-foreground sm:block">
             {displayName}
           </span>
-          <ChevronDown className="size-4 shrink-0 text-yellow-600/70 dark:text-yellow-400/70" />
+          <ChevronDown className="size-4 shrink-0 text-primary/70" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[calc(100vw-1rem)] max-w-72 sm:w-56">

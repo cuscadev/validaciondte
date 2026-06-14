@@ -473,7 +473,7 @@ function OutcomeAreaChart({ points }: { points: ActivityPeriodPoint[] }) {
                     r={isActive ? 10 : 8}
                     className={cn(
                       isActive
-                        ? 'fill-amber-400/25 stroke-amber-500 dark:stroke-yellow-400'
+                        ? 'fill-primary/25 stroke-primary'
                         : 'fill-muted-foreground/10 stroke-muted-foreground/40'
                     )}
                     strokeWidth={2}
@@ -534,7 +534,7 @@ function OutcomeAreaChart({ points }: { points: ActivityPeriodPoint[] }) {
               x2={activeMarker.x}
               y1={chart.paddingTop}
               y2={chart.baseline}
-              className="stroke-amber-500 dark:stroke-yellow-400"
+              className="stroke-primary"
               strokeWidth={2}
               strokeDasharray="5 4"
               pointerEvents="none"
@@ -638,7 +638,7 @@ function ModuleUsageBars({
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-background">
                 <div
-                  className="h-full rounded-full bg-amber-500 dark:bg-yellow-400"
+                  className="h-full rounded-full bg-primary"
                   style={{ width: `${width}%` }}
                 />
               </div>
@@ -736,7 +736,7 @@ export function ActivityPeriodChart({
               </p>
               <Link
                 href={emptyHref}
-                className="inline-flex items-center gap-1 text-sm font-semibold text-amber-600 hover:underline dark:text-yellow-400"
+                className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
               >
                 Ir al verificador
                 <ArrowRight className="size-4" />
@@ -754,7 +754,7 @@ export function ActivityPeriodChart({
                   </p>
                   <Link
                     href={emptyHref}
-                    className="inline-flex items-center gap-1 text-sm font-semibold text-amber-600 hover:underline dark:text-yellow-400"
+                    className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
                   >
                     Ir al verificador
                     <ArrowRight className="size-4" />

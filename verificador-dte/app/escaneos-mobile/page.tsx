@@ -72,14 +72,14 @@ function statusLabel(status?: ScanFolder['status']) {
 
 function statusClass(status?: ScanFolder['status']) {
   if (status === 'processed') return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200';
-  if (status === 'processing') return 'bg-yellow-100 text-yellow-900 dark:bg-yellow-400/15 dark:text-yellow-200';
+  if (status === 'processing') return 'bg-primary/15 text-primary';
   if (status === 'error') return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200';
   return 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-200';
 }
 
 function estadoClass(value?: string) {
   if (value === 'EMITIDO') return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200';
-  if (value === 'ANULADO') return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200';
+  if (value === 'ANULADO') return 'bg-primary/15 text-primary bg-primary/15 text-primary';
   if (value === 'ERROR' || value === 'RECHAZADO') return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200';
   return 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-200';
 }
@@ -260,15 +260,15 @@ export default function EscaneosMobilePage() {
   return (
     <PlanGate routeKey="escaneos-mobile">
     <main className="w-full max-w-full">
-      <Card className="w-full max-w-full overflow-hidden border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-950">
-        <CardHeader className="border-b border-slate-200 bg-white/90 dark:border-white/10 dark:bg-zinc-950/90">
+      <Card className="w-full max-w-full overflow-hidden border-border bg-card shadow-sm">
+        <CardHeader className="border-b border-border bg-card/90">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2 text-2xl text-slate-950 dark:text-white">
-                <QrCode className="size-6 text-amber-600 dark:text-yellow-300" />
+              <CardTitle className="flex items-center gap-2 text-2xl text-foreground">
+                <QrCode className="size-6 text-primary text-primary" />
                 Escaneo desde la app
               </CardTitle>
-              <CardDescription className="mt-2 text-slate-600 dark:text-zinc-300">
+              <CardDescription className="mt-2 text-muted-foreground">
                 Crea carpetas con código propio para que mobile envíe cada escaneo a la carpeta correcta.
               </CardDescription>
             </div>
@@ -276,22 +276,22 @@ export default function EscaneosMobilePage() {
         </CardHeader>
 
         <CardContent className="space-y-4 p-4">
-          <section className="grid gap-3 rounded-md border border-yellow-400/30 bg-yellow-50 p-4 dark:bg-yellow-400/10 md:grid-cols-[1fr_auto]">
+          <section className="grid gap-3 rounded-md border border-primary/30 bg-primary/10 p-4 dark:bg-primary/10 md:grid-cols-[1fr_auto]">
             <div>
-              <label className="text-sm font-semibold text-slate-950 dark:text-white">
+              <label className="text-sm font-semibold text-foreground">
                 Nueva carpeta
               </label>
               <input
                 value={folderName}
                 onChange={(event) => setFolderName(event.target.value)}
                 placeholder="Ej. Compras viernes, auditoría, ruta 1"
-                className="mt-2 h-10 w-full rounded-md border border-yellow-400/30 bg-white px-3 text-sm text-slate-950 outline-none focus:ring-2 focus:ring-yellow-400 dark:bg-black dark:text-white"
+                className="mt-2 h-10 w-full rounded-md border border-primary/30 bg-background px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary"
                 maxLength={60}
               />
             </div>
             <div className="flex items-end">
               <Button
-                className="bg-yellow-400 font-bold text-black hover:bg-yellow-300"
+                className="bg-primary font-bold text-black hover:bg-primary/90"
                 disabled={creatingFolder || !session?.id}
                 onClick={createFolder}
               >
@@ -301,7 +301,7 @@ export default function EscaneosMobilePage() {
             </div>
           </section>
 
-          <section className="grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-4 text-sm dark:border-white/10 dark:bg-black md:grid-cols-3">
+          <section className="grid gap-3 rounded-md border border-border bg-background p-4 text-sm md:grid-cols-3">
             <div>
               <div className="text-muted-foreground">Carpetas</div>
               <div className="mt-1 text-2xl font-bold">{folders.length}</div>
@@ -324,10 +324,10 @@ export default function EscaneosMobilePage() {
             </div>
           </section>
 
-          <div className="overflow-hidden rounded-md border border-slate-200 dark:border-white/10">
+          <div className="overflow-hidden rounded-md border border-border">
             <Table>
               <TableHeader>
-                <TableRow className="bg-slate-50 dark:bg-zinc-900">
+                <TableRow className="bg-slate-50 bg-card">
                   <TableHead>Carpeta</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Links</TableHead>
@@ -363,17 +363,17 @@ export default function EscaneosMobilePage() {
                               <button
                                 type="button"
                                 onClick={() => toggleFolder(folder.id)}
-                                className="flex max-w-full items-center gap-2 text-left font-semibold hover:text-amber-700 dark:hover:text-yellow-300"
+                                className="flex max-w-full items-center gap-2 text-left font-semibold hover:text-primary hover:text-primary"
                               >
                                 {isExpanded ? (
-                                  <ChevronDown className="size-4 shrink-0 text-amber-600 dark:text-yellow-300" />
+                                  <ChevronDown className="size-4 shrink-0 text-primary text-primary" />
                                 ) : (
-                                  <ChevronRight className="size-4 shrink-0 text-amber-600 dark:text-yellow-300" />
+                                  <ChevronRight className="size-4 shrink-0 text-primary text-primary" />
                                 )}
-                                <Folder className="size-4 shrink-0 text-amber-600 dark:text-yellow-300" />
+                                <Folder className="size-4 shrink-0 text-primary text-primary" />
                                 <span className="truncate">{folder.name}</span>
                               </button>
-                              <div className="inline-flex rounded-md border border-yellow-400/40 bg-yellow-50 px-2 py-1 font-mono text-sm font-black tracking-[0.2em] text-black dark:bg-yellow-400/10 dark:text-white">
+                              <div className="inline-flex rounded-md border border-primary/40 bg-primary/10 px-2 py-1 font-mono text-sm font-black tracking-[0.2em] text-foreground">
                                 {folder.code || '------'}
                               </div>
                             </div>
@@ -397,7 +397,7 @@ export default function EscaneosMobilePage() {
                               </Button>
                               <Button
                                 size="sm"
-                                className="bg-yellow-400 font-bold text-black hover:bg-yellow-300"
+                                className="bg-primary font-bold text-black hover:bg-primary/90"
                                 disabled={!!processingId || scanCount === 0}
                                 onClick={() => processFolder(folder.id)}
                               >
@@ -418,7 +418,7 @@ export default function EscaneosMobilePage() {
                         </TableRow>
                         {isExpanded ? (
                           <TableRow>
-                            <TableCell colSpan={5} className="bg-slate-50 p-4 dark:bg-black/30">
+                            <TableCell colSpan={5} className="bg-background/30 p-4">
                               <FolderDetails folder={folder} />
                             </TableCell>
                           </TableRow>
@@ -449,9 +449,9 @@ function FolderDetails({ folder }: { folder: ScanFolder }) {
   const rows = hasResults ? results : scans;
 
   return (
-    <div className="max-h-[24rem] overflow-auto rounded-md border border-slate-200 bg-white dark:border-white/10 dark:bg-zinc-950">
+    <div className="max-h-[24rem] overflow-auto rounded-md border border-border bg-card">
       <table className="w-full text-sm">
-        <thead className="sticky top-0 bg-slate-100 text-slate-950 dark:bg-zinc-900 dark:text-white">
+        <thead className="sticky top-0 bg-card text-foreground">
           <tr>
             <th className="p-2 text-left">#</th>
             <th className="p-2 text-left">{hasResults ? 'Código' : 'Link'}</th>
@@ -503,7 +503,7 @@ function FolderDetails({ folder }: { folder: ScanFolder }) {
                         href={link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs font-semibold text-amber-700 underline-offset-4 hover:underline dark:text-yellow-300"
+                        className="text-xs font-semibold text-primary underline-offset-4 hover:underline text-primary"
                       >
                         Abrir
                       </a>

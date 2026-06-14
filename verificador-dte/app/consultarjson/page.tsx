@@ -161,7 +161,7 @@ export default function ConsultarJsonPage() {
 
   const estadoClass = (estado: Resultado['estado']) => ({
     'EMITIDO': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200',
-    'ANULADO': 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200',
+    'ANULADO': 'bg-primary/15 text-primary bg-primary/15 text-primary',
     'RECHAZADO': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200',
     'NO ENCONTRADO': 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
     'ERROR': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200',

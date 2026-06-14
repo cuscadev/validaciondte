@@ -18,7 +18,7 @@ function estadoClass(estado?: string) {
     case 'EMITIDO':
       return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200';
     case 'ANULADO':
-      return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200';
+      return 'bg-primary/15 text-primary bg-primary/15 text-primary';
     case 'RECHAZADO':
       return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200';
     default:
@@ -63,7 +63,7 @@ export default function GmailJsonVerifyPanel({
         )}
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-white/10">
+      <div className="overflow-x-auto rounded-xl border border-border">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-200 bg-white text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-white/10 dark:bg-zinc-950 dark:text-zinc-400">

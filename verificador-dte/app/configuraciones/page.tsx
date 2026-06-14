@@ -358,7 +358,7 @@ export default function ConfiguracionesPage() {
             </div>
 
             {haciendaQuery.data?.lastAuthStatus && (
-              <div className="rounded-md bg-slate-50 p-3 text-sm dark:bg-zinc-900">
+              <div className="rounded-md bg-slate-50 p-3 text-sm bg-card">
                 Estado ultimo acceso Hacienda: <strong>{haciendaQuery.data.lastAuthStatus}</strong>
                 {haciendaQuery.data.tokenExpiresAt ? ` · vence ${new Date(haciendaQuery.data.tokenExpiresAt).toLocaleString('es-SV')}` : ''}
               </div>

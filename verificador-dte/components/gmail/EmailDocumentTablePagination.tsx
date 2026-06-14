@@ -29,7 +29,7 @@ export default function EmailDocumentTablePagination({
   const end = Math.min(page * pageSize, total);
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 dark:border-white/10 dark:bg-zinc-900/40 md:flex-row md:items-center md:justify-between">
+    <div className="flex flex-col gap-3 rounded-xl border border-border bg-card px-4 py-3 dark:border-white/10 dark:bg-zinc-900/40 md:flex-row md:items-center md:justify-between">
       <div className="text-xs text-slate-600 dark:text-zinc-400">
         {total > 0 ? (
           <>
@@ -42,7 +42,7 @@ export default function EmailDocumentTablePagination({
           'Sin registros'
         )}
         {total > pageSize ? (
-          <span className="mt-1 block text-slate-500 dark:text-zinc-500">
+          <span className="mt-1 block text-muted-foreground">
             Usa la paginacion para ver todos los documentos.
           </span>
         ) : null}

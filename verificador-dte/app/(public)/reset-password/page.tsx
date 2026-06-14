@@ -65,11 +65,11 @@ export default function ResetPasswordPage() {
       <div className="absolute inset-0 z-0 opacity-50 [background-image:linear-gradient(rgba(15,23,42,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(15,23,42,0.07)_1px,transparent_1px)] [background-size:72px_72px] dark:opacity-40 dark:[background-image:linear-gradient(rgba(255,255,255,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.07)_1px,transparent_1px)]" />
       <Card className="relative z-10 mt-16 w-full max-w-md border-slate-200 bg-white/90 text-slate-950 shadow-2xl shadow-slate-900/10 backdrop-blur dark:border-white/10 dark:bg-zinc-950/90 dark:text-white">
         <CardHeader>
-          <div className="flex size-12 items-center justify-center rounded-md bg-yellow-400 text-black">
+          <div className="flex size-12 items-center justify-center rounded-md bg-primary text-primary-foreground">
             {step === 'done' ? <MailCheck className="size-6" /> : <KeyRound className="size-6" />}
           </div>
           <CardTitle>Restablecer clave</CardTitle>
-          <CardDescription className="text-slate-600 dark:text-zinc-300">
+          <CardDescription className="text-muted-foreground">
             {step === 'email' && 'Te enviaremos un codigo de 6 digitos al correo.'}
             {step === 'code' && 'Ingresa el codigo recibido para enviarte una contrasena temporal.'}
             {step === 'done' && 'Te enviamos una contrasena temporal. Al iniciar sesion deberas cambiarla.'}
@@ -83,7 +83,7 @@ export default function ResetPasswordPage() {
                 <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
               </div>
               {error && <div className="rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-200">{error}</div>}
-              <Button type="submit" className="w-full bg-yellow-400 text-black hover:bg-yellow-300" disabled={loading}>
+              <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={loading}>
                 {loading ? 'Enviando...' : 'Enviar codigo'}
               </Button>
             </form>
@@ -96,14 +96,14 @@ export default function ResetPasswordPage() {
                 <Input id="code" inputMode="numeric" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} required />
               </div>
               {error && <div className="rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-200">{error}</div>}
-              <Button type="submit" className="w-full bg-yellow-400 text-black hover:bg-yellow-300" disabled={loading || code.length !== 6}>
+              <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={loading || code.length !== 6}>
                 {loading ? 'Verificando...' : 'Verificar y enviar clave temporal'}
               </Button>
             </form>
           )}
 
           {step === 'done' && (
-            <Button asChild className="w-full bg-yellow-400 text-black hover:bg-yellow-300">
+            <Button asChild className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
               <Link href="/login">Ir al login</Link>
             </Button>
           )}

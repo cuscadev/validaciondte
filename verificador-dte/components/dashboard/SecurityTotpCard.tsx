@@ -26,7 +26,7 @@ export function SecurityTotpCard({
           'h-full border-border/60 py-0 shadow-sm',
           totpEnabled
             ? 'bg-emerald-500/5 dark:bg-emerald-500/10'
-            : 'bg-muted/10 dark:bg-zinc-950'
+            : 'bg-muted/10'
         )}
       >
         <CardContent
@@ -38,7 +38,7 @@ export function SecurityTotpCard({
               isCompact ? 'size-10' : 'size-12',
               totpEnabled
                 ? 'bg-emerald-500 text-white'
-                : 'bg-yellow-400 text-black'
+                : 'bg-primary text-black'
             )}
           >
             {totpEnabled ? (
@@ -59,7 +59,7 @@ export function SecurityTotpCard({
 
           <p
             className={cn(
-              'mt-2 flex-1 text-slate-600 dark:text-zinc-300',
+              'mt-2 flex-1 text-muted-foreground',
               isCompact ? 'text-xs leading-5' : 'mt-3 text-sm leading-6'
             )}
           >
@@ -75,7 +75,7 @@ export function SecurityTotpCard({
               isCompact ? 'mt-4' : 'mt-6',
               totpEnabled
                 ? 'border border-emerald-500/40 bg-emerald-500/10 text-emerald-800 hover:bg-emerald-500/20 dark:text-emerald-200'
-                : 'bg-yellow-400 text-black hover:bg-yellow-300'
+                : 'bg-primary text-black hover:bg-primary/90'
             )}
           >
             {totpEnabled ? 'Gestionar seguridad' : 'Activar TOTP'}

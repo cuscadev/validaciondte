@@ -86,14 +86,14 @@ export default function ImapConnectionModal({
     >
       <div className="pr-6">
         <div className="mb-5 flex items-start gap-3">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-yellow-300">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
             {connected ? <Settings2 className="size-5" /> : <Mail className="size-5" />}
           </div>
           <div>
-            <h2 className="text-lg font-bold text-slate-950 dark:text-white">
+            <h2 className="text-lg font-bold text-foreground">
               {connected ? 'Cuenta conectada' : 'Conectar buzon IMAP'}
             </h2>
-            <p className="mt-1 text-sm text-slate-600 dark:text-zinc-400">
+            <p className="mt-1 text-sm text-muted-foreground">
               {connected
                 ? 'Solo lectura. La clave se guarda cifrada y no se muestra de nuevo.'
                 : 'Usa una clave de aplicacion. No se envian ni modifican correos.'}
@@ -110,7 +110,7 @@ export default function ImapConnectionModal({
           <div className="space-y-4">
             <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/20">
               <p className="font-semibold text-slate-900 dark:text-white">{status.email}</p>
-              <p className="mt-1 text-xs text-slate-600 dark:text-zinc-300">
+              <p className="mt-1 text-xs text-muted-foreground">
                 {status.host}:{status.port} · conectado el {formatDateTime(status.connectedAt)}
               </p>
               <p className="mt-2 text-xs text-slate-500 dark:text-zinc-400">
@@ -200,7 +200,7 @@ export default function ImapConnectionModal({
             </div>
 
             {isOAuthProvider ? (
-              <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+              <p className="rounded-lg bg-primary/10 px-3 py-2 text-xs leading-5 text-primary">
                 <KeyRound className="mr-1 inline size-3" />
                 {preset?.appPasswordHint}
               </p>
@@ -225,7 +225,7 @@ export default function ImapConnectionModal({
                         href={preset.appPasswordHelpUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-medium text-amber-600 underline dark:text-yellow-300"
+                        className="font-medium text-primary underline"
                       >
                         Como generarla
                       </a>
@@ -235,10 +235,10 @@ export default function ImapConnectionModal({
               </div>
             )}
 
-            <label className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-xs leading-5 text-slate-600 dark:border-white/10 dark:bg-zinc-900/40 dark:text-zinc-300">
+            <label className="flex items-start gap-2 rounded-lg border border-border bg-muted px-3 py-3 text-xs leading-5 text-muted-foreground">
               <input
                 type="checkbox"
-                className="mt-0.5 size-4 shrink-0 accent-amber-500"
+                className="mt-0.5 size-4 shrink-0 accent-primary"
                 checked={consent}
                 onChange={(event) => onConsentChange(event.target.checked)}
               />

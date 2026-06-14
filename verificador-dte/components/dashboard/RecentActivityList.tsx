@@ -47,7 +47,7 @@ function outcomeBorderClass(outcome: DashboardRecentLog['outcome']) {
     return 'border-l-emerald-500';
   }
   if (outcome === 'partial') {
-    return 'border-l-amber-500';
+    return 'border-l-primary';
   }
   return 'border-l-red-500';
 }
@@ -93,11 +93,11 @@ export function RecentActivityList({
                   <li
                     key={log.id}
                     className={cn(
-                      'flex items-center gap-2.5 rounded-lg border border-l-4 border-slate-200 bg-slate-50/50 p-2.5 dark:border-white/10 dark:bg-black/30',
+                      'flex items-center gap-2.5 rounded-lg border border-l-4 border-border bg-card/80 p-2.5',
                       outcomeBorderClass(log.outcome)
                     )}
                   >
-                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-yellow-400/20 text-amber-700 dark:text-yellow-300">
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
                       <Icon className="size-3.5" />
                     </span>
                     <div className="min-w-0 flex-1">

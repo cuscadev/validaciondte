@@ -18,13 +18,13 @@ export function MobileAppCard({ variant = 'default', className }: MobileAppCardP
 
   return (
     <FadeIn delay={0.2} className={cn('h-full', className)}>
-      <Card className="h-full border-border/60 bg-muted/10 py-0 shadow-sm dark:bg-zinc-950">
+      <Card className="h-full border-border/60 bg-muted/10 py-0 shadow-sm">
         <CardContent
           className={cn('flex h-full flex-col', isCompact ? 'p-4' : 'p-5')}
         >
           <div
             className={cn(
-              'flex items-center justify-center rounded-xl bg-yellow-400 text-black',
+              'flex items-center justify-center rounded-xl bg-primary text-black',
               isCompact ? 'size-10' : 'size-12'
             )}
           >
@@ -42,7 +42,7 @@ export function MobileAppCard({ variant = 'default', className }: MobileAppCardP
 
           <p
             className={cn(
-              'text-slate-600 dark:text-zinc-300',
+              'text-muted-foreground',
               isCompact ? 'mt-1.5 text-xs leading-5' : 'mt-3 text-sm leading-6'
             )}
           >
@@ -72,7 +72,7 @@ export function MobileAppCard({ variant = 'default', className }: MobileAppCardP
             target="_blank"
             rel="noopener noreferrer"
             className={cn(
-              'inline-flex w-full items-center justify-center gap-2 rounded-md bg-yellow-400 px-4 py-2.5 text-sm font-bold text-black transition hover:bg-yellow-300',
+              'inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-bold text-black transition hover:bg-primary/90',
               isCompact ? 'mt-3' : 'mt-5'
             )}
           >

@@ -93,7 +93,7 @@ export default function LandingPage() {
 	];
 
 	return (
-		<main className="relative min-h-screen overflow-x-hidden bg-slate-50 text-slate-950 dark:bg-black dark:text-white">
+		<main className="relative min-h-screen overflow-x-hidden bg-background text-foreground">
 			<script
 				type="application/ld+json"
 				dangerouslySetInnerHTML={{
@@ -110,15 +110,15 @@ export default function LandingPage() {
 				aria-labelledby="landing-title"
 				className="relative flex min-h-screen w-full items-center overflow-hidden px-4 pb-16 pt-28 sm:px-6 md:px-10 lg:px-16"
 			>
-				<div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_18%_20%,rgba(234,179,8,0.22),transparent_28%),radial-gradient(circle_at_82%_22%,rgba(59,130,246,0.16),transparent_30%),linear-gradient(135deg,#fff7ed_0%,#f8fafc_48%,#eef2ff_100%)] dark:bg-[radial-gradient(circle_at_18%_20%,rgba(250,204,21,0.22),transparent_28%),radial-gradient(circle_at_82%_22%,rgba(239,68,68,0.18),transparent_30%),linear-gradient(135deg,#030303_0%,#111111_48%,#1c0f0b_100%)]" />
+				<div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_18%_20%,rgba(0,209,255,0.18),transparent_28%),radial-gradient(circle_at_82%_22%,rgba(139,92,246,0.14),transparent_30%),linear-gradient(135deg,#f0f9ff_0%,#f8fafc_48%,#eef2ff_100%)] dark:bg-[radial-gradient(circle_at_18%_20%,rgba(0,209,255,0.22),transparent_28%),radial-gradient(circle_at_82%_22%,rgba(139,92,246,0.16),transparent_30%),linear-gradient(135deg,#1e2227_0%,#1a1e23_48%,#151820_100%)]" />
 
 				<div className="absolute inset-0 z-0 opacity-55 [background-image:linear-gradient(rgba(15,23,42,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(15,23,42,0.07)_1px,transparent_1px)] [background-size:72px_72px] dark:opacity-45 dark:[background-image:linear-gradient(rgba(255,255,255,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.07)_1px,transparent_1px)]" />
 
 				<div className="absolute inset-y-0 left-0 z-0 hidden w-[58vw] bg-gradient-to-r from-white/82 via-white/44 to-transparent md:block dark:hidden" />
 
-				<div className="pointer-events-none absolute right-[3vw] top-1/2 z-0 hidden h-[76vh] max-h-[820px] min-h-[480px] w-[58vw] min-w-[700px] -translate-y-1/2 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.72)_0%,rgba(255,255,255,0.46)_34%,rgba(234,179,8,0.13)_52%,transparent_72%)] md:block dark:hidden" />
+				<div className="pointer-events-none absolute right-[2vw] top-1/2 z-0 hidden h-[82vh] max-h-[860px] min-h-[520px] w-[60vw] min-w-[720px] -translate-y-1/2 bg-[radial-gradient(ellipse_at_center,rgba(0,209,255,0.14)_0%,rgba(0,209,255,0.06)_38%,transparent_72%)] md:block dark:bg-[radial-gradient(ellipse_at_center,rgba(0,209,255,0.2)_0%,rgba(139,92,246,0.08)_42%,transparent_75%)]" />
 
-				<div className="absolute inset-y-0 right-0 z-0 hidden h-full w-[64vw] min-w-[760px] opacity-100 drop-shadow-[0_32px_80px_rgba(15,23,42,0.2)] md:block dark:drop-shadow-none">
+				<div className="absolute inset-y-0 right-0 z-0 hidden h-full w-[58vw] min-w-[680px] max-w-[920px] md:block lg:w-[55vw]">
 					<ThreeLandingScene />
 				</div>
 
@@ -128,18 +128,18 @@ export default function LandingPage() {
 					duration={0.9}
 				>
 					<div>
-						<p className="mb-4 text-xs font-semibold uppercase tracking-[0.28em] text-amber-600 sm:text-sm dark:text-yellow-300">
+						<p className="mb-4 text-xs font-semibold uppercase tracking-[0.28em] text-primary sm:text-sm">
 							{t('landing.hero.eyebrow')}
 						</p>
 
 						<h1
 							id="landing-title"
-							className="text-4xl font-extrabold leading-tight text-slate-950 drop-shadow-[0_2px_18px_rgba(255,255,255,0.85)] sm:text-5xl md:text-6xl lg:text-7xl dark:text-white dark:drop-shadow-lg"
+							className="text-4xl font-extrabold leading-tight text-foreground drop-shadow-[0_2px_18px_rgba(255,255,255,0.85)] sm:text-5xl md:text-6xl lg:text-7xl dark:drop-shadow-lg"
 						>
 							{t('landingTitle')}
 						</h1>
 
-						<p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-slate-700 sm:text-lg md:mx-0 md:text-2xl dark:text-zinc-200">
+						<p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-muted-foreground sm:text-lg md:mx-0 md:text-2xl">
 							{t('landingDescription')}
 							<br className="hidden sm:block" />
 							{t('landingTagline')}
@@ -150,7 +150,7 @@ export default function LandingPage() {
 						<Link href="/signup" aria-label="Solicitar acceso al sistema DTE">
 							<Button
 								size="lg"
-								className="w-full bg-yellow-400 font-bold text-black hover:bg-yellow-300 sm:w-auto"
+								className="w-full bg-primary font-bold text-primary-foreground hover:bg-primary/90 sm:w-auto"
 							>
 								{t('registerSubmit')}
 								<ArrowRight className="size-4" />
@@ -161,7 +161,7 @@ export default function LandingPage() {
 							<Button
 								size="lg"
 								variant="outline"
-								className="w-full border-slate-300 bg-white/70 text-slate-950 hover:bg-white sm:w-auto dark:border-white/30 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
+								className="w-full border-border bg-card/70 text-foreground hover:bg-card sm:w-auto"
 							>
 								{t('login')}
 							</Button>
@@ -189,17 +189,17 @@ export default function LandingPage() {
 						<FadeIn
 							as="article"
 							key={item.title}
-							className="rounded-xl border border-slate-200 bg-white/85 p-6 text-slate-950 shadow-lg backdrop-blur dark:border-white/10 dark:bg-zinc-950/80 dark:text-gray-100"
+							className="rounded-xl border border-border bg-card/85 p-6 text-foreground shadow-lg backdrop-blur"
 							inView
 							y={40}
 							delay={index * 0.1}
 							viewportAmount={0.4}
 						>
-							<h2 className="mb-3 text-xl font-bold text-amber-600 dark:text-yellow-300">
+							<h2 className="mb-3 text-xl font-bold text-primary">
 								{item.title}
 							</h2>
 
-							<p className="text-sm leading-6 text-slate-600 dark:text-zinc-300">
+							<p className="text-sm leading-6 text-muted-foreground">
 								{item.description}
 							</p>
 						</FadeIn>
@@ -210,11 +210,11 @@ export default function LandingPage() {
 			<section
 				id="proceso"
 				aria-labelledby="workflow-title"
-				className="relative z-10 w-full border-t border-slate-200 bg-white px-4 py-16 sm:px-6 md:px-10 md:py-20 lg:px-16 dark:border-white/10 dark:bg-black"
+				className="relative z-10 w-full border-t border-border bg-background px-4 py-16 sm:px-6 md:px-10 md:py-20 lg:px-16"
 			>
 				<div className="mx-auto max-w-6xl">
 					<FadeIn className="max-w-3xl" inView y={34} viewportAmount={0.45}>
-						<p className="mb-3 text-sm font-semibold uppercase tracking-[0.24em] text-amber-600 dark:text-yellow-300">
+						<p className="mb-3 text-sm font-semibold uppercase tracking-[0.24em] text-primary">
 							{t('landing.workflow.eyebrow')}
 						</p>
 
@@ -231,21 +231,21 @@ export default function LandingPage() {
 								<FadeIn
 									as="article"
 									key={item.title}
-									className="rounded-xl border border-slate-200 bg-slate-50 p-6 shadow-sm dark:border-white/10 dark:bg-zinc-950"
+									className="rounded-xl border border-border bg-card p-6 shadow-sm"
 									inView
 									y={44}
 									delay={index * 0.12}
 									viewportAmount={0.35}
 								>
-									<div className="mb-5 flex size-11 items-center justify-center rounded-md bg-yellow-400 text-black">
+									<div className="mb-5 flex size-11 items-center justify-center rounded-md bg-primary text-primary-foreground">
 										<Icon className="size-5" />
 									</div>
 
-									<h3 className="mb-3 text-xl font-bold text-slate-950 dark:text-white">
+									<h3 className="mb-3 text-xl font-bold text-foreground">
 										{item.title}
 									</h3>
 
-									<p className="text-sm leading-6 text-slate-600 dark:text-zinc-300">
+									<p className="text-sm leading-6 text-muted-foreground">
 										{item.description}
 									</p>
 								</FadeIn>
@@ -258,7 +258,7 @@ export default function LandingPage() {
 			<section
 				id="funciones"
 				aria-labelledby="capabilities-title"
-				className="relative z-10 w-full bg-slate-100 px-4 py-16 sm:px-6 md:px-10 md:py-20 lg:px-16 dark:bg-zinc-950"
+				className="relative z-10 w-full bg-muted px-4 py-16 sm:px-6 md:px-10 md:py-20 lg:px-16"
 			>
 				<div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
 					<FadeIn
@@ -268,7 +268,7 @@ export default function LandingPage() {
 						initial={{ opacity: 0, x: -36 }}
 						whileInView={{ opacity: 1, x: 0 }}
 					>
-						<p className="mb-3 text-sm font-semibold uppercase tracking-[0.24em] text-amber-600 dark:text-yellow-300">
+						<p className="mb-3 text-sm font-semibold uppercase tracking-[0.24em] text-primary">
 							{t('landing.capabilities.eyebrow')}
 						</p>
 
@@ -276,7 +276,7 @@ export default function LandingPage() {
 							{t('landing.capabilities.title')}
 						</h2>
 
-						<p className="mt-5 text-base leading-7 text-slate-600 dark:text-zinc-300">
+						<p className="mt-5 text-base leading-7 text-muted-foreground">
 							{t('landing.capabilities.description')}
 						</p>
 					</FadeIn>
@@ -286,16 +286,16 @@ export default function LandingPage() {
 							<FadeIn
 								as="article"
 								key={item}
-								className="flex min-h-24 gap-4 rounded-xl border border-slate-200 bg-white/75 p-5 shadow-sm dark:border-white/10 dark:bg-black/60"
+								className="flex min-h-24 gap-4 rounded-xl border border-border bg-card/75 p-5 shadow-sm"
 								inView
 								y={34}
 								delay={index * 0.06}
 								duration={0.65}
 								viewportAmount={0.35}
 							>
-								<ShieldCheck className="mt-1 size-5 shrink-0 text-amber-600 dark:text-yellow-300" />
+								<ShieldCheck className="mt-1 size-5 shrink-0 text-primary" />
 
-								<p className="text-sm leading-6 text-slate-700 dark:text-zinc-200">
+								<p className="text-sm leading-6 text-muted-foreground">
 									{item}
 								</p>
 							</FadeIn>
@@ -307,13 +307,13 @@ export default function LandingPage() {
 			<section className="relative z-10 w-full bg-white px-4 py-16 sm:px-6 md:px-10 md:py-20 lg:px-16 dark:bg-black">
 				<div className="mx-auto max-w-6xl">
 					<div className="max-w-3xl">
-						<p className="mb-3 text-sm font-semibold uppercase tracking-[0.24em] text-amber-600 dark:text-yellow-300">
+						<p className="mb-3 text-sm font-semibold uppercase tracking-[0.24em] text-primary">
 							 DTE El Salvador
 						</p>
 						<h2 className="text-3xl font-bold md:text-5xl">
 							Sistema de verificacion y gestion de DTE en El Salvador
 						</h2>
-						<p className="mt-5 text-base leading-8 text-slate-700 dark:text-zinc-300">
+						<p className="mt-5 text-base leading-8 text-muted-foreground">
 							Verifica documentos tributarios electronicos, consulta DTE con Hacienda, gestiona auditorias y controla comprobantes electronicos desde una plataforma orientada a empresas, despachos contables y equipos de cumplimiento tributario.
 						</p>
 					</div>
@@ -347,15 +347,15 @@ export default function LandingPage() {
 						].map((item) => (
 							<article
 								key={item.title}
-								className="rounded-xl border border-slate-200 bg-slate-50 p-6 shadow-sm dark:border-white/10 dark:bg-zinc-950"
+								className="rounded-xl border border-border bg-card p-6 shadow-sm"
 							>
-								<h3 className="text-xl font-bold text-slate-950 dark:text-white">{item.title}</h3>
-								<p className="mt-3 text-sm leading-7 text-slate-700 dark:text-zinc-300">
+								<h3 className="text-xl font-bold text-foreground">{item.title}</h3>
+								<p className="mt-3 text-sm leading-7 text-muted-foreground">
 									{item.description}
 								</p>
 								<Link
 									href={item.href}
-									className="mt-5 inline-flex text-sm font-semibold text-amber-700 hover:text-amber-600 dark:text-yellow-300"
+									className="mt-5 inline-flex text-sm font-semibold text-primary hover:text-primary/80"
 								>
 									Leer mas
 								</Link>
@@ -368,49 +368,49 @@ export default function LandingPage() {
 			<PricingSection />
 
 			<section className="relative z-10 w-full overflow-hidden bg-white px-4 py-16 sm:px-6 md:px-10 md:py-20 lg:px-16 dark:bg-black">
-				<div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_30%,rgba(234,179,8,0.16),transparent_28%),radial-gradient(circle_at_80%_70%,rgba(59,130,246,0.13),transparent_32%)] dark:bg-[radial-gradient(circle_at_18%_30%,rgba(250,204,21,0.14),transparent_28%),radial-gradient(circle_at_80%_70%,rgba(239,68,68,0.13),transparent_32%)]" />
+				<div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_30%,rgba(0,209,255,0.14),transparent_28%),radial-gradient(circle_at_80%_70%,rgba(139,92,246,0.12),transparent_32%)] dark:bg-[radial-gradient(circle_at_18%_30%,rgba(0,209,255,0.16),transparent_28%),radial-gradient(circle_at_80%_70%,rgba(16,185,129,0.1),transparent_32%)]" />
 
 				<div className="relative mx-auto grid max-w-6xl gap-4 md:grid-cols-3">
 					<FadeIn
 						as="article"
-						className="rounded-xl border border-slate-200 bg-white/80 p-7 shadow-lg backdrop-blur dark:border-white/10 dark:bg-zinc-950/80"
+						className="rounded-xl border border-border bg-card/80 p-7 shadow-lg backdrop-blur"
 						inView
 						y={42}
 						viewportAmount={0.35}
 					>
-						<LockKeyhole className="mb-5 size-8 text-amber-600 dark:text-yellow-300" />
+						<LockKeyhole className="mb-5 size-8 text-primary" />
 
 						<h3 className="mb-3 text-xl font-bold">
 							{t('landing.bottom.security.title')}
 						</h3>
 
-						<p className="text-sm leading-6 text-slate-600 dark:text-zinc-300">
+						<p className="text-sm leading-6 text-muted-foreground">
 							{t('landing.bottom.security.description')}
 						</p>
 					</FadeIn>
 
 					<FadeIn
 						as="article"
-						className="rounded-xl border border-slate-200 bg-white/80 p-7 shadow-lg backdrop-blur dark:border-white/10 dark:bg-zinc-950/80"
+						className="rounded-xl border border-border bg-card/80 p-7 shadow-lg backdrop-blur"
 						inView
 						y={42}
 						delay={0.12}
 						viewportAmount={0.35}
 					>
-						<Users className="mb-5 size-8 text-amber-600 dark:text-yellow-300" />
+						<Users className="mb-5 size-8 text-primary" />
 
 						<h3 className="mb-3 text-xl font-bold">
 							{t('landing.bottom.collaboration.title')}
 						</h3>
 
-						<p className="text-sm leading-6 text-slate-600 dark:text-zinc-300">
+						<p className="text-sm leading-6 text-muted-foreground">
 							{t('landing.bottom.collaboration.description')}
 						</p>
 					</FadeIn>
 
 					<FadeIn
 						as="article"
-						className="rounded-xl border border-yellow-300/40 bg-yellow-300 p-7 text-black"
+						className="rounded-xl border border-primary/40 bg-primary p-7 text-primary-foreground"
 						inView
 						y={42}
 						delay={0.24}
@@ -420,14 +420,14 @@ export default function LandingPage() {
 							{t('landing.cta.title')}
 						</h3>
 
-						<p className="mb-6 text-sm leading-6 text-zinc-900">
+						<p className="mb-6 text-sm leading-6 text-primary-foreground/90">
 							{t('landing.cta.description')}
 						</p>
 
 						<Link href="/signup" aria-label="Solicitar acceso a la plataforma DTE">
 							<Button
 								size="lg"
-								className="bg-black font-bold text-white hover:bg-zinc-800"
+								className="bg-primary-foreground font-bold text-background hover:bg-primary-foreground/90"
 							>
 								{t('registerSubmit')}
 								<ArrowRight className="size-4" />
@@ -437,7 +437,7 @@ export default function LandingPage() {
 				</div>
 			</section>
 
-			<footer className="relative z-10 w-full border-t border-slate-200 bg-slate-950 px-4 py-10 text-white sm:px-6 md:px-10 lg:px-16 dark:border-white/10 dark:bg-zinc-950">
+			<footer className="relative z-10 w-full border-t border-border bg-[#1a1e23] px-4 py-10 text-white sm:px-6 md:px-10 lg:px-16">
 				<div className="mx-auto flex max-w-6xl flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
 					<div>
 						<p className="text-base font-bold">Kaiser DTE</p>
@@ -452,13 +452,13 @@ export default function LandingPage() {
 					>
 						<Link
 							href="/politica-privacidad"
-							className="underline-offset-4 transition hover:text-yellow-300 hover:underline"
+							className="underline-offset-4 transition hover:text-primary hover:underline"
 						>
 							Politica de privacidad
 						</Link>
 						<Link
 							href="/terminos-condiciones"
-							className="underline-offset-4 transition hover:text-yellow-300 hover:underline"
+							className="underline-offset-4 transition hover:text-primary hover:underline"
 						>
 							Terminos y condiciones
 						</Link>

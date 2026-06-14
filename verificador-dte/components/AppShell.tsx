@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { ThemeProvider } from '@/components/ThemeProvider'
+import { PublicThemeProvider, PublicThemeScope } from '@/components/ThemeProvider'
 import I18nProvider from '@/components/I18nProvider'
 import ProtectedAppShell from '@/components/ProtectedAppShell'
 import QueryProvider from '@/components/QueryProvider'
@@ -20,7 +20,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <Toaster position="top-center" richColors closeButton />
         <NetworkStatusToast />
         {isPublicRoute ? (
-          <ThemeProvider>{children}</ThemeProvider>
+          <PublicThemeProvider>
+            <PublicThemeScope>{children}</PublicThemeScope>
+          </PublicThemeProvider>
         ) : (
           <ProtectedAppShell>
             <ViewTransitionShell>{children}</ViewTransitionShell>

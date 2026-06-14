@@ -120,19 +120,19 @@ export default function NotificationsPage() {
   const loading = notificationsQuery.isPending && !notificationsQuery.data;
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-950 dark:bg-black dark:text-white">
+    <main className="min-h-screen bg-slate-50 text-slate-950 bg-background text-foreground">
       <div className="flex w-full flex-col gap-4 p-0">
-        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-950">
+        <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.24em] text-amber-600 dark:text-yellow-300">
+              <p className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.24em] text-primary text-primary">
                 <Bell className="size-4" />
                 Centro de notificaciones
               </p>
               <h1 className="text-3xl font-extrabold tracking-tight md:text-5xl">
                 Notificaciones
               </h1>
-              <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600 md:text-base dark:text-zinc-300">
+              <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600 md:text-base text-muted-foreground">
                 Revisa los avisos enviados a tu cuenta y marca como leido lo que ya atendiste.
               </p>
             </div>
@@ -144,8 +144,8 @@ export default function NotificationsPage() {
           </div>
         </section>
 
-        <section className="rounded-lg border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-950">
-          <div className="flex flex-col gap-3 border-b border-slate-200 p-4 dark:border-white/10 md:flex-row md:items-center md:justify-between">
+        <section className="rounded-lg border border-border bg-card shadow-sm">
+          <div className="flex flex-col gap-3 border-b border-slate-200 p-4 border-border md:flex-row md:items-center md:justify-between">
             <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
@@ -179,7 +179,7 @@ export default function NotificationsPage() {
               <Button
                 type="button"
                 size="sm"
-                className="bg-yellow-400 font-bold text-black hover:bg-yellow-300"
+                className="bg-primary font-bold text-black hover:bg-primary/90"
                 onClick={() => markAllReadMutation.mutate()}
                 disabled={unread.length === 0 || markAllReadMutation.isPending}
               >
@@ -208,7 +208,7 @@ export default function NotificationsPage() {
                     key={notification.id}
                     className={cn(
                       'grid gap-3 p-4 transition hover:bg-slate-50 dark:hover:bg-black md:grid-cols-[minmax(0,1fr)_auto] md:items-start',
-                      isUnread && 'bg-yellow-50/70 dark:bg-yellow-400/5'
+                      isUnread && 'bg-primary/5'
                     )}
                   >
                     <div className="flex min-w-0 gap-3">
@@ -216,15 +216,15 @@ export default function NotificationsPage() {
                         className={cn(
                           'mt-1 flex size-10 shrink-0 items-center justify-center rounded-lg border',
                           isUnread
-                            ? 'border-yellow-300 bg-yellow-400 text-black'
-                            : 'border-slate-200 bg-slate-100 text-slate-600 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-300'
+                            ? 'border-primary bg-primary text-primary-foreground'
+                            : 'border-slate-200 bg-slate-100 text-slate-600 border-border bg-card text-muted-foreground'
                         )}
                       >
                         <Bell className="size-5" />
                       </div>
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold dark:bg-zinc-900">
+                          <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold bg-card">
                             {getTypeLabel(notification.type)}
                           </span>
                           {isUnread ? (
@@ -240,7 +240,7 @@ export default function NotificationsPage() {
                         <h2 className="mt-2 text-base font-bold md:text-lg">
                           {notification.title}
                         </h2>
-                        <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-zinc-300">
+                        <p className="mt-1 text-sm leading-6 text-muted-foreground">
                           {notification.body}
                         </p>
                         <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
@@ -294,9 +294,9 @@ function SummaryCard({
   accent?: boolean;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-black">
+    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 border-border bg-background">
       <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
-      <p className={cn('mt-2 text-3xl font-extrabold', accent && 'text-amber-600 dark:text-yellow-300')}>
+      <p className={cn('mt-2 text-3xl font-extrabold', accent && 'text-primary text-primary')}>
         {value}
       </p>
     </div>
@@ -330,7 +330,7 @@ function NotificationsSkeleton() {
 function EmptyState({ filter }: { filter: 'all' | 'unread' }) {
   return (
     <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
-      <div className="flex size-14 items-center justify-center rounded-xl bg-slate-100 text-slate-500 dark:bg-zinc-900 dark:text-zinc-300">
+      <div className="flex size-14 items-center justify-center rounded-xl bg-slate-100 text-slate-500 bg-card text-muted-foreground">
         <Inbox className="size-7" />
       </div>
       <h2 className="mt-4 text-lg font-bold">

@@ -14,7 +14,7 @@ interface UserFormProps {
 }
 
 const fieldClass =
-  "w-full rounded-md border border-slate-200 bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-yellow-400/40 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10";
+  "w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10";
 
 export function UserForm({
   form,
@@ -28,14 +28,14 @@ export function UserForm({
   return (
     <form onSubmit={onSubmit} className="w-full min-w-[340px] max-w-lg">
       <div className="mb-5 flex items-start gap-3">
-        <div className="flex size-11 items-center justify-center rounded-md bg-yellow-400 text-black">
+        <div className="flex size-11 items-center justify-center rounded-md bg-primary text-black">
           {editMode ? <Save className="size-5" /> : <UserPlus className="size-5" />}
         </div>
         <div>
-          <h2 className="text-xl font-bold text-slate-950 dark:text-white">
+          <h2 className="text-xl font-bold text-foreground">
             {editMode ? "Editar usuario" : "Crear usuario"}
           </h2>
-          <p className="mt-1 text-sm text-slate-600 dark:text-zinc-300">
+          <p className="mt-1 text-sm text-muted-foreground">
             Define rol, membresia y vigencia del acceso.
           </p>
         </div>
@@ -119,7 +119,7 @@ export function UserForm({
           <X className="size-4" />
           Cancelar
         </Button>
-        <Button type="submit" className="bg-yellow-400 font-bold text-black hover:bg-yellow-300">
+        <Button type="submit" className="bg-primary font-bold text-black hover:bg-primary/90">
           <Save className="size-4" />
           {editMode ? "Guardar cambios" : "Crear usuario"}
         </Button>

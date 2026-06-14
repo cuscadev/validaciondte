@@ -175,7 +175,7 @@ export default function FacturacionReportePage() {
 
   if (!canUse) {
     return (
-      <main className="min-h-[calc(100vh-5rem)] bg-slate-50 p-4 text-slate-950 dark:bg-black dark:text-white">
+      <main className="min-h-[calc(100vh-5rem)] bg-slate-50 p-4 text-slate-950 bg-background text-foreground">
         <Card className="mx-auto max-w-xl">
           <CardHeader>
             <CardTitle>Acceso restringido</CardTitle>
@@ -187,7 +187,7 @@ export default function FacturacionReportePage() {
   }
 
   return (
-    <main className="min-h-[calc(100vh-5rem)] bg-slate-50 text-slate-950 dark:bg-black dark:text-white">
+    <main className="min-h-[calc(100vh-5rem)] bg-background text-foreground">
       <div className="space-y-4 p-0">
         <Card>
           <CardHeader>
@@ -229,9 +229,9 @@ export default function FacturacionReportePage() {
               </p>
             )}
 
-            <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-white/10">
+            <div className="overflow-x-auto rounded-lg border border-border">
               <table className="w-full min-w-[980px] text-sm">
-                <thead className="border-b bg-slate-50 text-left text-xs uppercase tracking-[0.14em] text-muted-foreground dark:border-white/10 dark:bg-black">
+                <thead className="border-b bg-slate-50 text-left text-xs uppercase tracking-[0.14em] text-muted-foreground border-border bg-background">
                   <tr>
                     <th className="px-3 py-3">Fecha</th>
                     <th className="px-3 py-3">Tipo</th>
@@ -245,7 +245,7 @@ export default function FacturacionReportePage() {
                 </thead>
                 <tbody>
                   {pagedRows.map((dte) => (
-                    <tr key={dte.id} className="border-b border-slate-200 last:border-0 dark:border-white/10">
+                    <tr key={dte.id} className="border-b border-slate-200 last:border-0 border-border">
                       <td className="px-3 py-3 whitespace-nowrap">{formatDate(dte.createdAt)}</td>
                       <td className="px-3 py-3">{tipoLabel(dte.tipoDte)}</td>
                       <td className="px-3 py-3">{dte.status || '-'}</td>

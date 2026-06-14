@@ -595,8 +595,8 @@ function VerificadorQrContent() {
 
   return (
     <main className="w-full max-w-full space-y-6 dark:bg-background">
-      <section className="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10">
-        <div className="border-b border-slate-200 px-4 py-3 dark:border-white/10">
+      <section className="overflow-hidden rounded-lg border border-border">
+        <div className="border-b border-slate-200 px-4 py-3 border-border">
           <h1 className="text-lg font-semibold">Escaneo QR DTE</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Escanea codigos QR de consulta publica, normaliza el enlace y verifica con Hacienda.
@@ -606,13 +606,13 @@ function VerificadorQrContent() {
         <div className="grid min-w-0 gap-4 p-3 sm:p-4 xl:grid-cols-2">
           <section
             className={cn(
-              'min-w-0 rounded-xl border border-slate-200 p-3 dark:border-white/10 sm:p-4',
+              'min-w-0 rounded-xl border border-slate-200 p-3 border-border sm:p-4',
               cameraExpanded && 'xl:col-span-2'
             )}
           >
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
-                <QrCode className="size-5 text-amber-500" />
+                <QrCode className="size-5 text-primary" />
                 <h2 className="font-semibold">Camara</h2>
               </div>
               <label className="flex min-w-0 flex-col gap-1 text-sm text-muted-foreground sm:flex-row sm:items-center sm:gap-2">
@@ -621,7 +621,7 @@ function VerificadorQrContent() {
                   value={selectedCameraId}
                   onChange={(event) => handleCameraChange(event.target.value)}
                   disabled={cameras.length <= 1 || cameraPermission === 'requesting'}
-                  className="w-full min-w-0 rounded-md border border-slate-200 bg-background px-2 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 sm:w-auto sm:max-w-[16rem]"
+                  className="w-full min-w-0 rounded-md border border-border bg-background px-2 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-60 border-border sm:w-auto sm:max-w-[16rem]"
                 >
                   {cameras.length ? (
                     cameras.map((camera, index) => (
@@ -638,7 +638,7 @@ function VerificadorQrContent() {
 
             <div
               ref={cameraFrameRef}
-              className="relative overflow-hidden rounded-xl border border-slate-200 bg-black/90 dark:border-white/10"
+              className="relative overflow-hidden rounded-xl border border-slate-200 bg-black/90 border-border"
             >
               <Button
                 type="button"
@@ -658,7 +658,7 @@ function VerificadorQrContent() {
                 <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-muted/40 p-4 text-center backdrop-blur-[1px]">
                   {cameraPermission === 'requesting' ? (
                     <>
-                      <Loader2 className="size-8 animate-spin text-amber-500" />
+                      <Loader2 className="size-8 animate-spin text-primary" />
                       <p className="text-sm text-muted-foreground">
                         Solicitando permiso de camara...
                       </p>
@@ -741,14 +741,14 @@ function VerificadorQrContent() {
             </div>
 
             {lastScan && (
-              <div className="mt-4 rounded-lg border border-slate-200 bg-muted/20 p-3 dark:border-white/10">
+              <div className="mt-4 rounded-lg border border-slate-200 bg-muted/20 p-3 border-border">
                 <p className="text-xs font-medium text-muted-foreground">Ultimo QR leido</p>
                 <p className="mt-1 break-all text-xs">{lastScan}</p>
               </div>
             )}
           </section>
 
-          <section className="min-w-0 rounded-xl border border-slate-200 p-3 dark:border-white/10 sm:p-4">
+          <section className="min-w-0 rounded-xl border border-slate-200 p-3 border-border sm:p-4">
             <div className="mb-4 space-y-3">
               <div>
                 <h2 className="font-semibold">Pendientes ({pendingScans.length})</h2>
@@ -801,14 +801,14 @@ function VerificadorQrContent() {
                   <article
                     key={item.id}
                     className={cn(
-                      'rounded-lg border border-slate-200 bg-muted/10 p-3 transition-shadow dark:border-white/10',
-                      highlightedScanId === item.id && 'ring-2 ring-amber-400 dark:ring-yellow-400'
+                      'rounded-lg border border-slate-200 bg-muted/10 p-3 transition-shadow border-border',
+                      highlightedScanId === item.id && 'ring-2 ring-primary'
                     )}
                   >
                     <div className="flex min-w-0 items-start justify-between gap-3">
                       <div className="min-w-0 flex-1 space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="rounded-md bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:text-yellow-300">
+                          <span className="rounded-md bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold text-primary text-primary">
                             #{item.scanNumber}
                           </span>
                           <p className="truncate text-sm font-semibold">{item.codGen}</p>
@@ -898,7 +898,7 @@ function VerificadorQrContent() {
           }}
         />
 
-        <div className="mt-4 overflow-hidden rounded-md border border-slate-200 dark:border-white/10">
+        <div className="mt-4 overflow-hidden rounded-md border border-border">
           <div className="divide-y md:hidden">
             {paginatedData.length === 0 ? (
               <div className="p-6 text-center text-sm text-muted-foreground">
@@ -927,7 +927,7 @@ function VerificadorQrContent() {
 
           <div className="hidden max-h-[60vh] overflow-auto md:block">
             <table className="w-full text-sm">
-              <thead className="sticky top-0 z-10 bg-slate-100 text-slate-950 dark:bg-zinc-900 dark:text-zinc-100">
+              <thead className="sticky top-0 z-10 bg-slate-100 text-slate-950 bg-card dark:text-zinc-100">
                 <tr>
                   {DTE_RESULT_COLUMNS.map((col) => (
                     <th
@@ -969,7 +969,7 @@ function VerificadorQrContent() {
             </table>
           </div>
 
-          <div className="flex flex-col items-stretch justify-between gap-3 border-t border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-black sm:flex-row sm:items-center">
+          <div className="flex flex-col items-stretch justify-between gap-3 border-t border-border bg-background px-3 py-2 sm:flex-row sm:items-center">
             <span className="text-sm text-muted-foreground">
               Pagina {currentPage} de {totalPages}
             </span>

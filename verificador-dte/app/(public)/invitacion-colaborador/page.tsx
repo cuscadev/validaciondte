@@ -88,7 +88,7 @@ function CollaboratorInvitationContent() {
         ) : (
           <form className="space-y-5" onSubmit={acceptInvite}>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 dark:text-yellow-400">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
                 Invitacion
               </p>
               <h1 className="mt-2 text-2xl font-bold">Crear contrasena</h1>
@@ -128,7 +128,7 @@ function CollaboratorInvitationContent() {
             <Button
               type="submit"
               disabled={submitting}
-              className="w-full bg-yellow-400 font-bold text-black hover:bg-yellow-300"
+              className="w-full bg-primary font-bold text-primary-foreground hover:bg-primary/90"
             >
               {submitting ? 'Creando cuenta...' : 'Aceptar invitacion'}
             </Button>

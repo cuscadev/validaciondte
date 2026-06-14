@@ -191,7 +191,7 @@ export default function DesktopLicensesPage() {
       <section className="rounded-lg border bg-background p-5 shadow-sm">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-yellow-600">Monitoreo</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">Monitoreo</p>
             <h1 className="mt-1 text-2xl font-semibold tracking-tight">Gestión de licencias desktop</h1>
             <p className="mt-1 text-sm text-muted-foreground">Administra licencias, controla dispositivos autorizados y revisa vencimientos.</p>
           </div>
@@ -255,7 +255,7 @@ export default function DesktopLicensesPage() {
               <p className="text-xs text-muted-foreground">Separa los deviceId con comas.</p>
             </div>
             {form.generatedPassword && (
-              <div className="space-y-2 md:col-span-2 rounded-lg bg-yellow-50 p-3 dark:bg-yellow-500/10">
+              <div className="space-y-2 md:col-span-2 rounded-lg bg-primary/10 p-3 dark:bg-primary/100/10">
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Contraseña generada</label>
                 <div className="flex items-center gap-2">
                   <code className="flex-1 rounded bg-slate-100 px-2 py-2 font-mono text-sm dark:bg-slate-800">{form.generatedPassword}</code>
@@ -270,7 +270,7 @@ export default function DesktopLicensesPage() {
                     Copiar
                   </Button>
                 </div>
-                <p className="text-xs text-yellow-700 dark:text-yellow-200">Esta contraseña fue enviada por correo. Muéstrala al usuario si es necesario.</p>
+                <p className="text-xs text-primary">Esta contraseña fue enviada por correo. Muéstrala al usuario si es necesario.</p>
               </div>
             )}
           </div>

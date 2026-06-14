@@ -398,7 +398,7 @@ export default function EnvioLotesPage() {
 
   if (!canUse) {
     return (
-      <main className="min-h-[calc(100vh-5rem)] bg-slate-50 p-4 text-slate-950 dark:bg-black dark:text-white">
+      <main className="min-h-[calc(100vh-5rem)] bg-slate-50 p-4 text-slate-950 bg-background text-foreground">
         <Card className="mx-auto max-w-xl">
           <CardHeader>
             <CardTitle>Acceso restringido</CardTitle>
@@ -410,15 +410,15 @@ export default function EnvioLotesPage() {
   }
 
   return (
-    <main className="min-h-[calc(100vh-5rem)] bg-slate-50 text-slate-950 dark:bg-black dark:text-white">
+    <main className="min-h-[calc(100vh-5rem)] bg-background text-foreground">
       <div className="grid w-full gap-4 p-0 xl:grid-cols-[minmax(0,1fr)_24rem]">
         <section className="space-y-4">
-          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-950">
-            <p className="mb-2 text-sm font-semibold uppercase tracking-[0.22em] text-amber-600 dark:text-yellow-300">
+          <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
+            <p className="mb-2 text-sm font-semibold uppercase tracking-[0.22em] text-primary text-primary">
               Facturacion electronica
             </p>
             <h1 className="text-3xl font-extrabold tracking-tight">Envio de lotes</h1>
-            <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600 dark:text-zinc-300">
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
               Genera varias facturas de consumidor final de prueba con el mismo contenido. Cada envio crea un codigo de generacion distinto.
             </p>
           </div>
@@ -426,7 +426,7 @@ export default function EnvioLotesPage() {
           {loading ? (
             <Card>
               <CardContent className="flex min-h-64 items-center justify-center">
-                <Loader2 className="size-7 animate-spin text-amber-600 dark:text-yellow-300" />
+                <Loader2 className="size-7 animate-spin text-primary text-primary" />
               </CardContent>
             </Card>
           ) : (
@@ -554,12 +554,12 @@ export default function EnvioLotesPage() {
                       placeholder="Opcional si ya esta guardada"
                     />
                   </div>
-                  <label className="flex cursor-pointer items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm dark:border-white/10 dark:bg-black">
+                  <label className="flex cursor-pointer items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm border-border bg-background">
                     <input
                       type="checkbox"
                       checked={transmitir}
                       onChange={(event) => setTransmitir(event.target.checked)}
-                      className="size-4 accent-yellow-400"
+                      className="size-4 accent-primary"
                     />
                     <span>Transmitir los chunks a Hacienda test</span>
                   </label>
@@ -579,7 +579,7 @@ export default function EnvioLotesPage() {
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <CardTitle className="flex items-center gap-2">
-                        <Database className="size-5 text-amber-600 dark:text-yellow-300" />
+                        <Database className="size-5 text-primary text-primary" />
                         Lotes guardados
                       </CardTitle>
                       <CardDescription>Codigos de lote enviados y disponibles para consulta en Hacienda.</CardDescription>
@@ -620,7 +620,7 @@ export default function EnvioLotesPage() {
                         const consultaKey = `${lote.id}:${selectedCode}`;
 
                         return (
-                          <tr key={lote.id} className="border-b border-slate-200 align-top last:border-0 dark:border-white/10">
+                          <tr key={lote.id} className="border-b border-slate-200 align-top last:border-0 border-border">
                             <td className="py-3 pr-3 whitespace-nowrap">{formatDate(lote.createdAt)}</td>
                             <td className="py-3 pr-3">
                               <span className="inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700 dark:bg-white/10 dark:text-zinc-200">
@@ -703,7 +703,7 @@ export default function EnvioLotesPage() {
                       </thead>
                       <tbody>
                         {rows.map((row) => (
-                          <tr key={row.index} className="border-b border-slate-200 last:border-0 dark:border-white/10">
+                          <tr key={row.index} className="border-b border-slate-200 last:border-0 border-border">
                             <td className="py-2 pr-3 font-mono">{row.index}</td>
                             <td className="py-2 pr-3 font-mono">{row.chunk || '-'}</td>
                             <td className="py-2 pr-3">
@@ -730,13 +730,13 @@ export default function EnvioLotesPage() {
           <Card className="sticky top-4">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <PackageCheck className="size-5 text-amber-600 dark:text-yellow-300" />
+                <PackageCheck className="size-5 text-primary text-primary" />
                 Lote
               </CardTitle>
               <CardDescription>Pruebas tipo 01 consumidor final.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-black">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 border-border bg-background">
                 <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Pruebas</p>
                 <p className="mt-1 text-3xl font-black">{Math.max(1, Math.min(1000, Number(batchSize || 1)))}</p>
                 <p className="mt-2 text-sm text-muted-foreground">
@@ -748,7 +748,7 @@ export default function EnvioLotesPage() {
                 type="button"
                 disabled={loading || submitting}
                 onClick={submitBatch}
-                className="h-12 w-full bg-yellow-400 font-bold text-black hover:bg-yellow-300"
+                className="h-12 w-full bg-primary font-bold text-black hover:bg-primary/90"
               >
                 {submitting ? (
                   <>
@@ -771,9 +771,9 @@ export default function EnvioLotesPage() {
               )}
 
               {rows.length > 0 && (
-                <div className="rounded-md border border-slate-200 bg-white p-3 text-sm dark:border-white/10 dark:bg-zinc-950">
+                <div className="rounded-md border border-slate-200 bg-white p-3 text-sm border-border bg-card">
                   <div className="mb-2 flex items-center gap-2 font-semibold">
-                    <ReceiptText className="size-4 text-amber-600 dark:text-yellow-300" />
+                    <ReceiptText className="size-4 text-primary text-primary" />
                     Avance
                   </div>
                   <div className="grid gap-1 text-xs">
@@ -785,7 +785,7 @@ export default function EnvioLotesPage() {
                     <span>Tiempo total: {formatMs(batchElapsedMs || undefined)}</span>
                   </div>
                   {chunks.length > 0 && (
-                    <div className="mt-3 grid gap-1 border-t border-slate-200 pt-3 text-xs dark:border-white/10">
+                    <div className="mt-3 grid gap-1 border-t border-slate-200 pt-3 text-xs border-border">
                       {chunks.map((chunk) => (
                         <span key={chunk.index} className="break-all">
                           Chunk {chunk.index}: {chunk.size} docs - {formatMs(chunk.totalMs)} - {chunk.codigoLote || 'sin envio'}
@@ -806,7 +806,7 @@ export default function EnvioLotesPage() {
 function StatusLabel({ row }: { row: BatchRow }) {
   if (row.status === 'running') {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-900">
+      <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-1 text-xs font-semibold text-primary">
         <Loader2 className="size-3 animate-spin" />
         Procesando
       </span>

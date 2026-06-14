@@ -242,10 +242,10 @@ export default function EscaneoQRPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 px-4 py-8 dark:bg-black">
+    <main className="min-h-screen bg-gray-50 px-4 py-8 bg-background">
       <section className="mx-auto max-w-7xl">
         <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-3xl font-bold text-gray-900 text-foreground">
             Escaneo de QR
           </h1>
 
@@ -257,11 +257,11 @@ export default function EscaneoQRPage() {
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* ESCÁNER */}
-          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-zinc-950">
+          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 bg-card">
             <div className="mb-4 flex items-center gap-3">
-              <QrCode className="h-6 w-6 text-yellow-500" />
+              <QrCode className="h-6 w-6 text-primary" />
 
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              <h2 className="text-xl font-semibold text-gray-900 text-foreground">
                 Escáner
               </h2>
             </div>
@@ -291,7 +291,7 @@ export default function EscaneoQRPage() {
                 <button
                   type="button"
                   onClick={startScanning}
-                  className="inline-flex items-center gap-2 rounded-xl bg-yellow-500 px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-yellow-400"
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary/100 px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-primary"
                 >
                   <Camera className="h-5 w-5" />
                   Iniciar cámara
@@ -309,7 +309,7 @@ export default function EscaneoQRPage() {
             </div>
 
             {lastScan && (
-              <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-800 dark:bg-zinc-900">
+              <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-800 bg-card">
                 <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
                   Último QR leído:
                 </p>
@@ -322,12 +322,12 @@ export default function EscaneoQRPage() {
           </section>
 
           {/* DATOS */}
-          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-zinc-950">
+          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 bg-card">
             <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
                 <FileText className="h-6 w-6 text-blue-500" />
 
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                <h2 className="text-xl font-semibold text-gray-900 text-foreground">
                   Datos escaneados ({scannedData.length})
                 </h2>
               </div>
@@ -368,10 +368,10 @@ export default function EscaneoQRPage() {
                 {scannedData.map((item, index) => (
                   <article
                     key={`${item.codGen}-${index}`}
-                    className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-zinc-900"
+                    className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 bg-card"
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
+                      <p className="truncate text-sm font-semibold text-gray-900 text-foreground">
                         {item.codGen}
                       </p>
 

@@ -218,7 +218,7 @@ export default function ObligationsCalendar() {
 
       <div className="mb-4 flex flex-col gap-3 border-b border-slate-200 pb-4 dark:border-white/10 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h2 className="text-base font-bold text-slate-950 dark:text-white">
+          <h2 className="text-base font-bold text-foreground">
             Agenda tributaria
           </h2>
 
@@ -280,16 +280,16 @@ export default function ObligationsCalendar() {
 
         <aside className="rounded-xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-black">
           <div className="mb-4">
-            <p className="flex items-center gap-2 text-sm font-semibold text-amber-600 dark:text-yellow-300">
+            <p className="flex items-center gap-2 text-sm font-semibold text-primary">
               <CalendarDays className="size-4" />
               Obligaciones
             </p>
 
-            <h3 className="mt-1 text-lg font-bold capitalize text-slate-950 dark:text-white">
+            <h3 className="mt-1 text-lg font-bold capitalize text-foreground">
               {formatSelectedDate(selectedDate)}
             </h3>
 
-            <p className="mt-1 text-xs text-slate-500 dark:text-zinc-500">
+            <p className="mt-1 text-xs text-muted-foreground">
               {selectedObligations.length}{' '}
               {selectedObligations.length === 1 ? 'actividad' : 'actividades'}
             </p>
@@ -308,11 +308,11 @@ export default function ObligationsCalendar() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h4 className="text-sm font-bold text-slate-950 dark:text-white">
+                      <h4 className="text-sm font-bold text-foreground">
                         {item.title}
                       </h4>
 
-                      <p className="mt-1 text-xs text-slate-500 dark:text-zinc-500">
+                      <p className="mt-1 text-xs text-muted-foreground">
                         {item.extendedProps?.status === 'completed'
                           ? 'Completada'
                           : item.extendedProps?.status === 'expired'
@@ -331,7 +331,7 @@ export default function ObligationsCalendar() {
                       </p>
 
                       {item.extendedProps?.notifyClient && (
-                        <p className="mt-1 text-xs text-slate-500 dark:text-zinc-500">
+                        <p className="mt-1 text-xs text-muted-foreground">
                           Recordatorio:{' '}
                           {item.extendedProps.reminderDaysBefore?.length
                             ? item.extendedProps.reminderDaysBefore.join(', ')

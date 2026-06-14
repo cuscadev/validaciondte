@@ -40,7 +40,7 @@ const STATUS_STYLES: Record<string, string> = {
   skipped_duplicate:
     'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-200',
   skipped_date:
-    'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200',
+    'bg-primary/15 text-primary bg-primary/15 text-primary',
   skipped_invalid: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200',
   skipped_unsupported_type:
     'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-200',
@@ -154,10 +154,10 @@ export default function GmailDocumentTable({
     documents.length > 0 && documents.every((d) => selectedIds.has(d.id));
 
   return (
-    <div className="relative overflow-hidden rounded-xl border border-slate-200 dark:border-white/10">
+    <div className="relative overflow-hidden rounded-xl border border-border">
       {loading && documents.length > 0 ? (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/60 dark:bg-zinc-950/60">
-          <Loader2 className="size-6 animate-spin text-amber-600" />
+          <Loader2 className="size-6 animate-spin text-primary" />
         </div>
       ) : null}
 

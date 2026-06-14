@@ -235,24 +235,24 @@ export default function AdminObligacionPage() {
 
   return (
     <main className="space-y-4">
-      <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-zinc-950">
+      <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm border-border bg-card">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-start gap-3">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-md bg-yellow-400 text-black">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
               <CalendarDays className="size-5" />
             </div>
 
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
+              <h1 className="text-2xl font-semibold tracking-tight text-foreground">
                 Gestión de obligaciones tributarias
               </h1>
-              <p className="mt-1 text-sm text-slate-600 dark:text-zinc-400">
+              <p className="mt-1 text-sm text-slate-600 text-muted-foreground">
                 Crea obligaciones para todos los clientes o selecciona clientes específicos.
               </p>
             </div>
           </div>
 
-          <Button asChild className="bg-yellow-400 font-semibold text-black hover:bg-yellow-300">
+          <Button asChild className="bg-primary font-semibold text-black hover:bg-primary/90">
             <a href={TAX_CALENDAR_URL} target="_blank" rel="noopener noreferrer">
               Abrir PDF
               <ExternalLink className="ml-2 size-4" />
@@ -264,9 +264,9 @@ export default function AdminObligacionPage() {
       <section className="grid gap-4 xl:grid-cols-[440px_1fr]">
         <form
           onSubmit={handleSubmit}
-          className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-zinc-950"
+          className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm border-border bg-card"
         >
-          <h2 className="text-base font-bold text-slate-950 dark:text-white">
+          <h2 className="text-base font-bold text-foreground">
             Nueva obligación
           </h2>
 
@@ -313,7 +313,7 @@ export default function AdminObligacionPage() {
               placeholder="Recordar días antes. Ej: 1,3,5"
             />
 
-            <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-zinc-300">
+            <label className="flex items-center gap-2 text-sm text-slate-700 text-muted-foreground">
               <input
                 type="checkbox"
                 checked={form.notifyClient}
@@ -328,8 +328,8 @@ export default function AdminObligacionPage() {
             </label>
 
             {form.targetMode === 'selected' && (
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-black">
-                <p className="mb-2 text-sm font-semibold text-slate-900 dark:text-white">
+              <div className="rounded-lg border border-border bg-background p-3">
+                <p className="mb-2 text-sm font-semibold text-slate-900 text-foreground">
                   Clientes seleccionados: {selectedUids.length}
                 </p>
 
@@ -354,14 +354,14 @@ export default function AdminObligacionPage() {
                         onClick={() => toggleUser(user.uid)}
                         className={`w-full rounded-lg border p-3 text-left text-sm ${
                           active
-                            ? 'border-yellow-400 bg-yellow-400/10'
-                            : 'border-slate-200 bg-white dark:border-white/10 dark:bg-zinc-950'
+                            ? 'border-primary bg-primary/10'
+                            : 'border-border bg-card'
                         }`}
                       >
-                        <p className="font-semibold text-slate-950 dark:text-white">
+                        <p className="font-semibold text-foreground">
                           {user.displayName || user.email || 'Sin nombre'}
                         </p>
-                        <p className="text-xs text-slate-500 dark:text-zinc-400">
+                        <p className="text-xs text-slate-500 text-muted-foreground">
                           {user.email || user.uid}
                         </p>
                       </button>
@@ -371,7 +371,7 @@ export default function AdminObligacionPage() {
               </div>
             )}
 
-            <Button type="submit" disabled={saving} className="w-full bg-yellow-400 text-black hover:bg-yellow-300">
+            <Button type="submit" disabled={saving} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
               {saving ? 'Guardando...' : 'Crear obligación'}
             </Button>
           </div>
@@ -380,9 +380,9 @@ export default function AdminObligacionPage() {
         <div className="space-y-4">
           <ObligationsCalendar />
 
-          <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-zinc-950">
+          <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm border-border bg-card">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-base font-bold text-slate-950 dark:text-white">
+              <h2 className="text-base font-bold text-foreground">
                 Obligaciones registradas
               </h2>
 
@@ -400,13 +400,13 @@ export default function AdminObligacionPage() {
               {obligations.map((item) => (
                 <article
                   key={item.id}
-                  className="flex items-start justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-black"
+                  className="flex items-start justify-between gap-3 rounded-lg border border-border bg-background p-3"
                 >
                   <div>
-                    <h3 className="text-sm font-bold text-slate-950 dark:text-white">
+                    <h3 className="text-sm font-bold text-foreground">
                       {item.title}
                     </h3>
-                    <p className="text-xs text-slate-500 dark:text-zinc-400">
+                    <p className="text-xs text-slate-500 text-muted-foreground">
                       Vence: {item.dueDate} ·{' '}
                       {item.targetMode === 'selected'
                         ? `${item.targetUids?.length ?? 0} cliente(s)`

@@ -369,7 +369,7 @@ export default function FacturacionReceptoresPage() {
       <div className="mx-auto w-full max-w-[96rem] space-y-4">
         <header className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase text-amber-600 dark:text-yellow-300">
+            <p className="text-xs font-semibold uppercase text-primary text-primary">
               Facturacion
             </p>
             <h1 className="mt-1 text-2xl font-bold">Receptores</h1>
@@ -397,7 +397,7 @@ export default function FacturacionReceptoresPage() {
         <Card className="rounded-xl border-border">
           <CardHeader className="p-4">
             <CardTitle className="flex items-center gap-2">
-              <Plus className="size-5 text-amber-600 dark:text-yellow-300" />
+              <Plus className="size-5 text-primary text-primary" />
               {form.id ? 'Editar receptor' : 'Nuevo receptor'}
             </CardTitle>
             <CardDescription>
@@ -618,7 +618,7 @@ export default function FacturacionReceptoresPage() {
                   <Button
                     type="submit"
                     disabled={saving}
-                    className="h-11 rounded-xl bg-yellow-400 font-bold text-black hover:bg-yellow-300"
+                    className="h-11 rounded-xl bg-primary font-bold text-black hover:bg-primary/90"
                   >
                     {saving ? (
                       <Loader2 className="size-4 animate-spin" />
@@ -650,7 +650,7 @@ export default function FacturacionReceptoresPage() {
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <CardTitle className="flex items-center gap-2">
-                  <UsersRound className="size-5 text-amber-600 dark:text-yellow-300" />
+                  <UsersRound className="size-5 text-primary text-primary" />
                   Tabla de receptores
                 </CardTitle>
                 <CardDescription>
@@ -684,7 +684,7 @@ export default function FacturacionReceptoresPage() {
           <CardContent className="p-4 pt-0">
             {loading ? (
               <div className="flex min-h-48 items-center justify-center">
-                <Loader2 className="size-7 animate-spin text-amber-600 dark:text-yellow-300" />
+                <Loader2 className="size-7 animate-spin text-primary text-primary" />
               </div>
             ) : (
               <Table>

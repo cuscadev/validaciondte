@@ -30,7 +30,7 @@ const CLOSE_DURATION = 0.5;
 const PROCESSING_FOOTER_MIN_H = 'min-h-[11.5rem]';
 
 const containerBorderClass =
-  'border border-yellow-200 dark:border-yellow-400/30';
+  'border border-primary/30';
 
 type ProcessingPhase = 'idle' | 'loading';
 type SummaryDisplay = 'none' | 'full';
@@ -221,16 +221,15 @@ export default function UploadFormAccordion({
             type="button"
             aria-controls={contentId}
             className={cn(
-              'flex w-full items-center justify-between bg-slate-50 px-4 py-2.5 text-sm font-medium',
-              'transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400/40',
-              'dark:bg-black dark:hover:bg-zinc-900',
+              'flex w-full items-center justify-between bg-muted px-4 py-2.5 text-sm font-medium',
+              'transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
               triggerRoundedClass
             )}
           >
-            <span className="font-bold text-yellow-400 dark:text-yellow-400">{title}</span>
+            <span className="font-bold text-primary">{title}</span>
             <ChevronDown
               className={cn(
-                'size-4 shrink-0 text-yellow-400/70 transition-transform duration-[1100ms] ease-in-out',
+                'size-4 shrink-0 text-primary/70 transition-transform duration-[1100ms] ease-in-out',
                 open && 'rotate-180'
               )}
             />
@@ -253,7 +252,7 @@ export default function UploadFormAccordion({
               if (open) handleOpenComplete();
             }}
             className={cn(
-              'overflow-hidden bg-slate-50 dark:bg-black',
+              'overflow-hidden bg-background',
               open && !showProcessingPanel ? 'rounded-b-lg' : '',
               !open && 'pointer-events-none'
             )}
@@ -266,7 +265,7 @@ export default function UploadFormAccordion({
           {showProcessingPanel && (
             <div
               className={cn(
-                'flex items-center justify-center rounded-b-lg border-t border-yellow-200/80 bg-slate-50 px-4 py-4 dark:border-yellow-400/20 dark:bg-black',
+                'flex items-center justify-center rounded-b-lg border-t border-border bg-muted px-4 py-4',
                 PROCESSING_FOOTER_MIN_H
               )}
             >

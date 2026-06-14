@@ -703,19 +703,19 @@ export default function UsersAdminPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-950 dark:bg-black dark:text-white">
+    <main className="min-h-screen bg-slate-50 text-slate-950 bg-background text-foreground">
       <div className="flex w-full flex-col gap-4 p-0">
-        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-950">
+        <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
           <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
-              <p className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.24em] text-amber-600 dark:text-yellow-300">
+              <p className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.24em] text-primary text-primary">
                 <Users className="size-4" />
                 Gestion de usuarios
               </p>
               <h1 className="text-3xl font-extrabold tracking-tight md:text-5xl">
                 Usuarios, roles y cupos delegados
               </h1>
-              <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600 md:text-base dark:text-zinc-300">
+              <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600 md:text-base text-muted-foreground">
                 Administra superadmins, clientes y colaboradores desde una sola vista.
               </p>
             </div>
@@ -728,16 +728,16 @@ export default function UsersAdminPage() {
           </div>
         </section>
 
-        <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-zinc-950">
+        <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm border-border bg-card">
           <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 className="text-xl font-bold">Todos los usuarios</h2>
-              <p className="mt-1 text-sm text-slate-600 dark:text-zinc-300">
+              <p className="mt-1 text-sm text-muted-foreground">
                 {filteredRows.length} de {totals.all} usuario{totals.all === 1 ? '' : 's'}.
               </p>
             </div>
 
-            <Button className="bg-yellow-400 font-bold text-black hover:bg-yellow-300" onClick={openCreateModal}>
+            <Button className="bg-primary font-bold text-black hover:bg-primary/90" onClick={openCreateModal}>
               <UserPlus className="size-4" />
               Crear usuario
             </Button>
@@ -750,12 +750,12 @@ export default function UsersAdminPage() {
                 onChange={setSearch}
                 placeholder="Buscar por nombre, correo, UID, rol o membresia..."
               />
-              <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-zinc-300">
+              <label className="flex items-center gap-2 text-sm text-muted-foreground">
                 Filas
                 <select
                   value={rowsPerPage}
                   onChange={(event) => setRowsPerPage(Number(event.target.value))}
-                  className="h-9 rounded-md border border-slate-200 bg-background px-2 text-sm outline-none focus:ring-2 focus:ring-yellow-400/40 dark:border-white/10"
+                  className="h-9 rounded-md border border-border bg-background px-2 text-sm outline-none focus:ring-2 focus:ring-primary/40 border-border"
                 >
                   {[10, 25, 50, 100].map((value) => (
                     <option key={value} value={value}>
@@ -797,7 +797,7 @@ export default function UsersAdminPage() {
             onToggleBlock={(row) => handleSessionAction(row.uid, row.disabled ? 'unblock' : 'block')}
           />
 
-          <div className="mt-0 flex flex-col items-center justify-between gap-3 rounded-b-lg border-x border-b border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-black sm:flex-row">
+          <div className="mt-0 flex flex-col items-center justify-between gap-3 rounded-b-lg border-x border-b border-border bg-background px-3 py-2 sm:flex-row">
             <span className="text-sm text-muted-foreground">
               Pagina <span className="font-medium text-foreground">{currentPage}</span> de {totalPages}
             </span>
@@ -879,7 +879,7 @@ export default function UsersAdminPage() {
             </p>
           </div>
 
-          <div className="grid gap-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm dark:border-white/10 dark:bg-black md:grid-cols-[minmax(0,1fr)_18rem] md:items-end">
+          <div className="grid gap-4 rounded-lg border border-border bg-background p-4 text-sm md:grid-cols-[minmax(0,1fr)_18rem] md:items-end">
             <div>
               <p className="font-semibold">{delegateUser?.displayName || delegateUser?.email}</p>
               <p className="text-muted-foreground">{delegateUser?.email}</p>
@@ -895,10 +895,10 @@ export default function UsersAdminPage() {
                   min={0}
                   value={delegateLimit}
                   onChange={(event) => setDelegateLimit(event.target.value)}
-                  className="w-full rounded-md border border-slate-200 bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-yellow-400/40 dark:border-white/10"
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40 border-border"
                 />
               </label>
-              <Button type="button" className="bg-yellow-400 font-bold text-black hover:bg-yellow-300" onClick={saveDelegateLimit}>
+              <Button type="button" className="bg-primary font-bold text-black hover:bg-primary/90" onClick={saveDelegateLimit}>
                 Guardar cupo
               </Button>
             </div>
@@ -984,9 +984,9 @@ function StatCard({
   value: number;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-black">
-      <Icon className="mb-3 size-5 text-amber-600 dark:text-yellow-300" />
-      <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-500">{label}</p>
+    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 border-border bg-background">
+      <Icon className="mb-3 size-5 text-primary text-primary" />
+      <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
       <p className="mt-1 text-sm font-bold">{value}</p>
     </div>
   );
@@ -1010,28 +1010,28 @@ function LimitEditor({
   };
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-zinc-950">
+    <section className="rounded-lg border border-slate-200 bg-white p-4 border-border bg-card">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
           <h3 className="flex items-center gap-2 text-lg font-bold">
-            <SlidersHorizontal className="size-5 text-amber-600 dark:text-yellow-300" />
+            <SlidersHorizontal className="size-5 text-primary text-primary" />
             {title}
           </h3>
           <p className="mt-1 text-sm text-muted-foreground">{description}</p>
         </div>
-        <Button type="button" className="bg-yellow-400 font-bold text-black hover:bg-yellow-300" onClick={onSave}>
+        <Button type="button" className="bg-primary font-bold text-black hover:bg-primary/90" onClick={onSave}>
           Guardar limites
         </Button>
       </div>
 
-      <div className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-black md:grid-cols-2">
+      <div className="mt-4 grid gap-3 rounded-lg border border-border bg-background p-3 md:grid-cols-2">
         <label className="grid gap-1 text-sm">
           <span className="font-medium">Fecha de renovacion</span>
           <input
             type="date"
             value={draft[RENEWAL_DATE_DRAFT_KEY] || ''}
             onChange={(event) => updateLimit(RENEWAL_DATE_DRAFT_KEY, event.target.value)}
-            className="rounded-md border border-slate-200 bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-yellow-400/40 dark:border-white/10"
+            className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40 border-border"
           />
           <span className="text-xs text-muted-foreground">
             Si es automatica, se renovara cada mes usando el dia de esta fecha.
@@ -1042,7 +1042,7 @@ function LimitEditor({
           <select
             value={draft[AUTOMATIC_RESET_DRAFT_KEY] || INHERIT_LIMIT_VALUE}
             onChange={(event) => updateLimit(AUTOMATIC_RESET_DRAFT_KEY, event.target.value)}
-            className="rounded-md border border-slate-200 bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-yellow-400/40 dark:border-white/10"
+            className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40 border-border"
           >
             <option value={INHERIT_LIMIT_VALUE}>Heredar</option>
             <option value="true">Automatica mensual</option>
@@ -1056,13 +1056,13 @@ function LimitEditor({
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         {PLAN_ROUTE_GROUPS.map((group) => (
-          <div key={group.key} className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-black">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-500">
+          <div key={group.key} className="rounded-lg border border-border bg-background p-3">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               {group.label}
             </p>
             <div className="grid gap-2">
               {group.routes.map((route) => (
-                <div key={route.key} className="grid gap-2 rounded-md border border-slate-200 bg-white p-2 dark:border-white/10 dark:bg-zinc-950">
+                <div key={route.key} className="grid gap-2 rounded-md border border-slate-200 bg-white p-2 border-border bg-card">
                   <p className="text-sm font-medium">{route.label}</p>
                   <label className="grid gap-1 text-xs text-muted-foreground">
                     Limite mensual
@@ -1074,7 +1074,7 @@ function LimitEditor({
                         onChange={(event) => updateLimit(route.key, event.target.value)}
                         placeholder="Heredar"
                         disabled={draft[route.key] === UNLIMITED_LIMIT_VALUE}
-                        className="w-full rounded-md border border-slate-200 bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-yellow-400/40 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10"
+                        className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60 border-border"
                       />
                       <select
                         value={draft[route.key] === UNLIMITED_LIMIT_VALUE ? UNLIMITED_LIMIT_VALUE : draft[route.key] ? 'custom' : INHERIT_LIMIT_VALUE}
@@ -1082,7 +1082,7 @@ function LimitEditor({
                           const value = event.target.value;
                           updateLimit(route.key, value === 'custom' ? '1' : value);
                         }}
-                        className="rounded-md border border-slate-200 bg-background px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-yellow-400/40 dark:border-white/10"
+                        className="rounded-md border border-border bg-background px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40 border-border"
                       >
                         <option value={INHERIT_LIMIT_VALUE}>Heredar</option>
                         <option value="custom">Fijo</option>
@@ -1104,7 +1104,7 @@ function LimitEditor({
                         onChange={(event) => updateLimit(batchDraftKey(route.key), event.target.value)}
                         placeholder="Heredar"
                         disabled={draft[batchDraftKey(route.key)] === UNLIMITED_LIMIT_VALUE}
-                        className="w-full rounded-md border border-slate-200 bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-yellow-400/40 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10"
+                        className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60 border-border"
                       />
                       <select
                         value={
@@ -1118,7 +1118,7 @@ function LimitEditor({
                           const value = event.target.value;
                           updateLimit(batchDraftKey(route.key), value === 'custom' ? '1' : value);
                         }}
-                        className="rounded-md border border-slate-200 bg-background px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-yellow-400/40 dark:border-white/10"
+                        className="rounded-md border border-border bg-background px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40 border-border"
                       >
                         <option value={INHERIT_LIMIT_VALUE}>Heredar</option>
                         <option value="custom">Fijo</option>
@@ -1150,18 +1150,18 @@ function UsageAdjustmentPanel({
   onAdjust: (routeKey: string, action: 'increment' | 'decrement' | 'set') => void;
 }) {
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-zinc-950">
+    <section className="rounded-lg border border-slate-200 bg-white p-4 border-border bg-card">
       <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
         <div>
           <h3 className="flex items-center gap-2 text-lg font-bold">
-            <Activity className="size-5 text-amber-600 dark:text-yellow-300" />
+            <Activity className="size-5 text-primary text-primary" />
             Consumo mensual
           </h3>
           <p className="mt-1 text-sm text-muted-foreground">
             Cada usuario tiene su propio conteo. Los ajustes modifican el saldo del mes sin borrar el historial.
           </p>
         </div>
-        <div className="rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold dark:border-white/10">
+        <div className="rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold border-border">
           {data
             ? `${data.automaticReset ? 'Automatico' : 'Manual'} · ciclo desde ${formatDate(data.periodStart)}${data.renewalDate ? ` · renovacion ${formatDate(data.renewalDate)}` : ` · dia ${data.resetDayOfMonth}`}`
             : 'Ciclo actual'}
@@ -1175,7 +1175,7 @@ function UsageAdjustmentPanel({
       ) : (
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[860px] text-sm">
-            <thead className="bg-slate-100 text-slate-950 dark:bg-zinc-900 dark:text-zinc-100">
+            <thead className="bg-slate-100 text-slate-950 bg-card dark:text-zinc-100">
               <tr>
                 <th className="px-3 py-2 text-left">Modulo</th>
                 <th className="px-3 py-2 text-right">Usado</th>
@@ -1206,7 +1206,7 @@ function UsageAdjustmentPanel({
                         value={drafts[route.key] || ''}
                         onChange={(event) => onDraftChange(route.key, event.target.value)}
                         placeholder="Cantidad"
-                        className="w-24 rounded-md border border-slate-200 bg-background px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-yellow-400/40 dark:border-white/10"
+                        className="w-24 rounded-md border border-border bg-background px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary/40 border-border"
                       />
                       <Button type="button" variant="outline" size="sm" onClick={() => onAdjust(route.key, 'increment')}>
                         Sumar
@@ -1251,7 +1251,7 @@ function ClientStatsPanel({
     <div className="space-y-5">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-600 dark:text-yellow-300">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary text-primary">
             Estadisticas
           </p>
           <h2 className="mt-2 text-2xl font-bold">
@@ -1261,7 +1261,7 @@ function ClientStatsPanel({
             Metricas de DTE procesados por la organizacion y sus colaboradores.
           </p>
         </div>
-        <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-white/10 dark:bg-black">
+        <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm border-border bg-background">
           <p className="font-semibold">Ultimos 30 dias</p>
           <p className="text-xs text-muted-foreground">
             {data ? `${formatDate(data.period.from)} - ${formatDate(data.period.to)}` : 'Cargando periodo'}
@@ -1270,7 +1270,7 @@ function ClientStatsPanel({
       </div>
 
       {loading ? (
-        <div className="rounded-lg border border-slate-200 bg-slate-50 p-8 text-center text-sm text-muted-foreground dark:border-white/10 dark:bg-black">
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-8 text-center text-sm text-muted-foreground border-border bg-background">
           Cargando estadisticas...
         </div>
       ) : (
@@ -1283,8 +1283,8 @@ function ClientStatsPanel({
             <StatsMetricCard icon={Percent} label="Tasa error" value={`${errorRate}%`} />
           </div>
 
-          <section className="rounded-lg border border-slate-200 bg-white dark:border-white/10 dark:bg-zinc-950">
-            <div className="border-b border-slate-200 px-4 py-3 dark:border-white/10">
+          <section className="rounded-lg border border-border bg-card">
+            <div className="border-b border-slate-200 px-4 py-3 border-border">
               <h3 className="font-bold">Actividad por usuario</h3>
               <p className="text-sm text-muted-foreground">
                 Titular y colaboradores asociados a este cliente.
@@ -1292,7 +1292,7 @@ function ClientStatsPanel({
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[760px] text-sm">
-                <thead className="bg-slate-100 text-slate-950 dark:bg-zinc-900 dark:text-zinc-100">
+                <thead className="bg-slate-100 text-slate-950 bg-card dark:text-zinc-100">
                   <tr>
                     <th className="px-4 py-3 text-left">Usuario</th>
                     <th className="px-4 py-3 text-left">Rol</th>
@@ -1312,7 +1312,7 @@ function ClientStatsPanel({
                           <div className="text-xs text-muted-foreground">{member.email}</div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold capitalize dark:bg-zinc-900">
+                          <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold capitalize bg-card">
                             {member.role === 'cliente' ? 'Cliente' : member.orgRole === 'administrador' ? 'Delegado admin' : 'Colaborador'}
                           </span>
                         </td>
@@ -1340,14 +1340,14 @@ function ClientStatsPanel({
           </section>
 
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
-            <section className="rounded-lg border border-slate-200 bg-white dark:border-white/10 dark:bg-zinc-950">
-              <div className="border-b border-slate-200 px-4 py-3 dark:border-white/10">
+            <section className="rounded-lg border border-border bg-card">
+              <div className="border-b border-slate-200 px-4 py-3 border-border">
                 <h3 className="font-bold">DTE por opcion de validacion</h3>
                 <p className="text-sm text-muted-foreground">Modulos mas utilizados por toda la organizacion.</p>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[620px] text-sm">
-                  <thead className="bg-slate-100 text-slate-950 dark:bg-zinc-900 dark:text-zinc-100">
+                  <thead className="bg-slate-100 text-slate-950 bg-card dark:text-zinc-100">
                     <tr>
                       <th className="px-4 py-3 text-left">Modulo</th>
                       <th className="px-4 py-3 text-right">Procesos</th>
@@ -1383,12 +1383,12 @@ function ClientStatsPanel({
               </div>
             </section>
 
-            <section className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-black">
+            <section className="rounded-lg border border-slate-200 bg-slate-50 p-4 border-border bg-background">
               <h3 className="font-bold">Procesos recientes</h3>
               <div className="mt-3 space-y-3">
                 {data?.recent.length ? (
                   data.recent.map((log) => (
-                    <div key={log.id} className="rounded-lg border border-slate-200 bg-white p-3 text-sm dark:border-white/10 dark:bg-zinc-950">
+                    <div key={log.id} className="rounded-lg border border-slate-200 bg-white p-3 text-sm border-border bg-card">
                       <div className="flex items-center justify-between gap-3">
                         <p className="font-semibold">{log.moduleName}</p>
                         <span className={getOutcomeClass(log.outcome)}>{getOutcomeLabel(log.outcome)}</span>
@@ -1423,8 +1423,8 @@ function StatsMetricCard({
   value: number | string;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-black">
-      <Icon className="mb-3 size-5 text-amber-600 dark:text-yellow-300" />
+    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 border-border bg-background">
+      <Icon className="mb-3 size-5 text-primary text-primary" />
       <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
       <p className="mt-1 text-2xl font-extrabold">{value}</p>
     </div>
@@ -1464,6 +1464,6 @@ function getOutcomeLabel(outcome: DashboardRecentLog['outcome']) {
 function getOutcomeClass(outcome: DashboardRecentLog['outcome']) {
   const base = 'rounded-full px-2 py-1 text-xs font-semibold';
   if (outcome === 'error') return `${base} bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-200`;
-  if (outcome === 'partial') return `${base} bg-amber-100 text-amber-800 dark:bg-yellow-400/15 dark:text-yellow-200`;
+  if (outcome === 'partial') return `${base} bg-primary/15 text-primary dark:bg-primary/15 text-primary`;
   return `${base} bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200`;
 }

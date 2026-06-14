@@ -23,7 +23,7 @@ type Props = {
 };
 
 const selectClassName =
-  'flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/30 dark:border-white/10 dark:bg-zinc-900 dark:text-white dark:[color-scheme:dark] [&>option]:bg-white [&>option]:text-slate-900 dark:[&>option]:bg-zinc-900 dark:[&>option]:text-white';
+  'flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 text-foreground [color-scheme:dark]';
 
 export default function GmailDocumentFilters({
   filters,
@@ -32,7 +32,7 @@ export default function GmailDocumentFilters({
   mailboxOptions,
 }: Props) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-zinc-900/40">
+    <div className="rounded-xl border border-border bg-card p-4 dark:border-white/10 dark:bg-zinc-900/40">
       <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-400">
         Filtros del catalogo
       </p>

@@ -250,19 +250,19 @@ export default function GmailIntegracionPage() {
 
   return (
     <PlanGate routeKey="integraciones-gmail">
-      <main className="w-full max-w-full text-slate-950 dark:text-white">
+      <main className="w-full max-w-full text-foreground">
         <div className="flex w-full flex-col gap-4">
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6 dark:border-white/10 dark:bg-zinc-950">
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6 border-border bg-card">
             <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-start">
               <div>
-                <p className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.24em] text-amber-600 dark:text-yellow-300">
+                <p className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.24em] text-primary text-primary">
                   <Mail className="size-4" />
                   Integracion Gmail
                 </p>
                 <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">
                   Importar DTE desde correo
                 </h1>
-                <p className="mt-4 text-sm leading-7 text-slate-600 md:text-base dark:text-zinc-300">
+                <p className="mt-4 text-sm leading-7 text-slate-600 md:text-base text-muted-foreground">
                   Conecta Gmail con acceso de solo lectura, importa adjuntos JSON de tipos
                   tributarios relevantes y verifica en Hacienda con el mismo flujo de Verificar
                   JSON.
@@ -292,7 +292,7 @@ export default function GmailIntegracionPage() {
 
           <section className="grid gap-5 xl:grid-cols-[22rem_minmax(0,1fr)]">
             <div className="space-y-5">
-              <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-950">
+              <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm border-border bg-card">
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <h2 className="text-lg font-bold">Cuenta Gmail</h2>
                   {status?.connected ? (
@@ -301,7 +301,7 @@ export default function GmailIntegracionPage() {
                       Activa
                     </span>
                   ) : (
-                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:bg-zinc-800 dark:text-zinc-300">
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:bg-zinc-800 text-muted-foreground">
                       Sin conectar
                     </span>
                   )}
@@ -315,13 +315,13 @@ export default function GmailIntegracionPage() {
                 ) : status?.connected ? (
                   <div className="space-y-4">
                     <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/20">
-                      <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                      <p className="text-sm font-semibold text-slate-900 text-foreground">
                         {status.googleEmail}
                       </p>
-                      <p className="mt-1 text-xs text-slate-600 dark:text-zinc-300">
+                      <p className="mt-1 text-xs text-muted-foreground">
                         Conectado el {formatDateTime(status.connectedAt)}
                       </p>
-                      <p className="mt-3 text-xs leading-5 text-slate-600 dark:text-zinc-400">
+                      <p className="mt-3 text-xs leading-5 text-slate-600 text-muted-foreground">
                         Acceso de solo lectura. No enviamos ni modificamos correos.
                       </p>
                     </div>
@@ -337,7 +337,7 @@ export default function GmailIntegracionPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <p className="text-sm leading-6 text-slate-600 dark:text-zinc-300">
+                    <p className="text-sm leading-6 text-muted-foreground">
                       Autoriza una cuenta Gmail de la organizacion para buscar adjuntos JSON de
                       DTE en el buzon.
                     </p>
@@ -361,9 +361,9 @@ export default function GmailIntegracionPage() {
                 )}
               </section>
 
-              <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-950">
+              <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm border-border bg-card">
                 <div className="mb-4 flex items-center gap-2">
-                  <CalendarRange className="size-4 text-amber-600 dark:text-yellow-300" />
+                  <CalendarRange className="size-4 text-primary text-primary" />
                   <h2 className="text-lg font-bold">Sincronizacion</h2>
                 </div>
 
@@ -392,7 +392,7 @@ export default function GmailIntegracionPage() {
                   </div>
                 </div>
 
-                <p className="mt-4 text-xs leading-5 text-slate-500 dark:text-zinc-400">
+                <p className="mt-4 text-xs leading-5 text-slate-500 text-muted-foreground">
                   {SYNC_CATALOG_HELP} Se buscan adjuntos JSON en correos del rango. Solo se importan
                   DTE 01, 03, 05, 06, 11 y 14. Otros tipos quedan como{' '}
                   <span className="font-medium">{STATUS_LABELS.skipped_unsupported_type}</span>.
@@ -418,7 +418,7 @@ export default function GmailIntegracionPage() {
                 </Button>
 
                 {job ? (
-                  <div className="mt-4 space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-zinc-900/40">
+                  <div className="mt-4 space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4 border-border bg-card/40">
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <SyncStat label="Encontrados" value={job.found_count} />
                       <SyncStat label="Importados" value={job.imported_count} accent />
@@ -426,7 +426,7 @@ export default function GmailIntegracionPage() {
                       <SyncStat label="Errores" value={job.error_count} />
                     </div>
                     <Progress value={progressValue} className="h-2" />
-                    <p className="text-xs text-slate-500 dark:text-zinc-400">
+                    <p className="text-xs text-slate-500 text-muted-foreground">
                       Rango {job.date_from} — {job.date_to} · estado {job.status}
                     </p>
                   </div>
@@ -434,24 +434,24 @@ export default function GmailIntegracionPage() {
               </section>
             </div>
 
-            <section className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-950">
+            <section className="rounded-2xl border border-border bg-card shadow-sm">
               {!status?.connected ? (
                 <div className="flex min-h-[28rem] flex-col items-center justify-center px-6 py-16 text-center">
-                  <div className="mb-4 flex size-16 items-center justify-center rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-yellow-300">
+                  <div className="mb-4 flex size-16 items-center justify-center rounded-2xl bg-primary/15 bg-primary/15 text-primary">
                     <Inbox className="size-8" />
                   </div>
                   <h2 className="text-xl font-bold">Conecta Gmail para comenzar</h2>
-                  <p className="mt-3 max-w-md text-sm leading-6 text-slate-600 dark:text-zinc-300">
+                  <p className="mt-3 max-w-md text-sm leading-6 text-muted-foreground">
                     Una vez autorizada la cuenta, aqui veras el catalogo de DTE importados,
                     podras filtrarlos y verificarlos en Hacienda.
                   </p>
                 </div>
               ) : (
                 <>
-                  <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-5 md:flex-row md:items-center md:justify-between dark:border-white/10">
+                  <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-5 md:flex-row md:items-center md:justify-between border-border">
                     <div>
                       <h2 className="text-xl font-bold">Catalogo de DTE importados</h2>
-                      <p className="mt-1 text-sm text-slate-600 dark:text-zinc-300">
+                      <p className="mt-1 text-sm text-muted-foreground">
                         {catalogTotal} documento(s) disponibles
                         {job ? ` · ultimo sync ${job.date_from} — ${job.date_to}` : ''}
                       </p>
@@ -542,14 +542,14 @@ function MetricCard({
   accent?: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-white/10 dark:bg-zinc-900/50">
-      <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-zinc-400">
+    <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 border-border bg-card/50">
+      <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 text-muted-foreground">
         <Icon className="size-3.5" />
         {label}
       </div>
       <p
         className={`text-2xl font-extrabold tracking-tight ${
-          accent ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-900 dark:text-white'
+          accent ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-900 text-foreground'
         }`}
       >
         {value}
@@ -568,11 +568,11 @@ function SyncStat({
   accent?: boolean;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-white/10 dark:bg-zinc-950">
-      <p className="text-xs text-slate-500 dark:text-zinc-400">{label}</p>
+    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 border-border bg-card">
+      <p className="text-xs text-slate-500 text-muted-foreground">{label}</p>
       <p
         className={`text-lg font-bold ${
-          accent ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-900 dark:text-white'
+          accent ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-900 text-foreground'
         }`}
       >
         {value}

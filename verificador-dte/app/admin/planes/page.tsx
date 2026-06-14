@@ -221,37 +221,37 @@ export default function PlanesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-950 dark:bg-black dark:text-white">
+    <main className="min-h-screen bg-slate-50 text-slate-950 bg-background text-foreground">
       <div className="mx-auto flex w-full max-w-[92rem] flex-col gap-4 p-0">
-        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-950">
+        <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
           <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
-              <p className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.24em] text-amber-600 dark:text-yellow-300">
+              <p className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.24em] text-primary text-primary">
                 <Settings2 className="size-4" />
                 Gestion de planes
               </p>
               <h1 className="text-3xl font-extrabold tracking-tight md:text-5xl">
                 Configura precios, accesos y visibilidad
               </h1>
-              <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600 md:text-base dark:text-zinc-300">
+              <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600 md:text-base text-muted-foreground">
                 Los cambios se guardan por plan y aplican inmediatamente en el control de acceso y en la seccion publica de planes.
               </p>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[34rem]">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-black">
-                <Eye className="mb-3 size-5 text-amber-600 dark:text-yellow-300" />
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-500">Landing</p>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 border-border bg-background">
+                <Eye className="mb-3 size-5 text-primary text-primary" />
+                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Landing</p>
                 <p className="mt-1 text-sm font-bold">{summary.visible} visibles</p>
               </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-black">
-                <Infinity className="mb-3 size-5 text-amber-600 dark:text-yellow-300" />
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-500">Ilimitados</p>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 border-border bg-background">
+                <Infinity className="mb-3 size-5 text-primary text-primary" />
+                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Ilimitados</p>
                 <p className="mt-1 text-sm font-bold">{summary.unlimited} planes</p>
               </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-black">
-                <BadgeCheck className="mb-3 size-5 text-amber-600 dark:text-yellow-300" />
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-500">Accesos</p>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 border-border bg-background">
+                <BadgeCheck className="mb-3 size-5 text-primary text-primary" />
+                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Accesos</p>
                 <p className="mt-1 text-sm font-bold">{summary.routes} activos</p>
               </div>
             </div>
@@ -268,27 +268,27 @@ export default function PlanesPage() {
               <article
                 key={plan.id}
                 className={[
-                  'flex min-h-full flex-col overflow-hidden rounded-lg border bg-white shadow-sm dark:bg-zinc-950',
+                  'flex min-h-full flex-col overflow-hidden rounded-lg border bg-white shadow-sm bg-card',
                   plan.featured
-                    ? 'border-yellow-300 dark:border-yellow-300/60'
-                    : 'border-slate-200 dark:border-white/10',
+                    ? 'border-primary/60 border-primary/60'
+                    : 'border-border',
                 ].join(' ')}
               >
-                <header className="border-b border-slate-200 bg-slate-50 p-5 dark:border-white/10 dark:bg-black">
+                <header className="border-b border-slate-200 bg-slate-50 p-5 border-border bg-background">
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <div className="flex items-center gap-2">
                         <h2 className="text-2xl font-bold">{plan.label}</h2>
                         {plan.featured && (
-                          <Badge className="bg-yellow-400 text-black hover:bg-yellow-400">Popular</Badge>
+                          <Badge className="bg-primary text-primary-foreground hover:bg-primary">Popular</Badge>
                         )}
                       </div>
-                      <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-zinc-300">
+                      <p className="mt-2 text-sm leading-6 text-muted-foreground">
                         {plan.description}
                       </p>
                     </div>
 
-                    <div className="rounded-md bg-yellow-400 p-2 text-black">
+                    <div className="rounded-md bg-primary p-2 text-black">
                       <Sparkles className="size-5" />
                     </div>
                   </div>
@@ -296,14 +296,14 @@ export default function PlanesPage() {
 
                 <div className="flex flex-1 flex-col gap-6 p-5">
                   <section>
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-500">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                       Precio
                     </p>
-                    <div className="flex overflow-hidden rounded-md border border-slate-200 bg-background dark:border-white/10">
+                    <div className="flex overflow-hidden rounded-md border border-border bg-background border-border">
                       <select
                         value={cfg.currency}
                         onChange={e => update(plan.id, 'currency', e.target.value)}
-                        className="border-r border-slate-200 bg-slate-100 px-2 py-2 text-sm outline-none dark:border-white/10 dark:bg-black"
+                        className="border-r border-slate-200 bg-slate-100 px-2 py-2 text-sm outline-none border-border bg-background"
                       >
                         <option>USD</option>
                         <option>EUR</option>
@@ -324,10 +324,10 @@ export default function PlanesPage() {
                   </section>
 
                   <section>
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-500">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                       Ciclo de facturacion
                     </p>
-                    <div className="grid grid-cols-3 overflow-hidden rounded-md border border-slate-200 text-sm dark:border-white/10">
+                    <div className="grid grid-cols-3 overflow-hidden rounded-md border border-slate-200 text-sm border-border">
                       {(['mensual', 'anual', 'personalizado'] as BillingCycle[]).map(cycle => (
                         <button
                           key={cycle}
@@ -335,8 +335,8 @@ export default function PlanesPage() {
                           onClick={() => update(plan.id, 'billingCycle', cycle)}
                           className={`px-2 py-2 transition ${
                             cfg.billingCycle === cycle
-                              ? 'bg-yellow-400 font-bold text-black'
-                              : 'text-slate-600 hover:bg-slate-50 dark:text-zinc-300 dark:hover:bg-black'
+                              ? 'bg-primary font-bold text-black'
+                              : 'text-slate-600 hover:bg-slate-50 text-muted-foreground dark:hover:bg-black'
                           }`}
                         >
                           {cycleLabel(cycle)}
@@ -346,7 +346,7 @@ export default function PlanesPage() {
                   </section>
 
                   <section>
-                    <p className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-500">
+                    <p className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                       <CalendarClock className="size-3.5" />
                       Vigencia
                     </p>
@@ -357,7 +357,7 @@ export default function PlanesPage() {
                           type="date"
                           value={cfg.dateFrom}
                           onChange={e => update(plan.id, 'dateFrom', e.target.value)}
-                          className="rounded-md border border-slate-200 bg-background px-2 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-yellow-400/40 dark:border-white/10"
+                          className="rounded-md border border-border bg-background px-2 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/40 border-border"
                         />
                       </label>
                       <label className="flex flex-col gap-1 text-xs text-muted-foreground">
@@ -367,7 +367,7 @@ export default function PlanesPage() {
                           value={cfg.dateTo}
                           readOnly={cfg.billingCycle !== 'personalizado'}
                           onChange={e => cfg.billingCycle === 'personalizado' && update(plan.id, 'dateTo', e.target.value)}
-                          className={`rounded-md border border-slate-200 bg-background px-2 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-yellow-400/40 dark:border-white/10 ${
+                          className={`rounded-md border border-border bg-background px-2 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/40 border-border ${
                             cfg.billingCycle !== 'personalizado' ? 'cursor-not-allowed opacity-60' : ''
                           }`}
                         />
@@ -376,7 +376,7 @@ export default function PlanesPage() {
                   </section>
 
                   <section>
-                    <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-500">
+                    <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                       Herramientas con acceso
                     </p>
                     <div className="grid gap-2">
@@ -393,15 +393,15 @@ export default function PlanesPage() {
                                   key={route.key}
                                   className={`flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 text-sm transition ${
                                     checked
-                                      ? 'border-yellow-300 bg-yellow-50 text-slate-950 dark:border-yellow-400/50 dark:bg-yellow-400/10 dark:text-white'
-                                      : 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:text-zinc-300 dark:hover:bg-black'
+                                      ? 'border-primary bg-primary/10 text-foreground'
+                                      : 'border-slate-200 text-slate-600 hover:bg-slate-50 border-border text-muted-foreground dark:hover:bg-black'
                                   }`}
                                 >
                                   <input
                                     type="checkbox"
                                     checked={checked}
                                     onChange={() => toggleRoute(plan.id, route.key)}
-                                    className="size-4 rounded accent-yellow-400"
+                                    className="size-4 rounded accent-primary"
                                   />
                                   <span>{route.label}</span>
                                 </label>
@@ -414,15 +414,15 @@ export default function PlanesPage() {
                   </section>
 
                   <section>
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-500">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                       Limite de consultas / mes
                     </p>
-                    <label className="mb-3 flex cursor-pointer items-center gap-3 text-sm text-slate-600 dark:text-zinc-300">
+                    <label className="mb-3 flex cursor-pointer items-center gap-3 text-sm text-muted-foreground">
                       <input
                         type="checkbox"
                         checked={cfg.queryLimit === null}
                         onChange={() => update(plan.id, 'queryLimit', cfg.queryLimit === null ? 1 : null)}
-                        className="size-4 rounded accent-yellow-400"
+                        className="size-4 rounded accent-primary"
                       />
                       <span className="flex items-center gap-2">
                         <Infinity className="size-4" />
@@ -435,22 +435,22 @@ export default function PlanesPage() {
                         min={1}
                         value={cfg.queryLimit}
                         onChange={e => update(plan.id, 'queryLimit', parseInt(e.target.value) || 1)}
-                        className="w-full rounded-md border border-slate-200 bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-yellow-400/40 dark:border-white/10"
+                        className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40 border-border"
                         placeholder="Ej: 50"
                       />
                     )}
                   </section>
 
                   <section>
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-500">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                       Links por carpeta mobile
                     </p>
-                    <label className="mb-3 flex cursor-pointer items-center gap-3 text-sm text-slate-600 dark:text-zinc-300">
+                    <label className="mb-3 flex cursor-pointer items-center gap-3 text-sm text-muted-foreground">
                       <input
                         type="checkbox"
                         checked={cfg.mobileScanFolderLimit === null}
                         onChange={() => update(plan.id, 'mobileScanFolderLimit', cfg.mobileScanFolderLimit === null ? 1 : null)}
-                        className="size-4 rounded accent-yellow-400"
+                        className="size-4 rounded accent-primary"
                       />
                       <span className="flex items-center gap-2">
                         <Infinity className="size-4" />
@@ -463,14 +463,14 @@ export default function PlanesPage() {
                         min={1}
                         value={cfg.mobileScanFolderLimit}
                         onChange={e => update(plan.id, 'mobileScanFolderLimit', parseInt(e.target.value) || 1)}
-                        className="w-full rounded-md border border-slate-200 bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-yellow-400/40 dark:border-white/10"
+                        className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40 border-border"
                         placeholder="Ej: 25"
                       />
                     )}
                   </section>
 
                   <section>
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-500">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                       Cupos de colaboradores
                     </p>
                     <input
@@ -478,7 +478,7 @@ export default function PlanesPage() {
                       min={0}
                       value={cfg.maxCollaborators ?? 0}
                       onChange={e => update(plan.id, 'maxCollaborators', parseInt(e.target.value, 10) || 0)}
-                      className="w-full rounded-md border border-slate-200 bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-yellow-400/40 dark:border-white/10"
+                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40 border-border"
                       placeholder="Ej: 10"
                     />
                     <p className="mt-1 text-xs text-muted-foreground">
@@ -486,7 +486,7 @@ export default function PlanesPage() {
                     </p>
                   </section>
 
-                  <section className="mt-auto flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-white/10 dark:bg-black">
+                  <section className="mt-auto flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 border-border bg-background">
                     <div>
                       <p className="flex items-center gap-2 text-sm font-semibold">
                         {cfg.visibleInLanding ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
@@ -497,16 +497,16 @@ export default function PlanesPage() {
                     <Switch
                       checked={cfg.visibleInLanding}
                       onCheckedChange={(checked) => update(plan.id, 'visibleInLanding', checked)}
-                      className="data-[state=checked]:bg-yellow-400"
+                      className="data-[state=checked]:bg-primary"
                     />
                   </section>
                 </div>
 
-                <footer className="border-t border-slate-200 p-5 dark:border-white/10">
+                <footer className="border-t border-slate-200 p-5 border-border">
                   <Button
                     onClick={() => handleSave(plan.id)}
                     disabled={isSaving}
-                    className="w-full bg-yellow-400 font-bold text-black hover:bg-yellow-300"
+                    className="w-full bg-primary font-bold text-black hover:bg-primary/90"
                   >
                     {isSaving ? (
                       <>

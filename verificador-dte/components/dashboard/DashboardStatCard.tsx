@@ -44,7 +44,7 @@ export function DashboardStatCard({
               <span
                 className={cn(
                   'flex size-9 shrink-0 items-center justify-center rounded-lg',
-                  iconClassName ?? 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400'
+                  iconClassName ?? 'bg-primary/15 text-primary'
                 )}
               >
                 <Icon className="size-4" />

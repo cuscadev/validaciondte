@@ -87,18 +87,18 @@ const sections = [
 
 export default function PrivacyPolicyPage() {
 	return (
-		<main className="min-h-screen bg-white text-slate-950 dark:bg-black dark:text-white">
+		<main className="min-h-screen bg-background text-foreground">
 			<PublicNavbar />
 
 			<section className="mx-auto w-full max-w-4xl px-4 pb-16 pt-28 sm:px-6 lg:px-8">
 				<div className="border-b border-slate-200 pb-8 dark:border-white/10">
-					<p className="text-sm font-semibold uppercase tracking-[0.22em] text-amber-600 dark:text-yellow-300">
+					<p className="text-sm font-semibold uppercase tracking-[0.22em] text-primary">
 						Kaiser DTE
 					</p>
 					<h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-5xl">
 						Politica de privacidad
 					</h1>
-					<p className="mt-4 text-base leading-7 text-slate-600 dark:text-zinc-300">
+					<p className="mt-4 text-base leading-7 text-muted-foreground">
 						Fecha de vigencia: 11 de junio de 2026.
 					</p>
 				</div>
@@ -106,13 +106,13 @@ export default function PrivacyPolicyPage() {
 				<div className="mt-10 space-y-10">
 					{sections.map((section) => (
 						<section key={section.title} className="space-y-4">
-							<h2 className="text-xl font-bold text-slate-950 dark:text-white">
+							<h2 className="text-xl font-bold text-foreground">
 								{section.title}
 							</h2>
 							{section.body.map((paragraph) => (
 								<p
 									key={paragraph}
-									className="text-base leading-8 text-slate-700 dark:text-zinc-300"
+									className="text-base leading-8 text-muted-foreground"
 								>
 									{paragraph}
 								</p>
@@ -121,15 +121,15 @@ export default function PrivacyPolicyPage() {
 					))}
 
 					<section className="space-y-4 border-t border-slate-200 pt-8 dark:border-white/10">
-						<h2 className="text-xl font-bold text-slate-950 dark:text-white">
+						<h2 className="text-xl font-bold text-foreground">
 							11. Contacto
 						</h2>
-						<p className="text-base leading-8 text-slate-700 dark:text-zinc-300">
+						<p className="text-base leading-8 text-muted-foreground">
 							Para consultas sobre privacidad, eliminacion de datos o la integracion
 							con Gmail, escriba a{' '}
 							<a
 								href="mailto:alexanderhernandz78@gmail.com"
-								className="font-semibold text-amber-700 underline-offset-4 hover:underline dark:text-yellow-300"
+								className="font-semibold text-primary underline-offset-4 hover:underline"
 							>
 								alexanderhernandz78@gmail.com
 							</a>
@@ -144,7 +144,7 @@ export default function PrivacyPolicyPage() {
 							</Link>
 							<Link
 								href="/"
-								className="rounded-md bg-yellow-400 px-4 py-2 text-sm font-bold text-black transition hover:bg-yellow-300"
+								className="rounded-md bg-primary px-4 py-2 text-sm font-bold text-primary-foreground transition hover:bg-primary/90"
 							>
 								Volver al inicio
 							</Link>

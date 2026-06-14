@@ -185,7 +185,7 @@ export default function FacturaExportacionPage() {
 
   if (!canUse) {
     return (
-      <main className="min-h-[calc(100vh-5rem)] bg-slate-50 p-4 text-slate-950 dark:bg-black dark:text-white">
+      <main className="min-h-[calc(100vh-5rem)] bg-slate-50 p-4 text-slate-950 bg-background text-foreground">
         <Card className="mx-auto max-w-xl">
           <CardHeader>
             <CardTitle>Acceso restringido</CardTitle>
@@ -197,18 +197,18 @@ export default function FacturaExportacionPage() {
   }
 
   return (
-    <main className="min-h-[calc(100vh-5rem)] bg-slate-50 text-slate-950 dark:bg-black dark:text-white">
+    <main className="min-h-[calc(100vh-5rem)] bg-background text-foreground">
       <section className="space-y-4">
-        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-950">
-          <p className="mb-2 text-sm font-semibold uppercase tracking-[0.22em] text-amber-600 dark:text-yellow-300">Facturacion electronica</p>
+        <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
+          <p className="mb-2 text-sm font-semibold uppercase tracking-[0.22em] text-primary text-primary">Facturacion electronica</p>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <h1 className="text-3xl font-extrabold tracking-tight">Factura de exportacion</h1>
-              <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600 dark:text-zinc-300">
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
                 Documento tipo 11 para ventas de bienes o servicios a clientes fuera de El Salvador con IVA tasa cero.
               </p>
             </div>
-            <Button disabled={loading || submitting} onClick={submitExportInvoice} className="h-11 bg-yellow-400 font-bold text-black hover:bg-yellow-300 lg:min-w-52">
+            <Button disabled={loading || submitting} onClick={submitExportInvoice} className="h-11 bg-primary font-bold text-black hover:bg-primary/90 lg:min-w-52">
               {submitting ? <><Loader2 className="size-4 animate-spin" /> Procesando</> : 'Firma y envio'}
             </Button>
           </div>
@@ -217,7 +217,7 @@ export default function FacturaExportacionPage() {
         {loading ? (
           <Card>
             <CardContent className="flex min-h-64 items-center justify-center">
-              <Loader2 className="size-7 animate-spin text-amber-600 dark:text-yellow-300" />
+              <Loader2 className="size-7 animate-spin text-primary text-primary" />
             </CardContent>
           </Card>
         ) : (
@@ -267,7 +267,7 @@ export default function FacturaExportacionPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 {items.map((line, index) => (
-                  <div key={index} className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 md:grid-cols-[7rem_minmax(0,1fr)_6rem_7rem_7rem_7rem_2.5rem] dark:border-white/10 dark:bg-black">
+                  <div key={index} className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 md:grid-cols-[7rem_minmax(0,1fr)_6rem_7rem_7rem_7rem_2.5rem] border-border bg-background">
                     <Field label="Codigo" value={line.codigo} onChange={(value) => updateLine(index, { codigo: value })} />
                     <Field label="Descripcion" value={line.descripcion} onChange={(value) => updateLine(index, { descripcion: value })} />
                     <NumberField label="Cantidad" value={line.cantidad} onChange={(value) => updateLine(index, { cantidad: value })} />
@@ -291,15 +291,15 @@ export default function FacturaExportacionPage() {
                       <NumberField label="Flete" value={flete} onChange={setFlete} />
                       <NumberField label="Seguro" value={seguro} onChange={setSeguro} />
                     </div>
-                    <label className="flex cursor-pointer items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm dark:border-white/10 dark:bg-black">
-                      <input type="checkbox" checked={transmitir} onChange={(event) => setTransmitir(event.target.checked)} className="size-4 accent-yellow-400" />
+                    <label className="flex cursor-pointer items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm border-border bg-background">
+                      <input type="checkbox" checked={transmitir} onChange={(event) => setTransmitir(event.target.checked)} className="size-4 accent-primary" />
                       <span>Transmitir a Hacienda test</span>
                     </label>
                     <Field label="Observaciones" value={observaciones} onChange={setObservaciones} />
                   </div>
                   <div>
                     <div className="mb-2 text-right text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Resumen del documento</div>
-                    <div className="overflow-hidden rounded-lg border border-slate-200 text-sm dark:border-white/10">
+                    <div className="overflow-hidden rounded-lg border border-slate-200 text-sm border-border">
                       <SummaryRow label="Total exportacion" value={money(subtotal)} />
                       <SummaryRow label="Flete" value={money(flete)} />
                       <SummaryRow label="Seguro" value={money(seguro)} />
@@ -339,9 +339,9 @@ function NumberField({ label, value, onChange }: { label: string; value: number;
 
 function SummaryRow({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_9rem] border-b border-slate-200 last:border-0 dark:border-white/10">
-      <div className={`bg-white px-3 py-2 text-right dark:bg-zinc-950 ${strong ? 'font-bold' : 'font-semibold'}`}>{label}</div>
-      <div className={`bg-slate-50 px-3 py-2 text-right dark:bg-black ${strong ? 'font-bold' : 'font-medium'}`}>{value}</div>
+    <div className="grid grid-cols-[minmax(0,1fr)_9rem] border-b border-slate-200 last:border-0 border-border">
+      <div className={`bg-white px-3 py-2 text-right bg-card ${strong ? 'font-bold' : 'font-semibold'}`}>{label}</div>
+      <div className={`bg-slate-50 px-3 py-2 text-right bg-background ${strong ? 'font-bold' : 'font-medium'}`}>{value}</div>
     </div>
   );
 }

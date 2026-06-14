@@ -53,7 +53,7 @@ export default function UploadFormSection({
   syncAccordionProcessing = true,
   submitLabel = 'Procesar',
   loadingLabel = 'Procesando…',
-  submitClassName = 'w-full bg-yellow-400 font-bold text-black hover:bg-yellow-300 sm:w-auto',
+  submitClassName = 'w-full bg-primary font-bold text-black hover:bg-primary/90 sm:w-auto',
   className,
 }: UploadFormSectionProps) {
   const accordion = useUploadFormAccordion();

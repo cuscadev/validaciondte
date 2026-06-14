@@ -14,7 +14,7 @@ const sizeClasses = {
 
 const toneClasses = {
   default:
-    'border-amber-500/25 border-t-amber-500 dark:border-yellow-400/25 dark:border-t-yellow-400 motion-reduce:border-t-amber-500',
+    'border-primary/25 border-t-primary motion-reduce:border-t-primary',
   onPrimary:
     'border-black/20 border-t-black dark:border-black/30 dark:border-t-black motion-reduce:border-t-black',
 } as const;

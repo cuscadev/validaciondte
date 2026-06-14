@@ -479,7 +479,7 @@ export default function QrPdfPage() {
       <main className="w-full max-w-full space-y-6 dark:bg-background">
             <form
               onSubmit={onSubmit}
-              className="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10"
+              className="overflow-hidden rounded-lg border border-border"
             >
               <UploadFormAccordion
                 accordionApiRef={accordionApiRef}
@@ -499,7 +499,7 @@ export default function QrPdfPage() {
               />
 
               {progress && (
-                <div className="rounded-md bg-yellow-100 p-3 text-sm text-yellow-900 dark:bg-yellow-400/15 dark:text-yellow-200">
+                <div className="rounded-md bg-primary/15 p-3 text-sm text-primary">
                   {progress}
                 </div>
               )}
@@ -509,52 +509,52 @@ export default function QrPdfPage() {
 
             <UploadResultsReveal visible={resultsVisible && data.length > 0}>
             <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-black">
-                <p className="text-xs text-slate-500 dark:text-zinc-400">
+              <div className="rounded-lg border border-border bg-background p-3">
+                <p className="text-xs text-slate-500 text-muted-foreground">
                   Total
                 </p>
 
-                <p className="font-bold text-slate-950 dark:text-white">
+                <p className="font-bold text-foreground">
                   {resumen.total}
                 </p>
               </div>
 
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-black">
-                <p className="text-xs text-slate-500 dark:text-zinc-400">
+              <div className="rounded-lg border border-border bg-background p-3">
+                <p className="text-xs text-slate-500 text-muted-foreground">
                   Procesados
                 </p>
 
-                <p className="font-bold text-slate-950 dark:text-white">
+                <p className="font-bold text-foreground">
                   {resumen.procesados}
                 </p>
               </div>
 
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-black">
-                <p className="text-xs text-slate-500 dark:text-zinc-400">
+              <div className="rounded-lg border border-border bg-background p-3">
+                <p className="text-xs text-slate-500 text-muted-foreground">
                   Errores
                 </p>
 
-                <p className="font-bold text-slate-950 dark:text-white">
+                <p className="font-bold text-foreground">
                   {resumen.errores}
                 </p>
               </div>
 
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-black">
-                <p className="text-xs text-slate-500 dark:text-zinc-400">
+              <div className="rounded-lg border border-border bg-background p-3">
+                <p className="text-xs text-slate-500 text-muted-foreground">
                   Admin factura
                 </p>
 
-                <p className="font-bold text-slate-950 dark:text-white">
+                <p className="font-bold text-foreground">
                   {resumen.admin}
                 </p>
               </div>
 
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-black">
-                <p className="text-xs text-slate-500 dark:text-zinc-400">
+              <div className="rounded-lg border border-border bg-background p-3">
+                <p className="text-xs text-slate-500 text-muted-foreground">
                   Webapp DTE
                 </p>
 
-                <p className="font-bold text-slate-950 dark:text-white">
+                <p className="font-bold text-foreground">
                   {resumen.webapp}
                 </p>
               </div>
@@ -612,10 +612,10 @@ export default function QrPdfPage() {
               }}
             />
 
-            <div className="overflow-hidden rounded-md border border-slate-200 dark:border-white/10">
+            <div className="overflow-hidden rounded-md border border-border">
               <div className="max-h-[60vh] overflow-auto">
                 <table className="w-full text-sm">
-                  <thead className="sticky top-0 z-10 bg-slate-100 text-slate-950 dark:bg-zinc-900 dark:text-zinc-100">
+                  <thead className="sticky top-0 z-10 bg-slate-100 text-slate-950 bg-card dark:text-zinc-100">
                     <tr>
                       {columnas.map((col) => (
                         <th
@@ -677,7 +677,7 @@ export default function QrPdfPage() {
                 </table>
               </div>
 
-              <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-black sm:flex-row">
+              <div className="flex flex-col items-center justify-between gap-3 border-t border-border bg-background px-3 py-2 sm:flex-row">
                 <span className="text-sm text-muted-foreground">
                   Página{' '}
                   <span className="font-medium text-foreground">

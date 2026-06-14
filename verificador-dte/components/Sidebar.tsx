@@ -70,8 +70,8 @@ function collapsedItemClass(active: boolean) {
   return cn(
     collapsedIconBtn,
     active
-      ? 'bg-yellow-400 text-black shadow-sm shadow-yellow-400/20'
-      : 'text-zinc-300 hover:bg-white/10 hover:text-white',
+      ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm shadow-primary/20'
+      : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground',
   );
 }
 
@@ -149,7 +149,7 @@ function SidebarSubmenuFlyout({
                 }}
                 className={
                   isActivePath(pathname, c.href)
-                    ? 'bg-yellow-400/10 text-yellow-700 dark:text-yellow-300'
+                    ? 'bg-sidebar-accent text-primary'
                     : ''
                 }
               >
@@ -164,7 +164,7 @@ function SidebarSubmenuFlyout({
 }
 
 const collapsedChevronBtn =
-  'mx-0.5 flex h-6 w-10 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-white/10 hover:text-white disabled:pointer-events-none disabled:opacity-25';
+  'mx-0.5 flex h-6 w-10 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/50 transition hover:bg-sidebar-accent hover:text-sidebar-foreground disabled:pointer-events-none disabled:opacity-25';
 
 function CollapsedNavRail({ children }: { children: React.ReactNode }) {
   const navRef = useRef<HTMLElement>(null);
@@ -687,13 +687,13 @@ export default function Sidebar({
   return (
     <div
       className={cn(
-        'flex h-full w-full flex-col bg-black text-white',
+        'flex h-full w-full flex-col bg-sidebar text-sidebar-foreground',
         collapsed ? 'px-2.5 py-3' : 'p-4',
       )}
     >
       <div
         className={cn(
-          'border-b border-white/10',
+          'border-b border-sidebar-border',
           collapsed ? 'mb-3 flex justify-center pb-3' : 'mb-6 pb-5',
         )}
       >
@@ -705,8 +705,8 @@ export default function Sidebar({
             className={cn(
               'transition',
               collapsed
-                ? 'relative mx-0.5 block size-10 shrink-0 overflow-hidden rounded-xl border border-white/15 bg-white/5 hover:bg-white/10'
-                : 'flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-white/10',
+                ? 'relative mx-0.5 block size-10 shrink-0 overflow-hidden rounded-xl border border-sidebar-border bg-sidebar-accent hover:bg-sidebar-accent/80'
+                : 'flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-sidebar-accent',
             )}
             title={collapsed ? undefined : brandName}
           >
@@ -810,8 +810,8 @@ export default function Sidebar({
                 className={cn(
                   'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition',
                   active
-                    ? 'bg-yellow-400 text-black shadow-sm shadow-yellow-400/20'
-                    : 'text-zinc-300 hover:bg-white/10 hover:text-white',
+                    ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm shadow-primary/20'
+                    : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground',
                 )}
               >
                 <Icon className="h-5 w-5 shrink-0" />
@@ -831,8 +831,8 @@ export default function Sidebar({
                 onClick={() => toggleOpen(href)}
                 className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-sm font-medium transition ${
                   active
-                    ? 'bg-yellow-400 text-black shadow-sm shadow-yellow-400/20'
-                    : 'text-zinc-300 hover:bg-white/10 hover:text-white'
+                    ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm shadow-primary/20'
+                    : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -848,7 +848,7 @@ export default function Sidebar({
               </button>
 
               {isOpen && (
-                <div className="ml-4 mt-2 space-y-1 border-l border-yellow-400/30 pl-3">
+                <div className="ml-4 mt-2 space-y-1 border-l border-primary/30 pl-3">
                   {children.map((c) => {
                     const childActive = isActivePath(
                       pathname,
@@ -865,14 +865,14 @@ export default function Sidebar({
                         }
                         className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition ${
                           childActive
-                            ? 'text-yellow-300'
-                            : 'text-zinc-300 hover:bg-yellow-400/10 hover:text-yellow-200'
+                            ? 'text-primary'
+                            : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-primary'
                         }`}
                       >
                         <span
                           className={`h-2 w-2 rounded-full transition ${
                             childActive
-                              ? 'bg-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.7)]'
+                              ? 'bg-primary shadow-[0_0_10px_rgba(0,209,255,0.7)]'
                               : 'bg-white/20'
                           }`}
                           aria-hidden

@@ -314,7 +314,7 @@ export default function VerificarPorCodigoYFechaPage() {
       case 'EMITIDO':
         return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200'
       case 'ANULADO':
-        return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200'
+        return 'bg-primary/15 text-primary bg-primary/15 text-primary'
       case 'RECHAZADO':
         return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200'
       case 'INVALIDADO':
@@ -327,7 +327,7 @@ export default function VerificarPorCodigoYFechaPage() {
   return (
     <PlanGate routeKey={accessRouteKey}>
     <main className="w-full max-w-full space-y-6">
-          <form onSubmit={onSubmit} className="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10">
+          <form onSubmit={onSubmit} className="overflow-hidden rounded-lg border border-border">
             <UploadFormAccordion
               accordionApiRef={accordionApiRef}
               onResultsReveal={onResultsReveal}
@@ -421,10 +421,10 @@ export default function VerificarPorCodigoYFechaPage() {
             }}
           />
 
-          <div className="overflow-hidden rounded-md border border-slate-200 dark:border-white/10">
+          <div className="overflow-hidden rounded-md border border-border">
             <div className="max-h-[60vh] overflow-auto">
               <table className="w-full text-sm">
-                <thead className="sticky top-0 z-10 bg-slate-100 text-slate-950 backdrop-blur supports-[backdrop-filter]:bg-slate-100/90 dark:bg-zinc-900 dark:text-zinc-100">
+                <thead className="sticky top-0 z-10 bg-slate-100 text-slate-950 backdrop-blur supports-[backdrop-filter]:bg-slate-100/90 bg-card dark:text-zinc-100">
                   <tr>
                     {columnas.map(col => (
                       <th
@@ -508,7 +508,7 @@ export default function VerificarPorCodigoYFechaPage() {
               </table>
             </div>
 
-            <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-black sm:flex-row">
+            <div className="flex flex-col items-center justify-between gap-3 border-t border-border bg-background px-3 py-2 sm:flex-row">
               <span className="text-sm text-muted-foreground">
                 Página <span className="font-medium text-foreground">{currentPage}</span> de {totalPages}
               </span>

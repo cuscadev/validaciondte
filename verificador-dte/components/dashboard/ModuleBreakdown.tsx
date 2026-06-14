@@ -81,7 +81,7 @@ export function ModuleBreakdown({ byModule, loading, className }: ModuleBreakdow
                     className="flex flex-col gap-2 rounded-xl border border-border/60 bg-muted/15 p-3"
                   >
                     <div className="flex items-start gap-2">
-                      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 text-amber-600 dark:text-yellow-400">
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
                         <Icon className="size-4" />
                       </span>
                       <div className="min-w-0 flex-1">

@@ -179,7 +179,7 @@ export default function RegisterPage() {
 	};
 
 	return (
-		<main className="relative min-h-screen overflow-x-hidden bg-slate-50 text-slate-950 dark:bg-black dark:text-white">
+		<main className="relative min-h-screen overflow-x-hidden bg-background text-foreground">
 			<div className="fixed left-0 top-0 z-30 w-full">
 				<PublicNavbar />
 			</div>
@@ -190,7 +190,7 @@ export default function RegisterPage() {
 
 			<section className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl items-center justify-center px-4 pb-8 pt-24 sm:px-6 sm:pt-28 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(26rem,32rem)] lg:items-center lg:gap-16 lg:px-12 xl:gap-24 xl:px-16">
 				<div className="hidden w-full max-w-2xl lg:block lg:pl-4 xl:pl-8">
-					<p className="mb-5 text-sm font-semibold uppercase tracking-[0.32em] text-amber-500 dark:text-yellow-300">
+					<p className="mb-5 text-sm font-semibold uppercase tracking-[0.32em] text-primary">
 						SOLICITUD DE ACCESO
 					</p>
 
@@ -198,48 +198,48 @@ export default function RegisterPage() {
 						Activa tu espacio para verificar y gestionar DTE.
 					</h1>
 
-					<p className="mt-6 max-w-xl text-lg leading-7 text-slate-600 dark:text-zinc-300">
+					<p className="mt-6 max-w-xl text-lg leading-7 text-muted-foreground">
 						Completa tus datos y revisaremos la solicitud para habilitar una cuenta segura para tu equipo.
 					</p>
 
 					<div className="mt-10 space-y-4">
 						<div className="flex gap-4 rounded-xl border border-slate-200 bg-white/75 p-5 shadow-sm backdrop-blur dark:border-white/10 dark:bg-zinc-950/70">
-							<ClipboardCheck className="mt-1 size-6 shrink-0 text-amber-500 dark:text-yellow-300" />
+							<ClipboardCheck className="mt-1 size-6 shrink-0 text-primary" />
 
 							<div>
-								<h2 className="font-bold text-slate-950 dark:text-white">
+								<h2 className="font-bold text-foreground">
 									1. Envia tu solicitud
 								</h2>
 
-								<p className="text-sm leading-6 text-slate-600 dark:text-zinc-300">
+								<p className="text-sm leading-6 text-muted-foreground">
 									Registramos tus datos de contacto y el contexto de uso.
 								</p>
 							</div>
 						</div>
 
 						<div className="flex gap-4 rounded-xl border border-slate-200 bg-white/75 p-5 shadow-sm backdrop-blur dark:border-white/10 dark:bg-zinc-950/70">
-							<ShieldCheck className="mt-1 size-6 shrink-0 text-amber-500 dark:text-yellow-300" />
+							<ShieldCheck className="mt-1 size-6 shrink-0 text-primary" />
 
 							<div>
-								<h2 className="font-bold text-slate-950 dark:text-white">
+								<h2 className="font-bold text-foreground">
 									2. Validamos el acceso
 								</h2>
 
-								<p className="text-sm leading-6 text-slate-600 dark:text-zinc-300">
+								<p className="text-sm leading-6 text-muted-foreground">
 									El equipo administrador revisa la solicitud y asigna permisos.
 								</p>
 							</div>
 						</div>
 
 						<div className="flex gap-4 rounded-xl border border-slate-200 bg-white/75 p-5 shadow-sm backdrop-blur dark:border-white/10 dark:bg-zinc-950/70">
-							<FileText className="mt-1 size-6 shrink-0 text-amber-500 dark:text-yellow-300" />
+							<FileText className="mt-1 size-6 shrink-0 text-primary" />
 
 							<div>
-								<h2 className="font-bold text-slate-950 dark:text-white">
+								<h2 className="font-bold text-foreground">
 									3. Empiezas a operar
 								</h2>
 
-								<p className="text-sm leading-6 text-slate-600 dark:text-zinc-300">
+								<p className="text-sm leading-6 text-muted-foreground">
 									Accede a validaciones, reportes y conciliaciones desde un solo lugar.
 								</p>
 							</div>
@@ -249,7 +249,7 @@ export default function RegisterPage() {
 
 				<Card className="mx-auto w-full max-w-lg rounded-2xl border border-slate-200 bg-white/90 text-slate-950 shadow-2xl shadow-black/20 backdrop-blur dark:border-white/10 dark:bg-zinc-950/90 dark:text-white dark:shadow-black/40">
 					<CardHeader className="space-y-4 p-5 sm:p-6">
-						<div className="flex size-12 items-center justify-center rounded-xl bg-yellow-400 text-black shadow-lg shadow-yellow-500/20 sm:size-14">
+						<div className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20 sm:size-14">
 							<UserPlus className="size-6 sm:size-7" />
 						</div>
 
@@ -258,7 +258,7 @@ export default function RegisterPage() {
 								{t('registerTitle')}
 							</CardTitle>
 
-							<CardDescription className="mt-2 text-sm leading-6 text-slate-600 dark:text-zinc-300">
+							<CardDescription className="mt-2 text-sm leading-6 text-muted-foreground">
 								{t('registerDescription')}
 							</CardDescription>
 						</div>
@@ -383,7 +383,7 @@ export default function RegisterPage() {
 											type="button"
 											onClick={handleResendCode}
 											disabled={loading}
-											className="text-left font-semibold text-amber-600 transition hover:text-amber-500 disabled:cursor-not-allowed disabled:opacity-60 dark:text-yellow-300 dark:hover:text-yellow-200 sm:text-right"
+											className="text-left font-semibold text-primary transition hover:text-primary/80 disabled:cursor-not-allowed disabled:opacity-60 sm:text-right"
 										>
 											Reenviar codigo
 										</button>
@@ -405,7 +405,7 @@ export default function RegisterPage() {
 
 							<Button
 								type="submit"
-								className="h-12 w-full rounded-xl bg-yellow-400 font-bold text-black hover:bg-yellow-300"
+								className="h-12 w-full rounded-xl bg-primary font-bold text-primary-foreground hover:bg-primary/90"
 								disabled={loading}
 							>
 								{loading
@@ -423,7 +423,7 @@ export default function RegisterPage() {
 						<div className="mt-6 text-center text-sm text-slate-500 dark:text-zinc-400">
 							<Link
 								href="/login"
-								className="font-semibold text-amber-500 hover:text-amber-400 dark:text-yellow-300 dark:hover:text-yellow-200"
+								className="font-semibold text-primary hover:text-primary/80"
 							>
 								{t('loginLink')}
 							</Link>

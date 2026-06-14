@@ -38,7 +38,7 @@ export function DashboardMetricsRow({
         value={totals?.records ?? 0}
         subtitle={`${totals?.processes ?? 0} procesos`}
         icon={FileStack}
-        iconClassName="bg-yellow-500/15 text-yellow-600 dark:text-yellow-400"
+        iconClassName="bg-primary/15 text-primary"
         loading={showSkeleton}
         className={cn(metricCardClass, bento && 'lg:col-start-1 lg:row-start-2')}
       />
@@ -76,7 +76,7 @@ export function DashboardMetricsRow({
     return (
       <FadeIn delay={0.05} className={cn('flex flex-col gap-3 lg:contents', className)}>
         <div className="flex items-center justify-between gap-3 lg:col-span-4 lg:col-start-1 lg:row-start-1">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-600 dark:text-yellow-300">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
             Actividad
           </p>
           <Button
@@ -102,7 +102,7 @@ export function DashboardMetricsRow({
     <FadeIn delay={0.05} className={className}>
       <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-600 dark:text-yellow-300">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
             Actividad
           </p>
           <Button

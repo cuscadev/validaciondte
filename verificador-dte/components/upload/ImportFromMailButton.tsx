@@ -150,7 +150,7 @@ export default function ImportFromMailButton({ tiposDte, onImport, disabled }: P
         <div className="space-y-4">
           <div>
             <h3 className="text-lg font-bold">Importar JSON desde correo</h3>
-            <p className="text-sm text-slate-600 dark:text-zinc-300">
+            <p className="text-sm text-muted-foreground">
               Documentos sincronizados desde Gmail o IMAP.
               {tiposDte?.length ? ` Solo tipos DTE ${tiposDte.join(', ')}.` : ''}
             </p>
@@ -193,7 +193,7 @@ export default function ImportFromMailButton({ tiposDte, onImport, disabled }: P
             </Button>
           </div>
 
-          <div className="max-h-[50vh] overflow-auto rounded-lg border border-slate-200 dark:border-white/10">
+          <div className="max-h-[50vh] overflow-auto rounded-lg border border-border">
             {loading ? (
               <div className="flex items-center justify-center gap-2 py-12 text-sm text-slate-500">
                 <Loader2 className="size-4 animate-spin" />
@@ -206,7 +206,7 @@ export default function ImportFromMailButton({ tiposDte, onImport, disabled }: P
                     <th className="px-3 py-2">
                       <input
                         type="checkbox"
-                        className="size-4 accent-amber-500"
+                        className="size-4 accent-primary"
                         checked={documents.length > 0 && selectedIds.size === documents.length}
                         onChange={toggleAll}
                         aria-label="Seleccionar todos"
@@ -229,7 +229,7 @@ export default function ImportFromMailButton({ tiposDte, onImport, disabled }: P
                       <td className="px-3 py-2">
                         <input
                           type="checkbox"
-                          className="size-4 accent-amber-500"
+                          className="size-4 accent-primary"
                           checked={selectedIds.has(doc.id)}
                           onChange={() => toggle(doc.id)}
                           onClick={(e) => e.stopPropagation()}
@@ -255,7 +255,7 @@ export default function ImportFromMailButton({ tiposDte, onImport, disabled }: P
                 </tbody>
               </table>
             ) : (
-              <div className="flex flex-col items-center gap-2 px-6 py-12 text-center text-sm text-slate-600 dark:text-zinc-300">
+              <div className="flex flex-col items-center gap-2 px-6 py-12 text-center text-sm text-muted-foreground">
                 <Inbox className="size-6 text-slate-400" />
                 <p>No hay documentos importados desde el correo para estos filtros.</p>
                 <p className="text-xs text-slate-500 dark:text-zinc-400">

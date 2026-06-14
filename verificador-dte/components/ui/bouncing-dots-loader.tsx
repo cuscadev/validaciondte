@@ -34,7 +34,7 @@ export function BouncingDotsLoader({
         <span
           key={index}
           className={cn(
-            'bouncing-dot rounded-full bg-yellow-400 dark:bg-yellow-300',
+            'bouncing-dot rounded-full bg-primary',
             dotSizeClasses[size]
           )}
         />

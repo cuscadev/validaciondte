@@ -26,13 +26,13 @@ export function DashboardUsersRow({
     <FadeIn delay={0.06}>
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-600 dark:text-yellow-300">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
             {scopeLabel}
           </p>
           {users?.scope === 'organization' ? (
             <Link
               href={manageHref}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 hover:underline dark:text-yellow-400"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
             >
               Gestionar usuarios
               <ArrowRight className="size-3.5" />
@@ -40,7 +40,7 @@ export function DashboardUsersRow({
           ) : users?.scope === 'platform' ? (
             <Link
               href={manageHref}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 hover:underline dark:text-yellow-400"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
             >
               Ver todos los usuarios
               <ArrowRight className="size-3.5" />
@@ -54,7 +54,7 @@ export function DashboardUsersRow({
             value={users?.total ?? 0}
             subtitle={users?.label ?? 'Miembros registrados'}
             icon={Users}
-            iconClassName="bg-slate-500/15 text-slate-700 dark:text-slate-300"
+            iconClassName="bg-slate-500/15 text-muted-foreground"
             loading={showSkeleton}
           />
           <DashboardStatCard

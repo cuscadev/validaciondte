@@ -280,7 +280,7 @@ export default function ConsultaLotesJSONPage() {
               </Card>
               <Card>
                 <CardHeader className="pb-2"><CardTitle className="text-sm">Errores</CardTitle></CardHeader>
-                <CardContent className="text-2xl font-semibold text-amber-600">{totals.errores}</CardContent>
+                <CardContent className="text-2xl font-semibold text-primary">{totals.errores}</CardContent>
               </Card>
             </section>
 

@@ -52,35 +52,35 @@ export default function PricingSection() {
     <section
       id="planes"
       aria-labelledby="pricing-title"
-      className="relative z-10 w-full border-t border-slate-200 bg-slate-100 px-4 py-16 sm:px-6 md:px-10 md:py-20 lg:px-16 dark:border-white/10 dark:bg-zinc-950"
+      className="relative z-10 w-full border-t border-border bg-muted px-4 py-16 sm:px-6 md:px-10 md:py-20 lg:px-16"
     >
       <div className="mx-auto max-w-6xl">
         <FadeIn className="mx-auto max-w-3xl text-center" inView y={34} viewportAmount={0.45}>
-          <p className="mb-3 flex items-center justify-center gap-2 text-sm font-semibold uppercase tracking-[0.24em] text-amber-600 dark:text-yellow-300">
+          <p className="mb-3 flex items-center justify-center gap-2 text-sm font-semibold uppercase tracking-[0.24em] text-primary">
             <Sparkles className="size-4" />
             Planes
           </p>
           <h2 id="pricing-title" className="text-3xl font-bold md:text-5xl">
             Elige el acceso que necesita tu operacion
           </h2>
-          <p className="mt-5 text-base leading-7 text-slate-600 dark:text-zinc-300">
+          <p className="mt-5 text-base leading-7 text-muted-foreground">
             Compara herramientas incluidas, limites de consulta y opciones de crecimiento para tu flujo DTE.
           </p>
         </FadeIn>
 
         {loading ? (
-          <div className="mt-12 rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-600 shadow-sm dark:border-white/10 dark:bg-black dark:text-zinc-300">
+          <div className="mt-12 rounded-xl border border-border bg-card p-8 text-center text-muted-foreground shadow-sm">
             Cargando planes...
           </div>
         ) : visiblePlans.length === 0 ? (
-          <div className="mx-auto mt-12 max-w-xl rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm dark:border-white/10 dark:bg-black">
+          <div className="mx-auto mt-12 max-w-xl rounded-xl border border-border bg-card p-8 text-center shadow-sm">
             <h3 className="text-xl font-bold">Planes proximamente disponibles</h3>
-            <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-zinc-300">
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">
               Estamos preparando las opciones de acceso. Puedes solicitar una cuenta y te contactaremos.
             </p>
             <Link
               href="/signup"
-              className="mt-6 inline-flex items-center justify-center gap-2 rounded-md bg-yellow-400 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-yellow-300"
+              className="mt-6 inline-flex items-center justify-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition hover:bg-primary/90"
             >
               Solicitar acceso
               <ArrowRight className="size-4" />
@@ -100,8 +100,8 @@ export default function PricingSection() {
                   className={[
                     'relative flex min-h-full flex-col rounded-xl border p-6 shadow-sm',
                     featured
-                      ? 'border-yellow-300 bg-yellow-300 text-black dark:border-yellow-300 dark:bg-yellow-300'
-                      : 'border-slate-200 bg-white text-slate-950 dark:border-white/10 dark:bg-black dark:text-white',
+                      ? 'border-primary bg-primary text-primary-foreground'
+                      : 'border-border bg-card text-foreground',
                   ].join(' ')}
                   inView
                   y={36}
@@ -110,12 +110,12 @@ export default function PricingSection() {
                   viewportAmount={0.35}
                 >
                   {meta.badge && (
-                    <span className={`absolute right-5 top-5 rounded-full px-3 py-1 text-xs font-bold ${featured ? 'bg-black text-white' : 'bg-yellow-400 text-black'}`}>
+                    <span className={`absolute right-5 top-5 rounded-full px-3 py-1 text-xs font-bold ${featured ? 'bg-primary-foreground text-background' : 'bg-primary text-primary-foreground'}`}>
                       {meta.badge}
                     </span>
                   )}
 
-                  <h3 className={`text-xl font-bold ${featured ? 'text-black' : 'text-amber-600 dark:text-yellow-300'}`}>
+                  <h3 className={`text-xl font-bold ${featured ? 'text-primary-foreground' : 'text-primary'}`}>
                     {meta.label}
                   </h3>
 
@@ -124,13 +124,13 @@ export default function PricingSection() {
                       {price === 0 ? 'Gratis' : `${cfg.currency ?? 'USD'} ${price.toFixed(2)}`}
                     </span>
                     {price > 0 && (
-                      <span className={`mb-1 text-sm ${featured ? 'text-zinc-800' : 'text-slate-500 dark:text-zinc-400'}`}>
+                      <span className={`mb-1 text-sm ${featured ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
                         {cycleLabel(cfg.billingCycle)}
                       </span>
                     )}
                   </div>
 
-                  <div className={`mt-6 flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${featured ? 'bg-black/10 text-black' : 'bg-slate-50 text-slate-700 dark:bg-zinc-950 dark:text-zinc-300'}`}>
+                  <div className={`mt-6 flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${featured ? 'bg-primary-foreground/10 text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
                     {cfg.queryLimit === null ? (
                       <>
                         <Infinity className="size-4" />
@@ -145,7 +145,7 @@ export default function PricingSection() {
                   </div>
 
                   <div className="mt-6 flex flex-1 flex-col gap-2">
-                    <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${featured ? 'text-zinc-800' : 'text-slate-500 dark:text-zinc-500'}`}>
+                    <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${featured ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
                       Herramientas incluidas
                     </p>
                     {Object.entries(VERIFICADOR_ROUTES).map(([key, label]) => {
@@ -153,9 +153,9 @@ export default function PricingSection() {
                       return (
                         <div
                           key={key}
-                          className={`flex items-center gap-2 text-sm ${included ? '' : featured ? 'text-black/45 line-through' : 'text-slate-400 line-through dark:text-zinc-600'}`}
+                          className={`flex items-center gap-2 text-sm ${included ? '' : featured ? 'text-primary-foreground/45 line-through' : 'text-muted-foreground/50 line-through'}`}
                         >
-                          <Check className={`size-4 shrink-0 ${included ? featured ? 'text-black' : 'text-emerald-500' : 'opacity-30'}`} />
+                          <Check className={`size-4 shrink-0 ${included ? featured ? 'text-primary-foreground' : 'text-brand-success' : 'opacity-30'}`} />
                           {label}
                         </div>
                       );
@@ -166,8 +166,8 @@ export default function PricingSection() {
                     href={`/signup?plan=${encodeURIComponent(planId)}`}
                     className={`mt-8 inline-flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-bold transition ${
                       featured
-                        ? 'bg-black text-white hover:bg-zinc-800'
-                        : 'bg-yellow-400 text-black hover:bg-yellow-300'
+                        ? 'bg-primary-foreground text-background hover:bg-primary-foreground/90'
+                        : 'bg-primary text-primary-foreground hover:bg-primary/90'
                     }`}
                   >
                     {price === 0 ? 'Empezar gratis' : 'Solicitar acceso'}

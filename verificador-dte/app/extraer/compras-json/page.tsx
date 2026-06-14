@@ -490,7 +490,7 @@ export default function ComprasJsonPage() {
       <main className="w-full max-w-full space-y-6 dark:bg-background">
             <form
               onSubmit={onSubmit}
-              className="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10"
+              className="overflow-hidden rounded-lg border border-border"
             >
               <UploadFormAccordion
                 accordionApiRef={accordionApiRef}
@@ -520,45 +520,45 @@ export default function ComprasJsonPage() {
 
             <UploadResultsReveal visible={resultsVisible && data.length > 0}>
             <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-black">
-                <p className="text-xs text-slate-500 dark:text-zinc-400">
+              <div className="rounded-lg border border-border bg-background p-3">
+                <p className="text-xs text-slate-500 text-muted-foreground">
                   Exenta
                 </p>
-                <p className="font-bold text-slate-950 dark:text-white">
+                <p className="font-bold text-foreground">
                   {fmt(resumen.exenta)}
                 </p>
               </div>
 
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-black">
-                <p className="text-xs text-slate-500 dark:text-zinc-400">
+              <div className="rounded-lg border border-border bg-background p-3">
+                <p className="text-xs text-slate-500 text-muted-foreground">
                   Gravado
                 </p>
-                <p className="font-bold text-slate-950 dark:text-white">
+                <p className="font-bold text-foreground">
                   {fmt(resumen.gravado)}
                 </p>
               </div>
 
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-black">
-                <p className="text-xs text-slate-500 dark:text-zinc-400">IVA</p>
-                <p className="font-bold text-slate-950 dark:text-white">
+              <div className="rounded-lg border border-border bg-background p-3">
+                <p className="text-xs text-slate-500 text-muted-foreground">IVA</p>
+                <p className="font-bold text-foreground">
                   {fmt(resumen.iva)}
                 </p>
               </div>
 
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-black">
-                <p className="text-xs text-slate-500 dark:text-zinc-400">
+              <div className="rounded-lg border border-border bg-background p-3">
+                <p className="text-xs text-slate-500 text-muted-foreground">
                   Percepción
                 </p>
-                <p className="font-bold text-slate-950 dark:text-white">
+                <p className="font-bold text-foreground">
                   {fmt(resumen.percepcion)}
                 </p>
               </div>
 
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-black">
-                <p className="text-xs text-slate-500 dark:text-zinc-400">
+              <div className="rounded-lg border border-border bg-background p-3">
+                <p className="text-xs text-slate-500 text-muted-foreground">
                   Total pagar
                 </p>
-                <p className="font-bold text-slate-950 dark:text-white">
+                <p className="font-bold text-foreground">
                   {fmt(resumen.total)}
                 </p>
               </div>
@@ -612,10 +612,10 @@ export default function ComprasJsonPage() {
               }}
             />
 
-            <div className="overflow-hidden rounded-md border border-slate-200 dark:border-white/10">
+            <div className="overflow-hidden rounded-md border border-border">
               <div className="max-h-[60vh] overflow-auto">
                 <table className="w-full text-sm">
-                  <thead className="sticky top-0 z-10 bg-slate-100 text-slate-950 dark:bg-zinc-900 dark:text-zinc-100">
+                  <thead className="sticky top-0 z-10 bg-slate-100 text-slate-950 bg-card dark:text-zinc-100">
                     <tr>
                       {columnas.map((col) => (
                         <th
@@ -661,7 +661,7 @@ export default function ComprasJsonPage() {
                 </table>
               </div>
 
-              <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-black sm:flex-row">
+              <div className="flex flex-col items-center justify-between gap-3 border-t border-border bg-background px-3 py-2 sm:flex-row">
                 <span className="text-sm text-muted-foreground">
                   Página{' '}
                   <span className="font-medium text-foreground">

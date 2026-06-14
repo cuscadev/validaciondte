@@ -100,7 +100,7 @@ export default function EmailDocumentResultsTabs({
   return (
     <div className="space-y-0">
       <div
-        className="flex gap-1 overflow-x-auto border-b border-slate-200 dark:border-white/10"
+        className="flex gap-1 overflow-x-auto border-b border-border"
         role="tablist"
         aria-label="Resultados de importacion"
       >
@@ -115,8 +115,8 @@ export default function EmailDocumentResultsTabs({
               onClick={() => setActiveTab(tab.id)}
               className={`flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-semibold transition-colors ${
                 active
-                  ? 'border-amber-500 text-amber-700 dark:border-yellow-400 dark:text-yellow-300'
-                  : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
               {tab.id === 'hacienda' ? (
@@ -129,14 +129,14 @@ export default function EmailDocumentResultsTabs({
                 <span
                   className={`rounded-full px-2 py-0.5 text-xs font-bold ${
                     active
-                      ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200'
-                      : 'bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-300'
+                      ? 'bg-primary/15 text-primary'
+                      : 'bg-muted text-muted-foreground'
                   }`}
                 >
                   {tab.count}
                 </span>
               ) : verifyLoading && tab.id === 'hacienda' ? (
-                <Loader2 className="size-3.5 animate-spin text-amber-600 dark:text-yellow-300" />
+                <Loader2 className="size-3.5 animate-spin text-primary" />
               ) : null}
             </button>
           );
@@ -180,7 +180,7 @@ export default function EmailDocumentResultsTabs({
               <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-14 text-center dark:border-white/10 dark:bg-zinc-900/30">
                 <FileStack className="mx-auto mb-3 size-8 text-slate-400" />
                 <p className="font-medium text-slate-900 dark:text-white">{emptyCatalogTitle}</p>
-                <p className="mt-2 text-sm text-slate-600 dark:text-zinc-300">
+                <p className="mt-2 text-sm text-muted-foreground">
                   {emptyCatalogDescription}
                 </p>
               </div>
@@ -234,7 +234,7 @@ export default function EmailDocumentResultsTabs({
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-sm text-slate-600 dark:text-zinc-300">
+                  <p className="text-sm text-muted-foreground">
                     Sin documentos vinculados.
                   </p>
                 )}
@@ -257,7 +257,7 @@ export default function EmailDocumentResultsTabs({
                 <p className="font-medium text-slate-900 dark:text-white">
                   Sin verificaciones en Hacienda
                 </p>
-                <p className="mt-2 text-sm text-slate-600 dark:text-zinc-300">
+                <p className="mt-2 text-sm text-muted-foreground">
                   Selecciona documentos en la pestana Correos importados y pulsa Verificar JSON.
                 </p>
               </div>

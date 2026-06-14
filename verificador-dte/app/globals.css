@@ -39,6 +39,9 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-brand-success: var(--brand-success);
+  --color-brand-purple: var(--brand-purple);
+  --color-brand-orange: var(--brand-orange);
   --font-sans: var(--app-font-family, ui-sans-serif, system-ui, sans-serif);
 }
 
@@ -118,6 +121,61 @@
   color: oklch(0.985 0 0);
 }
 
+/* NovaFact palette — scoped to private authenticated views */
+.private-app {
+  --brand-success: #10b981;
+  --brand-purple: #8b5cf6;
+  --brand-orange: #f59e0b;
+  --primary: #00d1ff;
+  --primary-foreground: #0f1419;
+  --ring: #00d1ff66;
+  --sidebar-primary: #00d1ff;
+  --sidebar-primary-foreground: #0f1419;
+  --sidebar-accent: rgb(0 209 255 / 0.1);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-ring: #00d1ff66;
+}
+
+.private-app.dark {
+  --background: #1e2227;
+  --foreground: #ffffff;
+  --card: #24292e;
+  --card-foreground: #ffffff;
+  --popover: #24292e;
+  --popover-foreground: #ffffff;
+  --primary: #00d1ff;
+  --primary-foreground: #0f1419;
+  --secondary: #2d3339;
+  --secondary-foreground: #ffffff;
+  --muted: #2d3339;
+  --muted-foreground: #9ca3af;
+  --accent: rgb(0 209 255 / 0.1);
+  --accent-foreground: #ffffff;
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: rgb(255 255 255 / 10%);
+  --input: rgb(255 255 255 / 15%);
+  --ring: #00d1ff66;
+  --chart-1: #00d1ff;
+  --chart-2: #10b981;
+  --chart-3: #8b5cf6;
+  --chart-4: #f59e0b;
+  --chart-5: #9ca3af;
+  --sidebar: #1a1e23;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #00d1ff;
+  --sidebar-primary-foreground: #0f1419;
+  --sidebar-accent: rgb(0 209 255 / 0.1);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgb(255 255 255 / 10%);
+  --sidebar-ring: #00d1ff66;
+  color-scheme: dark;
+}
+
+.private-app.dark select option {
+  background-color: #24292e;
+  color: #ffffff;
+}
+
 @keyframes brand-loader-spin {
   to {
     transform: rotate(360deg);
@@ -164,8 +222,8 @@
     background-color: rgb(248 250 252);
   }
   50% {
-    border-color: rgb(250 204 21 / 0.55);
-    background-color: rgb(254 252 232 / 0.45);
+    border-color: rgb(0 209 255 / 0.55);
+    background-color: rgb(0 209 255 / 0.08);
   }
 }
 
@@ -173,11 +231,11 @@
   0%,
   100% {
     border-color: rgb(255 255 255 / 0.15);
-    background-color: rgb(0 0 0);
+    background-color: #1e2227;
   }
   50% {
-    border-color: rgb(250 204 21 / 0.45);
-    background-color: rgb(250 204 21 / 0.08);
+    border-color: rgb(0 209 255 / 0.45);
+    background-color: rgb(0 209 255 / 0.08);
   }
 }
 
@@ -185,7 +243,8 @@
   animation: dropzone-empty-pulse 2.4s ease-in-out infinite;
 }
 
-.dark .dropzone-empty-pulse {
+.dark .dropzone-empty-pulse,
+.private-app.dark .dropzone-empty-pulse {
   animation-name: dropzone-empty-pulse-dark;
 }
 

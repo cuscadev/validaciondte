@@ -133,7 +133,7 @@ export default function LandingVisitorsPage() {
       <section className="rounded-lg border bg-background p-5 shadow-sm">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-yellow-600">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">
               Monitoreo
             </p>
             <h1 className="mt-1 text-2xl font-semibold tracking-tight">
@@ -157,7 +157,7 @@ export default function LandingVisitorsPage() {
             <CardTitle className="text-sm">Ingresos historicos</CardTitle>
           </CardHeader>
           <CardContent className="flex items-center gap-2 text-2xl font-semibold">
-            <MousePointerClick className="size-5 text-yellow-500" />
+            <MousePointerClick className="size-5 text-primary" />
             {totals.total}
           </CardContent>
         </Card>
@@ -168,7 +168,7 @@ export default function LandingVisitorsPage() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2 text-2xl font-semibold">
-              <Activity className="size-5 text-yellow-500" />
+              <Activity className="size-5 text-primary" />
               {totals.today}
             </div>
             <div className="mt-1 text-xs text-muted-foreground">
@@ -182,7 +182,7 @@ export default function LandingVisitorsPage() {
             <CardTitle className="text-sm">Rango visible</CardTitle>
           </CardHeader>
           <CardContent className="flex items-center gap-2 text-2xl font-semibold">
-            <CalendarDays className="size-5 text-yellow-500" />
+            <CalendarDays className="size-5 text-primary" />
             {totals.period}
           </CardContent>
         </Card>
@@ -270,7 +270,7 @@ export default function LandingVisitorsPage() {
                         <Badge
                           className={
                             day.date === todayKey
-                              ? 'bg-yellow-400 text-black'
+                              ? 'bg-primary text-primary-foreground'
                               : 'bg-slate-200 text-slate-900'
                           }
                         >

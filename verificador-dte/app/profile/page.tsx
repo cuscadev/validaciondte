@@ -798,7 +798,7 @@ export default function ProfilePage() {
 					aria-label="Cargando perfil"
 					className="flex flex-col items-center gap-4 rounded-2xl border border-border bg-card p-8 shadow-xl"
 				>
-					<Loader2 className="size-8 animate-spin text-amber-500 dark:text-yellow-300" />
+					<Loader2 className="size-8 animate-spin text-primary" />
 					<p className="text-sm text-muted-foreground">Cargando perfil...</p>
 				</section>
 			</main>
@@ -813,7 +813,7 @@ export default function ProfilePage() {
 		<main className="min-h-screen overflow-x-hidden bg-background px-0 py-2 text-foreground">
 			<div className="w-full max-w-[92rem]">
 				<header className="mb-4 rounded-2xl border border-border bg-card p-5 shadow-xl">
-					<p className="mb-2 text-xs font-semibold uppercase tracking-[0.28em] text-amber-600 dark:text-yellow-300">
+					<p className="mb-2 text-xs font-semibold uppercase tracking-[0.28em] text-primary text-primary">
 						Configuración de cuenta
 					</p>
 
@@ -835,7 +835,7 @@ export default function ProfilePage() {
 										id="profile-info-title"
 										className="flex items-center gap-2 text-foreground"
 									>
-										<UserRound className="size-5 text-amber-600 dark:text-yellow-300" />
+										<UserRound className="size-5 text-primary text-primary" />
 										Información del perfil
 									</CardTitle>
 
@@ -1012,7 +1012,7 @@ export default function ProfilePage() {
 										<Button
 											type="submit"
 											disabled={saving}
-											className="h-12 w-full rounded-xl bg-yellow-400 font-bold text-black hover:bg-yellow-300"
+											className="h-12 w-full rounded-xl bg-primary font-bold text-black hover:bg-primary/90"
 										>
 											{saving ? (
 												<>
@@ -1035,7 +1035,7 @@ export default function ProfilePage() {
 										id="emitter-info-title"
 										className="flex items-center gap-2 text-foreground"
 									>
-										<Building2 className="size-5 text-amber-600 dark:text-yellow-300" />
+										<Building2 className="size-5 text-primary text-primary" />
 										Datos de emisor
 									</CardTitle>
 
@@ -1047,10 +1047,10 @@ export default function ProfilePage() {
 								<CardContent className="p-4 pt-0">
 									{emitterLoading ? (
 										<div className="flex min-h-40 items-center justify-center rounded-2xl border border-border bg-background">
-											<Loader2 className="size-6 animate-spin text-amber-600 dark:text-yellow-300" />
+											<Loader2 className="size-6 animate-spin text-primary text-primary" />
 										</div>
 									) : !hasEmitter ? (
-										<p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-100">
+										<p className="rounded-xl border border-brand-orange/30 bg-brand-orange/10 px-4 py-3 text-sm text-primary dark:text-primary">
 											{emitterError || 'Todavia no tienes un emisor vinculado en la base local.'}
 										</p>
 									) : (
@@ -1377,7 +1377,7 @@ export default function ProfilePage() {
 											<Button
 												type="submit"
 												disabled={emitterSaving}
-												className="h-12 w-full rounded-xl bg-yellow-400 font-bold text-black hover:bg-yellow-300"
+												className="h-12 w-full rounded-xl bg-primary font-bold text-black hover:bg-primary/90"
 											>
 												{emitterSaving ? (
 													<>
@@ -1404,7 +1404,7 @@ export default function ProfilePage() {
 										id="password-title"
 										className="flex items-center gap-2 text-foreground"
 									>
-										<KeyRound className="size-5 text-amber-600 dark:text-yellow-300" />
+										<KeyRound className="size-5 text-primary text-primary" />
 										Cambiar contraseña
 									</CardTitle>
 
@@ -1480,7 +1480,7 @@ export default function ProfilePage() {
 										<Button
 											type="submit"
 											disabled={pwSaving}
-											className="h-12 w-full rounded-xl bg-yellow-400 font-bold text-black hover:bg-yellow-300"
+											className="h-12 w-full rounded-xl bg-primary font-bold text-black hover:bg-primary/90"
 										>
 											{pwSaving ? (
 												<>
@@ -1507,7 +1507,7 @@ export default function ProfilePage() {
 									{totpEnrolled ? (
 										<ShieldCheck className="size-5 text-emerald-400" />
 									) : (
-										<ShieldOff className="size-5 text-amber-600 dark:text-yellow-300" />
+										<ShieldOff className="size-5 text-primary text-primary" />
 									)}
 									Seguridad 2FA
 								</CardTitle>
@@ -1558,7 +1558,7 @@ export default function ProfilePage() {
 										<Button
 											onClick={handleStartTotpSetup}
 											disabled={totpLoading}
-											className="h-12 w-full rounded-xl bg-yellow-400 font-bold text-black hover:bg-yellow-300"
+											className="h-12 w-full rounded-xl bg-primary font-bold text-black hover:bg-primary/90"
 										>
 											{totpLoading ? (
 												<>
@@ -1634,7 +1634,7 @@ export default function ProfilePage() {
 												<Button
 													type="submit"
 													disabled={totpLoading || totpCode.length !== 6}
-													className="h-12 rounded-xl bg-yellow-400 font-bold text-black hover:bg-yellow-300"
+													className="h-12 rounded-xl bg-primary font-bold text-black hover:bg-primary/90"
 												>
 													{totpLoading ? (
 														<>

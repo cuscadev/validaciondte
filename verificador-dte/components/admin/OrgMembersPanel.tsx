@@ -49,8 +49,8 @@ type OrgMembersPanelProps = {
 export function OrgMembersPanel({ loading, detail, onEditMember }: OrgMembersPanelProps) {
   if (loading || !detail) {
     return (
-      <div className="flex justify-center border-t border-slate-200 bg-slate-50/80 py-10 dark:border-white/10 dark:bg-black/40">
-        <Loader2 className="size-8 animate-spin text-amber-500" />
+      <div className="flex justify-center border-t border-border bg-card py-10 dark:border-white/10 dark:bg-black/40">
+        <Loader2 className="size-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -58,7 +58,7 @@ export function OrgMembersPanel({ loading, detail, onEditMember }: OrgMembersPan
   const org = detail.organization;
 
   return (
-    <div className="space-y-6 border-t border-slate-200 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-black/40 md:p-5">
+    <div className="space-y-6 border-t border-border bg-card p-4 dark:border-white/10 dark:bg-black/40 md:p-5">
       <div>
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Usuarios de la organización

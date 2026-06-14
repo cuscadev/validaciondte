@@ -193,13 +193,13 @@ export default function DashboardPage() {
 
   return (
 
-    <main className="min-h-[calc(100vh-5rem)] bg-slate-50 text-slate-950 dark:bg-black dark:text-white">
+    <main className="min-h-[calc(100vh-5rem)] bg-background text-foreground">
 
       <div className="flex w-full max-w-none flex-col gap-4 p-0">
 
         {isError && (
 
-          <div className="flex items-start gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 dark:text-amber-100">
+          <div className="flex items-start gap-3 rounded-lg border border-brand-orange/40 bg-brand-orange/10 px-4 py-3 text-sm text-foreground dark:text-primary">
 
             <AlertCircle className="mt-0.5 size-4 shrink-0" />
 
@@ -207,7 +207,7 @@ export default function DashboardPage() {
 
               <p className="font-semibold">No se pudieron cargar las metricas</p>
 
-              <p className="mt-1 text-amber-900/80 dark:text-amber-100/80">
+              <p className="mt-1 text-primary/80 dark:text-primary/80">
 
                 {error instanceof Error
 

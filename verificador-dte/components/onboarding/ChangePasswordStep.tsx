@@ -115,7 +115,7 @@ export function ChangePasswordStep({ uid, mustClearFlag, onSuccess }: ChangePass
       <Button
         type="submit"
         disabled={saving}
-        className="w-full bg-yellow-400 font-bold text-black hover:bg-yellow-300"
+        className="w-full bg-primary font-bold text-black hover:bg-primary/90"
       >
         {saving ? (
           <>

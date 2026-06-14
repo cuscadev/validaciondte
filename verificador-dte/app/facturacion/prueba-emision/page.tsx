@@ -194,11 +194,11 @@ export default function FacturacionPruebaEmisionPage() {
 
   if (!canUseFacturacion) {
     return (
-      <main className="min-h-[calc(100vh-5rem)] bg-slate-50 text-slate-950 dark:bg-black dark:text-white">
-        <Card className="mx-auto max-w-xl border-amber-300 bg-white dark:border-amber-400/30 dark:bg-zinc-950">
+      <main className="min-h-[calc(100vh-5rem)] bg-background text-foreground">
+        <Card className="mx-auto max-w-xl border-brand-orange/60 bg-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Shield className="size-5 text-amber-600" />
+              <Shield className="size-5 text-primary" />
               Acceso restringido
             </CardTitle>
             <CardDescription>
@@ -211,23 +211,23 @@ export default function FacturacionPruebaEmisionPage() {
   }
 
   return (
-    <main className="min-h-[calc(100vh-5rem)] bg-slate-50 text-slate-950 dark:bg-black dark:text-white">
+    <main className="min-h-[calc(100vh-5rem)] bg-background text-foreground">
       <div className="flex w-full max-w-none flex-col gap-4 p-0">
-        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-950">
+        <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
             <div>
-              <p className="mb-3 text-sm font-semibold uppercase tracking-[0.22em] text-amber-600 dark:text-yellow-300">
+              <p className="mb-3 text-sm font-semibold uppercase tracking-[0.22em] text-primary text-primary">
                 Facturacion electronica
               </p>
               <h1 className="text-3xl font-extrabold tracking-tight md:text-5xl">
                 Prueba de emision completa
               </h1>
-              <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600 md:text-base dark:text-zinc-300">
+              <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600 md:text-base text-muted-foreground">
                 Obtiene token de Hacienda, busca el certificado .crt del servidor, firma el DTE y transmite a Hacienda test.
               </p>
             </div>
 
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm dark:border-white/10 dark:bg-black">
+            <div className="rounded-lg border border-border bg-background p-4 text-sm">
               <p className="font-semibold">Coleccion Firebase</p>
               <p className="mt-1 font-mono text-xs text-muted-foreground">Supabase (tablas dte_emisiones_*)</p>
             </div>
@@ -236,7 +236,7 @@ export default function FacturacionPruebaEmisionPage() {
 
         <div className="grid gap-4 xl:grid-cols-[30rem_minmax(0,1fr)]">
           <div className="grid gap-4">
-            <Card className="border-slate-200 bg-white dark:border-white/10 dark:bg-zinc-950">
+            <Card className="border-border bg-card">
               <CardHeader>
                 <CardTitle>Paso 1: Hacienda</CardTitle>
                 <CardDescription>
@@ -276,7 +276,7 @@ export default function FacturacionPruebaEmisionPage() {
                   type="button"
                   onClick={authenticateHacienda}
                   disabled={!canAuthenticate}
-                  className="bg-yellow-400 font-bold text-black hover:bg-yellow-300"
+                  className="bg-primary font-bold text-black hover:bg-primary/90"
                 >
                   {authenticating ? (
                     <>
@@ -293,7 +293,7 @@ export default function FacturacionPruebaEmisionPage() {
               </CardContent>
             </Card>
 
-            <Card className="border-slate-200 bg-white dark:border-white/10 dark:bg-zinc-950">
+            <Card className="border-border bg-card">
               <CardHeader>
                 <CardTitle>Paso 2: Firmar y emitir</CardTitle>
                 <CardDescription>
@@ -312,17 +312,17 @@ export default function FacturacionPruebaEmisionPage() {
                   />
                 </div>
 
-                <label className="flex cursor-pointer items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm dark:border-white/10 dark:bg-black">
+                <label className="flex cursor-pointer items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm border-border bg-background">
                   <input
                     type="checkbox"
                     checked={transmitir}
                     onChange={(event) => setTransmitir(event.target.checked)}
-                    className="size-4 accent-yellow-400"
+                    className="size-4 accent-primary"
                   />
                   <span>Transmitir a Hacienda test</span>
                 </label>
 
-                <div className="grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm dark:border-white/10 dark:bg-black">
+                <div className="grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm border-border bg-background">
                   <StatusLine ready={haciendaReady} label="Token Hacienda" />
                   <StatusLine ready={Boolean(passwordPri.trim())} label="Clave privada capturada" />
                 </div>
@@ -330,7 +330,7 @@ export default function FacturacionPruebaEmisionPage() {
                 <Button
                   onClick={runFlow}
                   disabled={!canSubmit}
-                  className="bg-yellow-400 font-bold text-black hover:bg-yellow-300"
+                  className="bg-primary font-bold text-black hover:bg-primary/90"
                 >
                   {loading ? (
                     <>
@@ -362,7 +362,7 @@ export default function FacturacionPruebaEmisionPage() {
             </Card>
           </div>
 
-          <Card className="min-h-[28rem] border-slate-200 bg-white dark:border-white/10 dark:bg-zinc-950">
+          <Card className="min-h-[28rem] border-border bg-card">
             <CardHeader>
               <CardTitle>Resultado</CardTitle>
               <CardDescription>
@@ -371,7 +371,7 @@ export default function FacturacionPruebaEmisionPage() {
             </CardHeader>
             <CardContent>
               {!result ? (
-                <div className="flex min-h-[18rem] items-center justify-center rounded-lg border border-dashed border-slate-300 text-sm text-muted-foreground dark:border-white/10">
+                <div className="flex min-h-[18rem] items-center justify-center rounded-lg border border-dashed border-slate-300 text-sm text-muted-foreground border-border">
                   Ejecuta el flujo para ver la respuesta.
                 </div>
               ) : (
@@ -389,7 +389,7 @@ export default function FacturacionPruebaEmisionPage() {
                     </Button>
                   )}
 
-                  <pre className="max-h-[34rem] overflow-auto rounded-lg border border-slate-200 bg-slate-950 p-4 text-xs leading-5 text-slate-100 dark:border-white/10">
+                  <pre className="max-h-[34rem] overflow-auto rounded-lg border border-slate-200 bg-slate-950 p-4 text-xs leading-5 text-slate-100 border-border">
                     {stringify(result)}
                   </pre>
                 </div>
@@ -415,7 +415,7 @@ function StatusLine({ ready, label }: { ready: boolean; label: string }) {
 
 function ResultStat({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-black">
+    <div className="rounded-lg border border-border bg-background p-3">
       <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
       <p className={`mt-1 break-all text-xs ${mono ? 'font-mono' : 'font-bold'}`}>{value}</p>
     </div>

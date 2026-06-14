@@ -92,12 +92,12 @@ export function UserTable({ rows, onEdit, onDelete, onViewDetails, onViewStats, 
                         />
                       </div>
                     ) : (
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-yellow-400 text-xs font-bold text-black dark:border-white/10">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-primary text-xs font-bold text-black dark:border-white/10">
                         {getInitials(row.displayName || row.email)}
                       </div>
                     )}
                     <div className="min-w-0">
-                      <div className="truncate font-semibold text-slate-950 dark:text-white">
+                      <div className="truncate font-semibold text-foreground">
                         {row.displayName || row.email}
                       </div>
                       <div className="truncate text-xs text-slate-500 dark:text-zinc-400">
@@ -122,12 +122,12 @@ export function UserTable({ rows, onEdit, onDelete, onViewDetails, onViewStats, 
                   </div>
                 </td>
                 <td className="px-4 py-3">
-                  <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs font-semibold capitalize text-yellow-900 dark:bg-yellow-400/15 dark:text-yellow-200">
+                  <span className="rounded-full bg-primary/15 px-2 py-1 text-xs font-semibold capitalize text-primary">
                     {row.membershipType}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-slate-600 dark:text-zinc-300">{row.membershipExpiresAt}</td>
-                <td className="px-4 py-3 text-slate-600 dark:text-zinc-300">
+                <td className="px-4 py-3 text-muted-foreground">{row.membershipExpiresAt}</td>
+                <td className="px-4 py-3 text-muted-foreground">
                   {row.role === "cliente"
                     ? `${row.collaboratorCount ?? 0} / ${row.maxCollaborators ?? 0}`
                     : "—"}

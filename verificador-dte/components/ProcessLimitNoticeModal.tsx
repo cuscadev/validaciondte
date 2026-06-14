@@ -31,7 +31,7 @@ export default function ProcessLimitNoticeModal({
     <Modal open={open} onClose={() => {}} disableClose className="w-[min(96vw,34rem)]">
       <div className="space-y-4 pr-6">
         <div className="flex items-start gap-3">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
             <AlertTriangle className="size-5" />
           </div>
           <div>
@@ -45,15 +45,15 @@ export default function ProcessLimitNoticeModal({
         </div>
 
         <div className="space-y-3">
-          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm dark:border-amber-500/30 dark:bg-amber-500/10">
-            <p className="font-semibold text-amber-900 dark:text-amber-100">Limite por proceso</p>
-            <p className="mt-1 text-amber-950/80 dark:text-amber-50/80">
+          <div className="rounded-lg border border-brand-orange/30 bg-brand-orange/10 p-4 text-sm">
+            <p className="font-semibold text-foreground">Limite por proceso</p>
+            <p className="mt-1 text-muted-foreground">
               Maximo por cada ejecucion:{' '}
-              <span className="font-bold text-amber-950 dark:text-amber-50">
+              <span className="font-bold text-foreground">
                 {formatLimit(status.batchLimit)} {status.batchUnit}
               </span>
             </p>
-            <p className="mt-2 text-xs text-amber-900/70 dark:text-amber-100/70">
+            <p className="mt-2 text-xs text-muted-foreground">
               Aplica cada vez que subes o procesas un lote. No es lo mismo que el limite mensual:
               este controla cuantos {status.batchUnit} puedes enviar en una sola operacion.
             </p>
@@ -90,7 +90,7 @@ export default function ProcessLimitNoticeModal({
 
         <Button
           type="button"
-          className="w-full bg-yellow-400 font-bold text-black hover:bg-yellow-300"
+          className="w-full bg-primary font-bold text-black hover:bg-primary/90"
           disabled={saving}
           onClick={() => void onAccept()}
         >

@@ -116,7 +116,7 @@ export function estadoPill(v?: string) {
     case 'EMITIDO':
       return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200';
     case 'ANULADO':
-      return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200';
+      return 'bg-primary/15 text-primary bg-primary/15 text-primary';
     case 'RECHAZADO':
       return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200';
     case 'INVALIDADO':

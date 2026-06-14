@@ -313,8 +313,8 @@ export default function Page() {
   return (
     <PlanGate routeKey={accessRouteKey}>
       <main className="w-full max-w-full space-y-6 dark:bg-background">
-        <section className="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-white/10">
+        <section className="overflow-hidden rounded-lg border border-border">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 border-border">
             <h2 className="text-sm font-semibold text-foreground">
               {t('prrocesardte_detalle', { count: items.length, max: MAX_ITEMS })}
             </h2>
@@ -324,7 +324,7 @@ export default function Page() {
                 <select
                   value={ambiente}
                   onChange={(e) => setAmbiente(e.target.value === '00' ? '00' : '01')}
-                  className="rounded-md border border-slate-200 bg-background px-2 py-1 text-sm dark:border-white/10"
+                  className="rounded-md border border-border bg-background px-2 py-1 text-sm border-border"
                   title="01 = Producción, 00 = Pruebas"
                 >
                   <option value="01">01 ({t('prrocesardte_produccion')})</option>
@@ -346,9 +346,9 @@ export default function Page() {
           </div>
 
           <div className="grid gap-4 p-4 lg:grid-cols-[1fr_16rem]">
-            <div className="overflow-x-auto rounded-md border border-slate-200 dark:border-white/10">
+            <div className="overflow-x-auto rounded-md border border-border">
               <table className="min-w-full text-sm">
-                <thead className="bg-slate-100 text-slate-950 dark:bg-zinc-900 dark:text-zinc-100">
+                <thead className="bg-slate-100 text-slate-950 bg-card dark:text-zinc-100">
                   <tr>
                     <th className="px-3 py-2 text-left whitespace-nowrap">{t('prrocesardte_item')}</th>
                     <th className="px-3 py-2 text-left whitespace-nowrap">{t('prrocesardte_codigo')}</th>
@@ -405,7 +405,7 @@ export default function Page() {
             </UploadTableHints>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 border-t border-slate-200 px-4 py-3 dark:border-white/10">
+          <div className="flex flex-wrap items-center gap-3 border-t border-slate-200 px-4 py-3 border-border">
             <Button type="button" onClick={() => void validar()} disabled={loading || items.length === 0}>
               {loading ? t('prrocesardte_validando') : t('prrocesardte_validar')}
             </Button>
@@ -472,10 +472,10 @@ export default function Page() {
             }}
           />
 
-          <div className="mt-4 overflow-hidden rounded-md border border-slate-200 dark:border-white/10">
+          <div className="mt-4 overflow-hidden rounded-md border border-border">
             <div className="max-h-[60vh] overflow-auto">
               <table className="w-full text-sm">
-                <thead className="sticky top-0 z-10 bg-slate-100 text-slate-950 backdrop-blur supports-[backdrop-filter]:bg-slate-100/90 dark:bg-zinc-900 dark:text-zinc-100">
+                <thead className="sticky top-0 z-10 bg-slate-100 text-slate-950 backdrop-blur supports-[backdrop-filter]:bg-slate-100/90 bg-card dark:text-zinc-100">
                   <tr>
                     {DTE_RESULT_COLUMNS.map((col) => (
                       <th key={col.key} className="whitespace-nowrap p-2 text-left font-semibold">
@@ -508,7 +508,7 @@ export default function Page() {
               </table>
             </div>
 
-            <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-black sm:flex-row">
+            <div className="flex flex-col items-center justify-between gap-3 border-t border-border bg-background px-3 py-2 sm:flex-row">
               <span className="text-sm text-muted-foreground">
                 {t('prrocesardte_pagina', { current: currentPage, total: totalPages })}
               </span>

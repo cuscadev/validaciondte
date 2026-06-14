@@ -180,7 +180,7 @@ export default function UsuariosOrgPage() {
             </p>
           </div>
           <Button
-            className="shrink-0 bg-yellow-400 font-bold text-black hover:bg-yellow-300"
+            className="shrink-0 bg-primary font-bold text-black hover:bg-primary/90"
             onClick={openInviteModal}
             disabled={seats.used >= seats.max}
           >
@@ -356,7 +356,7 @@ export default function UsuariosOrgPage() {
               type="submit"
               disabled={inviteSubmitting || isLoading}
               aria-busy={inviteSubmitting}
-              className="w-full bg-yellow-400 font-bold text-black hover:bg-yellow-300"
+              className="w-full bg-primary font-bold text-black hover:bg-primary/90"
             >
               {inviteSubmitting ? 'Enviando invitacion...' : 'Enviar invitacion'}
             </Button>

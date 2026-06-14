@@ -19,7 +19,7 @@ export function DashboardActionsBento({
 }: DashboardActionsBentoProps) {
   return (
     <section className="space-y-3">
-      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-600 dark:text-yellow-300">
+      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
         Acciones y seguimiento
       </p>
 

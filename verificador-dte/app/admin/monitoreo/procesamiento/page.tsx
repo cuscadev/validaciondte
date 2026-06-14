@@ -78,7 +78,7 @@ function formatBytes(bytes: number) {
 
 function outcomeClass(outcome: string) {
   if (outcome === 'success') return 'bg-emerald-500 text-white';
-  if (outcome === 'partial') return 'bg-amber-500 text-black';
+  if (outcome === 'partial') return 'bg-primary text-black';
   return 'bg-red-500 text-white';
 }
 
@@ -230,7 +230,7 @@ export default function ProcessingLogsPage() {
       <section className="rounded-lg border bg-background p-5 shadow-sm">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-yellow-600">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">
               Monitoreo
             </p>
 
@@ -256,7 +256,7 @@ export default function ProcessingLogsPage() {
           </CardHeader>
 
           <CardContent className="flex items-center gap-2 text-2xl font-semibold">
-            <FileText className="size-5 text-yellow-500" />
+            <FileText className="size-5 text-primary" />
             {totals.files}
           </CardContent>
         </Card>
@@ -267,7 +267,7 @@ export default function ProcessingLogsPage() {
           </CardHeader>
 
           <CardContent className="flex items-center gap-2 text-2xl font-semibold">
-            <Activity className="size-5 text-yellow-500" />
+            <Activity className="size-5 text-primary" />
             {totals.records}
           </CardContent>
         </Card>
@@ -288,7 +288,7 @@ export default function ProcessingLogsPage() {
           </CardHeader>
 
           <CardContent className="flex items-center gap-2 text-2xl font-semibold">
-            <Clock className="size-5 text-yellow-500" />
+            <Clock className="size-5 text-primary" />
             {formatDuration(totals.duration)}
           </CardContent>
         </Card>
@@ -611,9 +611,9 @@ export default function ProcessingLogsPage() {
                       transition-colors
                       focus:outline-none
                       focus:ring-2
-                      focus:ring-yellow-400
-                      dark:border-white/10
-                      dark:bg-zinc-950
+                      focus:ring-primary
+                      border-border
+                      bg-card
                     "
                   >
                     {[5, 10, 20].map((n) => (

@@ -685,15 +685,15 @@ export default function PlantillasPdfPage() {
         )}
       </div>
       <main className="w-full max-w-full dark:bg-background">
-        <Card className="w-full max-w-full overflow-hidden border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-950">
-          <CardHeader className="border-b border-slate-200 bg-white/90 dark:border-white/10 dark:bg-zinc-950/90">
+        <Card className="w-full max-w-full overflow-hidden border-border bg-card shadow-sm">
+          <CardHeader className="border-b border-border bg-card/90">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2 text-2xl text-slate-950 dark:text-white">
-                  <Palette className="size-6 text-amber-500" />
+                <CardTitle className="flex items-center gap-2 text-2xl text-foreground">
+                  <Palette className="size-6 text-primary" />
                   Plantillas PDF
                 </CardTitle>
-                <CardDescription className="mt-2 max-w-3xl text-slate-600 dark:text-zinc-300">
+                <CardDescription className="mt-2 max-w-3xl text-muted-foreground">
                   Genera PDFs personalizados desde JSON DTE con logo, diseño profesional y descarga local.
                   Los documentos se procesan en memoria y no se guardan en el servidor.
                 </CardDescription>
@@ -714,8 +714,8 @@ export default function PlantillasPdfPage() {
                   onClick={() => setSelectedTemplate(item.id)}
                   className={`rounded-lg border p-4 text-left transition ${
                     selectedTemplate === item.id
-                      ? 'border-yellow-400 bg-yellow-50 shadow-sm dark:bg-yellow-400/10'
-                      : 'border-slate-200 bg-slate-50 hover:border-yellow-300 dark:border-white/10 dark:bg-black'
+                      ? 'border-primary bg-primary/10 shadow-sm'
+                      : 'border-slate-200 bg-slate-50 hover:border-primary/60 border-border bg-background'
                   }`}
                 >
                   <div
@@ -730,7 +730,7 @@ export default function PlantillasPdfPage() {
                     </div>
                   </div>
                   <div className="flex items-center justify-between gap-3">
-                    <h2 className="font-semibold text-slate-950 dark:text-white">{item.name}</h2>
+                    <h2 className="font-semibold text-foreground">{item.name}</h2>
                     {selectedTemplate === item.id && <Badge>Activa</Badge>}
                   </div>
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.description}</p>
@@ -739,10 +739,10 @@ export default function PlantillasPdfPage() {
             </section>
 
             {selectedTemplate === 'personalizada' && (
-              <section className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-black">
+              <section className="rounded-lg border border-slate-200 bg-slate-50 p-4 border-border bg-background">
                 <div className="flex items-center gap-2">
-                  <Palette className="size-5 text-amber-500" />
-                  <h2 className="font-semibold text-slate-950 dark:text-white">DiseÃ±o personalizado</h2>
+                  <Palette className="size-5 text-primary" />
+                  <h2 className="font-semibold text-foreground">DiseÃ±o personalizado</h2>
                 </div>
 
                 <div className="mt-4 grid gap-4 md:grid-cols-3">
@@ -774,7 +774,7 @@ export default function PlantillasPdfPage() {
                               [field.key]: event.target.value,
                             }))
                           }
-                          className="bg-white font-mono text-sm dark:bg-zinc-950"
+                          className="bg-white font-mono text-sm bg-card"
                         />
                       </div>
                     </div>
@@ -784,10 +784,10 @@ export default function PlantillasPdfPage() {
             )}
 
             <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">
-              <div className="space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-black">
+              <div className="space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-4 border-border bg-background">
                 <div className="flex items-center gap-2">
-                  <ImageIcon className="size-5 text-amber-500" />
-                  <h2 className="font-semibold text-slate-950 dark:text-white">Logo para este PDF</h2>
+                  <ImageIcon className="size-5 text-primary" />
+                  <h2 className="font-semibold text-foreground">Logo para este PDF</h2>
                 </div>
 
                 <div className="grid gap-3 md:grid-cols-3">
@@ -805,8 +805,8 @@ export default function PlantillasPdfPage() {
                       }}
                       className={`min-h-16 rounded-md border px-3 py-2 text-sm font-medium transition ${
                         logoMode === option.key
-                          ? 'border-yellow-400 bg-yellow-50 text-slate-950 dark:bg-yellow-400/10 dark:text-white'
-                          : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-100 dark:border-white/10 dark:bg-zinc-950 dark:text-zinc-200'
+                          ? 'border-primary bg-primary/10 text-slate-950 dark:bg-primary/10 text-foreground'
+                          : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-100 border-border bg-card dark:text-zinc-200'
                       }`}
                     >
                       {option.label}
@@ -835,17 +835,17 @@ export default function PlantillasPdfPage() {
                 </p>
               </div>
 
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-black">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 border-border bg-background">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="size-5 text-amber-500" />
-                  <h2 className="font-semibold text-slate-950 dark:text-white">Plantilla seleccionada</h2>
+                  <Sparkles className="size-5 text-primary" />
+                  <h2 className="font-semibold text-foreground">Plantilla seleccionada</h2>
                 </div>
-                <p className="mt-3 text-2xl font-bold text-slate-950 dark:text-white">{template.name}</p>
+                <p className="mt-3 text-2xl font-bold text-foreground">{template.name}</p>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">{template.description}</p>
               </div>
             </section>
 
-            <section className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-black">
+            <section className="rounded-lg border border-slate-200 bg-slate-50 p-4 border-border bg-background">
               <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
                 <div className="space-y-2">
                   <Label htmlFor="jsonFiles">JSON DTE</Label>
@@ -856,7 +856,7 @@ export default function PlantillasPdfPage() {
                     accept=".json,application/json"
                     multiple
                     onChange={handleJsonChange}
-                    className="bg-white dark:bg-zinc-950"
+                    className="bg-white bg-card"
                   />
                   <p className="text-xs text-muted-foreground">
                     Puedes procesar 1 JSON o un lote de hasta {MAX_JSON_FILES} archivos.
@@ -868,7 +868,7 @@ export default function PlantillasPdfPage() {
                     type="button"
                     disabled={loading || !jsonFiles.length}
                     onClick={processFiles}
-                    className="h-10 bg-yellow-400 font-bold text-black hover:bg-yellow-300"
+                    className="h-10 bg-primary font-bold text-black hover:bg-primary/90"
                   >
                     {loading ? (
                       <>
@@ -899,24 +899,24 @@ export default function PlantillasPdfPage() {
             </section>
 
             <section className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-black">
+              <div className="rounded-lg border border-border bg-background p-3">
                 <p className="text-xs text-muted-foreground">Archivos seleccionados</p>
                 <p className="text-xl font-bold">{jsonFiles.length}</p>
               </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-black">
+              <div className="rounded-lg border border-border bg-background p-3">
                 <p className="text-xs text-muted-foreground">PDFs generados</p>
                 <p className="text-xl font-bold">{generated.length}</p>
               </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-black">
+              <div className="rounded-lg border border-border bg-background p-3">
                 <p className="text-xs text-muted-foreground">Errores</p>
                 <p className="text-xl font-bold">{errors.length}</p>
               </div>
             </section>
 
-            <div className="overflow-hidden rounded-md border border-slate-200 dark:border-white/10">
+            <div className="overflow-hidden rounded-md border border-border">
               <div className="max-h-[54vh] overflow-auto">
                 <table className="w-full text-sm">
-                  <thead className="sticky top-0 z-10 bg-slate-100 text-slate-950 dark:bg-zinc-900 dark:text-zinc-100">
+                  <thead className="sticky top-0 z-10 bg-slate-100 text-slate-950 bg-card dark:text-zinc-100">
                     <tr>
                       <th className="p-2 text-left font-semibold">Archivo JSON</th>
                       <th className="p-2 text-left font-semibold">Tipo DTE</th>

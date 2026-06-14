@@ -18,10 +18,10 @@ const summaryItems = [
 ] as const;
 
 const toneClasses = {
-  neutral:
-    'border-slate-200 bg-white text-slate-900 dark:border-white/10 dark:bg-zinc-950 dark:text-white',
   amber:
-    'border-yellow-200/80 bg-yellow-50/70 text-yellow-900 dark:border-yellow-400/25 dark:bg-yellow-400/10 dark:text-yellow-100',
+    'border-primary/30 bg-primary/10 text-primary',
+  neutral:
+    'border-border bg-card text-foreground',
   red:
     'border-red-200/80 bg-red-50/70 text-red-900 dark:border-red-400/25 dark:bg-red-950/30 dark:text-red-100',
   green:
