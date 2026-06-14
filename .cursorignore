@@ -1,0 +1,8 @@
+﻿# Go build cache (no subir)
+**/.gocache/
+
+# Next.js / Node
+**/.next/
+**/node_modules/
+**/out/
+**/.turbo/
