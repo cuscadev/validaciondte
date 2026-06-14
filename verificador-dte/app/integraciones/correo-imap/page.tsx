@@ -7,10 +7,11 @@ import {
   CheckCircle2,
   FileStack,
   Inbox,
-  KeyRound,
   Loader2,
   Mail,
+  Plug,
   RefreshCw,
+  Settings2,
   ShieldCheck,
   Unplug,
   X,
@@ -21,6 +22,7 @@ import GmailDocumentFilters from '@/components/gmail/GmailDocumentFilters';
 import EmailDocumentTablePagination from '@/components/gmail/EmailDocumentTablePagination';
 import GmailDocumentTable, { STATUS_LABELS } from '@/components/gmail/GmailDocumentTable';
 import GmailJsonVerifyPanel from '@/components/gmail/GmailJsonVerifyPanel';
+import ImapConnectionModal from '@/components/imap/ImapConnectionModal';
 import PlanGate from '@/components/PlanGate';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,7 +37,7 @@ import { useImapIntegrationStatus } from '@/lib/email-import/use-imap-integratio
 import { notifySyncCompleted, SYNC_CATALOG_HELP } from '@/lib/email-import/sync-plan-messages';
 import type { SyncPlanResult } from '@/lib/email-import/sync-plan';
 import { invalidateGetQueries } from '@/lib/tanstack-query';
-import { IMAP_PROVIDER_PRESETS, getImapPreset } from '@/lib/imap/presets';
+import { getImapPreset } from '@/lib/imap/presets';
 
 type SyncJob = {
   id: string;
@@ -82,6 +84,8 @@ export default function CorreoImapIntegracionPage() {
   const [password, setPassword] = useState('');
   const [consent, setConsent] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  const [connectionModalOpen, setConnectionModalOpen] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
 
   const [dateFrom, setDateFrom] = useState(defaults.from);
   const [dateTo, setDateTo] = useState(defaults.to);
@@ -133,7 +137,6 @@ export default function CorreoImapIntegracionPage() {
 
   const preset = useMemo(() => getImapPreset(provider), [provider]);
   const isCustom = provider === 'custom';
-  const isOAuthProvider = preset?.authMethod === 'oauth';
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -226,6 +229,7 @@ export default function CorreoImapIntegracionPage() {
       }
       toast.success('Cuenta de correo conectada correctamente.');
       setPassword('');
+      setConnectionModalOpen(false);
       await refreshIntegration();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Error');
@@ -235,6 +239,7 @@ export default function CorreoImapIntegracionPage() {
   };
 
   const disconnectImap = async () => {
+    setDisconnecting(true);
     try {
       const res = await authFetch('/api/integrations/imap/status', {
         method: 'DELETE',
@@ -244,9 +249,12 @@ export default function CorreoImapIntegracionPage() {
       toast.success('Cuenta desconectada. La clave de aplicacion fue eliminada.');
       setJob(null);
       clearCatalog();
+      setConnectionModalOpen(false);
       await refreshIntegration();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Error');
+    } finally {
+      setDisconnecting(false);
     }
   };
 
@@ -349,436 +357,353 @@ export default function CorreoImapIntegracionPage() {
             </div>
           </section>
 
-          <section className="grid gap-5 xl:grid-cols-[24rem_minmax(0,1fr)]">
-            <div className="space-y-5">
+          <section className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between dark:border-white/10 dark:bg-zinc-950 md:px-5">
+            <div className="flex min-w-0 items-center gap-3">
+              <div
+                className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${
+                  status?.connected
+                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                    : 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400'
+                }`}
+              >
+                {status?.connected ? <CheckCircle2 className="size-5" /> : <Plug className="size-5" />}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                  {loadingStatus
+                    ? 'Verificando conexion...'
+                    : status?.connected
+                      ? status.email
+                      : 'Sin cuenta conectada'}
+                </p>
+                <p className="truncate text-xs text-slate-500 dark:text-zinc-400">
+                  {status?.connected
+                    ? `${status.host}:${status.port} · conectado ${formatDateTime(status.connectedAt)}`
+                    : 'Conecta tu buzon IMAP para importar DTE desde el correo'}
+                </p>
+              </div>
+            </div>
+            <div className="flex shrink-0 gap-2">
+              {status?.connected ? (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-10"
+                    onClick={() => setConnectionModalOpen(true)}
+                  >
+                    <Settings2 className="mr-2 size-4" />
+                    Gestionar
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-10 text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/30"
+                    onClick={() => setConnectionModalOpen(true)}
+                  >
+                    <Unplug className="mr-2 size-4" />
+                    Desconectar
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-10"
+                  onClick={() => setConnectionModalOpen(true)}
+                  disabled={loadingStatus}
+                >
+                  <Mail className="mr-2 size-4" />
+                  Conectar correo
+                </Button>
+              )}
+            </div>
+          </section>
+
+          {!status?.connected ? (
+            <section className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center shadow-sm dark:border-white/10 dark:bg-zinc-950">
+              <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-yellow-300">
+                <Inbox className="size-8" />
+              </div>
+              <h2 className="text-xl font-bold">Conecta tu correo para comenzar</h2>
+              <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-slate-600 dark:text-zinc-300">
+                Configura IMAP con clave de aplicacion. Luego podras importar por rango de fechas,
+                filtrar el catalogo y verificar DTE en Hacienda.
+              </p>
+              <Button type="button" className="mt-6" onClick={() => setConnectionModalOpen(true)}>
+                <Mail className="mr-2 size-4" />
+                Conectar buzon IMAP
+              </Button>
+            </section>
+          ) : (
+            <div className="flex flex-col gap-5">
               <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-950">
-                <div className="mb-4 flex items-center justify-between gap-3">
-                  <h2 className="text-lg font-bold">Cuenta de correo</h2>
-                  {status?.connected ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200">
-                      <span className="size-2 rounded-full bg-emerald-500" />
-                      Activa
-                    </span>
-                  ) : (
-                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:bg-zinc-800 dark:text-zinc-300">
-                      Sin conectar
-                    </span>
-                  )}
+                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-amber-600 dark:text-yellow-300">
+                      <CalendarRange className="size-4" />
+                      Importar del buzon
+                    </p>
+                    <p className="mt-1 text-sm text-slate-600 dark:text-zinc-400">
+                      {SYNC_CATALOG_HELP}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={runSync}
+                    disabled={syncing}
+                    className="h-11 shrink-0"
+                  >
+                    {syncing ? (
+                      <>
+                        <Loader2 className="mr-2 size-4 animate-spin" />
+                        Sincronizando...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="mr-2 size-4" />
+                        Buscar e importar
+                      </>
+                    )}
+                  </Button>
                 </div>
 
-                {loadingStatus ? (
-                  <div className="flex items-center gap-2 py-6 text-sm text-slate-500">
-                    <Loader2 className="size-4 animate-spin" />
-                    Cargando estado...
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="sync-date-from">Correos desde</Label>
+                    <Input
+                      id="sync-date-from"
+                      type="date"
+                      className="h-10"
+                      value={dateFrom}
+                      onChange={(e) => setDateFrom(e.target.value)}
+                      disabled={syncing}
+                    />
                   </div>
-                ) : status?.connected ? (
-                  <div className="space-y-4">
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/20">
-                      <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                        {status.email}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-600 dark:text-zinc-300">
-                        {status.host}:{status.port} · conectado el{' '}
-                        {formatDateTime(status.connectedAt)}
-                      </p>
-                      <p className="mt-3 text-xs leading-5 text-slate-600 dark:text-zinc-400">
-                        Acceso de solo lectura por IMAP. La clave de aplicacion se guarda cifrada
-                        y nunca se muestra. Consentimiento aceptado el{' '}
-                        {formatDateTime(status.consentAcceptedAt)}.
-                      </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="sync-date-to">Correos hasta</Label>
+                    <Input
+                      id="sync-date-to"
+                      type="date"
+                      className="h-10"
+                      value={dateTo}
+                      onChange={(e) => setDateTo(e.target.value)}
+                      disabled={syncing}
+                    />
+                  </div>
+                  {job ? (
+                    <>
+                      <SyncStat label="Importados" value={job.imported_count} accent />
+                      <SyncStat label="Omitidos" value={job.skipped_count} />
+                    </>
+                  ) : null}
+                </div>
+
+                {job ? (
+                  <div className="mt-4 space-y-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 dark:text-zinc-400">
+                      <span>
+                        Rango {job.date_from} — {job.date_to} · estado {job.status}
+                      </span>
+                      <span>
+                        {job.found_count} encontrados · {job.error_count} errores
+                      </span>
                     </div>
+                    <Progress value={progressValue} className="h-2" />
+                  </div>
+                ) : (
+                  <p className="mt-3 text-xs text-slate-500 dark:text-zinc-400">
+                    Solo se importan DTE 01, 03, 05, 06, 11 y 14. Otros quedan como{' '}
+                    <span className="font-medium">{STATUS_LABELS.skipped_unsupported_type}</span>.
+                  </p>
+                )}
+
+                <div className="mt-5 border-t border-slate-200 pt-5 dark:border-white/10">
+                  <GmailDocumentFilters
+                    filters={catalogFilters}
+                    onChange={(patch) => setCatalogFilters((prev) => ({ ...prev, ...patch }))}
+                    disabled={loadingCatalog || syncing}
+                    mailboxOptions={mailboxOptions}
+                  />
+                </div>
+              </section>
+
+              <section className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-950">
+                <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-5 md:flex-row md:items-center md:justify-between dark:border-white/10">
+                  <div>
+                    <h2 className="text-xl font-bold">Resultados</h2>
+                    <p className="mt-1 text-sm text-slate-600 dark:text-zinc-300">
+                      {catalogTotal} documento(s) en el catalogo
+                      {job ? ` · ultimo sync ${job.date_from} — ${job.date_to}` : ''}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
                     <Button
                       type="button"
                       variant="outline"
-                      className="w-full"
-                      onClick={disconnectImap}
+                      disabled={loadingCatalog}
+                      onClick={() => void loadCatalog()}
                     >
-                      <Unplug className="mr-2 size-4" />
-                      Desconectar cuenta
+                      {loadingCatalog ? (
+                        <Loader2 className="mr-2 size-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="mr-2 size-4" />
+                      )}
+                      Actualizar
                     </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <p className="text-sm leading-6 text-slate-600 dark:text-zinc-300">
-                      Ingresa el correo de la organizacion y su clave de aplicacion para buscar
-                      adjuntos JSON de DTE en el buzon.
-                    </p>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="imap-provider">Proveedor</Label>
-                      <select
-                        id="imap-provider"
-                        className="h-11 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50 dark:bg-input/30 dark:text-white dark:[color-scheme:dark] [&>option]:bg-white [&>option]:text-slate-900 dark:[&>option]:bg-zinc-900 dark:[&>option]:text-white"
-                        value={provider}
-                        onChange={(event) => setProvider(event.target.value)}
-                      >
-                        {IMAP_PROVIDER_PRESETS.map((item) => (
-                          <option key={item.id} value={item.id}>
-                            {item.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {isCustom ? (
-                      <div className="grid grid-cols-[1fr_6rem] gap-2">
-                        <div className="space-y-2">
-                          <Label htmlFor="imap-host">Servidor IMAP</Label>
-                          <Input
-                            id="imap-host"
-                            className="h-11"
-                            placeholder="imap.miempresa.com"
-                            value={host}
-                            onChange={(event) => setHost(event.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="imap-port">Puerto</Label>
-                          <Input
-                            id="imap-port"
-                            className="h-11"
-                            inputMode="numeric"
-                            value={port}
-                            onChange={(event) => setPort(event.target.value)}
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="rounded-lg bg-slate-100 px-3 py-2 text-xs text-slate-600 dark:bg-zinc-900 dark:text-zinc-300">
-                        Servidor: <span className="font-mono">{preset?.host}</span> · puerto{' '}
-                        <span className="font-mono">{preset?.port}</span> (TLS)
-                      </p>
-                    )}
-
-                    <div className="space-y-2">
-                      <Label htmlFor="imap-email">
-                        Correo{isOAuthProvider ? ' (opcional, para validar la cuenta)' : ''}
-                      </Label>
-                      <Input
-                        id="imap-email"
-                        type="email"
-                        inputMode="email"
-                        className="h-11"
-                        placeholder="usuario@miempresa.com"
-                        value={email}
-                        onChange={(event) => setEmail(event.target.value)}
-                      />
-                    </div>
-
-                    {isOAuthProvider ? (
-                      <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
-                        <KeyRound className="mr-1 inline size-3" />
-                        {preset?.appPasswordHint}
-                      </p>
-                    ) : (
-                      <div className="space-y-2">
-                        <Label htmlFor="imap-password">Clave de aplicacion</Label>
-                        <Input
-                          id="imap-password"
-                          type="password"
-                          autoComplete="off"
-                          className="h-11"
-                          placeholder="xxxx xxxx xxxx xxxx"
-                          value={password}
-                          onChange={(event) => setPassword(event.target.value)}
-                        />
-                        {preset?.appPasswordHint ? (
-                          <p className="text-xs leading-5 text-slate-500 dark:text-zinc-400">
-                            <KeyRound className="mr-1 inline size-3" />
-                            {preset.appPasswordHint}{' '}
-                            {preset.appPasswordHelpUrl ? (
-                              <a
-                                href={preset.appPasswordHelpUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="font-medium text-amber-600 underline dark:text-yellow-300"
-                              >
-                                Como generarla
-                              </a>
-                            ) : null}
-                          </p>
-                        ) : null}
-                      </div>
-                    )}
-
-                    <label className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-xs leading-5 text-slate-600 dark:border-white/10 dark:bg-zinc-900/40 dark:text-zinc-300">
-                      <input
-                        type="checkbox"
-                        className="mt-0.5 size-4 shrink-0 accent-amber-500"
-                        checked={consent}
-                        onChange={(event) => setConsent(event.target.checked)}
-                      />
-                      <span>
-                        Autorizo la lectura de este buzon por IMAP con el unico fin de extraer
-                        adjuntos JSON de DTE. No se envian ni modifican correos.
-                      </span>
-                    </label>
-
                     <Button
                       type="button"
-                      className="h-11 w-full"
-                      onClick={isOAuthProvider ? connectMicrosoft : connectImap}
-                      disabled={connecting}
+                      disabled={!selectedIds.size || verifyLoading}
+                      onClick={() => void verifySelected()}
                     >
-                      {connecting ? (
-                        <>
-                          <Loader2 className="mr-2 size-4 animate-spin" />
-                          {isOAuthProvider ? 'Redirigiendo a Microsoft...' : 'Probando conexion...'}
-                        </>
+                      {verifyLoading ? (
+                        <Loader2 className="mr-2 size-4 animate-spin" />
                       ) : (
-                        <>
-                          <Mail className="mr-2 size-4" />
-                          {isOAuthProvider ? 'Conectar con Microsoft' : 'Conectar correo'}
-                        </>
+                        <ShieldCheck className="mr-2 size-4" />
                       )}
+                      Verificar JSON ({selectedIds.size})
                     </Button>
                   </div>
-                )}
-              </section>
-
-              <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-950">
-                <div className="mb-4 flex items-center gap-2">
-                  <CalendarRange className="size-4 text-amber-600 dark:text-yellow-300" />
-                  <h2 className="text-lg font-bold">Sincronizacion</h2>
                 </div>
 
-                <div className="grid gap-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="date-from">Correos desde</Label>
-                    <Input
-                      id="date-from"
-                      type="date"
-                      className="h-11"
-                      value={dateFrom}
-                      onChange={(e) => setDateFrom(e.target.value)}
-                      disabled={!status?.connected || syncing}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="date-to">Correos hasta</Label>
-                    <Input
-                      id="date-to"
-                      type="date"
-                      className="h-11"
-                      value={dateTo}
-                      onChange={(e) => setDateTo(e.target.value)}
-                      disabled={!status?.connected || syncing}
-                    />
-                  </div>
-                </div>
-
-                <p className="mt-4 text-xs leading-5 text-slate-500 dark:text-zinc-400">
-                  {SYNC_CATALOG_HELP} Se buscan adjuntos JSON (incluso dentro de ZIP) en correos del
-                  rango. Solo se importan DTE 01, 03, 05, 06, 11 y 14. Otros tipos quedan como{' '}
-                  <span className="font-medium">{STATUS_LABELS.skipped_unsupported_type}</span>.
-                </p>
-
-                <Button
-                  type="button"
-                  className="mt-4 h-11 w-full"
-                  onClick={runSync}
-                  disabled={!status?.connected || syncing}
-                >
-                  {syncing ? (
+                <div className="space-y-5 p-5">
+                  {loadingCatalog && !catalog.length ? (
+                    <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
+                      <Loader2 className="size-4 animate-spin" />
+                      Cargando catalogo...
+                    </div>
+                  ) : catalog.length ? (
                     <>
-                      <Loader2 className="mr-2 size-4 animate-spin" />
-                      Sincronizando...
+                      <GmailDocumentTable
+                        documents={catalog}
+                        selectedIds={selectedIds}
+                        onToggleSelect={toggleSelect}
+                        onToggleAll={toggleAll}
+                        onViewLinks={(doc) => void viewLinks(doc)}
+                        onViewJson={(doc) => void viewJson(doc)}
+                        sortBy={sortBy}
+                        sortDir={sortDir}
+                        onSort={handleSort}
+                        showMailboxColumn={showMailboxColumn}
+                        loading={loadingCatalog}
+                      />
+                      <EmailDocumentTablePagination
+                        page={page}
+                        pageSize={pageSize}
+                        total={catalogTotal}
+                        totalPages={totalPages}
+                        loading={loadingCatalog}
+                        onPageChange={setPage}
+                        onPageSizeChange={setPageSize}
+                      />
                     </>
                   ) : (
-                    <>
-                      <RefreshCw className="mr-2 size-4" />
-                      Buscar e importar
-                    </>
-                  )}
-                </Button>
-
-                {job ? (
-                  <div className="mt-4 space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-zinc-900/40">
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <SyncStat label="Encontrados" value={job.found_count} />
-                      <SyncStat label="Importados" value={job.imported_count} accent />
-                      <SyncStat label="Omitidos" value={job.skipped_count} />
-                      <SyncStat label="Errores" value={job.error_count} />
-                    </div>
-                    <Progress value={progressValue} className="h-2" />
-                    <p className="text-xs text-slate-500 dark:text-zinc-400">
-                      Rango {job.date_from} — {job.date_to} · estado {job.status}
-                    </p>
-                  </div>
-                ) : null}
-              </section>
-            </div>
-
-            <section className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-950">
-              {!status?.connected ? (
-                <div className="flex min-h-[28rem] flex-col items-center justify-center px-6 py-16 text-center">
-                  <div className="mb-4 flex size-16 items-center justify-center rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-yellow-300">
-                    <Inbox className="size-8" />
-                  </div>
-                  <h2 className="text-xl font-bold">Conecta tu correo para comenzar</h2>
-                  <p className="mt-3 max-w-md text-sm leading-6 text-slate-600 dark:text-zinc-300">
-                    Una vez conectada la cuenta por IMAP, aqui veras el catalogo de DTE
-                    importados, podras filtrarlos y verificarlos en Hacienda.
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-5 md:flex-row md:items-center md:justify-between dark:border-white/10">
-                    <div>
-                      <h2 className="text-xl font-bold">Catalogo de DTE importados</h2>
-                      <p className="mt-1 text-sm text-slate-600 dark:text-zinc-300">
-                        {catalogTotal} documento(s) disponibles
-                        {job ? ` · ultimo sync ${job.date_from} — ${job.date_to}` : ''}
+                    <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-14 text-center dark:border-white/10 dark:bg-zinc-900/30">
+                      <FileStack className="mx-auto mb-3 size-8 text-slate-400" />
+                      <p className="font-medium text-slate-900 dark:text-white">
+                        Sin documentos importados
+                      </p>
+                      <p className="mt-2 text-sm text-slate-600 dark:text-zinc-300">
+                        Elige un rango de fechas arriba y pulsa Buscar e importar.
                       </p>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        disabled={loadingCatalog}
-                        onClick={() => void loadCatalog()}
-                      >
-                        {loadingCatalog ? (
-                          <Loader2 className="mr-2 size-4 animate-spin" />
-                        ) : (
-                          <RefreshCw className="mr-2 size-4" />
-                        )}
-                        Actualizar
-                      </Button>
-                      <Button
-                        type="button"
-                        disabled={!selectedIds.size || verifyLoading}
-                        onClick={() => void verifySelected()}
-                      >
-                        {verifyLoading ? (
-                          <Loader2 className="mr-2 size-4 animate-spin" />
-                        ) : (
-                          <ShieldCheck className="mr-2 size-4" />
-                        )}
-                        Verificar JSON ({selectedIds.size})
-                      </Button>
-                    </div>
-                  </div>
+                  )}
 
-                  <div className="space-y-5 p-5">
-                    <GmailDocumentFilters
-                      filters={catalogFilters}
-                      onChange={(patch) => setCatalogFilters((prev) => ({ ...prev, ...patch }))}
-                      disabled={loadingCatalog}
-                      mailboxOptions={mailboxOptions}
-                    />
+                  <GmailJsonVerifyPanel
+                    results={verifyResults}
+                    downloadHref={verifyDownloadHref}
+                    filename={verifyFilename}
+                    loading={verifyLoading}
+                  />
 
-                    {loadingCatalog && !catalog.length ? (
-                      <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
-                        <Loader2 className="size-4 animate-spin" />
-                        Cargando catalogo...
-                      </div>
-                    ) : catalog.length ? (
-                      <>
-                        <GmailDocumentTable
-                          documents={catalog}
-                          selectedIds={selectedIds}
-                          onToggleSelect={toggleSelect}
-                          onToggleAll={toggleAll}
-                          onViewLinks={(doc) => void viewLinks(doc)}
-                          onViewJson={(doc) => void viewJson(doc)}
-                          sortBy={sortBy}
-                          sortDir={sortDir}
-                          onSort={handleSort}
-                          showMailboxColumn={showMailboxColumn}
-                          loading={loadingCatalog}
-                        />
-                        <EmailDocumentTablePagination
-                          page={page}
-                          pageSize={pageSize}
-                          total={catalogTotal}
-                          totalPages={totalPages}
-                          loading={loadingCatalog}
-                          onPageChange={setPage}
-                          onPageSizeChange={setPageSize}
-                        />
-                      </>
-                    ) : (
-                      <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-14 text-center dark:border-white/10 dark:bg-zinc-900/30">
-                        <FileStack className="mx-auto mb-3 size-8 text-slate-400" />
-                        <p className="font-medium text-slate-900 dark:text-white">
-                          Sin documentos importados
-                        </p>
-                        <p className="mt-2 text-sm text-slate-600 dark:text-zinc-300">
-                          Ejecuta una sincronizacion o amplia el rango de fechas del buzon.
-                        </p>
-                      </div>
-                    )}
-
-                    <GmailJsonVerifyPanel
-                      results={verifyResults}
-                      downloadHref={verifyDownloadHref}
-                      filename={verifyFilename}
-                      loading={verifyLoading}
-                    />
-
-                    {linkedPreview ? (
-                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-zinc-900/40">
-                        <div className="mb-3 flex items-start justify-between gap-2">
-                          <div>
-                            <p className="text-sm font-semibold">Documentos relacionados</p>
-                            <p className="text-xs text-slate-500 dark:text-zinc-400">
-                              {linkedPreview.doc.tipo_dte_label} ·{' '}
-                              {linkedPreview.doc.codigo_generacion}
-                            </p>
-                          </div>
-                          <Button
-                            type="button"
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => setLinkedPreview(null)}
-                            aria-label="Cerrar panel"
-                          >
-                            <X className="size-4" />
-                          </Button>
-                        </div>
-                        {loadingLinks ? (
-                          <Loader2 className="size-4 animate-spin" />
-                        ) : linkedPreview.documents.length ? (
-                          <ul className="space-y-2 text-sm">
-                            {linkedPreview.documents.map((rel) => (
-                              <li
-                                key={rel.id}
-                                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-3 dark:border-white/10 dark:bg-zinc-950"
-                              >
-                                <div>
-                                  <span className="font-medium">
-                                    {rel.tipo_dte_label || rel.tipo_dte}
-                                  </span>
-                                  <span className="mx-2 text-slate-400">·</span>
-                                  <span className="font-mono text-xs">{rel.codigo_generacion}</span>
-                                  <div className="text-xs text-slate-500 dark:text-zinc-400">
-                                    {rel.fec_emi} · {rel.emisor_nombre || '—'}
-                                  </div>
-                                </div>
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => void viewLinks(rel)}
-                                >
-                                  Ver enlaces
-                                </Button>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-sm text-slate-600 dark:text-zinc-300">
-                            Sin documentos vinculados.
+                  {linkedPreview ? (
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-zinc-900/40">
+                      <div className="mb-3 flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-semibold">Documentos relacionados</p>
+                          <p className="text-xs text-slate-500 dark:text-zinc-400">
+                            {linkedPreview.doc.tipo_dte_label} ·{' '}
+                            {linkedPreview.doc.codigo_generacion}
                           </p>
-                        )}
+                        </div>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => setLinkedPreview(null)}
+                          aria-label="Cerrar panel"
+                        >
+                          <X className="size-4" />
+                        </Button>
                       </div>
-                    ) : null}
-                  </div>
-                </>
-              )}
-            </section>
-          </section>
+                      {loadingLinks ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : linkedPreview.documents.length ? (
+                        <ul className="space-y-2 text-sm">
+                          {linkedPreview.documents.map((rel) => (
+                            <li
+                              key={rel.id}
+                              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-3 dark:border-white/10 dark:bg-zinc-950"
+                            >
+                              <div>
+                                <span className="font-medium">
+                                  {rel.tipo_dte_label || rel.tipo_dte}
+                                </span>
+                                <span className="mx-2 text-slate-400">·</span>
+                                <span className="font-mono text-xs">{rel.codigo_generacion}</span>
+                                <div className="text-xs text-slate-500 dark:text-zinc-400">
+                                  {rel.fec_emi} · {rel.emisor_nombre || '—'}
+                                </div>
+                              </div>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => void viewLinks(rel)}
+                              >
+                                Ver enlaces
+                              </Button>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-slate-600 dark:text-zinc-300">
+                          Sin documentos vinculados.
+                        </p>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              </section>
+            </div>
+          )}
+
+          <ImapConnectionModal
+            open={connectionModalOpen}
+            onClose={() => setConnectionModalOpen(false)}
+            status={status}
+            loadingStatus={loadingStatus}
+            provider={provider}
+            onProviderChange={setProvider}
+            host={host}
+            onHostChange={setHost}
+            port={port}
+            onPortChange={setPort}
+            email={email}
+            onEmailChange={setEmail}
+            password={password}
+            onPasswordChange={setPassword}
+            consent={consent}
+            onConsentChange={setConsent}
+            connecting={connecting}
+            onConnectPassword={connectImap}
+            onConnectMicrosoft={connectMicrosoft}
+            onDisconnect={disconnectImap}
+            disconnecting={disconnecting}
+            formatDateTime={formatDateTime}
+          />
         </div>
       </main>
     </PlanGate>
