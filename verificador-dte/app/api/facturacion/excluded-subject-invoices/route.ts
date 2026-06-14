@@ -127,7 +127,7 @@ async function buildExcludedSubjectReceptor(row: Record<string, unknown>) {
     throw new Error(`Completa el sujeto excluido: ${missing.join(', ')}.`);
   }
   if (!isValidDteMunicipioCode(receptor.direccion.municipio)) {
-    throw new Error(`Municipio del sujeto excluido invalido para DTE (CAT-013): ${receptor.direccion.municipio}. Debe ser codigo de 4 digitos.`);
+    throw new Error(`Municipio del sujeto excluido invalido para DTE (CAT-013): ${receptor.direccion.municipio}. Debe ser codigo de 2 digitos.`);
   }
 
   return receptor;
@@ -212,7 +212,7 @@ export async function POST(req: NextRequest) {
     }
     if (!isValidDteMunicipioCode(emisor.direccion.municipio)) {
       return NextResponse.json(
-        { error: `Municipio del emisor invalido para DTE (CAT-013): ${emisor.direccion.municipio}. Debe ser codigo de 4 digitos.` },
+        { error: `Municipio del emisor invalido para DTE (CAT-013): ${emisor.direccion.municipio}. Debe ser codigo de 2 digitos.` },
         { status: 400 }
       );
     }

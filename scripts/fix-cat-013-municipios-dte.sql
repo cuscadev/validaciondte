@@ -1,5 +1,5 @@
--- CAT-013 v1.1: codigo de 4 digitos para emisor/receptor.direccion.municipio en JSON DTE.
--- El codigo interno (2 digitos) se mantiene para FK con distritos y formularios.
+-- CAT-013 v1.1: codigo oficial de 4 digitos (depto + municipio) como referencia.
+-- En JSON DTE: departamento = 2 digitos, municipio = ultimos 2 digitos de codigo_dte.
 
 ALTER TABLE cat_006_municipios
   ADD COLUMN IF NOT EXISTS codigo_dte VARCHAR(4);

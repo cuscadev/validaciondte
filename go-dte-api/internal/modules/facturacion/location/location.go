@@ -2,20 +2,15 @@ package location
 
 import "strings"
 
-// DteMunicipioCode builds the CAT-013 value for DTE JSON (4 digits).
-func DteMunicipioCode(departamento, municipio, codigoDte string) string {
-	if code := LeftPadDigits(DigitsOnly(codigoDte), 4); len(DigitsOnly(codigoDte)) >= 4 {
-		return code
+// DteMunicipioCode returns the 2-digit CAT-013 municipio suffix for DTE JSON.
+func DteMunicipioCode(_departamento, municipio, codigoDte string) string {
+	if digits := DigitsOnly(codigoDte); len(digits) >= 4 {
+		return LeftPadDigits(digits[len(digits)-2:], 2)
 	}
-	dept := LeftPadDigits(departamento, 2)
-	digits := DigitsOnly(municipio)
-	if dept == "" || digits == "" {
-		return LeftPadDigits(municipio, 4)
+	if digits := DigitsOnly(municipio); len(digits) >= 4 {
+		return LeftPadDigits(digits[len(digits)-2:], 2)
 	}
-	if len(digits) >= 4 {
-		return digits[len(digits)-4:]
-	}
-	return dept + LeftPadDigits(municipio, 2)
+	return LeftPadDigits(municipio, 2)
 }
 
 func DigitsOnly(value string) string {

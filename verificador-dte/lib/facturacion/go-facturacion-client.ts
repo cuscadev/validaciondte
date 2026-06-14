@@ -256,7 +256,7 @@ export function validateEmisorForEmission(emisor: DteEmisorInput) {
   }
   if (!isValidDteMunicipioCode(direccion.municipio)) {
     throw new GoFacturacionError(
-      `Municipio del emisor invalido para DTE (CAT-013): ${emisor.direccion.municipio}. Debe ser codigo de 4 digitos (departamento + municipio). Ve a Perfil / Datos del emisor y selecciona ubicacion valida.`,
+      `Municipio del emisor invalido para DTE (CAT-013): ${emisor.direccion.municipio}. Debe ser codigo de 2 digitos. Ve a Perfil / Datos del emisor y selecciona ubicacion valida.`,
       400
     );
   }

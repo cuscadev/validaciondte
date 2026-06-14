@@ -43,34 +43,28 @@ export function sanitizeLocationCodeForForm(value: unknown): string {
   return normalized === '00' ? '' : normalized;
 }
 
-/** CAT-013: municipio en JSON DTE = codigo oficial de 4 digitos (depto + municipio). */
+/** CAT-013: municipio en JSON DTE = 2 digitos (sufijo oficial). codigo_dte (4 digitos) se usa solo como referencia. */
 export function toDteMunicipioCode(
-  departamento: unknown,
+  _departamento: unknown,
   municipio: unknown,
   codigoDte?: unknown
 ): string {
   const official = cleanDigits(codigoDte);
   if (official.length >= 4) {
-    return official.slice(-4).padStart(4, '0');
+    return official.slice(-2).padStart(2, '0');
   }
 
-  const dept = normalizeLocationCode(departamento);
   const digits = cleanDigits(municipio);
-  if (!dept || !digits) return '';
-
   if (digits.length >= 4) {
-    return digits.slice(-4).padStart(4, '0');
+    return digits.slice(-2).padStart(2, '0');
   }
 
-  const muni = normalizeLocationCode(municipio);
-  return `${dept}${muni}`;
+  return normalizeLocationCode(municipio);
 }
 
 export function isValidDteMunicipioCode(value: unknown): boolean {
-  const code = String(value ?? '').trim();
-  if (!/^\d{4}$/.test(code)) return false;
-  if (code === '0000') return false;
-  return code.slice(2) !== '00';
+  const code = normalizeLocationCode(value);
+  return /^\d{2}$/.test(code) && code !== '00';
 }
 
 export function normalizeDteDireccion<T extends { departamento: string; municipio: string; distrito: string }>(

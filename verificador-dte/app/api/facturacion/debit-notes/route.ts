@@ -277,7 +277,7 @@ export async function POST(req: NextRequest) {
     }
     if (!isValidDteMunicipioCode(emisor.direccion.municipio)) {
       return NextResponse.json(
-        { error: `Municipio del emisor invalido para DTE (CAT-013): ${emisor.direccion.municipio}. Debe ser codigo de 4 digitos.`, stage },
+        { error: `Municipio del emisor invalido para DTE (CAT-013): ${emisor.direccion.municipio}. Debe ser codigo de 2 digitos.`, stage },
         { status: 400 }
       );
     }
@@ -315,7 +315,7 @@ export async function POST(req: NextRequest) {
     }
     if (!isValidDteMunicipioCode(receptor.direccion.municipio)) {
       return NextResponse.json(
-        { error: `Municipio del receptor invalido para DTE (CAT-013): ${receptor.direccion.municipio}. Debe ser codigo de 4 digitos.`, stage },
+        { error: `Municipio del receptor invalido para DTE (CAT-013): ${receptor.direccion.municipio}. Debe ser codigo de 2 digitos.`, stage },
         { status: 400 }
       );
     }

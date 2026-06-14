@@ -6,11 +6,11 @@ func TestDteMunicipioCode(t *testing.T) {
 	tests := []struct {
 		dept, muni, official, want string
 	}{
-		{"05", "01", "0511", "0511"},
-		{"05", "01", "", "0501"},
-		{"06", "14", "", "0614"},
-		{"06", "01", "0614", "0614"},
-		{"05", "0504", "", "0504"},
+		{"05", "01", "0511", "11"},
+		{"05", "01", "", "01"},
+		{"06", "14", "", "14"},
+		{"06", "0614", "", "14"},
+		{"04", "35", "0435", "35"},
 	}
 	for _, tc := range tests {
 		got := DteMunicipioCode(tc.dept, tc.muni, tc.official)

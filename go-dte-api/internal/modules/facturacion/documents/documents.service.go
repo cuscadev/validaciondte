@@ -557,9 +557,9 @@ func validateEmisor(emisor dto.EmisorInput) error {
 	if strings.TrimSpace(emisor.Direccion.Municipio) == "" {
 		return errors.New("emisor.direccion.municipio es requerido")
 	}
-	municipio := location.DteMunicipioCode(emisor.Direccion.Departamento, emisor.Direccion.Municipio, emisor.Direccion.Municipio)
-	if municipio == "" || municipio == "0000" || municipio[2:] == "00" {
-		return errors.New("emisor.direccion.municipio invalido: configura un municipio valido del catalogo CAT-013 (4 digitos)")
+	municipio := location.DteMunicipioCode(emisor.Direccion.Departamento, emisor.Direccion.Municipio, "")
+	if municipio == "" || municipio == "00" {
+		return errors.New("emisor.direccion.municipio invalido: configura un municipio valido del catalogo CAT-013 (2 digitos)")
 	}
 	if strings.TrimSpace(emisor.Telefono) == "" {
 		return errors.New("emisor.telefono es requerido")
@@ -1000,7 +1000,7 @@ func mapEmisor(input dto.EmisorInput) domain.Emisor {
 		CodActividad:    input.CodActividad,
 		DescActividad:   input.DescActividad,
 		NombreComercial: input.NombreComercial,
-		Direccion:       mapEmisorDireccion(input.Direccion),
+		Direccion:       mapDireccion(input.Direccion),
 		Telefono:        input.Telefono,
 		Correo:          input.Correo,
 		CodEstable:      input.CodEstable,
