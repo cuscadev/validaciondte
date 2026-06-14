@@ -6,6 +6,7 @@ import { Loader2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { auth } from '@/lib/firebase';
+import { sanitizeLocationCodeForForm } from '@/lib/facturacion/resolve-location';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,6 +33,9 @@ export type EmitterForm = {
   regimenTributarioCodigo: string;
   tipoAfiliacionCodigo: string;
   ambienteCodigo: string;
+  codEstable: string;
+  codPuntoVenta: string;
+  tipoEstablecimientoEmision: string;
   rolEmisor?: string;
   certificadoPath?: string;
 };
@@ -79,6 +83,9 @@ const emptyEmitterForm: EmitterForm = {
   regimenTributarioCodigo: '',
   tipoAfiliacionCodigo: '',
   ambienteCodigo: '00',
+  codEstable: '0001',
+  codPuntoVenta: '0001',
+  tipoEstablecimientoEmision: 'M',
 };
 
 const emptyCatalogs: ProfileCatalogs = {
@@ -108,17 +115,26 @@ function emitterToForm(data: Partial<EmitterForm>): EmitterForm {
     codigoActividad: data.codigoActividad || '',
     descripcionActividad: data.descripcionActividad || '',
     departamentoCodigo: data.departamentoCodigo || '',
-    municipioCodigo: lastTwoDigits(data.municipioCodigo),
-    distritoCodigo: lastTwoDigits(data.distritoCodigo),
+    municipioCodigo: sanitizeLocationCodeForForm(data.municipioCodigo),
+    distritoCodigo: sanitizeLocationCodeForForm(data.distritoCodigo),
     complementoDireccion: data.complementoDireccion || '',
     telefono: data.telefono || '',
     correo: data.correo || '',
     regimenTributarioCodigo: data.regimenTributarioCodigo || '',
     tipoAfiliacionCodigo: data.tipoAfiliacionCodigo || '',
     ambienteCodigo: data.ambienteCodigo || '00',
+    codEstable: normalizeEstableCode(data.codEstable),
+    codPuntoVenta: normalizeEstableCode(data.codPuntoVenta),
+    tipoEstablecimientoEmision: data.tipoEstablecimientoEmision || data.tipoEstablecimientoCodigo || 'M',
     rolEmisor: data.rolEmisor || '',
     certificadoPath: data.certificadoPath || '',
   };
+}
+
+function normalizeEstableCode(value?: string) {
+  const digits = String(value || '').replace(/\D/g, '');
+  if (!digits) return '0001';
+  return digits.padStart(4, '0').slice(-4);
 }
 
 function catalogLabel(row: CatalogRow) {
@@ -132,11 +148,6 @@ function catalogOptions(rows: CatalogRow[]): SearchableSelectOption[] {
     label: catalogLabel(row),
     description: row.descripcion,
   }));
-}
-
-function lastTwoDigits(value?: string) {
-  const clean = String(value || '').trim();
-  return clean.length > 2 ? clean.slice(-2) : clean;
 }
 
 export function EmitterSettingsForm({
@@ -288,6 +299,18 @@ export function EmitterSettingsForm({
       setError('NIT, NRC y nombre legal son obligatorios.');
       return;
     }
+    if (!form.departamentoCodigo || !form.municipioCodigo) {
+      setError('Selecciona departamento y municipio validos del catalogo.');
+      return;
+    }
+    if (filteredDistritos.length > 0 && !form.distritoCodigo) {
+      setError('Selecciona un distrito valido para el municipio.');
+      return;
+    }
+    if (!form.complementoDireccion.trim()) {
+      setError('Ingresa el complemento de direccion (calle, colonia, numero).');
+      return;
+    }
 
     setSaving(true);
     try {
@@ -300,7 +323,11 @@ export function EmitterSettingsForm({
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          codEstable: normalizeEstableCode(form.codEstable),
+          codPuntoVenta: normalizeEstableCode(form.codPuntoVenta),
+        }),
       });
       const data = (await res.json()) as {
         emitter?: Partial<EmitterForm>;
@@ -443,6 +470,39 @@ export function EmitterSettingsForm({
             onValueChange={(value) => setField('ambienteCodigo', value)}
             placeholder="Seleccionar ambiente"
             searchPlaceholder="Buscar ambiente"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="emitter-cod-estable">Cod. establecimiento</Label>
+          <Input
+            id="emitter-cod-estable"
+            name="codEstable"
+            value={form.codEstable}
+            onChange={handleChange}
+            placeholder="0001"
+            maxLength={4}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="emitter-cod-pv">Cod. punto de venta</Label>
+          <Input
+            id="emitter-cod-pv"
+            name="codPuntoVenta"
+            value={form.codPuntoVenta}
+            onChange={handleChange}
+            placeholder="0001"
+            maxLength={4}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="emitter-tipo-emision">Tipo establecimiento emision</Label>
+          <Input
+            id="emitter-tipo-emision"
+            name="tipoEstablecimientoEmision"
+            value={form.tipoEstablecimientoEmision}
+            onChange={handleChange}
+            placeholder="M"
+            maxLength={1}
           />
         </div>
         <div className="space-y-2 sm:col-span-2">

@@ -133,7 +133,7 @@ func (s *Service) CreateConsumerInvoice(req dto.CreateConsumerInvoiceRequest) (d
 			TipoMoneda:       monedaUSD,
 		},
 		DocumentoRelacionado: nil,
-		Emisor:               mapEmisor(req.Emisor),
+		Emisor:               finalizeEmisor(req.Emisor, req.Establecimiento, req.PuntoVenta),
 		Receptor:             mapReceptor(req.Receptor),
 		OtrosDocumentos:      nil,
 		VentaTercero:         nil,
@@ -209,7 +209,7 @@ func (s *Service) CreateTaxCreditInvoice(req dto.CreateTaxCreditInvoiceRequest) 
 			TipoMoneda:       monedaUSD,
 		},
 		DocumentoRelacionado: nil,
-		Emisor:               mapEmisor(req.Emisor),
+		Emisor:               finalizeEmisor(req.Emisor, req.Establecimiento, req.PuntoVenta),
 		Receptor:             mapTaxCreditReceptor(req.Receptor),
 		OtrosDocumentos:      nil,
 		VentaTercero:         nil,
@@ -281,7 +281,7 @@ func (s *Service) CreateExportInvoice(req dto.CreateExportInvoiceRequest) (dto.C
 			HorEmi:           horEmi,
 			TipoMoneda:       monedaUSD,
 		},
-		Emisor:          mapEmisor(req.Emisor),
+		Emisor:          finalizeEmisor(req.Emisor, req.Establecimiento, req.PuntoVenta),
 		Receptor:        mapExportReceptor(req.Receptor),
 		OtrosDocumentos: mapExportOtherDocuments(req.OtrosDocumentos),
 		VentaTercero:    mapVentaTercero(req.VentaTercero),
@@ -402,7 +402,7 @@ func (s *Service) createAdjustmentNote(req dto.CreateAdjustmentNoteRequest, tipo
 			Fusion:           req.Fusion,
 		},
 		DocumentoRelacionado: related,
-		Emisor:               mapEmisor(req.Emisor),
+		Emisor:               finalizeEmisor(req.Emisor, req.Establecimiento, req.PuntoVenta),
 		Receptor:             mapNoteReceptor(req.Receptor),
 		VentaTercero:         nil,
 		CuerpoDocumento:      cuerpo,
@@ -555,6 +555,10 @@ func validateEmisor(emisor dto.EmisorInput) error {
 	}
 	if strings.TrimSpace(emisor.Direccion.Municipio) == "" {
 		return errors.New("emisor.direccion.municipio es requerido")
+	}
+	municipio := leftPadDigits(emisor.Direccion.Municipio, 2)
+	if municipio == "00" {
+		return errors.New("emisor.direccion.municipio invalido: configura un municipio valido del catalogo CAT-006")
 	}
 	if strings.TrimSpace(emisor.Telefono) == "" {
 		return errors.New("emisor.telefono es requerido")
@@ -1003,12 +1007,28 @@ func mapEmisor(input dto.EmisorInput) domain.Emisor {
 	}
 }
 
+func finalizeEmisor(input dto.EmisorInput, establecimientoCodigo, puntoVentaCodigo string) domain.Emisor {
+	emisor := mapEmisor(input)
+	codEstable := leftPadDigits(firstNonEmpty(ptrString(input.CodEstable), establecimientoCodigo, "0001"), 4)
+	codPuntoVenta := leftPadDigits(firstNonEmpty(ptrString(input.CodPuntoVenta), puntoVentaCodigo, "0001"), 4)
+	emisor.CodEstable = &codEstable
+	emisor.CodPuntoVenta = &codPuntoVenta
+	return emisor
+}
+
+func ptrString(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return strings.TrimSpace(*value)
+}
+
 func mapDireccion(input dto.Direccion) domain.Direccion {
 	return domain.Direccion{
-		Departamento: input.Departamento,
-		Municipio:    input.Municipio,
-		Distrito:     input.Distrito,
-		Complemento:  input.Complemento,
+		Departamento: leftPadDigits(input.Departamento, 2),
+		Municipio:    leftPadDigits(input.Municipio, 2),
+		Distrito:     leftPadDigits(input.Distrito, 2),
+		Complemento:  strings.TrimSpace(input.Complemento),
 	}
 }
 
@@ -1344,7 +1364,7 @@ func (s *Service) CreateExtendedTaxDocument(req dto.CreateTaxCreditInvoiceReques
 			HorEmi:           horEmi,
 			TipoMoneda:       monedaUSD,
 		},
-		Emisor:          mapEmisor(req.Emisor),
+		Emisor:          finalizeEmisor(req.Emisor, req.Establecimiento, req.PuntoVenta),
 		Receptor:        mapTaxCreditReceptor(req.Receptor),
 		CuerpoDocumento: cuerpo,
 		Resumen:         resumen,

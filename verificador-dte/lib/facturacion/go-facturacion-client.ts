@@ -252,6 +252,18 @@ export function validateEmisorForEmission(emisor: DteEmisorInput) {
       400
     );
   }
+  if (emisor.direccion.municipio === '00') {
+    throw new GoFacturacionError(
+      'Municipio del emisor invalido (00). Ve a Perfil / Datos del emisor y selecciona departamento, municipio y distrito validos.',
+      400
+    );
+  }
+  if (emisor.direccion.distrito === '00') {
+    throw new GoFacturacionError(
+      'Distrito del emisor invalido (00). Ve a Perfil / Datos del emisor y selecciona un distrito valido.',
+      400
+    );
+  }
 }
 
 export function resolveEmissionEnvironment(

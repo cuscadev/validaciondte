@@ -18,21 +18,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Modal } from '@/components/ui/modal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { EmitterSettingsForm, type EmitterForm } from '@/components/profile/EmitterSettingsForm';
 
-type Emitter = {
-  nit?: string;
-  nrc?: string;
-  nombre?: string;
-  nombreComercial?: string;
-  codigoActividad?: string;
-  descripcionActividad?: string;
-  departamentoCodigo?: string;
-  municipioCodigo?: string;
-  distritoCodigo?: string;
-  complementoDireccion?: string;
-  telefono?: string;
-  correo?: string;
-};
+type Emitter = Partial<EmitterForm>;
 
 type Receptor = {
   id: number;
@@ -448,13 +436,16 @@ export default function FacturarConsumidorFinalPage() {
                   <CardContent>
                     <TabsContent value="emisor" className="mt-0">
                       {emitter ? (
-                        <div className="grid gap-3 text-sm md:grid-cols-3">
-                          <Info label="Nombre" value={emitter.nombre || '-'} />
-                          <Info label="NIT / NRC" value={`${emitter.nit || '-'} / ${emitter.nrc || '-'}`} />
-                          <Info label="Actividad" value={emitter.descripcionActividad || emitter.codigoActividad || '-'} />
-                          <Info label="Direccion" value={emitter.complementoDireccion || '-'} wide />
-                          <Info label="Telefono" value={emitter.telefono || '-'} />
-                          <Info label="Correo" value={emitter.correo || '-'} />
+                        <div className="space-y-4">
+                          <p className="text-sm text-muted-foreground">
+                            Corrige departamento, municipio, distrito y codigos de establecimiento antes de transmitir a Hacienda.
+                          </p>
+                          <EmitterSettingsForm
+                            saveLabel="Guardar datos del emisor"
+                            onSaved={(saved) => {
+                              setEmitter(saved);
+                            }}
+                          />
                         </div>
                       ) : (
                         <p className="text-sm text-muted-foreground">No hay emisor configurado.</p>

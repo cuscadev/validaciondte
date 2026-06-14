@@ -50,8 +50,8 @@ export function buildEmisorPayload(
     },
     telefono: getString(row.telefono),
     correo: getString(row.correo),
-    codEstable: nullableString(row.cod_estable) || '001',
-    codPuntoVenta: nullableString(row.cod_punto_venta) || '001',
+    codEstable: nullableString(row.cod_estable) || '0001',
+    codPuntoVenta: nullableString(row.cod_punto_venta) || '0001',
     tipoEstablecimiento:
       getString(row.tipo_establecimiento_emision) || getString(row.tipo_establecimiento_codigo) || 'M',
   };

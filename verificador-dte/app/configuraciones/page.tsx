@@ -16,6 +16,7 @@ import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
 import { useTranslation } from 'react-i18next';
 import { CertificateSettingsCard } from '@/components/configuraciones/CertificateSettingsCard';
+import { EmitterSettingsForm } from '@/components/profile/EmitterSettingsForm';
 
 interface SmtpForm {
   host: string;
@@ -299,6 +300,20 @@ export default function ConfiguracionesPage() {
       </Card>
 
       {appUser && <CertificateSettingsCard />}
+
+      {appUser && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Datos del emisor (ubicacion y facturacion)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-4 text-sm text-muted-foreground">
+              Departamento, municipio, distrito y codigos de establecimiento usados en tus DTE.
+            </p>
+            <EmitterSettingsForm saveLabel="Guardar emisor" />
+          </CardContent>
+        </Card>
+      )}
 
       {canShowHaciendaCard && (
       <Card>

@@ -36,6 +36,12 @@ export function normalizeLocationCode(value: unknown): string {
   return digits.slice(-2).padStart(2, '0');
 }
 
+/** Convierte codigos invalidos de placeholder (00) a vacio para formularios. */
+export function sanitizeLocationCodeForForm(value: unknown): string {
+  const normalized = normalizeLocationCode(value);
+  return normalized === '00' ? '' : normalized;
+}
+
 export function toDteLocationCodes(location: ResolvedLocation) {
   return {
     departamento: location.departamento,

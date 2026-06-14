@@ -27,6 +27,7 @@ import {
 import { auth, storage } from '@/lib/firebase';
 import { AppUser, getUser, updateUser } from '@/lib/firestoreUser';
 import { QUERY_CACHE_MS } from '@/components/QueryProvider';
+import { sanitizeLocationCodeForForm } from '@/lib/facturacion/resolve-location';
 
 import {
 	Card,
@@ -66,6 +67,9 @@ type EmitterForm = {
 	regimenTributarioCodigo: string;
 	tipoAfiliacionCodigo: string;
 	ambienteCodigo: string;
+	codEstable: string;
+	codPuntoVenta: string;
+	tipoEstablecimientoEmision: string;
 	rolEmisor?: string;
 	certificadoPath?: string;
 	// Configuración de facturación
@@ -123,6 +127,9 @@ const emptyEmitterForm: EmitterForm = {
 	regimenTributarioCodigo: '',
 	tipoAfiliacionCodigo: '',
 	ambienteCodigo: '00',
+	codEstable: '0001',
+	codPuntoVenta: '0001',
+	tipoEstablecimientoEmision: 'M',
 };
 
 const emptyCatalogs: ProfileCatalogs = {
@@ -153,14 +160,18 @@ function emitterToForm(data: Partial<EmitterForm>): EmitterForm {
 		codigoActividad: data.codigoActividad || '',
 		descripcionActividad: data.descripcionActividad || '',
 		departamentoCodigo: data.departamentoCodigo || '',
-		municipioCodigo: lastTwoDigits(data.municipioCodigo),
-		distritoCodigo: lastTwoDigits(data.distritoCodigo),
+		municipioCodigo: sanitizeLocationCodeForForm(data.municipioCodigo),
+		distritoCodigo: sanitizeLocationCodeForForm(data.distritoCodigo),
 		complementoDireccion: data.complementoDireccion || '',
 		telefono: data.telefono || '',
 		correo: data.correo || '',
 		regimenTributarioCodigo: data.regimenTributarioCodigo || '',
 		tipoAfiliacionCodigo: data.tipoAfiliacionCodigo || '',
 		ambienteCodigo: data.ambienteCodigo || '00',
+		codEstable: normalizeEstableCode(data.codEstable),
+		codPuntoVenta: normalizeEstableCode(data.codPuntoVenta),
+		tipoEstablecimientoEmision:
+			data.tipoEstablecimientoEmision || data.tipoEstablecimientoCodigo || 'M',
 		rolEmisor: data.rolEmisor || '',
 		certificadoPath: data.certificadoPath || '',
 		metodoPagoDefecto: data.metodoPagoDefecto || '',
@@ -188,9 +199,10 @@ function catalogOptions(rows: CatalogRow[]): SearchableSelectOption[] {
 	}));
 }
 
-function lastTwoDigits(value?: string) {
-	const clean = String(value || '').trim();
-	return clean.length > 2 ? clean.slice(-2) : clean;
+function normalizeEstableCode(value?: string) {
+	const digits = String(value || '').replace(/\D/g, '');
+	if (!digits) return '0001';
+	return digits.padStart(4, '0').slice(-4);
 }
 
 const environmentOptions: SearchableSelectOption[] = [
@@ -1266,13 +1278,65 @@ export default function ProfilePage() {
 														id="emitter-distrito"
 														name="distritoCodigo"
 														value={emitterForm.distritoCodigo}
+														disabled={!emitterForm.municipioCodigo || filteredDistritos.length === 0}
 														options={catalogOptionGroups.distritos}
 														onValueChange={(nextValue) =>
 															setEmitterField('distritoCodigo', nextValue)
 														}
-														placeholder="Seleccionar distrito"
+														placeholder={
+															emitterForm.municipioCodigo
+																? filteredDistritos.length > 0
+																	? 'Seleccionar distrito'
+																	: 'Sin distritos en catalogo'
+																: 'Selecciona municipio primero'
+														}
 														searchPlaceholder="Buscar distrito"
 														clearable
+													/>
+												</div>
+
+												<div className="space-y-2">
+													<Label htmlFor="emitter-cod-estable" className="text-foreground">
+														Cod. establecimiento
+													</Label>
+													<Input
+														id="emitter-cod-estable"
+														name="codEstable"
+														value={emitterForm.codEstable}
+														onChange={handleEmitterChange}
+														placeholder="0001"
+														maxLength={4}
+														className="h-12 rounded-xl border-border bg-background text-foreground"
+													/>
+												</div>
+
+												<div className="space-y-2">
+													<Label htmlFor="emitter-cod-pv" className="text-foreground">
+														Cod. punto de venta
+													</Label>
+													<Input
+														id="emitter-cod-pv"
+														name="codPuntoVenta"
+														value={emitterForm.codPuntoVenta}
+														onChange={handleEmitterChange}
+														placeholder="0001"
+														maxLength={4}
+														className="h-12 rounded-xl border-border bg-background text-foreground"
+													/>
+												</div>
+
+												<div className="space-y-2">
+													<Label htmlFor="emitter-tipo-emision" className="text-foreground">
+														Tipo establecimiento emision
+													</Label>
+													<Input
+														id="emitter-tipo-emision"
+														name="tipoEstablecimientoEmision"
+														value={emitterForm.tipoEstablecimientoEmision}
+														onChange={handleEmitterChange}
+														placeholder="M"
+														maxLength={1}
+														className="h-12 rounded-xl border-border bg-background text-foreground"
 													/>
 												</div>
 
