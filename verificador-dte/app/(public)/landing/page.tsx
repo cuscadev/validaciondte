@@ -116,9 +116,9 @@ export default function LandingPage() {
 
 				<div className="absolute inset-y-0 left-0 z-0 hidden w-[58vw] bg-gradient-to-r from-white/82 via-white/44 to-transparent md:block dark:hidden" />
 
-				<div className="pointer-events-none absolute right-[2vw] top-1/2 z-0 hidden h-[82vh] max-h-[860px] min-h-[520px] w-[60vw] min-w-[720px] -translate-y-1/2 bg-[radial-gradient(ellipse_at_center,rgba(0,209,255,0.14)_0%,rgba(0,209,255,0.06)_38%,transparent_72%)] md:block dark:bg-[radial-gradient(ellipse_at_center,rgba(0,209,255,0.2)_0%,rgba(139,92,246,0.08)_42%,transparent_75%)]" />
+				<div className="pointer-events-none absolute right-[3vw] top-1/2 z-0 hidden h-[76vh] max-h-[820px] min-h-[480px] w-[58vw] min-w-[700px] -translate-y-1/2 bg-[radial-gradient(ellipse_at_center,rgba(0,209,255,0.12)_0%,rgba(0,209,255,0.05)_38%,transparent_72%)] md:block dark:bg-[radial-gradient(ellipse_at_center,rgba(0,209,255,0.18)_0%,rgba(139,92,246,0.08)_42%,transparent_75%)]" />
 
-				<div className="absolute inset-y-0 right-0 z-0 hidden h-full w-[58vw] min-w-[680px] max-w-[920px] md:block lg:w-[55vw]">
+				<div className="absolute inset-y-0 right-0 z-0 hidden h-full w-[64vw] min-w-[760px] opacity-100 drop-shadow-[0_32px_80px_rgba(15,23,42,0.2)] md:block dark:drop-shadow-none">
 					<ThreeLandingScene />
 				</div>
 
