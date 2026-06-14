@@ -144,7 +144,7 @@ export async function POST(req: NextRequest) {
     const upstream = await fetch(`${getGoDteApiUrl()}/api/facturacion/certificates/upload`, {
       method: 'POST',
       headers: goInternalHeaders({ 'Content-Type': contentType }),
-      body,
+      body: new Uint8Array(body),
       cache: 'no-store',
     });
 
