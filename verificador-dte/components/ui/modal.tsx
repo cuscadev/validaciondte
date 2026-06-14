@@ -23,13 +23,13 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto overscroll-contain bg-black/40 p-2 sm:items-center sm:p-4"
       onClick={handleBackdropClick}
       role="presentation"
     >
       <div
         className={cn(
-          "relative max-w-full min-w-[320px] rounded-xl bg-background p-6 shadow-xl",
+          "relative my-auto w-full max-w-[calc(100vw-1rem)] min-w-0 rounded-xl bg-background p-4 shadow-xl sm:min-w-[320px] sm:p-6",
           className
         )}
         onClick={(e) => e.stopPropagation()}

@@ -704,24 +704,24 @@ export default function UsersAdminPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <div className="flex w-full flex-col gap-4 p-0">
-        <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
-          <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
-            <div>
-              <p className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.24em] text-primary text-primary">
-                <Users className="size-4" />
+    <main className="min-w-0 bg-background text-foreground">
+      <div className="flex w-full min-w-0 flex-col gap-3 sm:gap-4">
+        <section className="rounded-lg border border-border bg-card p-4 shadow-sm sm:p-5">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-5">
+            <div className="min-w-0">
+              <p className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary sm:mb-3 sm:text-sm sm:tracking-[0.24em]">
+                <Users className="size-4 shrink-0" />
                 Gestion de usuarios
               </p>
-              <h1 className="text-3xl font-extrabold tracking-tight md:text-5xl">
+              <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl lg:text-5xl">
                 Usuarios, roles y cupos delegados
               </h1>
-              <p className="mt-4 max-w-3xl text-sm leading-6 text-muted-foreground md:text-base">
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground sm:mt-4 md:text-base">
                 Administra superadmins, clientes y colaboradores desde una sola vista.
               </p>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[34rem]">
+            <div className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-3 sm:grid-cols-3 lg:w-full lg:max-w-[34rem]">
               <StatCard icon={BadgeCheck} label="Clientes" value={totals.cliente} />
               <StatCard icon={Users} label="Colaboradores" value={totals.colaborador} />
               <StatCard icon={ShieldCheck} label="Superadmins" value={totals.superadmin} />
@@ -729,34 +729,37 @@ export default function UsersAdminPage() {
           </div>
         </section>
 
-        <section className="rounded-lg border border-border bg-card p-4 shadow-sm">
-          <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h2 className="text-xl font-bold">Todos los usuarios</h2>
+        <section className="min-w-0 rounded-lg border border-border bg-card p-3 shadow-sm sm:p-4">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <h2 className="text-lg font-bold sm:text-xl">Todos los usuarios</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {filteredRows.length} de {totals.all} usuario{totals.all === 1 ? '' : 's'}.
               </p>
             </div>
 
-            <Button className="bg-primary font-bold text-black hover:bg-primary/90" onClick={openCreateModal}>
+            <Button
+              className="w-full bg-primary font-bold text-black hover:bg-primary/90 sm:w-auto"
+              onClick={openCreateModal}
+            >
               <UserPlus className="size-4" />
               Crear usuario
             </Button>
           </div>
 
           <div className="mb-4 flex flex-col gap-3">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <UserTableSearch
                 value={search}
                 onChange={setSearch}
                 placeholder="Buscar por nombre, correo, UID, rol o membresia..."
               />
-              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+              <label className="flex shrink-0 items-center gap-2 text-sm text-muted-foreground">
                 Filas
                 <select
                   value={rowsPerPage}
                   onChange={(event) => setRowsPerPage(Number(event.target.value))}
-                  className="h-9 rounded-md border border-border bg-background px-2 text-sm outline-none focus:ring-2 focus:ring-primary/40 border-border"
+                  className="h-9 rounded-md border border-border bg-background px-2 text-sm outline-none focus:ring-2 focus:ring-primary/40"
                 >
                   {[10, 25, 50, 100].map((value) => (
                     <option key={value} value={value}>
@@ -766,12 +769,13 @@ export default function UsersAdminPage() {
                 </select>
               </label>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:thin]">
               {ROLE_FILTERS.map((filter) => (
                 <Button
                   key={filter.id}
                   type="button"
                   size="sm"
+                  className="shrink-0"
                   variant={roleFilter === filter.id ? 'default' : 'outline'}
                   onClick={() => setRoleFilter(filter.id)}
                 >
@@ -798,12 +802,12 @@ export default function UsersAdminPage() {
             onToggleBlock={(row) => handleSessionAction(row.uid, row.disabled ? 'unblock' : 'block')}
           />
 
-          <div className="mt-0 flex flex-col items-center justify-between gap-3 rounded-b-lg border-x border-b border-border bg-background px-3 py-2 sm:flex-row">
-            <span className="text-sm text-muted-foreground">
+          <div className="mt-3 flex flex-col items-center justify-between gap-3 rounded-lg border border-border bg-background px-3 py-2 sm:mt-0 sm:flex-row sm:rounded-b-lg sm:border-x sm:border-b sm:border-t-0">
+            <span className="text-center text-sm text-muted-foreground sm:text-left">
               Pagina <span className="font-medium text-foreground">{currentPage}</span> de {totalPages}
             </span>
 
-            <div className="flex items-center gap-2">
+            <div className="flex w-full items-center justify-center gap-1 sm:w-auto sm:gap-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -1020,7 +1024,7 @@ function LimitEditor({
           </h3>
           <p className="mt-1 text-sm text-muted-foreground">{description}</p>
         </div>
-        <Button type="button" className="bg-primary font-bold text-black hover:bg-primary/90" onClick={onSave}>
+        <Button type="button" className="w-full bg-primary font-bold text-black hover:bg-primary/90 sm:w-auto" onClick={onSave}>
           Guardar limites
         </Button>
       </div>
@@ -1067,7 +1071,7 @@ function LimitEditor({
                   <p className="text-sm font-medium">{route.label}</p>
                   <label className="grid gap-1 text-xs text-muted-foreground">
                     Limite mensual
-                    <div className="grid grid-cols-[minmax(0,1fr)_8rem] gap-2">
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_8rem]">
                       <input
                         type="number"
                         min={1}
@@ -1075,7 +1079,7 @@ function LimitEditor({
                         onChange={(event) => updateLimit(route.key, event.target.value)}
                         placeholder="Heredar"
                         disabled={draft[route.key] === UNLIMITED_LIMIT_VALUE}
-                        className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60 border-border"
+                        className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
                       />
                       <select
                         value={draft[route.key] === UNLIMITED_LIMIT_VALUE ? UNLIMITED_LIMIT_VALUE : draft[route.key] ? 'custom' : INHERIT_LIMIT_VALUE}
@@ -1093,7 +1097,7 @@ function LimitEditor({
                   </label>
                   <label className="grid gap-1 text-xs text-muted-foreground">
                     Limite por proceso
-                    <div className="grid grid-cols-[minmax(0,1fr)_8rem] gap-2">
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_8rem]">
                       <input
                         type="number"
                         min={1}
@@ -1105,7 +1109,7 @@ function LimitEditor({
                         onChange={(event) => updateLimit(batchDraftKey(route.key), event.target.value)}
                         placeholder="Heredar"
                         disabled={draft[batchDraftKey(route.key)] === UNLIMITED_LIMIT_VALUE}
-                        className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60 border-border"
+                        className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
                       />
                       <select
                         value={
@@ -1162,7 +1166,7 @@ function UsageAdjustmentPanel({
             Cada usuario tiene su propio conteo. Los ajustes modifican el saldo del mes sin borrar el historial.
           </p>
         </div>
-        <div className="rounded-md border border-border px-3 py-2 text-sm font-semibold">
+        <div className="rounded-md border border-border px-3 py-2 text-sm font-semibold sm:max-w-md">
           {data
             ? `${data.automaticReset ? 'Automatico' : 'Manual'} · ciclo desde ${formatDate(data.periodStart)}${data.renewalDate ? ` · renovacion ${formatDate(data.renewalDate)}` : ` · dia ${data.resetDayOfMonth}`}`
             : 'Ciclo actual'}
@@ -1174,7 +1178,56 @@ function UsageAdjustmentPanel({
           Cargando consumo...
         </div>
       ) : (
-        <div className="mt-4 overflow-x-auto">
+        <>
+          <div className="mt-4 space-y-3 md:hidden">
+            {data?.routes.map((route) => (
+              <article key={route.key} className="rounded-lg border border-border bg-background p-3 text-sm">
+                <div className="font-semibold">{route.label}</div>
+                <div className="text-xs text-muted-foreground">{route.groupLabel}</div>
+                <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <dt className="text-muted-foreground">Usado</dt>
+                    <dd className="font-bold">{route.used}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Limite</dt>
+                    <dd>{route.limit === null ? 'Ilimitado' : route.limit}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Restante</dt>
+                    <dd>{route.remaining === null ? '-' : route.remaining}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Ajuste</dt>
+                    <dd>{route.adjustment}</dd>
+                  </div>
+                </dl>
+                <div className="mt-3 flex flex-col gap-2">
+                  <input
+                    type="number"
+                    min={0}
+                    value={drafts[route.key] || ''}
+                    onChange={(event) => onDraftChange(route.key, event.target.value)}
+                    placeholder="Cantidad"
+                    className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary/40"
+                  />
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                    <Button type="button" variant="outline" size="sm" onClick={() => onAdjust(route.key, 'increment')}>
+                      Sumar
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => onAdjust(route.key, 'decrement')}>
+                      Restar
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => onAdjust(route.key, 'set')}>
+                      Resetear a cero
+                    </Button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div className="mt-4 hidden overflow-x-auto md:block">
           <table className="w-full min-w-[860px] text-sm">
             <thead className={TABLE_HEAD}>
               <tr>
@@ -1224,7 +1277,8 @@ function UsageAdjustmentPanel({
               ))}
             </tbody>
           </table>
-        </div>
+          </div>
+        </>
       )}
     </section>
   );
@@ -1255,7 +1309,7 @@ function ClientStatsPanel({
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary text-primary">
             Estadisticas
           </p>
-          <h2 className="mt-2 text-2xl font-bold">
+          <h2 className="mt-2 text-xl font-bold sm:text-2xl">
             {data?.organization.displayTitle || client?.displayName || client?.email || 'Cliente'}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -1291,7 +1345,33 @@ function ClientStatsPanel({
                 Titular y colaboradores asociados a este cliente.
               </p>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto md:hidden">
+              <div className="space-y-3 p-3">
+                {data?.members.length ? (
+                  data.members.map((member) => (
+                    <article key={member.uid} className="rounded-lg border border-border bg-background p-3 text-sm">
+                      <div className="font-semibold">{member.displayName || member.email}</div>
+                      <div className="text-xs text-muted-foreground">{member.email}</div>
+                      <span className="mt-2 inline-flex rounded-full bg-muted px-2 py-1 text-xs font-semibold capitalize text-muted-foreground">
+                        {member.role === 'cliente' ? 'Cliente' : member.orgRole === 'administrador' ? 'Delegado admin' : 'Colaborador'}
+                      </span>
+                      <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                        <div><dt className="text-muted-foreground">Procesos</dt><dd className="font-semibold">{member.totals.processes}</dd></div>
+                        <div><dt className="text-muted-foreground">DTE</dt><dd>{member.totals.records}</dd></div>
+                        <div><dt className="text-muted-foreground">Exitosos</dt><dd className="text-emerald-600 dark:text-emerald-300">{member.totals.successCount}</dd></div>
+                        <div><dt className="text-muted-foreground">Fallidos</dt><dd className="text-red-600 dark:text-red-300">{member.totals.errorCount}</dd></div>
+                        <div><dt className="text-muted-foreground">Error</dt><dd>{getErrorRate(member.totals)}%</dd></div>
+                      </dl>
+                    </article>
+                  ))
+                ) : (
+                  <div className="py-8 text-center text-muted-foreground">
+                    Sin actividad registrada en este periodo.
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="hidden overflow-x-auto md:block">
               <table className="w-full min-w-[760px] text-sm">
                 <thead className={TABLE_HEAD}>
                   <tr>
@@ -1346,7 +1426,24 @@ function ClientStatsPanel({
                 <h3 className="font-bold">DTE por opcion de validacion</h3>
                 <p className="text-sm text-muted-foreground">Modulos mas utilizados por toda la organizacion.</p>
               </div>
-              <div className="overflow-x-auto">
+              <div className="space-y-3 p-3 md:hidden">
+                {data?.byModule.length ? (
+                  data.byModule.map((module) => (
+                    <article key={module.routeKey || module.moduleName} className="rounded-lg border border-border bg-background p-3 text-sm">
+                      <div className="font-semibold">{module.moduleName}</div>
+                      <dl className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                        <div><dt className="text-muted-foreground">Procesos</dt><dd>{module.count}</dd></div>
+                        <div><dt className="text-muted-foreground">DTE</dt><dd>{module.records}</dd></div>
+                        <div><dt className="text-muted-foreground">Exitosos</dt><dd className="text-emerald-600 dark:text-emerald-300">{module.successCount}</dd></div>
+                        <div><dt className="text-muted-foreground">Fallidos</dt><dd className="text-red-600 dark:text-red-300">{module.errorCount}</dd></div>
+                      </dl>
+                    </article>
+                  ))
+                ) : (
+                  <div className="py-8 text-center text-muted-foreground">Sin modulos procesados todavia.</div>
+                )}
+              </div>
+              <div className="hidden overflow-x-auto md:block">
                 <table className="w-full min-w-[620px] text-sm">
                   <thead className={TABLE_HEAD}>
                     <tr>
