@@ -6,6 +6,7 @@ import { createEmision, mergeEmision } from '@/lib/facturacion/emisiones-store';
 import {
   resolveReceptorDteLocation,
 } from '@/lib/facturacion/build-emisor';
+import { isValidDteMunicipioCode } from '@/lib/facturacion/resolve-location';
 import { prepareEmission, postGo } from '@/lib/facturacion/prepare-emission';
 import { GoFacturacionError } from '@/lib/facturacion/go-facturacion-client';
 import { getHaciendaTokenForUser } from '@/lib/hacienda-auth';
@@ -125,8 +126,8 @@ async function buildExcludedSubjectReceptor(row: Record<string, unknown>) {
   if (missing.length) {
     throw new Error(`Completa el sujeto excluido: ${missing.join(', ')}.`);
   }
-  if (!/^\d{2}$/.test(receptor.direccion.municipio)) {
-    throw new Error(`Municipio del sujeto excluido invalido para DTE: ${receptor.direccion.municipio}. Debe tener 2 digitos.`);
+  if (!isValidDteMunicipioCode(receptor.direccion.municipio)) {
+    throw new Error(`Municipio del sujeto excluido invalido para DTE (CAT-013): ${receptor.direccion.municipio}. Debe ser codigo de 4 digitos.`);
   }
 
   return receptor;
@@ -209,9 +210,9 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    if (!/^\d{2}$/.test(emisor.direccion.municipio)) {
+    if (!isValidDteMunicipioCode(emisor.direccion.municipio)) {
       return NextResponse.json(
-        { error: `Municipio del emisor invalido para DTE: ${emisor.direccion.municipio}. Debe tener 2 digitos.` },
+        { error: `Municipio del emisor invalido para DTE (CAT-013): ${emisor.direccion.municipio}. Debe ser codigo de 4 digitos.` },
         { status: 400 }
       );
     }

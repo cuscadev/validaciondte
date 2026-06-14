@@ -6,6 +6,7 @@ import { createEmision, getEmisionDataById, mergeEmision } from '@/lib/facturaci
 import {
   resolveReceptorDteLocation,
 } from '@/lib/facturacion/build-emisor';
+import { isValidDteMunicipioCode, toDteMunicipioCode } from '@/lib/facturacion/resolve-location';
 import { prepareEmission, postGo } from '@/lib/facturacion/prepare-emission';
 import { GoFacturacionError } from '@/lib/facturacion/go-facturacion-client';
 import { getHaciendaTokenForUser } from '@/lib/hacienda-auth';
@@ -63,10 +64,6 @@ function lastTwoDigits(value: unknown) {
   const digits = cleanDigits(value);
   if (!digits) return '';
   return digits.slice(-2).padStart(2, '0');
-}
-
-function municipioDteCode(_departamento: string, municipio: string) {
-  return lastTwoDigits(municipio);
 }
 
 function normalizeNrc(value: unknown, required = false) {
@@ -153,7 +150,7 @@ function buildNoteReceptorFromDte(receptor: JsonRecord) {
     nombreComercial: nullableString(receptor.nombreComercial),
     direccion: {
       departamento: getString(direccion.departamento),
-      municipio: municipioDteCode(getString(direccion.departamento), getString(direccion.municipio)),
+      municipio: toDteMunicipioCode(getString(direccion.departamento), getString(direccion.municipio)),
       distrito: lastTwoDigits(direccion.distrito),
       complemento: getString(direccion.complemento),
     },
@@ -278,9 +275,9 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    if (!/^\d{2}$/.test(emisor.direccion.municipio)) {
+    if (!isValidDteMunicipioCode(emisor.direccion.municipio)) {
       return NextResponse.json(
-        { error: `Municipio del emisor invalido para DTE: ${emisor.direccion.municipio}. Debe tener 2 digitos.`, stage },
+        { error: `Municipio del emisor invalido para DTE (CAT-013): ${emisor.direccion.municipio}. Debe ser codigo de 4 digitos.`, stage },
         { status: 400 }
       );
     }
@@ -316,9 +313,9 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    if (!/^\d{2}$/.test(receptor.direccion.municipio)) {
+    if (!isValidDteMunicipioCode(receptor.direccion.municipio)) {
       return NextResponse.json(
-        { error: `Municipio del receptor invalido para DTE: ${receptor.direccion.municipio}. Debe tener 2 digitos.`, stage },
+        { error: `Municipio del receptor invalido para DTE (CAT-013): ${receptor.direccion.municipio}. Debe ser codigo de 4 digitos.`, stage },
         { status: 400 }
       );
     }

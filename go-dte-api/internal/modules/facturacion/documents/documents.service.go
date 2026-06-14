@@ -13,6 +13,7 @@ import (
 	"verificador-dte/go-dte-api/internal/modules/facturacion/catalogs"
 	"verificador-dte/go-dte-api/internal/modules/facturacion/documents/domain"
 	"verificador-dte/go-dte-api/internal/modules/facturacion/documents/dto"
+	"verificador-dte/go-dte-api/internal/modules/facturacion/location"
 )
 
 const (
@@ -556,9 +557,9 @@ func validateEmisor(emisor dto.EmisorInput) error {
 	if strings.TrimSpace(emisor.Direccion.Municipio) == "" {
 		return errors.New("emisor.direccion.municipio es requerido")
 	}
-	municipio := leftPadDigits(emisor.Direccion.Municipio, 2)
-	if municipio == "00" {
-		return errors.New("emisor.direccion.municipio invalido: configura un municipio valido del catalogo CAT-006")
+	municipio := location.DteMunicipioCode(emisor.Direccion.Departamento, emisor.Direccion.Municipio)
+	if municipio == "" || municipio == "0000" || municipio[2:] == "00" {
+		return errors.New("emisor.direccion.municipio invalido: configura un municipio valido del catalogo CAT-013 (4 digitos)")
 	}
 	if strings.TrimSpace(emisor.Telefono) == "" {
 		return errors.New("emisor.telefono es requerido")
@@ -1024,11 +1025,17 @@ func ptrString(value *string) string {
 }
 
 func mapDireccion(input dto.Direccion) domain.Direccion {
+	dept, muni, dist, comp := location.MapDteDireccion(
+		input.Departamento,
+		input.Municipio,
+		input.Distrito,
+		input.Complemento,
+	)
 	return domain.Direccion{
-		Departamento: leftPadDigits(input.Departamento, 2),
-		Municipio:    leftPadDigits(input.Municipio, 2),
-		Distrito:     leftPadDigits(input.Distrito, 2),
-		Complemento:  strings.TrimSpace(input.Complemento),
+		Departamento: dept,
+		Municipio:    muni,
+		Distrito:     dist,
+		Complemento:  comp,
 	}
 }
 
@@ -1111,12 +1118,7 @@ func mapTaxCreditReceptor(input dto.TaxCreditReceptorInput) domain.ReceptorCredi
 		CodActividad:    input.CodActividad,
 		DescActividad:   input.DescActividad,
 		NombreComercial: input.NombreComercial,
-		Direccion: domain.Direccion{
-			Departamento: input.Direccion.Departamento,
-			Municipio:    input.Direccion.Municipio,
-			Distrito:     input.Direccion.Distrito,
-			Complemento:  input.Direccion.Complemento,
-		},
+		Direccion:       mapDireccion(input.Direccion),
 		Telefono: input.Telefono,
 		Correo:   input.Correo,
 	}
@@ -1144,12 +1146,7 @@ func mapNoteReceptor(input dto.NoteReceptorInput) domain.ReceptorNota {
 		CodActividad:    input.CodActividad,
 		DescActividad:   input.DescActividad,
 		NombreComercial: input.NombreComercial,
-		Direccion: domain.Direccion{
-			Departamento: input.Direccion.Departamento,
-			Municipio:    input.Direccion.Municipio,
-			Distrito:     input.Direccion.Distrito,
-			Complemento:  input.Direccion.Complemento,
-		},
+		Direccion:       mapDireccion(input.Direccion),
 		Telefono: input.Telefono,
 		Correo:   input.Correo,
 	}
@@ -1162,12 +1159,7 @@ func mapExcludedSubjectIssuer(input dto.EmisorInput) domain.EmisorSujetoExcluido
 		Nombre:        input.Nombre,
 		CodActividad:  input.CodActividad,
 		DescActividad: input.DescActividad,
-		Direccion: domain.Direccion{
-			Departamento: input.Direccion.Departamento,
-			Municipio:    input.Direccion.Municipio,
-			Distrito:     input.Direccion.Distrito,
-			Complemento:  input.Direccion.Complemento,
-		},
+		Direccion:       mapDireccion(input.Direccion),
 		Telefono:      input.Telefono,
 		CodEstable:    input.CodEstable,
 		CodPuntoVenta: input.CodPuntoVenta,
@@ -1182,12 +1174,7 @@ func mapExcludedSubjectReceptor(input dto.ExcludedSubjectReceptorInput) domain.R
 		Nombre:        input.Nombre,
 		CodActividad:  input.CodActividad,
 		DescActividad: input.DescActividad,
-		Direccion: domain.Direccion{
-			Departamento: input.Direccion.Departamento,
-			Municipio:    input.Direccion.Municipio,
-			Distrito:     input.Direccion.Distrito,
-			Complemento:  input.Direccion.Complemento,
-		},
+		Direccion:       mapDireccion(input.Direccion),
 		Telefono: input.Telefono,
 		Correo:   input.Correo,
 	}

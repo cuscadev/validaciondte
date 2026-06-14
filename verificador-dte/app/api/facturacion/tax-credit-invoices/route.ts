@@ -6,6 +6,7 @@ import { createEmision, mergeEmision } from '@/lib/facturacion/emisiones-store';
 import {
   resolveReceptorDteLocation,
 } from '@/lib/facturacion/build-emisor';
+import { isValidDteMunicipioCode } from '@/lib/facturacion/resolve-location';
 import { prepareEmission, postGo } from '@/lib/facturacion/prepare-emission';
 import { GoFacturacionError } from '@/lib/facturacion/go-facturacion-client';
 import { getHaciendaTokenForUser } from '@/lib/hacienda-auth';
@@ -65,12 +66,6 @@ function lastTwoDigits(value: unknown) {
   const digits = cleanDigits(value);
   if (!digits) return '';
   return digits.slice(-2).padStart(2, '0');
-}
-
-function municipioDteCode(departamento: string, municipio: string) {
-  const muniDigits = cleanDigits(municipio);
-  if (!muniDigits) return '';
-  return muniDigits.slice(-2).padStart(2, '0');
 }
 
 function normalizeNrc(value: unknown, required = false) {
@@ -258,15 +253,15 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    if (!/^\d{2}$/.test(emisor.direccion.municipio)) {
+    if (!isValidDteMunicipioCode(emisor.direccion.municipio)) {
       return NextResponse.json(
-        { error: `Municipio del emisor invalido para DTE: ${emisor.direccion.municipio}. Debe tener 2 digitos.` },
+        { error: `Municipio del emisor invalido para DTE (CAT-013): ${emisor.direccion.municipio}. Debe ser codigo de 4 digitos.` },
         { status: 400 }
       );
     }
-    if (!/^\d{2}$/.test(receptorFiscal.direccion.municipio)) {
+    if (!isValidDteMunicipioCode(receptorFiscal.direccion.municipio)) {
       return NextResponse.json(
-        { error: `Municipio del receptor invalido para DTE: ${receptorFiscal.direccion.municipio}. Debe tener 2 digitos.` },
+        { error: `Municipio del receptor invalido para DTE (CAT-013): ${receptorFiscal.direccion.municipio}. Debe ser codigo de 4 digitos.` },
         { status: 400 }
       );
     }

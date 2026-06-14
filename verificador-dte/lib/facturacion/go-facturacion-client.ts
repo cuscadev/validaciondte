@@ -1,4 +1,8 @@
 import { getGoDteApiUrl } from '@/lib/go-dte-api';
+import {
+  isValidDteMunicipioCode,
+  normalizeDteDireccion,
+} from '@/lib/facturacion/resolve-location';
 
 export type DteEmisorInput = {
   nit: string;
@@ -202,7 +206,10 @@ export async function fetchEmisorEmissionContext(
 
   return {
     emisorId,
-    emisor,
+    emisor: {
+      ...emisor,
+      direccion: normalizeDteDireccion(emisor.direccion),
+    },
     establecimiento,
     puntoVenta,
     establecimientoTipo,
@@ -240,25 +247,20 @@ export function validateEmisorForEmission(emisor: DteEmisorInput) {
       400
     );
   }
-  if (!emisor.direccion?.departamento || !emisor.direccion?.municipio || !emisor.direccion?.distrito) {
+  const direccion = normalizeDteDireccion(emisor.direccion);
+  if (!direccion.departamento || !direccion.municipio || !direccion.distrito) {
     throw new GoFacturacionError(
       'Configura departamento, municipio y distrito validos del emisor antes de facturar.',
       400
     );
   }
-  if (!/^\d{2}$/.test(emisor.direccion.municipio)) {
+  if (!isValidDteMunicipioCode(direccion.municipio)) {
     throw new GoFacturacionError(
-      `Municipio del emisor invalido para DTE: ${emisor.direccion.municipio}. Debe tener 2 digitos.`,
+      `Municipio del emisor invalido para DTE (CAT-013): ${emisor.direccion.municipio}. Debe ser codigo de 4 digitos (departamento + municipio). Ve a Perfil / Datos del emisor y selecciona ubicacion valida.`,
       400
     );
   }
-  if (emisor.direccion.municipio === '00') {
-    throw new GoFacturacionError(
-      'Municipio del emisor invalido (00). Ve a Perfil / Datos del emisor y selecciona departamento, municipio y distrito validos.',
-      400
-    );
-  }
-  if (emisor.direccion.distrito === '00') {
+  if (direccion.distrito === '00') {
     throw new GoFacturacionError(
       'Distrito del emisor invalido (00). Ve a Perfil / Datos del emisor y selecciona un distrito valido.',
       400

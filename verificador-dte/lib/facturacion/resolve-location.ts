@@ -42,11 +42,45 @@ export function sanitizeLocationCodeForForm(value: unknown): string {
   return normalized === '00' ? '' : normalized;
 }
 
-export function toDteLocationCodes(location: ResolvedLocation) {
+/** CAT-013: municipio en JSON DTE = 2 digitos depto + 2 digitos municipio (4 total). */
+export function toDteMunicipioCode(departamento: unknown, municipio: unknown): string {
+  const dept = normalizeLocationCode(departamento);
+  const digits = cleanDigits(municipio);
+  if (!dept || !digits) return '';
+
+  if (digits.length >= 4) {
+    return digits.slice(-4).padStart(4, '0');
+  }
+
+  const muni = normalizeLocationCode(municipio);
+  return `${dept}${muni}`;
+}
+
+export function isValidDteMunicipioCode(value: unknown): boolean {
+  const code = String(value ?? '').trim();
+  if (!/^\d{4}$/.test(code)) return false;
+  if (code === '0000') return false;
+  return code.slice(2) !== '00';
+}
+
+export function normalizeDteDireccion<T extends { departamento: string; municipio: string; distrito: string }>(
+  direccion: T
+): T {
+  const departamento = normalizeLocationCode(direccion.departamento);
   return {
-    departamento: location.departamento,
-    municipio: location.municipio,
-    distrito: location.distrito,
+    ...direccion,
+    departamento,
+    municipio: toDteMunicipioCode(departamento, direccion.municipio),
+    distrito: normalizeLocationCode(direccion.distrito),
+  };
+}
+
+export function toDteLocationCodes(location: ResolvedLocation) {
+  const departamento = normalizeLocationCode(location.departamento);
+  return {
+    departamento,
+    municipio: toDteMunicipioCode(departamento, location.municipio),
+    distrito: normalizeLocationCode(location.distrito),
   };
 }
 

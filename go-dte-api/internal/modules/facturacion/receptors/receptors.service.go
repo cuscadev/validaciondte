@@ -7,6 +7,7 @@ import (
 
 	"verificador-dte/go-dte-api/internal/modules/facturacion/catalogs"
 	"verificador-dte/go-dte-api/internal/modules/facturacion/documents/domain"
+	"verificador-dte/go-dte-api/internal/modules/facturacion/location"
 	"verificador-dte/go-dte-api/internal/modules/facturacion/receptors/dto"
 )
 
@@ -178,11 +179,17 @@ func requireCommonTaxpayer(input dto.BuildReceptorRequest, label string) error {
 }
 
 func mapDireccion(input dto.Direccion) domain.Direccion {
+	dept, muni, dist, comp := location.MapDteDireccion(
+		input.Departamento,
+		input.Municipio,
+		input.Distrito,
+		input.Complemento,
+	)
 	return domain.Direccion{
-		Departamento: input.Departamento,
-		Municipio:    input.Municipio,
-		Distrito:     input.Distrito,
-		Complemento:  input.Complemento,
+		Departamento: dept,
+		Municipio:    muni,
+		Distrito:     dist,
+		Complemento:  comp,
 	}
 }
 

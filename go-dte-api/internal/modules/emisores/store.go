@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"verificador-dte/go-dte-api/internal/modules/emisores/dto"
+	"verificador-dte/go-dte-api/internal/modules/facturacion/location"
 )
 
 var (
@@ -97,6 +98,8 @@ func MapToDteInput(row *dto.EmisorRow) dto.DteEmisorInput {
 		}
 		return strings.TrimSpace(*value)
 	}
+	dept := locationCode(ptr(row.DepartamentoCodigo))
+	muni := locationCode(ptr(row.MunicipioCodigo))
 	return dto.DteEmisorInput{
 		NIT:             strings.TrimSpace(row.NIT),
 		NRC:             strings.TrimSpace(row.NRC),
@@ -105,8 +108,8 @@ func MapToDteInput(row *dto.EmisorRow) dto.DteEmisorInput {
 		DescActividad:   ptr(row.DescripcionActividad),
 		NombreComercial: row.NombreComercial,
 		Direccion: dto.Direccion{
-			Departamento: locationCode(ptr(row.DepartamentoCodigo)),
-			Municipio:    locationCode(ptr(row.MunicipioCodigo)),
+			Departamento: dept,
+			Municipio:    location.DteMunicipioCode(dept, muni),
 			Distrito:     locationCode(ptr(row.DistritoCodigo)),
 			Complemento:  ptr(row.ComplementoDireccion),
 		},
