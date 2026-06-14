@@ -309,7 +309,8 @@ export async function PUT(req: NextRequest) {
     const municipioCodigo = location?.municipioCodigo ?? normalizeLocationCode(body.municipioCodigo);
     const distritoCodigo = location?.distritoCodigo ?? normalizeLocationCode(body.distritoCodigo);
     const departamentoCodigo =
-      location?.departamentoCodigo ?? normalizeLocationCode(body.departamentoCodigo) || clean(body.departamentoCodigo);
+      location?.departamentoCodigo ??
+      (normalizeLocationCode(body.departamentoCodigo) || clean(body.departamentoCodigo));
 
     let current = await getLinkedEmitter(identity.uid, identity.email);
     if (!current) {

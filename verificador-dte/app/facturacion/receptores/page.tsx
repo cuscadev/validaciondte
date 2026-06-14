@@ -17,7 +17,7 @@ import {
   departamentoOptions,
   distritoOptions,
   municipioOptions,
-  municipioSelectKey,
+  municipioSelectKey as buildMunicipioSelectKey,
   parseDistritoSelectKey,
   parseMunicipioSelectKey,
   syncLocationSelectKeys,
@@ -335,7 +335,7 @@ export default function FacturacionReceptoresPage() {
     );
     setDistritoSelectKey(key);
     if (departamentoCodigo && municipioCodigo) {
-      setMunicipioSelectKey(municipioSelectKey(departamentoCodigo, municipioCodigo));
+      setMunicipioSelectKey(buildMunicipioSelectKey(departamentoCodigo, municipioCodigo));
     }
     setForm((current) => ({
       ...current,

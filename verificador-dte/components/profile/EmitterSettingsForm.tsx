@@ -13,7 +13,7 @@ import {
   distritoOptions,
   municipioOptions,
   municipioRequiresDistrito,
-  municipioSelectKey,
+  municipioSelectKey as buildMunicipioSelectKey,
   parseDistritoSelectKey,
   parseMunicipioSelectKey,
   syncLocationSelectKeys,
@@ -294,7 +294,7 @@ export function EmitterSettingsForm({
     );
     setDistritoSelectKey(key);
     if (departamentoCodigo && municipioCodigo) {
-      setMunicipioSelectKey(municipioSelectKey(departamentoCodigo, municipioCodigo));
+      setMunicipioSelectKey(buildMunicipioSelectKey(departamentoCodigo, municipioCodigo));
     }
     setForm((prev) => ({
       ...prev,

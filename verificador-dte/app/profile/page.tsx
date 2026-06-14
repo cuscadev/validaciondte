@@ -33,7 +33,7 @@ import {
 	departamentoOptions,
 	distritoOptions,
 	municipioOptions,
-	municipioSelectKey,
+	municipioSelectKey as buildMunicipioSelectKey,
 	parseDistritoSelectKey,
 	parseMunicipioSelectKey,
 	syncLocationSelectKeys,
@@ -466,7 +466,7 @@ export default function ProfilePage() {
 		);
 		setDistritoSelectKey(key);
 		if (departamentoCodigo && municipioCodigo) {
-			setMunicipioSelectKey(municipioSelectKey(departamentoCodigo, municipioCodigo));
+			setMunicipioSelectKey(buildMunicipioSelectKey(departamentoCodigo, municipioCodigo));
 		}
 		setEmitterForm((prev) => ({
 			...prev,
