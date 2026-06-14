@@ -6,7 +6,21 @@ import { Loader2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { auth } from '@/lib/firebase';
-import { sanitizeLocationCodeForForm } from '@/lib/facturacion/resolve-location';
+import {
+  buildDepartamentosMap,
+  buildMunicipiosByIdMap,
+  departamentoOptions,
+  distritoOptions,
+  municipioOptions,
+  municipioRequiresDistrito,
+  parseDistritoSelectKey,
+  parseMunicipioSelectKey,
+  syncLocationSelectKeys,
+} from '@/lib/facturacion/location-catalog-options';
+import {
+  normalizeLocationCode,
+  sanitizeLocationCodeForForm,
+} from '@/lib/facturacion/resolve-location';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -160,6 +174,8 @@ export function EmitterSettingsForm({
     emitterToForm({ ...emptyEmitterForm, ...defaultValues })
   );
   const [catalogs, setCatalogs] = useState<ProfileCatalogs>(emptyCatalogs);
+  const [municipioSelectKey, setMunicipioSelectKey] = useState('');
+  const [distritoSelectKey, setDistritoSelectKey] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -195,10 +211,23 @@ export function EmitterSettingsForm({
         const emitterData = (await emitterRes.json()) as {
           emitter?: Partial<EmitterForm>;
         };
-        if (emitterRes.ok && emitterData.emitter && !cancelled) {
-          setForm(emitterToForm({ ...defaultValues, ...emitterData.emitter }));
-        } else if (!cancelled) {
-          setForm(emitterToForm({ ...emptyEmitterForm, ...defaultValues }));
+        const nextForm = emitterRes.ok && emitterData.emitter
+          ? emitterToForm({ ...defaultValues, ...emitterData.emitter })
+          : emitterToForm({ ...emptyEmitterForm, ...defaultValues });
+
+        if (!cancelled) {
+          setForm(nextForm);
+          const loadedCatalogs = catalogsRes.ok && catalogsData.catalogs
+            ? { ...emptyCatalogs, ...catalogsData.catalogs }
+            : emptyCatalogs;
+          const keys = syncLocationSelectKeys(
+            loadedCatalogs,
+            nextForm.departamentoCodigo,
+            nextForm.municipioCodigo,
+            nextForm.distritoCodigo
+          );
+          setMunicipioSelectKey(keys.municipioSelectKey);
+          setDistritoSelectKey(keys.distritoSelectKey);
         }
 
         if (!catalogsRes.ok) {
@@ -219,29 +248,15 @@ export function EmitterSettingsForm({
     };
   }, [defaultValuesKey]);
 
-  const filteredMunicipios = useMemo(() => {
-    if (!form.departamentoCodigo) return catalogs.municipios;
-    return catalogs.municipios.filter(
-      (row) => row.departamento_codigo === form.departamentoCodigo
-    );
-  }, [catalogs.municipios, form.departamentoCodigo]);
-
-  const selectedMunicipio = useMemo(
-    () =>
-      filteredMunicipios.find(
-        (row) => row.codigo === form.municipioCodigo && row.departamento_codigo === form.departamentoCodigo
-      ),
-    [filteredMunicipios, form.departamentoCodigo, form.municipioCodigo]
+  const departamentosMap = useMemo(
+    () => buildDepartamentosMap(catalogs.departamentos),
+    [catalogs.departamentos]
   );
 
-  const filteredDistritos = useMemo(() => {
-    if (!form.departamentoCodigo || !selectedMunicipio?.id) return [];
-    return catalogs.distritos.filter(
-      (row) =>
-        row.departamento_codigo === form.departamentoCodigo &&
-        Number(row.municipio_id) === Number(selectedMunicipio.id)
-    );
-  }, [catalogs.distritos, form.departamentoCodigo, selectedMunicipio?.id]);
+  const municipiosById = useMemo(
+    () => buildMunicipiosByIdMap(catalogs.municipios),
+    [catalogs.municipios]
+  );
 
   const selectedActividad = useMemo(
     () => catalogs.actividades.find((row) => row.codigo === form.codigoActividad),
@@ -250,27 +265,31 @@ export function EmitterSettingsForm({
 
   const options = useMemo(
     () => ({
-      departamentos: catalogOptions(catalogs.departamentos),
-      municipios: catalogOptions(filteredMunicipios),
-      distritos: catalogOptions(filteredDistritos),
+      departamentos: departamentoOptions(catalogs.departamentos),
+      municipios: municipioOptions(catalogs.municipios, departamentosMap),
+      distritos: distritoOptions(catalogs.distritos, municipiosById),
       tiposEstablecimiento: catalogOptions(catalogs.tiposEstablecimiento),
       actividades: catalogOptions(catalogs.actividades),
       regimenesTributarios: catalogOptions(catalogs.regimenesTributarios),
       tiposAfiliacion: catalogOptions(catalogs.tiposAfiliacion),
     }),
-    [catalogs, filteredDistritos, filteredMunicipios]
+    [catalogs, departamentosMap, municipiosById]
   );
+
+  function setMunicipioFromSelectKey(key: string) {
+    const { municipioCodigo } = parseMunicipioSelectKey(key);
+    setMunicipioSelectKey(key);
+    setForm((prev) => ({ ...prev, municipioCodigo }));
+  }
+
+  function setDistritoFromSelectKey(key: string) {
+    const { distritoCodigo } = parseDistritoSelectKey(key);
+    setDistritoSelectKey(key);
+    setForm((prev) => ({ ...prev, distritoCodigo }));
+  }
 
   function setField(name: keyof EmitterForm, value: string) {
     setForm((prev) => {
-      if (name === 'departamentoCodigo') {
-        return { ...prev, departamentoCodigo: value, municipioCodigo: '', distritoCodigo: '' };
-      }
-
-      if (name === 'municipioCodigo') {
-        return { ...prev, municipioCodigo: value, distritoCodigo: '' };
-      }
-
       if (name === 'codigoActividad') {
         const actividad = catalogs.actividades.find((row) => row.codigo === value);
         return {
@@ -303,7 +322,10 @@ export function EmitterSettingsForm({
       setError('Selecciona departamento y municipio validos del catalogo.');
       return;
     }
-    if (filteredDistritos.length > 0 && !form.distritoCodigo) {
+    if (
+      municipioRequiresDistrito(catalogs, form.departamentoCodigo, form.municipioCodigo) &&
+      !form.distritoCodigo
+    ) {
       setError('Selecciona un distrito valido para el municipio.');
       return;
     }
@@ -325,6 +347,9 @@ export function EmitterSettingsForm({
         },
         body: JSON.stringify({
           ...form,
+          departamentoCodigo: normalizeLocationCode(form.departamentoCodigo),
+          municipioCodigo: normalizeLocationCode(form.municipioCodigo),
+          distritoCodigo: normalizeLocationCode(form.distritoCodigo),
           codEstable: normalizeEstableCode(form.codEstable),
           codPuntoVenta: normalizeEstableCode(form.codPuntoVenta),
         }),
@@ -337,6 +362,14 @@ export function EmitterSettingsForm({
 
       const next = emitterToForm(data.emitter || form);
       setForm(next);
+      const keys = syncLocationSelectKeys(
+        catalogs,
+        next.departamentoCodigo,
+        next.municipioCodigo,
+        next.distritoCodigo
+      );
+      setMunicipioSelectKey(keys.municipioSelectKey);
+      setDistritoSelectKey(keys.distritoSelectKey);
       toast.success('Datos de emisor guardados.');
       onSaved?.(next);
     } catch (err) {
@@ -435,11 +468,10 @@ export function EmitterSettingsForm({
           <SearchableSelect
             id="emitter-municipio"
             name="municipioCodigo"
-            value={form.municipioCodigo}
-            disabled={!form.departamentoCodigo}
+            value={municipioSelectKey}
             options={options.municipios}
-            onValueChange={(value) => setField('municipioCodigo', value)}
-            placeholder={form.departamentoCodigo ? 'Seleccionar municipio' : 'Selecciona departamento primero'}
+            onValueChange={setMunicipioFromSelectKey}
+            placeholder="Seleccionar municipio"
             searchPlaceholder="Buscar municipio"
             clearable
           />
@@ -449,13 +481,10 @@ export function EmitterSettingsForm({
           <SearchableSelect
             id="emitter-distrito"
             name="distritoCodigo"
-            value={form.distritoCodigo}
-            disabled={!form.municipioCodigo}
+            value={distritoSelectKey}
             options={options.distritos}
-            onValueChange={(value) => setField('distritoCodigo', value)}
-            placeholder={
-              form.municipioCodigo ? 'Seleccionar distrito' : 'Selecciona municipio primero'
-            }
+            onValueChange={setDistritoFromSelectKey}
+            placeholder="Seleccionar distrito"
             searchPlaceholder="Buscar distrito"
             clearable
           />

@@ -11,6 +11,20 @@ import {
   UsersRound,
 } from 'lucide-react';
 
+import {
+  buildDepartamentosMap,
+  buildMunicipiosByIdMap,
+  departamentoOptions,
+  distritoOptions,
+  municipioOptions,
+  parseDistritoSelectKey,
+  parseMunicipioSelectKey,
+  syncLocationSelectKeys,
+} from '@/lib/facturacion/location-catalog-options';
+import {
+  normalizeLocationCode,
+  sanitizeLocationCodeForForm,
+} from '@/lib/facturacion/resolve-location';
 import { auth } from '@/lib/firebase';
 import { useAuth } from '@/components/AuthProvider';
 import { Badge } from '@/components/ui/badge';
@@ -165,11 +179,6 @@ function catalogOptions(rows: CatalogRow[]): SearchableSelectOption[] {
   }));
 }
 
-function lastTwoDigits(value?: string) {
-  const clean = String(value || '').trim();
-  return clean.length > 2 ? clean.slice(-2) : clean;
-}
-
 async function firebaseToken() {
   const token = await auth.currentUser?.getIdToken();
   if (!token) throw new Error('Sesion no autorizada');
@@ -187,8 +196,8 @@ function formFromReceptor(row: Receptor): ReceptorForm {
     telefono: row.telefono || '',
     correo: row.correo || '',
     departamentoCodigo: row.departamentoCodigo || '',
-    municipioCodigo: lastTwoDigits(row.municipioCodigo),
-    distritoCodigo: lastTwoDigits(row.distritoCodigo),
+    municipioCodigo: sanitizeLocationCodeForForm(row.municipioCodigo),
+    distritoCodigo: sanitizeLocationCodeForForm(row.distritoCodigo),
     complementoDireccion: row.complementoDireccion || '',
     nrc: row.nrc || '',
     codigoActividad: row.codigoActividad || '',
@@ -201,11 +210,39 @@ function formFromReceptor(row: Receptor): ReceptorForm {
   };
 }
 
+function clearLocationSelectKeys(
+  setMunicipioSelectKey: (value: string) => void,
+  setDistritoSelectKey: (value: string) => void
+) {
+  setMunicipioSelectKey('');
+  setDistritoSelectKey('');
+}
+
+function applyReceptorForm(
+  nextForm: ReceptorForm,
+  catalogs: ReceptorCatalogs,
+  setForm: (value: ReceptorForm) => void,
+  setMunicipioSelectKey: (value: string) => void,
+  setDistritoSelectKey: (value: string) => void
+) {
+  setForm(nextForm);
+  const keys = syncLocationSelectKeys(
+    catalogs,
+    nextForm.departamentoCodigo,
+    nextForm.municipioCodigo,
+    nextForm.distritoCodigo
+  );
+  setMunicipioSelectKey(keys.municipioSelectKey);
+  setDistritoSelectKey(keys.distritoSelectKey);
+}
+
 export default function FacturacionReceptoresPage() {
   const { appUser, authChecked } = useAuth();
   const [catalogs, setCatalogs] = useState<ReceptorCatalogs>(emptyCatalogs);
   const [rows, setRows] = useState<Receptor[]>([]);
   const [form, setForm] = useState<ReceptorForm>(emptyForm);
+  const [municipioSelectKey, setMunicipioSelectKey] = useState('');
+  const [distritoSelectKey, setDistritoSelectKey] = useState('');
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -217,41 +254,27 @@ export default function FacturacionReceptoresPage() {
     appUser?.role === 'cliente' ||
     appUser?.role === 'colaborador';
 
-  const filteredMunicipios = useMemo(() => {
-    if (!form.departamentoCodigo) return catalogs.municipios;
-    return catalogs.municipios.filter(
-      (row) => row.departamento_codigo === form.departamentoCodigo
-    );
-  }, [catalogs.municipios, form.departamentoCodigo]);
-
-  const selectedMunicipio = useMemo(
-    () =>
-      filteredMunicipios.find(
-        (row) => row.codigo === form.municipioCodigo && row.departamento_codigo === form.departamentoCodigo
-      ),
-    [filteredMunicipios, form.departamentoCodigo, form.municipioCodigo]
+  const departamentosMap = useMemo(
+    () => buildDepartamentosMap(catalogs.departamentos),
+    [catalogs.departamentos]
   );
 
-  const filteredDistritos = useMemo(() => {
-    if (!form.departamentoCodigo || !selectedMunicipio?.id) return [];
-    return catalogs.distritos.filter(
-      (row) =>
-        row.departamento_codigo === form.departamentoCodigo &&
-        Number(row.municipio_id) === Number(selectedMunicipio.id)
-    );
-  }, [catalogs.distritos, form.departamentoCodigo, selectedMunicipio?.id]);
+  const municipiosById = useMemo(
+    () => buildMunicipiosByIdMap(catalogs.municipios),
+    [catalogs.municipios]
+  );
 
   const optionGroups = useMemo(
     () => ({
       tiposDocumento: catalogOptions(catalogs.tiposDocumento),
-      departamentos: catalogOptions(catalogs.departamentos),
-      municipios: catalogOptions(filteredMunicipios),
-      distritos: catalogOptions(filteredDistritos),
+      departamentos: departamentoOptions(catalogs.departamentos),
+      municipios: municipioOptions(catalogs.municipios, departamentosMap),
+      distritos: distritoOptions(catalogs.distritos, municipiosById),
       actividades: catalogOptions(catalogs.actividades),
       regimenesTributarios: catalogOptions(catalogs.regimenesTributarios),
       paises: catalogOptions(catalogs.paises),
     }),
-    [catalogs, filteredDistritos, filteredMunicipios]
+    [catalogs, departamentosMap, municipiosById]
   );
 
   async function loadData(search = query) {
@@ -294,18 +317,25 @@ export default function FacturacionReceptoresPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authChecked, canAccess]);
 
+  function setMunicipioFromSelectKey(key: string) {
+    const { municipioCodigo } = parseMunicipioSelectKey(key);
+    setMunicipioSelectKey(key);
+    setForm((current) => ({ ...current, municipioCodigo }));
+  }
+
+  function setDistritoFromSelectKey(key: string) {
+    const { distritoCodigo } = parseDistritoSelectKey(key);
+    setDistritoSelectKey(key);
+    setForm((current) => ({ ...current, distritoCodigo }));
+  }
+
+  function resetForm() {
+    setForm(emptyForm);
+    clearLocationSelectKeys(setMunicipioSelectKey, setDistritoSelectKey);
+  }
+
   function setField(name: keyof ReceptorForm, value: string | boolean | number) {
-    setForm((current) => {
-      if (name === 'departamentoCodigo') {
-        return { ...current, departamentoCodigo: String(value), municipioCodigo: '', distritoCodigo: '' };
-      }
-
-      if (name === 'municipioCodigo') {
-        return { ...current, municipioCodigo: String(value), distritoCodigo: '' };
-      }
-
-      return { ...current, [name]: value };
-    });
+    setForm((current) => ({ ...current, [name]: value }));
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -324,6 +354,9 @@ export default function FacturacionReceptoresPage() {
         },
         body: JSON.stringify({
           ...form,
+          departamentoCodigo: normalizeLocationCode(form.departamentoCodigo),
+          municipioCodigo: normalizeLocationCode(form.municipioCodigo),
+          distritoCodigo: normalizeLocationCode(form.distritoCodigo),
           datosCompletados: Boolean(
             form.numeroDocumento &&
               form.nombre &&
@@ -339,7 +372,7 @@ export default function FacturacionReceptoresPage() {
       }
 
       setSuccess('Receptor guardado correctamente');
-      setForm(emptyForm);
+      resetForm();
       await loadData(query);
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
@@ -528,16 +561,11 @@ export default function FacturacionReceptoresPage() {
                   <Label htmlFor="municipio">Municipio</Label>
                   <SearchableSelect
                     id="municipio"
-                    value={form.municipioCodigo}
+                    value={municipioSelectKey}
                     options={optionGroups.municipios}
-                    onValueChange={(value) => setField('municipioCodigo', value)}
-                    placeholder={
-                      form.departamentoCodigo
-                        ? 'Municipio'
-                        : 'Selecciona departamento'
-                    }
+                    onValueChange={setMunicipioFromSelectKey}
+                    placeholder="Seleccionar municipio"
                     searchPlaceholder="Buscar municipio"
-                    disabled={!form.departamentoCodigo}
                     clearable
                   />
                 </div>
@@ -546,10 +574,10 @@ export default function FacturacionReceptoresPage() {
                   <Label htmlFor="distrito">Distrito</Label>
                   <SearchableSelect
                     id="distrito"
-                    value={form.distritoCodigo}
+                    value={distritoSelectKey}
                     options={optionGroups.distritos}
-                    onValueChange={(value) => setField('distritoCodigo', value)}
-                    placeholder="Distrito"
+                    onValueChange={setDistritoFromSelectKey}
+                    placeholder="Seleccionar distrito"
                     searchPlaceholder="Buscar distrito"
                     clearable
                   />
@@ -609,7 +637,7 @@ export default function FacturacionReceptoresPage() {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setForm(emptyForm)}
+                      onClick={() => resetForm()}
                       className="h-11 rounded-xl"
                     >
                       Nuevo
@@ -760,7 +788,15 @@ export default function FacturacionReceptoresPage() {
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => setForm(formFromReceptor(row))}
+                            onClick={() =>
+                              applyReceptorForm(
+                                formFromReceptor(row),
+                                catalogs,
+                                setForm,
+                                setMunicipioSelectKey,
+                                setDistritoSelectKey
+                              )
+                            }
                           >
                             <Pencil className="size-4" />
                             Editar
