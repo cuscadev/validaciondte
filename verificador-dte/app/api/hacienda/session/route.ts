@@ -12,10 +12,16 @@ export async function POST(req: NextRequest) {
     const environment = body.environment === 'production' ? 'production' : 'test';
     const token = await getHaciendaTokenForUser(user.uid, Boolean(body.forceRefresh), environment);
 
+    // Separar token del tipo de bearer
+    const bearerPrefix = 'Bearer ';
+    const tokenWithoutBearer = token.startsWith(bearerPrefix) ? token.slice(bearerPrefix.length) : token;
+    
     return NextResponse.json({
       success: true,
       environment,
-      tokenType: token.startsWith('Bearer ') ? 'Bearer' : '',
+      token: tokenWithoutBearer,
+      tokenType: 'Bearer',
+      fullToken: token,
     });
   } catch (error) {
     return NextResponse.json(

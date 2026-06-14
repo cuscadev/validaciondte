@@ -61,7 +61,7 @@ func (s *Service) ConsultaDteLote(ctx context.Context, codigoLote string, token 
 		return nil, fiber.StatusInternalServerError, err
 	}
 
-	req.Header.Set("Authorization", token)
+	req.Header.Set("Authorization", haciendaAuthorizationHeader(token))
 	req.Header.Set("User-Agent", s.cfg.HaciendaUserAgent)
 	req.Header.Set("Content-Type", "application/JSON")
 
@@ -287,4 +287,15 @@ func asString(value any) string {
 	default:
 		return fmt.Sprint(typed)
 	}
+}
+
+func haciendaAuthorizationHeader(token string) string {
+	token = strings.TrimSpace(token)
+	if strings.HasPrefix(strings.ToLower(token), "bearer ") {
+		token = strings.TrimSpace(token[7:])
+	}
+	if token == "" {
+		return ""
+	}
+	return "Bearer " + token
 }

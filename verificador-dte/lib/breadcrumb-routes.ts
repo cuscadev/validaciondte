@@ -125,6 +125,36 @@ const ROUTE_MAP: Record<string, RouteEntry> = {
   '/configuraciones': {
     segments: [{ label: 'Configuracion' }],
   },
+  '/facturacion/reporte': {
+    segments: [
+      { label: 'Facturacion', href: '/facturacion/reporte' },
+      { label: 'Reporte' },
+    ],
+  },
+  '/facturacion/sujeto-excluido': {
+    segments: [
+      { label: 'Facturacion', href: '/facturacion/sujeto-excluido' },
+      { label: 'Sujeto excluido' },
+    ],
+  },
+  '/facturacion/nota-credito': {
+    segments: [
+      { label: 'Facturacion', href: '/facturacion/nota-credito' },
+      { label: 'Nota de credito' },
+    ],
+  },
+  '/facturacion/exportacion': {
+    segments: [
+      { label: 'Facturacion', href: '/facturacion/exportacion' },
+      { label: 'Factura de exportacion' },
+    ],
+  },
+  '/facturacion/nota-debito': {
+    segments: [
+      { label: 'Facturacion', href: '/facturacion/nota-debito' },
+      { label: 'Nota de debito' },
+    ],
+  },
   '/integraciones/gmail': {
     segments: [
       { label: 'Integraciones', href: '/integraciones/gmail' },

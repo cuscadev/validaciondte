@@ -30,12 +30,11 @@ function getUserAgent() {
 }
 
 function normalizeToken(token: string) {
-  const clean = token.trim();
-  return clean.toLowerCase().startsWith('bearer ') ? clean : `Bearer ${clean}`;
+  return token.replace(/^Bearer\s+/i, '').trim();
 }
 
 function tokenExp(token: string) {
-  const raw = token.replace(/^Bearer\s+/i, '').trim();
+  const raw = token.replace(/^Bearer\s+/i, '').trim() || token.trim();
   const [, payload] = raw.split('.');
   if (!payload) return null;
 
@@ -82,7 +81,9 @@ export async function getHaciendaTokenForUser(
   }
 
   if (!forceRefresh && isTokenFresh(tokenInfo)) {
-    return decryptSecret(tokenInfo.tokenEncrypted!);
+    const cachedToken = decryptSecret(tokenInfo.tokenEncrypted!);
+    // Always normalize token to remove "Bearer" prefix if present
+    return normalizeToken(cachedToken);
   }
 
   const password = decryptSecret(settings.passwordEncrypted);

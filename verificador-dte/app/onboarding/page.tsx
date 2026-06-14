@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import type { PersonType } from '@/lib/organization-types';
+import { EmitterSettingsForm, type EmitterForm } from '@/components/profile/EmitterSettingsForm';
 
 type WizardStep =
   | { kind: 'password'; label: 'Seguridad' }
@@ -68,6 +69,7 @@ export default function OnboardingPage() {
   const [companyNrc, setCompanyNrc] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [emitterSaved, setEmitterSaved] = useState(false);
 
   const isCliente = appUser?.role === 'cliente';
   const isColaborador = appUser?.role === 'colaborador';
@@ -92,6 +94,47 @@ export default function OnboardingPage() {
   });
 
   const org = orgMeData?.organization;
+
+  const emitterDefaults = useMemo<Partial<EmitterForm>>(() => {
+    const fiscalNit =
+      personType === 'juridica'
+        ? companyNit
+        : hasHomologatedDui
+          ? formatDui(dui)
+          : nit;
+    const fiscalNrc = personType === 'juridica' ? companyNrc : nrc;
+    const legalName =
+      personType === 'juridica'
+        ? companyLegalName || fullLegalName
+        : fullLegalName;
+
+    return {
+      nit: fiscalNit,
+      nrc: fiscalNrc,
+      nombre: legalName,
+      nombreComercial: legalName,
+      razonSocial: legalName,
+      complementoDireccion: fiscalAddress,
+      correo: appUser?.email || '',
+      ambienteCodigo: '00',
+    };
+  }, [
+    appUser?.email,
+    companyLegalName,
+    companyNit,
+    companyNrc,
+    dui,
+    fiscalAddress,
+    fullLegalName,
+    hasHomologatedDui,
+    nit,
+    nrc,
+    personType,
+  ]);
+
+  useEffect(() => {
+    setEmitterSaved(false);
+  }, [emitterDefaults]);
 
   useEffect(() => {
     if (step >= wizardSteps.length && wizardSteps.length > 0) {
@@ -261,6 +304,10 @@ export default function OnboardingPage() {
         toast.error('Completa nombre, NIT, NRC y direccion de la empresa');
         return;
       }
+    }
+    if (kycStepId === 'emisor' && !emitterSaved) {
+      toast.error('Guarda los datos del emisor antes de continuar');
+      return;
     }
     runViewTransition(() => {
       setStep((s) => Math.min(s + 1, wizardSteps.length - 1));
@@ -497,6 +544,19 @@ export default function OnboardingPage() {
                 />
                 <span>Acepto la politica de privacidad y el tratamiento de datos para completar el KYC.</span>
               </label>
+            </div>
+          )}
+
+          {kycStepId === 'emisor' && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Configura el emisor que se usara para facturacion electronica y consultas fiscales.
+              </p>
+              <EmitterSettingsForm
+                defaultValues={emitterDefaults}
+                saveLabel="Guardar emisor"
+                onSaved={() => setEmitterSaved(true)}
+              />
             </div>
           )}
             </div>

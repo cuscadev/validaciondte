@@ -23,6 +23,7 @@ import {
   Smartphone,
   Mail,
   UserCheck,
+  ReceiptText,
 } from 'lucide-react';
 
 import { useAuth } from '@/components/AuthProvider';
@@ -337,6 +338,52 @@ export default function Sidebar({
     [],
   );
 
+  const facturacionChildren = useMemo<NavChild[]>(
+    () => [
+      {
+        href: '/facturacion/consumidor-final',
+        label: 'Facturar consumidor final',
+      },
+      {
+        href: '/facturacion/credito-fiscal',
+        label: 'Emitir credito fiscal',
+      },
+      {
+        href: '/facturacion/exportacion',
+        label: 'Factura de exportacion',
+      },
+      {
+        href: '/facturacion/nota-credito',
+        label: 'Nota de credito',
+      },
+      {
+        href: '/facturacion/nota-debito',
+        label: 'Nota de debito',
+      },
+      {
+        href: '/facturacion/sujeto-excluido',
+        label: 'Facturar sujeto excluido',
+      },
+      {
+        href: '/facturacion/envio-lotes',
+        label: 'Envio de lotes',
+      },
+      {
+        href: '/facturacion/reporte',
+        label: 'Reporte',
+      },
+      {
+        href: '/facturacion/prueba-emision',
+        label: 'Prueba de emision',
+      },
+      {
+        href: '/facturacion/receptores',
+        label: 'Receptores',
+      },
+    ],
+    [],
+  );
+
   const baseItems = useMemo<Item[]>(
     () => [
       {
@@ -414,6 +461,31 @@ export default function Sidebar({
       href: '/admin/access-requests',
       label: 'sidebar.accessRequests',
       icon: UserCheck,
+    }),
+    [],
+  );
+
+  const facturacionItem = useMemo<Item>(
+    () => ({
+      href: '/facturacion',
+      label: 'Facturacion',
+      icon: ReceiptText,
+      children: facturacionChildren,
+    }),
+    [facturacionChildren],
+  );
+
+  const facturacionReceptoresItem = useMemo<Item>(
+    () => ({
+      href: '/facturacion',
+      label: 'Facturacion',
+      icon: ReceiptText,
+      children: [
+        {
+          href: '/facturacion/receptores',
+          label: 'Receptores',
+        },
+      ],
     }),
     [],
   );
@@ -535,6 +607,7 @@ export default function Sidebar({
       return [
         ...planFilteredBaseItems,
         accessRequestsItem,
+        facturacionItem,
         adminItem,
         planesItem,
         avisosItem,
@@ -546,21 +619,39 @@ export default function Sidebar({
 
     if (showOrgUsers) {
       return isCliente
-        ? [...planFilteredBaseItems, orgKycItem, orgUsersItem, notificationsItem]
-        : [...planFilteredBaseItems, orgUsersItem, notificationsItem];
+        ? [
+            ...planFilteredBaseItems,
+            orgKycItem,
+            facturacionItem,
+            orgUsersItem,
+            notificationsItem,
+          ]
+        : [
+            ...planFilteredBaseItems,
+            facturacionReceptoresItem,
+            orgUsersItem,
+            notificationsItem,
+          ];
     }
 
     if (isCliente) {
-      return [...planFilteredBaseItems, orgKycItem, notificationsItem];
+      return [
+        ...planFilteredBaseItems,
+        orgKycItem,
+        facturacionItem,
+        notificationsItem,
+      ];
     }
 
-    return [...planFilteredBaseItems, notificationsItem];
+    return [...planFilteredBaseItems, facturacionReceptoresItem, notificationsItem];
   }, [
     isSuperadmin,
     showOrgUsers,
     isCliente,
     planFilteredBaseItems,
     accessRequestsItem,
+    facturacionItem,
+    facturacionReceptoresItem,
     adminItem,
     planesItem,
     avisosItem,
@@ -687,13 +778,14 @@ export default function Sidebar({
                 itemLabel={itemLabel}
                 active={active}
                 icon={Icon}
-                children={children}
                 pathname={pathname}
                 onNavigate={onNavigate}
                 t={t}
                 open={openFlyoutHref === href}
                 onOpenChange={(next) => setOpenFlyoutHref(next ? href : null)}
-              />
+              >
+                {children}
+              </SidebarSubmenuFlyout>
             );
           })}
         </CollapsedNavRail>
