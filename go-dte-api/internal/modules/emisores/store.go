@@ -105,15 +105,35 @@ func MapToDteInput(row *dto.EmisorRow) dto.DteEmisorInput {
 		DescActividad:   ptr(row.DescripcionActividad),
 		NombreComercial: row.NombreComercial,
 		Direccion: dto.Direccion{
-			Departamento: ptr(row.DepartamentoCodigo),
-			Municipio:    ptr(row.MunicipioCodigo),
-			Distrito:     ptr(row.DistritoCodigo),
+			Departamento: locationCode(ptr(row.DepartamentoCodigo)),
+			Municipio:    locationCode(ptr(row.MunicipioCodigo)),
+			Distrito:     locationCode(ptr(row.DistritoCodigo)),
 			Complemento:  ptr(row.ComplementoDireccion),
 		},
-		Telefono:      ptr(row.Telefono),
-		Correo:        ptr(row.Correo),
+		Telefono:            ptr(row.Telefono),
+		Correo:              ptr(row.Correo),
 		CodEstable:          row.CodEstable,
 		CodPuntoVenta:       row.CodPuntoVenta,
 		TipoEstablecimiento: row.TipoEstablecimientoEmision,
 	}
+}
+
+func locationCode(value string) string {
+	var digits strings.Builder
+	for _, r := range strings.TrimSpace(value) {
+		if r >= '0' && r <= '9' {
+			digits.WriteRune(r)
+		}
+	}
+	out := digits.String()
+	if out == "" {
+		return ""
+	}
+	if len(out) > 2 {
+		out = out[len(out)-2:]
+	}
+	for len(out) < 2 {
+		out = "0" + out
+	}
+	return out
 }

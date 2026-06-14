@@ -60,7 +60,7 @@ export async function resolveLocation(
   input: LocationInput,
   options: ResolveOptions = {}
 ): Promise<ResolvedLocation | null> {
-  const departamentoCodigo = String(input.departamentoCodigo ?? '').trim();
+  const departamentoCodigo = normalizeLocationCode(input.departamentoCodigo);
   const municipioCodigo = normalizeLocationCode(input.municipioCodigo);
   const distritoCodigo = normalizeLocationCode(input.distritoCodigo);
 

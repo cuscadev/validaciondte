@@ -35,20 +35,46 @@ export function distritoSelectKey(municipioId: number | string, distritoCodigo: 
 
 export function parseMunicipioSelectKey(key: string) {
   const trimmed = key.trim();
-  if (!trimmed) return { municipioCodigo: '' };
+  if (!trimmed) return { departamentoCodigo: '', municipioCodigo: '' };
 
-  const parts = trimmed.split(':');
-  const municipioCodigo = normalizeLocationCode(parts[parts.length - 1] ?? '');
-  return { municipioCodigo };
+  const colonIndex = trimmed.indexOf(':');
+  if (colonIndex === -1) {
+    return { departamentoCodigo: '', municipioCodigo: normalizeLocationCode(trimmed) };
+  }
+
+  return {
+    departamentoCodigo: normalizeLocationCode(trimmed.slice(0, colonIndex)),
+    municipioCodigo: normalizeLocationCode(trimmed.slice(colonIndex + 1)),
+  };
 }
 
-export function parseDistritoSelectKey(key: string) {
+export function parseDistritoSelectKey(
+  key: string,
+  municipiosById?: Map<number, LocationCatalogRow>
+) {
   const trimmed = key.trim();
-  if (!trimmed) return { distritoCodigo: '' };
+  if (!trimmed) {
+    return { departamentoCodigo: '', municipioCodigo: '', distritoCodigo: '' };
+  }
 
-  const parts = trimmed.split(':');
-  const distritoCodigo = normalizeLocationCode(parts[parts.length - 1] ?? '');
-  return { distritoCodigo };
+  const colonIndex = trimmed.indexOf(':');
+  if (colonIndex === -1) {
+    return {
+      departamentoCodigo: '',
+      municipioCodigo: '',
+      distritoCodigo: normalizeLocationCode(trimmed),
+    };
+  }
+
+  const municipioId = trimmed.slice(0, colonIndex);
+  const distritoCodigo = normalizeLocationCode(trimmed.slice(colonIndex + 1));
+  const municipio = municipioId ? municipiosById?.get(Number(municipioId)) : undefined;
+
+  return {
+    departamentoCodigo: normalizeLocationCode(municipio?.departamento_codigo),
+    municipioCodigo: normalizeLocationCode(municipio?.codigo),
+    distritoCodigo,
+  };
 }
 
 export function departamentoOptions(rows: LocationCatalogRow[]): SearchableSelectOption[] {

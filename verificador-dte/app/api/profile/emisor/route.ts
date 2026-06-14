@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import {
   LocationValidationError,
+  normalizeLocationCode,
   resolveLocation,
 } from '@/lib/facturacion/resolve-location';
 import { getPostgresPool } from '@/lib/postgres';
@@ -53,13 +54,6 @@ function clean(value: unknown) {
 
 function cleanRequired(value: unknown) {
   return typeof value === 'string' ? value.trim() : '';
-}
-
-function cleanLastTwoDigits(value: unknown) {
-  if (typeof value !== 'string') return null;
-  const digits = value.replace(/\D/g, '');
-  if (!digits) return null;
-  return digits.slice(-2).padStart(2, '0');
 }
 
 async function upsertEmisorConfiguracion(
@@ -312,9 +306,10 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    const municipioCodigo = location?.municipioCodigo ?? cleanLastTwoDigits(body.municipioCodigo);
-    const distritoCodigo = location?.distritoCodigo ?? cleanLastTwoDigits(body.distritoCodigo);
-    const departamentoCodigo = location?.departamentoCodigo ?? clean(body.departamentoCodigo);
+    const municipioCodigo = location?.municipioCodigo ?? normalizeLocationCode(body.municipioCodigo);
+    const distritoCodigo = location?.distritoCodigo ?? normalizeLocationCode(body.distritoCodigo);
+    const departamentoCodigo =
+      location?.departamentoCodigo ?? normalizeLocationCode(body.departamentoCodigo) || clean(body.departamentoCodigo);
 
     let current = await getLinkedEmitter(identity.uid, identity.email);
     if (!current) {

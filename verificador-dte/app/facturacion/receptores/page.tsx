@@ -17,6 +17,7 @@ import {
   departamentoOptions,
   distritoOptions,
   municipioOptions,
+  municipioSelectKey,
   parseDistritoSelectKey,
   parseMunicipioSelectKey,
   syncLocationSelectKeys,
@@ -195,7 +196,7 @@ function formFromReceptor(row: Receptor): ReceptorForm {
     razonSocial: row.razonSocial || '',
     telefono: row.telefono || '',
     correo: row.correo || '',
-    departamentoCodigo: row.departamentoCodigo || '',
+    departamentoCodigo: sanitizeLocationCodeForForm(row.departamentoCodigo),
     municipioCodigo: sanitizeLocationCodeForForm(row.municipioCodigo),
     distritoCodigo: sanitizeLocationCodeForForm(row.distritoCodigo),
     complementoDireccion: row.complementoDireccion || '',
@@ -318,15 +319,30 @@ export default function FacturacionReceptoresPage() {
   }, [authChecked, canAccess]);
 
   function setMunicipioFromSelectKey(key: string) {
-    const { municipioCodigo } = parseMunicipioSelectKey(key);
+    const { departamentoCodigo, municipioCodigo } = parseMunicipioSelectKey(key);
     setMunicipioSelectKey(key);
-    setForm((current) => ({ ...current, municipioCodigo }));
+    setForm((current) => ({
+      ...current,
+      ...(departamentoCodigo ? { departamentoCodigo } : {}),
+      municipioCodigo,
+    }));
   }
 
   function setDistritoFromSelectKey(key: string) {
-    const { distritoCodigo } = parseDistritoSelectKey(key);
+    const { departamentoCodigo, municipioCodigo, distritoCodigo } = parseDistritoSelectKey(
+      key,
+      municipiosById
+    );
     setDistritoSelectKey(key);
-    setForm((current) => ({ ...current, distritoCodigo }));
+    if (departamentoCodigo && municipioCodigo) {
+      setMunicipioSelectKey(municipioSelectKey(departamentoCodigo, municipioCodigo));
+    }
+    setForm((current) => ({
+      ...current,
+      ...(departamentoCodigo ? { departamentoCodigo } : {}),
+      ...(municipioCodigo ? { municipioCodigo } : {}),
+      distritoCodigo,
+    }));
   }
 
   function resetForm() {

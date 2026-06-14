@@ -13,6 +13,7 @@ import {
   distritoOptions,
   municipioOptions,
   municipioRequiresDistrito,
+  municipioSelectKey,
   parseDistritoSelectKey,
   parseMunicipioSelectKey,
   syncLocationSelectKeys,
@@ -128,7 +129,7 @@ function emitterToForm(data: Partial<EmitterForm>): EmitterForm {
     tipoEstablecimientoCodigo: data.tipoEstablecimientoCodigo || '',
     codigoActividad: data.codigoActividad || '',
     descripcionActividad: data.descripcionActividad || '',
-    departamentoCodigo: data.departamentoCodigo || '',
+    departamentoCodigo: sanitizeLocationCodeForForm(data.departamentoCodigo),
     municipioCodigo: sanitizeLocationCodeForForm(data.municipioCodigo),
     distritoCodigo: sanitizeLocationCodeForForm(data.distritoCodigo),
     complementoDireccion: data.complementoDireccion || '',
@@ -277,15 +278,30 @@ export function EmitterSettingsForm({
   );
 
   function setMunicipioFromSelectKey(key: string) {
-    const { municipioCodigo } = parseMunicipioSelectKey(key);
+    const { departamentoCodigo, municipioCodigo } = parseMunicipioSelectKey(key);
     setMunicipioSelectKey(key);
-    setForm((prev) => ({ ...prev, municipioCodigo }));
+    setForm((prev) => ({
+      ...prev,
+      ...(departamentoCodigo ? { departamentoCodigo } : {}),
+      municipioCodigo,
+    }));
   }
 
   function setDistritoFromSelectKey(key: string) {
-    const { distritoCodigo } = parseDistritoSelectKey(key);
+    const { departamentoCodigo, municipioCodigo, distritoCodigo } = parseDistritoSelectKey(
+      key,
+      municipiosById
+    );
     setDistritoSelectKey(key);
-    setForm((prev) => ({ ...prev, distritoCodigo }));
+    if (departamentoCodigo && municipioCodigo) {
+      setMunicipioSelectKey(municipioSelectKey(departamentoCodigo, municipioCodigo));
+    }
+    setForm((prev) => ({
+      ...prev,
+      ...(departamentoCodigo ? { departamentoCodigo } : {}),
+      ...(municipioCodigo ? { municipioCodigo } : {}),
+      distritoCodigo,
+    }));
   }
 
   function setField(name: keyof EmitterForm, value: string) {

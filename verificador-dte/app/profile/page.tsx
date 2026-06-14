@@ -33,6 +33,7 @@ import {
 	departamentoOptions,
 	distritoOptions,
 	municipioOptions,
+	municipioSelectKey,
 	parseDistritoSelectKey,
 	parseMunicipioSelectKey,
 	syncLocationSelectKeys,
@@ -172,7 +173,7 @@ function emitterToForm(data: Partial<EmitterForm>): EmitterForm {
 		tipoEstablecimientoCodigo: data.tipoEstablecimientoCodigo || '',
 		codigoActividad: data.codigoActividad || '',
 		descripcionActividad: data.descripcionActividad || '',
-		departamentoCodigo: data.departamentoCodigo || '',
+		departamentoCodigo: sanitizeLocationCodeForForm(data.departamentoCodigo),
 		municipioCodigo: sanitizeLocationCodeForForm(data.municipioCodigo),
 		distritoCodigo: sanitizeLocationCodeForForm(data.distritoCodigo),
 		complementoDireccion: data.complementoDireccion || '',
@@ -449,15 +450,30 @@ export default function ProfilePage() {
 	};
 
 	const setMunicipioFromSelectKey = (key: string) => {
-		const { municipioCodigo } = parseMunicipioSelectKey(key);
+		const { departamentoCodigo, municipioCodigo } = parseMunicipioSelectKey(key);
 		setMunicipioSelectKey(key);
-		setEmitterForm((prev) => ({ ...prev, municipioCodigo }));
+		setEmitterForm((prev) => ({
+			...prev,
+			...(departamentoCodigo ? { departamentoCodigo } : {}),
+			municipioCodigo,
+		}));
 	};
 
 	const setDistritoFromSelectKey = (key: string) => {
-		const { distritoCodigo } = parseDistritoSelectKey(key);
+		const { departamentoCodigo, municipioCodigo, distritoCodigo } = parseDistritoSelectKey(
+			key,
+			municipiosById
+		);
 		setDistritoSelectKey(key);
-		setEmitterForm((prev) => ({ ...prev, distritoCodigo }));
+		if (departamentoCodigo && municipioCodigo) {
+			setMunicipioSelectKey(municipioSelectKey(departamentoCodigo, municipioCodigo));
+		}
+		setEmitterForm((prev) => ({
+			...prev,
+			...(departamentoCodigo ? { departamentoCodigo } : {}),
+			...(municipioCodigo ? { municipioCodigo } : {}),
+			distritoCodigo,
+		}));
 	};
 
 	const setEmitterField = (name: keyof EmitterForm, value: string) => {
