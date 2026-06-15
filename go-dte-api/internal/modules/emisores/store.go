@@ -30,7 +30,10 @@ func (s *Store) GetByFirebaseUID(ctx context.Context, firebaseUID, email string)
 			e.tipo_establecimiento_codigo, e.codigo_actividad,
 			COALESCE(NULLIF(BTRIM(e.descripcion_actividad), ''), a.nombre) AS descripcion_actividad,
 			e.departamento_codigo, e.municipio_codigo, e.distrito_codigo,
-			m.codigo_dte,
+			COALESCE(
+				NULLIF(BTRIM(e.departamento_codigo), '') || LPAD(NULLIF(BTRIM(e.distrito_codigo), ''), 2, '0'),
+				e.municipio_codigo
+			) AS codigo_dte,
 			e.complemento_direccion, e.telefono, e.correo, e.ambiente_codigo,
 			e.certificado_path,
 			COALESCE(NULLIF(BTRIM(ec.cod_estable), ''), '001') AS cod_estable,
@@ -40,9 +43,6 @@ func (s *Store) GetByFirebaseUID(ctx context.Context, firebaseUID, email string)
 		INNER JOIN usuario_emisor ue ON ue.usuario_id = u.id
 		INNER JOIN emisores e ON e.id = ue.emisor_id
 		LEFT JOIN cat_024_codigo_actividad a ON a.codigo = e.codigo_actividad
-		LEFT JOIN cat_006_municipios m ON m.departamento_codigo = e.departamento_codigo
-			AND m.codigo = e.municipio_codigo
-			AND COALESCE(m.activo, TRUE) = TRUE
 		LEFT JOIN emisor_configuracion ec ON ec.emisor_id = e.id
 		WHERE u.activo = TRUE AND e.activo = TRUE
 		  AND (u.firebase_uid = $1 OR lower(u.email) = lower($2))
@@ -71,16 +71,16 @@ func (s *Store) GetByID(ctx context.Context, id int) (*dto.EmisorRow, error) {
 			e.id, e.nit, e.nrc, e.nombre, e.nombre_comercial, e.razon_social,
 			e.tipo_establecimiento_codigo, e.codigo_actividad, e.descripcion_actividad,
 			e.departamento_codigo, e.municipio_codigo, e.distrito_codigo,
-			m.codigo_dte,
+			COALESCE(
+				NULLIF(BTRIM(e.departamento_codigo), '') || LPAD(NULLIF(BTRIM(e.distrito_codigo), ''), 2, '0'),
+				e.municipio_codigo
+			) AS codigo_dte,
 			e.complemento_direccion, e.telefono, e.correo, e.ambiente_codigo,
 			e.certificado_path,
 			COALESCE(NULLIF(BTRIM(ec.cod_estable), ''), '001'),
 			COALESCE(NULLIF(BTRIM(ec.cod_punto_venta), ''), '001'),
 			COALESCE(NULLIF(BTRIM(ec.tipo_establecimiento_emision), ''), NULLIF(BTRIM(e.tipo_establecimiento_codigo), ''), 'M')
 		FROM emisores e
-		LEFT JOIN cat_006_municipios m ON m.departamento_codigo = e.departamento_codigo
-			AND m.codigo = e.municipio_codigo
-			AND COALESCE(m.activo, TRUE) = TRUE
 		LEFT JOIN emisor_configuracion ec ON ec.emisor_id = e.id
 		WHERE e.id = $1 AND e.activo = TRUE
 		LIMIT 1
@@ -111,9 +111,11 @@ func MapToDteInput(row *dto.EmisorRow) dto.DteEmisorInput {
 	dept := locationCode(ptr(row.DepartamentoCodigo))
 	muni := locationCode(ptr(row.MunicipioCodigo))
 	officialMuni := ptr(row.MunicipioCodigoDte)
+	dist := locationCode(ptr(row.DistritoCodigo))
 	deptOut, muniOut, compOut := location.MapEmisorDteDireccion(
 		dept,
 		muni,
+		dist,
 		ptr(row.ComplementoDireccion),
 		officialMuni,
 	)
@@ -127,7 +129,7 @@ func MapToDteInput(row *dto.EmisorRow) dto.DteEmisorInput {
 		Direccion: dto.Direccion{
 			Departamento: deptOut,
 			Municipio:    muniOut,
-			Distrito:     locationCode(ptr(row.DistritoCodigo)),
+			Distrito:     dist,
 			Complemento:  compOut,
 		},
 		Telefono:            ptr(row.Telefono),

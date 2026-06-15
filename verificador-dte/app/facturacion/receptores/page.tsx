@@ -12,16 +12,16 @@ import {
 } from 'lucide-react';
 
 import {
-  buildDepartamentosMap,
-  buildMunicipiosByIdMap,
   departamentoOptions,
   distritoOptions,
   municipioOptions,
+  municipioRequiresDistrito,
   municipioSelectKey as buildMunicipioSelectKey,
   parseDistritoSelectKey,
   parseMunicipioSelectKey,
   syncLocationSelectKeys,
 } from '@/lib/facturacion/location-catalog-options';
+import { DteDireccionPreview } from '@/components/facturacion/DteDireccionPreview';
 import {
   normalizeLocationCode,
   sanitizeLocationCodeForForm,
@@ -55,10 +55,11 @@ import {
 type CatalogRow = {
   id?: number;
   codigo: string;
+  valor?: string;
   nombre?: string;
   descripcion?: string;
   departamento_codigo?: string;
-  municipio_id?: number;
+  municipio_codigo?: string;
 };
 
 type ReceptorCatalogs = {
@@ -168,7 +169,7 @@ const usoOptions: SearchableSelectOption[] = [
 ];
 
 function catalogLabel(row: CatalogRow) {
-  const name = row.nombre || row.descripcion || row.codigo;
+  const name = row.valor || row.nombre || row.descripcion || row.codigo;
   return `${row.codigo} - ${name}`;
 }
 
@@ -255,27 +256,17 @@ export default function FacturacionReceptoresPage() {
     appUser?.role === 'cliente' ||
     appUser?.role === 'colaborador';
 
-  const departamentosMap = useMemo(
-    () => buildDepartamentosMap(catalogs.departamentos),
-    [catalogs.departamentos]
-  );
-
-  const municipiosById = useMemo(
-    () => buildMunicipiosByIdMap(catalogs.municipios),
-    [catalogs.municipios]
-  );
-
   const optionGroups = useMemo(
     () => ({
       tiposDocumento: catalogOptions(catalogs.tiposDocumento),
       departamentos: departamentoOptions(catalogs.departamentos),
-      municipios: municipioOptions(catalogs.municipios, departamentosMap),
-      distritos: distritoOptions(catalogs.distritos, municipiosById),
+      municipios: municipioOptions(catalogs.municipios, form.departamentoCodigo),
+      distritos: distritoOptions(catalogs.distritos),
       actividades: catalogOptions(catalogs.actividades),
       regimenesTributarios: catalogOptions(catalogs.regimenesTributarios),
       paises: catalogOptions(catalogs.paises),
     }),
-    [catalogs, departamentosMap, municipiosById]
+    [catalogs, form.departamentoCodigo]
   );
 
   async function loadData(search = query) {
@@ -319,28 +310,19 @@ export default function FacturacionReceptoresPage() {
   }, [authChecked, canAccess]);
 
   function setMunicipioFromSelectKey(key: string) {
-    const { departamentoCodigo, municipioCodigo } = parseMunicipioSelectKey(key);
+    const { municipioCodigo } = parseMunicipioSelectKey(key);
     setMunicipioSelectKey(key);
     setForm((current) => ({
       ...current,
-      ...(departamentoCodigo ? { departamentoCodigo } : {}),
       municipioCodigo,
     }));
   }
 
   function setDistritoFromSelectKey(key: string) {
-    const { departamentoCodigo, municipioCodigo, distritoCodigo } = parseDistritoSelectKey(
-      key,
-      municipiosById
-    );
+    const { distritoCodigo } = parseDistritoSelectKey(key);
     setDistritoSelectKey(key);
-    if (departamentoCodigo && municipioCodigo) {
-      setMunicipioSelectKey(buildMunicipioSelectKey(departamentoCodigo, municipioCodigo));
-    }
     setForm((current) => ({
       ...current,
-      ...(departamentoCodigo ? { departamentoCodigo } : {}),
-      ...(municipioCodigo ? { municipioCodigo } : {}),
       distritoCodigo,
     }));
   }
@@ -351,7 +333,25 @@ export default function FacturacionReceptoresPage() {
   }
 
   function setField(name: keyof ReceptorForm, value: string | boolean | number) {
-    setForm((current) => ({ ...current, [name]: value }));
+    setForm((current) => {
+      if (name === 'departamentoCodigo' && typeof value === 'string') {
+        if (value !== current.departamentoCodigo) {
+          clearLocationSelectKeys(setMunicipioSelectKey, setDistritoSelectKey);
+          return {
+            ...current,
+            departamentoCodigo: value,
+            municipioCodigo: '',
+            distritoCodigo: '',
+          };
+        }
+        return {
+          ...current,
+          departamentoCodigo: value,
+        };
+      }
+
+      return { ...current, [name]: value };
+    });
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -359,6 +359,17 @@ export default function FacturacionReceptoresPage() {
     setSaving(true);
     setError('');
     setSuccess('');
+
+    if (form.departamentoCodigo && form.municipioCodigo) {
+      if (
+        municipioRequiresDistrito(catalogs, form.departamentoCodigo, form.municipioCodigo) &&
+        !form.distritoCodigo
+      ) {
+        setError('Selecciona un distrito valido para el municipio.');
+        setSaving(false);
+        return;
+      }
+    }
 
     try {
       const token = await firebaseToken();
@@ -596,6 +607,15 @@ export default function FacturacionReceptoresPage() {
                     placeholder="Seleccionar distrito"
                     searchPlaceholder="Buscar distrito"
                     clearable
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <DteDireccionPreview
+                    departamentoCodigo={form.departamentoCodigo}
+                    municipioCodigo={form.municipioCodigo}
+                    distritoCodigo={form.distritoCodigo}
+                    complemento={form.complementoDireccion}
                   />
                 </div>
 

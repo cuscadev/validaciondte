@@ -5,9 +5,9 @@ import { getPostgresPool } from '@/lib/postgres';
 export const runtime = 'nodejs';
 
 const allowedCatalogs = {
-  departamentos: 'cat_005_departamentos',
-  municipios: 'cat_006_municipios',
-  distritos: 'cat_008_distritos',
+  departamentos: 'cat_012_departamento',
+  municipios: 'cat_013_municipio',
+  distritos: 'cat_008_distrito',
   tiposEstablecimiento: 'cat_007_tipo_establecimiento',
   actividades: 'cat_024_codigo_actividad',
   regimenesTributarios: 'cat_023_regimen_tributario',
@@ -42,11 +42,20 @@ async function requireAuth(req: NextRequest) {
   }
 }
 
+const locationCatalogColumns: Record<string, string> = {
+  cat_012_departamento: 'id, codigo, valor',
+  cat_013_municipio: 'id, departamento_codigo, codigo, valor',
+  cat_008_distrito: 'id, codigo, valor',
+};
+
 async function readCatalog(tableName: string) {
   const pool = getPostgresPool();
+  const columns = locationCatalogColumns[tableName];
   try {
     const result = await pool.query(
-      `
+      columns
+        ? `SELECT ${columns} FROM ${tableName} ORDER BY id`
+        : `
         SELECT *
         FROM ${tableName}
         WHERE COALESCE(activo, TRUE) = TRUE

@@ -1,7 +1,11 @@
 import { getGoDteApiUrl } from '@/lib/go-dte-api';
+import { getPostgresPool } from '@/lib/postgres';
 import {
   isValidDteMunicipioCode,
+  LocationValidationError,
   normalizeDteDireccion,
+  resolveEmitterRowLocation,
+  toDteLocationCodes,
 } from '@/lib/facturacion/resolve-location';
 
 export type DteEmisorInput = {
@@ -158,57 +162,151 @@ export async function fetchGoFacturacion<T = unknown>(
   return payload as T;
 }
 
+function mapRowToDteEmisorInput(row: Record<string, unknown>): DteEmisorInput {
+  const str = (value: unknown) => getString(value).trim();
+  const nullable = (value: unknown) => {
+    const trimmed = str(value);
+    return trimmed || null;
+  };
+
+  return {
+    nit: str(row.nit),
+    nrc: str(row.nrc),
+    nombre: str(row.nombre),
+    codActividad: str(row.codigo_actividad),
+    descActividad: str(row.descripcion_actividad),
+    nombreComercial: nullable(row.nombre_comercial),
+    tipoEstablecimiento: str(row.tipo_establecimiento_emision).slice(0, 1).toUpperCase() || 'M',
+    direccion: normalizeDteDireccion({
+      departamento: str(row.departamento_codigo),
+      municipio: str(row.municipio_codigo),
+      distrito: str(row.distrito_codigo),
+      complemento: str(row.complemento_direccion),
+    }),
+    telefono: str(row.telefono),
+    correo: str(row.correo),
+    codEstable: str(row.cod_estable) || '001',
+    codPuntoVenta: str(row.cod_punto_venta) || '001',
+  };
+}
+
+async function fetchLinkedEmisorRow(firebaseUid: string, email: string) {
+  const pool = getPostgresPool();
+  const result = await pool.query(
+    `
+      SELECT
+        e.id,
+        e.nit,
+        e.nrc,
+        e.nombre,
+        e.nombre_comercial,
+        e.razon_social,
+        e.tipo_establecimiento_codigo,
+        e.codigo_actividad,
+        COALESCE(NULLIF(BTRIM(e.descripcion_actividad), ''), a.nombre) AS descripcion_actividad,
+        e.departamento_codigo,
+        e.municipio_codigo,
+        e.distrito_codigo,
+        e.complemento_direccion,
+        e.telefono,
+        e.correo,
+        COALESCE(NULLIF(BTRIM(ec.cod_estable), ''), '001') AS cod_estable,
+        COALESCE(NULLIF(BTRIM(ec.cod_punto_venta), ''), '001') AS cod_punto_venta,
+        COALESCE(
+          NULLIF(BTRIM(ec.tipo_establecimiento_emision), ''),
+          NULLIF(BTRIM(e.tipo_establecimiento_codigo), ''),
+          'M'
+        ) AS tipo_establecimiento_emision
+      FROM usuarios u
+      INNER JOIN usuario_emisor ue ON ue.usuario_id = u.id
+      INNER JOIN emisores e ON e.id = ue.emisor_id
+      LEFT JOIN cat_024_codigo_actividad a ON a.codigo = e.codigo_actividad
+      LEFT JOIN emisor_configuracion ec ON ec.emisor_id = e.id
+      WHERE u.activo = TRUE
+        AND e.activo = TRUE
+        AND (u.firebase_uid = $1 OR lower(u.email) = lower($2))
+      ORDER BY
+        CASE ue.rol WHEN 'propietario' THEN 0 WHEN 'editor' THEN 1 ELSE 2 END,
+        e.id ASC
+      LIMIT 1
+    `,
+    [firebaseUid, email]
+  );
+
+  return result.rows[0] as Record<string, unknown> | undefined;
+}
+
 export async function fetchEmisorDteInput(
   firebaseUid: string,
   email: string
 ): Promise<DteEmisorInput> {
-  const response = await fetchGoFacturacion<{ emisor?: DteEmisorInput }>(
-    '/api/emisores/me/dte-input',
-    {
-      headers: {
-        'X-Firebase-UID': firebaseUid,
-        'X-User-Email': email,
-      },
-    }
-  );
-
-  const emisor = response.emisor;
-  if (!emisor?.nit) {
-    throw new GoFacturacionError('No hay emisor vinculado para este usuario.', 404);
-  }
-  return emisor;
+  const context = await fetchEmisorEmissionContext(firebaseUid, email);
+  return context.emisor;
 }
 
 export async function fetchEmisorEmissionContext(
   firebaseUid: string,
   email: string
 ): Promise<EmisorEmissionContext> {
-  const response = await fetchGoFacturacion<{
-    emisor?: DteEmisorInput;
-    emisorId?: number;
-    id?: number;
-  }>('/api/emisores/me/dte-input', {
-    headers: {
-      'X-Firebase-UID': firebaseUid,
-      'X-User-Email': email,
-    },
-  });
-
-  const emisor = response.emisor;
-  const emisorId = Number(response.emisorId ?? response.id ?? 0);
-  if (!emisor?.nit || !emisorId) {
-    throw new GoFacturacionError('No hay emisor vinculado para este usuario.', 404);
+  const linkedRow = await fetchLinkedEmisorRow(firebaseUid, email);
+  if (!linkedRow?.nit) {
+    throw new GoFacturacionError(
+      'No hay emisor vinculado a tu usuario. Guarda los datos del emisor en Configuraciones antes de facturar.',
+      404
+    );
   }
 
+  const emisorId = Number(linkedRow.id ?? 0);
+  if (!emisorId) {
+    throw new GoFacturacionError(
+      'No hay emisor vinculado a tu usuario. Guarda los datos del emisor en Configuraciones antes de facturar.',
+      404
+    );
+  }
+
+  const emisor = mapRowToDteEmisorInput(linkedRow);
   const establecimiento = defaultCode(emisor.codEstable, '001');
   const puntoVenta = defaultCode(emisor.codPuntoVenta, '001');
   const establecimientoTipo = getString(emisor.tipoEstablecimiento).trim().slice(0, 1).toUpperCase() || 'M';
+
+  const pool = getPostgresPool();
+
+  let direccionDte;
+  try {
+    const location = await resolveEmitterRowLocation(
+      pool,
+      {
+        departamento_codigo: linkedRow.departamento_codigo,
+        municipio_codigo: linkedRow.municipio_codigo,
+        distrito_codigo: linkedRow.distrito_codigo,
+        complemento_direccion: linkedRow.complemento_direccion,
+      },
+      { requireDistrito: true }
+    );
+    direccionDte = toDteLocationCodes(location);
+  } catch (error) {
+    if (error instanceof LocationValidationError) {
+      throw new GoFacturacionError(
+        'Completa departamento, municipio y distrito validos del emisor en Configuraciones antes de facturar.',
+        400
+      );
+    }
+    throw error;
+  }
+
+  const complemento =
+    getString(linkedRow.complemento_direccion).trim() || getString(emisor.direccion?.complemento);
 
   return {
     emisorId,
     emisor: {
       ...emisor,
-      direccion: normalizeDteDireccion(emisor.direccion),
+      direccion: {
+        departamento: direccionDte.departamento,
+        municipio: direccionDte.municipio,
+        distrito: direccionDte.distrito,
+        complemento,
+      },
     },
     establecimiento,
     puntoVenta,
@@ -254,9 +352,9 @@ export function validateEmisorForEmission(emisor: DteEmisorInput) {
       400
     );
   }
-  if (!isValidDteMunicipioCode(direccion.municipio)) {
+  if (!isValidDteMunicipioCode(direccion.municipio, direccion.departamento)) {
     throw new GoFacturacionError(
-      `Municipio del emisor invalido para DTE (CAT-013): ${emisor.direccion.municipio}. Debe ser codigo de 2 digitos. Ve a Perfil / Datos del emisor y selecciona ubicacion valida.`,
+      `Municipio del emisor invalido para Hacienda: ${emisor.direccion.municipio}. Usa el codigo CAT-013 del catalogo (columna codigo, ej. 30 o 34), no el id ni el codigo del distrito.`,
       400
     );
   }

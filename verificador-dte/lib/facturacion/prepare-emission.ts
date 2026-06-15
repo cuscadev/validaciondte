@@ -14,6 +14,33 @@ export type PreparedEmission = EmisorEmissionContext & {
   sequenceFields: Awaited<ReturnType<typeof buildDocumentSequenceFields>>;
 };
 
+export function buildPreviewSequenceFields(context: EmisorEmissionContext) {
+  return {
+    correlativo: 0,
+    numeroControl: '',
+    establecimiento: context.establecimiento,
+    puntoVenta: context.puntoVenta,
+    establecimientoTipo: context.establecimientoTipo,
+  };
+}
+
+export async function preparePreviewEmission(
+  firebaseUid: string,
+  email: string,
+  tipoDte: string,
+  requestedEnvironment?: 'test' | 'production'
+): Promise<PreparedEmission> {
+  const context = await fetchEmisorEmissionContext(firebaseUid, email);
+  validateEmisorForEmission(context.emisor);
+  const environment = resolveEmissionEnvironment(requestedEnvironment, null);
+  return {
+    ...context,
+    environment,
+    ambiente: ambienteDteCode(environment),
+    sequenceFields: buildPreviewSequenceFields(context),
+  };
+}
+
 export async function prepareEmission(
   firebaseUid: string,
   email: string,

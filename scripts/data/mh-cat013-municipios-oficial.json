@@ -1,0 +1,134 @@
+{
+  "fuente": "Ministerio de Hacienda El Salvador - Catalogos Facturacion Electronica v1.0 (CAT-013 Municipio)",
+  "nota": "Los codigos de municipio CAT-013 son unicos SOLO dentro de cada departamento (se repiten entre departamentos). La clave real es departamento + municipio.",
+  "departamentos": [
+    {
+      "departamento": "01",
+      "nombre": "Ahuachapan",
+      "municipios": [
+        { "codigo": "13", "valor": "AHUACHAPAN NORTE" },
+        { "codigo": "14", "valor": "AHUACHAPAN CENTRO" },
+        { "codigo": "15", "valor": "AHUACHAPAN SUR" }
+      ]
+    },
+    {
+      "departamento": "02",
+      "nombre": "Santa Ana",
+      "municipios": [
+        { "codigo": "14", "valor": "SANTA ANA NORTE" },
+        { "codigo": "15", "valor": "SANTA ANA CENTRO" },
+        { "codigo": "16", "valor": "SANTA ANA ESTE" },
+        { "codigo": "17", "valor": "SANTA ANA OESTE" }
+      ]
+    },
+    {
+      "departamento": "03",
+      "nombre": "Sonsonate",
+      "municipios": [
+        { "codigo": "17", "valor": "SONSONATE NORTE" },
+        { "codigo": "18", "valor": "SONSONATE CENTRO" },
+        { "codigo": "19", "valor": "SONSONATE ESTE" },
+        { "codigo": "20", "valor": "SONSONATE OESTE" }
+      ]
+    },
+    {
+      "departamento": "04",
+      "nombre": "Chalatenango",
+      "municipios": [
+        { "codigo": "34", "valor": "CHALATENANGO NORTE" },
+        { "codigo": "35", "valor": "CHALATENANGO CENTRO" },
+        { "codigo": "36", "valor": "CHALATENANGO SUR" }
+      ]
+    },
+    {
+      "departamento": "05",
+      "nombre": "La Libertad",
+      "municipios": [
+        { "codigo": "23", "valor": "LA LIBERTAD NORTE" },
+        { "codigo": "24", "valor": "LA LIBERTAD CENTRO" },
+        { "codigo": "25", "valor": "LA LIBERTAD OESTE" },
+        { "codigo": "26", "valor": "LA LIBERTAD ESTE" },
+        { "codigo": "27", "valor": "LA LIBERTAD COSTA" },
+        { "codigo": "28", "valor": "LA LIBERTAD SUR" }
+      ]
+    },
+    {
+      "departamento": "06",
+      "nombre": "San Salvador",
+      "municipios": [
+        { "codigo": "20", "valor": "SAN SALVADOR NORTE" },
+        { "codigo": "21", "valor": "SAN SALVADOR OESTE" },
+        { "codigo": "22", "valor": "SAN SALVADOR ESTE" },
+        { "codigo": "23", "valor": "SAN SALVADOR CENTRO" },
+        { "codigo": "24", "valor": "SAN SALVADOR SUR" }
+      ]
+    },
+    {
+      "departamento": "07",
+      "nombre": "Cuscatlan",
+      "municipios": [
+        { "codigo": "17", "valor": "CUSCATLAN NORTE" },
+        { "codigo": "18", "valor": "CUSCATLAN SUR" }
+      ]
+    },
+    {
+      "departamento": "08",
+      "nombre": "La Paz",
+      "municipios": [
+        { "codigo": "23", "valor": "LA PAZ OESTE" },
+        { "codigo": "24", "valor": "LA PAZ CENTRO" },
+        { "codigo": "25", "valor": "LA PAZ ESTE" }
+      ]
+    },
+    {
+      "departamento": "09",
+      "nombre": "Cabanas",
+      "municipios": [
+        { "codigo": "10", "valor": "CABANAS OESTE" },
+        { "codigo": "11", "valor": "CABANAS ESTE" }
+      ]
+    },
+    {
+      "departamento": "10",
+      "nombre": "San Vicente",
+      "municipios": [
+        { "codigo": "14", "valor": "SAN VICENTE NORTE" },
+        { "codigo": "15", "valor": "SAN VICENTE SUR" }
+      ]
+    },
+    {
+      "departamento": "11",
+      "nombre": "Usulutan",
+      "municipios": [
+        { "codigo": "24", "valor": "USULUTAN NORTE" },
+        { "codigo": "25", "valor": "USULUTAN ESTE" },
+        { "codigo": "26", "valor": "USULUTAN OESTE" }
+      ]
+    },
+    {
+      "departamento": "12",
+      "nombre": "San Miguel",
+      "municipios": [
+        { "codigo": "21", "valor": "SAN MIGUEL NORTE" },
+        { "codigo": "22", "valor": "SAN MIGUEL CENTRO" },
+        { "codigo": "23", "valor": "SAN MIGUEL OESTE" }
+      ]
+    },
+    {
+      "departamento": "13",
+      "nombre": "Morazan",
+      "municipios": [
+        { "codigo": "27", "valor": "MORAZAN NORTE" },
+        { "codigo": "28", "valor": "MORAZAN SUR" }
+      ]
+    },
+    {
+      "departamento": "14",
+      "nombre": "La Union",
+      "municipios": [
+        { "codigo": "19", "valor": "LA UNION NORTE" },
+        { "codigo": "20", "valor": "LA UNION SUR" }
+      ]
+    }
+  ]
+}

@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { buildDteDireccionPreview } from '@/lib/facturacion/location-catalog-options';
 import {
   LocationValidationError,
   normalizeLocationCode,
   resolveLocation,
+  sanitizeLocationCodeForForm,
+  sanitizeLocationCodeForStorage,
 } from '@/lib/facturacion/resolve-location';
+import { requiresDistritoForMunicipio } from '@/lib/facturacion/ubicacion-maps';
 import { getPostgresPool } from '@/lib/postgres';
 
 export const runtime = 'nodejs';
@@ -243,6 +247,30 @@ function canUpdateEmitter(role: string, emitterRole: string) {
   return emitterRole === 'propietario' || emitterRole === 'editor';
 }
 
+function sanitizeEmitterResponse(emitter: Record<string, unknown>) {
+  const departamentoCodigo =
+    sanitizeLocationCodeForForm(emitter.departamentoCodigo) || emitter.departamentoCodigo;
+  const municipioCodigo = sanitizeLocationCodeForForm(emitter.municipioCodigo);
+  const distritoCodigo = sanitizeLocationCodeForForm(emitter.distritoCodigo);
+  const complementoDireccion =
+    typeof emitter.complementoDireccion === 'string' ? emitter.complementoDireccion : '';
+  const direccionHacienda = buildDteDireccionPreview(
+    String(departamentoCodigo ?? ''),
+    municipioCodigo,
+    distritoCodigo,
+    complementoDireccion
+  );
+
+  return {
+    ...emitter,
+    departamentoCodigo,
+    municipioCodigo,
+    distritoCodigo,
+    municipioCodigoDte: direccionHacienda?.municipio ?? null,
+    direccionHacienda,
+  };
+}
+
 export async function GET(req: NextRequest) {
   try {
     const identity = await getIdentity(req);
@@ -256,7 +284,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    return json({ emitter });
+    return json({ emitter: sanitizeEmitterResponse(emitter) });
   } catch (error) {
     console.error('[api/profile/emisor] Error loading emitter', error);
 
@@ -287,7 +315,8 @@ export async function PUT(req: NextRequest) {
     const pool = getPostgresPool();
     let location = null as Awaited<ReturnType<typeof resolveLocation>>;
 
-    if (body.departamentoCodigo || body.municipioCodigo) {
+    if (body.departamentoCodigo || body.municipioCodigo || body.distritoCodigo) {
+      const municipioCodigo = normalizeLocationCode(body.municipioCodigo);
       try {
         location = await resolveLocation(
           pool,
@@ -296,7 +325,10 @@ export async function PUT(req: NextRequest) {
             municipioCodigo: body.municipioCodigo,
             distritoCodigo: body.distritoCodigo,
           },
-          { requireDistrito: Boolean(body.distritoCodigo) }
+          {
+            requireDistrito:
+              Boolean(body.distritoCodigo) || requiresDistritoForMunicipio(municipioCodigo),
+          }
         );
       } catch (error) {
         if (error instanceof LocationValidationError) {
@@ -306,11 +338,16 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    const municipioCodigo = location?.municipioCodigo ?? normalizeLocationCode(body.municipioCodigo);
-    const distritoCodigo = location?.distritoCodigo ?? normalizeLocationCode(body.distritoCodigo);
-    const departamentoCodigo =
-      location?.departamentoCodigo ??
-      (normalizeLocationCode(body.departamentoCodigo) || clean(body.departamentoCodigo));
+    if (!location) {
+      return json(
+        { error: 'Selecciona departamento, municipio y distrito validos del catalogo.' },
+        { status: 400 }
+      );
+    }
+
+    const municipioCodigo = location.municipioCodigo;
+    const distritoCodigo = location.distritoCodigo ?? '';
+    const departamentoCodigo = location.departamentoCodigo;
 
     let current = await getLinkedEmitter(identity.uid, identity.email);
     if (!current) {
@@ -492,10 +529,10 @@ export async function PUT(req: NextRequest) {
     const emitter = await getLinkedEmitter(identity.uid, identity.email);
 
     return json({
-      emitter: {
+      emitter: sanitizeEmitterResponse({
         ...emitter,
         rolEmisor: current.rolEmisor,
-      },
+      }),
     });
   } catch (error) {
     console.error('[api/profile/emisor] Error updating emitter', error);

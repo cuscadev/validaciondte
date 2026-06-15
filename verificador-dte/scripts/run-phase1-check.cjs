@@ -18,9 +18,9 @@ async function main() {
   await client.connect();
 
   const checks = [
-    ['max_muni_len', 'SELECT MAX(LENGTH(codigo))::text AS v FROM cat_006_municipios'],
-    ['distrito_count', 'SELECT COUNT(*)::text AS v FROM cat_008_distritos'],
-    ['muni_count', 'SELECT COUNT(*)::text AS v FROM cat_006_municipios'],
+    ['max_muni_len', 'SELECT MAX(LENGTH(codigo))::text AS v FROM cat_013_municipio'],
+    ['distrito_count', 'SELECT COUNT(*)::text AS v FROM cat_008_distrito'],
+    ['muni_count', 'SELECT COUNT(*)::text AS v FROM cat_013_municipio'],
     [
       'legacy_emisores',
       `SELECT COUNT(*)::text AS v FROM emisores WHERE municipio_codigo IS NOT NULL AND LENGTH(municipio_codigo) > 2`,

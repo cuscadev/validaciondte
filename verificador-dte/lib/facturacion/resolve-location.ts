@@ -1,5 +1,10 @@
 import type { Pool } from 'pg';
 
+import {
+  distritoCodigoFromGeo,
+  geoCodigoDistrito,
+} from '@/lib/facturacion/ubicacion-maps';
+
 export type ResolvedLocation = {
   departamentoCodigo: string;
   municipioCodigo: string;
@@ -8,7 +13,6 @@ export type ResolvedLocation = {
   municipio: string;
   municipioDte: string;
   distrito: string;
-  municipioId: number;
 };
 
 export type LocationInput = {
@@ -34,7 +38,8 @@ function cleanDigits(value: unknown) {
 export function normalizeLocationCode(value: unknown): string {
   const digits = cleanDigits(value);
   if (!digits) return '';
-  return digits.slice(-2).padStart(2, '0');
+  const normalized = digits.slice(-2).padStart(2, '0');
+  return normalized === '00' ? '' : normalized;
 }
 
 /** Convierte codigos invalidos de placeholder (00) a vacio para formularios. */
@@ -43,39 +48,45 @@ export function sanitizeLocationCodeForForm(value: unknown): string {
   return normalized === '00' ? '' : normalized;
 }
 
-/** CAT-013: municipio en JSON DTE = 2 digitos (sufijo oficial). codigo_dte (4 digitos) se usa solo como referencia. */
+export function isInvalidLocationCode(value: unknown): boolean {
+  const normalized = normalizeLocationCode(value);
+  return !normalized || normalized === '00';
+}
+
+/** Normaliza para guardar en BD (2 digitos). Rechaza 00 y vacio. */
+export function sanitizeLocationCodeForStorage(value: unknown): string {
+  const normalized = normalizeLocationCode(value);
+  if (!normalized || normalized === '00') return '';
+  return normalized;
+}
+
+/**
+ * Municipio DTE = codigo CAT-013 (columna codigo en cat_013_municipio).
+ * Los codigos son unicos SOLO dentro del departamento, asi que se envia tal cual.
+ */
 export function toDteMunicipioCode(
   _departamento: unknown,
   municipio: unknown,
-  codigoDte?: unknown
+  _distrito?: unknown
 ): string {
-  const official = cleanDigits(codigoDte);
-  if (official.length >= 4) {
-    return official.slice(-2).padStart(2, '0');
-  }
-
-  const digits = cleanDigits(municipio);
-  if (digits.length >= 4) {
-    return digits.slice(-2).padStart(2, '0');
-  }
-
   return normalizeLocationCode(municipio);
 }
 
-export function isValidDteMunicipioCode(value: unknown): boolean {
-  const code = normalizeLocationCode(value);
-  return /^\d{2}$/.test(code) && code !== '00';
+/** Formato de municipio DTE: 2 digitos, distinto de 00. La validacion contra el
+ * catalogo (departamento + municipio) se hace en resolveLocation/BD. */
+export function isValidDteMunicipioCode(value: unknown, _departamento?: unknown): boolean {
+  const muni = normalizeLocationCode(value);
+  return /^\d{2}$/.test(muni) && muni !== '00';
 }
 
 export function normalizeDteDireccion<T extends { departamento: string; municipio: string; distrito: string }>(
-  direccion: T,
-  municipioDte?: string
+  direccion: T
 ): T {
   const departamento = normalizeLocationCode(direccion.departamento);
   return {
     ...direccion,
     departamento,
-    municipio: toDteMunicipioCode(departamento, direccion.municipio, municipioDte),
+    municipio: toDteMunicipioCode(departamento, direccion.municipio),
     distrito: normalizeLocationCode(direccion.distrito),
   };
 }
@@ -84,7 +95,7 @@ export function toDteLocationCodes(location: ResolvedLocation) {
   const departamento = normalizeLocationCode(location.departamento);
   return {
     departamento,
-    municipio: location.municipioDte || toDteMunicipioCode(departamento, location.municipio),
+    municipio: toDteMunicipioCode(departamento, location.municipioCodigo),
     distrito: normalizeLocationCode(location.distrito),
   };
 }
@@ -112,16 +123,15 @@ export async function resolveLocation(
     throw new LocationValidationError('Departamento es obligatorio.');
   }
 
-  if (!municipioCodigo) {
+  if (!municipioCodigo || municipioCodigo === '00') {
     throw new LocationValidationError('Municipio es obligatorio.');
   }
 
   const dept = await pool.query<{ codigo: string }>(
     `
       SELECT codigo
-      FROM cat_005_departamentos
+      FROM cat_012_departamento
       WHERE codigo = $1
-        AND COALESCE(activo, TRUE) = TRUE
       LIMIT 1
     `,
     [departamentoCodigo]
@@ -130,63 +140,59 @@ export async function resolveLocation(
     throw new LocationValidationError(`Departamento invalido: ${departamentoCodigo}.`);
   }
 
-  const municipio = await pool.query<{ id: number; codigo: string; codigo_dte: string | null }>(
+  const municipio = await pool.query<{ codigo: string }>(
     `
-      SELECT id, codigo, codigo_dte
-      FROM cat_006_municipios
-      WHERE codigo = $1
-        AND departamento_codigo = $2
-        AND COALESCE(activo, TRUE) = TRUE
+      SELECT codigo
+      FROM cat_013_municipio
+      WHERE departamento_codigo = $1
+        AND LPAD(TRIM(codigo), 2, '0') = $2
       LIMIT 1
     `,
-    [municipioCodigo, departamentoCodigo]
+    [departamentoCodigo, municipioCodigo]
   );
   if (!municipio.rows[0]) {
     throw new LocationValidationError(
-      `Municipio invalido para el departamento seleccionado (${departamentoCodigo}/${municipioCodigo}).`
+      `Municipio ${municipioCodigo} no es valido para el departamento ${departamentoCodigo} segun el catalogo CAT-013 de Hacienda.`
     );
   }
 
-  const municipioId = municipio.rows[0].id;
-  const municipioDte = toDteMunicipioCode(
-    departamentoCodigo,
-    municipio.rows[0].codigo,
-    municipio.rows[0].codigo_dte
-  );
+  const municipioCodigoStored = normalizeLocationCode(municipio.rows[0].codigo);
   let resolvedDistrito = distritoCodigo;
 
   if (resolvedDistrito) {
+    const distritoDigits = cleanDigits(resolvedDistrito);
+    const geoCodigo =
+      distritoDigits.length >= 4
+        ? distritoDigits.slice(-4).padStart(4, '0')
+        : geoCodigoDistrito(departamentoCodigo, resolvedDistrito);
     const distrito = await pool.query<{ codigo: string }>(
       `
         SELECT codigo
-        FROM cat_008_distritos
-        WHERE municipio_id = $1
-          AND departamento_codigo = $2
-          AND codigo = $3
-          AND COALESCE(activo, TRUE) = TRUE
+        FROM cat_008_distrito
+        WHERE codigo = $1
         LIMIT 1
       `,
-      [municipioId, departamentoCodigo, resolvedDistrito]
+      [geoCodigo]
     );
     if (!distrito.rows[0]) {
       throw new LocationValidationError(
-        `Distrito invalido para el municipio seleccionado (${departamentoCodigo}/${municipioCodigo}/${resolvedDistrito}).`
+        `Distrito invalido para el departamento seleccionado (${departamentoCodigo}/${resolvedDistrito}).`
       );
     }
-    resolvedDistrito = distrito.rows[0].codigo;
+
+    resolvedDistrito = distritoCodigoFromGeo(distrito.rows[0].codigo);
   } else if (options.requireDistrito) {
     throw new LocationValidationError('Distrito es obligatorio para este tipo de documento.');
   }
 
   return {
     departamentoCodigo,
-    municipioCodigo: municipio.rows[0].codigo,
+    municipioCodigo: municipioCodigoStored,
     distritoCodigo: resolvedDistrito || null,
     departamento: departamentoCodigo,
-    municipio: municipio.rows[0].codigo,
-    municipioDte,
+    municipio: municipioCodigoStored,
+    municipioDte: toDteMunicipioCode(departamentoCodigo, municipioCodigoStored),
     distrito: resolvedDistrito,
-    municipioId,
   };
 }
 

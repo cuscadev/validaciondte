@@ -1,0 +1,440 @@
+{
+  "fuente": "Ministerio de Hacienda El Salvador - Catalogos Facturacion Electronica v1.0 (CAT-008 Distrito) + Ley Especial para la Reestructuracion Municipal 2023 (D.L. 762)",
+  "nota": "Los codigos de distrito CAT-008 son alfabeticos y unicos SOLO dentro de cada departamento. Cada distrito pertenece a un municipio (zona) CAT-013. La direccion DTE debe enviar departamento + municipio(zona) + distrito de forma consistente; Hacienda valida que el distrito pertenezca al municipio.",
+  "departamentos": [
+    {
+      "departamento": "01",
+      "nombre": "Ahuachapan",
+      "municipios": [
+        { "municipio": "13", "municipioNombre": "AHUACHAPAN NORTE", "distritos": [
+          { "codigo": "03", "valor": "ATIQUIZAYA" },
+          { "codigo": "05", "valor": "EL REFUGIO" },
+          { "codigo": "09", "valor": "SAN LORENZO" },
+          { "codigo": "12", "valor": "TURIN" }
+        ]},
+        { "municipio": "14", "municipioNombre": "AHUACHAPAN CENTRO", "distritos": [
+          { "codigo": "01", "valor": "AHUACHAPAN" },
+          { "codigo": "02", "valor": "APANECA" },
+          { "codigo": "04", "valor": "CONCEPCION DE ATACO" },
+          { "codigo": "11", "valor": "TACUBA" }
+        ]},
+        { "municipio": "15", "municipioNombre": "AHUACHAPAN SUR", "distritos": [
+          { "codigo": "06", "valor": "GUAYMANGO" },
+          { "codigo": "07", "valor": "JUJUTLA" },
+          { "codigo": "08", "valor": "SAN FRANCISCO MENENDEZ" },
+          { "codigo": "10", "valor": "SAN PEDRO PUXTLA" }
+        ]}
+      ]
+    },
+    {
+      "departamento": "02",
+      "nombre": "Santa Ana",
+      "municipios": [
+        { "municipio": "14", "municipioNombre": "SANTA ANA NORTE", "distritos": [
+          { "codigo": "06", "valor": "MASAHUAT" },
+          { "codigo": "07", "valor": "METAPAN" },
+          { "codigo": "11", "valor": "SANTA ROSA GUACHIPILIN" },
+          { "codigo": "13", "valor": "TEXISTEPEQUE" }
+        ]},
+        { "municipio": "15", "municipioNombre": "SANTA ANA CENTRO", "distritos": [
+          { "codigo": "10", "valor": "SANTA ANA" }
+        ]},
+        { "municipio": "16", "municipioNombre": "SANTA ANA ESTE", "distritos": [
+          { "codigo": "02", "valor": "COATEPEQUE" },
+          { "codigo": "04", "valor": "EL CONGO" }
+        ]},
+        { "municipio": "17", "municipioNombre": "SANTA ANA OESTE", "distritos": [
+          { "codigo": "01", "valor": "CANDELARIA DE LA FRONTERA" },
+          { "codigo": "03", "valor": "CHALCHUAPA" },
+          { "codigo": "05", "valor": "EL PORVENIR" },
+          { "codigo": "08", "valor": "SAN ANTONIO PAJONAL" },
+          { "codigo": "09", "valor": "SAN SEBASTIAN SALITRILLO" },
+          { "codigo": "12", "valor": "SANTIAGO DE LA FRONTERA" }
+        ]}
+      ]
+    },
+    {
+      "departamento": "03",
+      "nombre": "Sonsonate",
+      "municipios": [
+        { "municipio": "17", "municipioNombre": "SONSONATE NORTE", "distritos": [
+          { "codigo": "07", "valor": "JUAYUA" },
+          { "codigo": "08", "valor": "NAHUIZALCO" },
+          { "codigo": "10", "valor": "SALCOATITAN" },
+          { "codigo": "13", "valor": "SANTA CATARINA MASAHUAT" }
+        ]},
+        { "municipio": "18", "municipioNombre": "SONSONATE CENTRO", "distritos": [
+          { "codigo": "09", "valor": "NAHULINGO" },
+          { "codigo": "11", "valor": "SAN ANTONIO DEL MONTE" },
+          { "codigo": "14", "valor": "SANTO DOMINGO DE GUZMAN" },
+          { "codigo": "15", "valor": "SONSONATE" },
+          { "codigo": "16", "valor": "SONZACATE" }
+        ]},
+        { "municipio": "19", "municipioNombre": "SONSONATE ESTE", "distritos": [
+          { "codigo": "02", "valor": "ARMENIA" },
+          { "codigo": "03", "valor": "CALUCO" },
+          { "codigo": "04", "valor": "CUISNAHUAT" },
+          { "codigo": "05", "valor": "SANTA ISABEL ISHUATAN" },
+          { "codigo": "06", "valor": "IZALCO" },
+          { "codigo": "12", "valor": "SAN JULIAN" }
+        ]},
+        { "municipio": "20", "municipioNombre": "SONSONATE OESTE", "distritos": [
+          { "codigo": "01", "valor": "ACAJUTLA" }
+        ]}
+      ]
+    },
+    {
+      "departamento": "04",
+      "nombre": "Chalatenango",
+      "municipios": [
+        { "municipio": "34", "municipioNombre": "CHALATENANGO NORTE", "distritos": [
+          { "codigo": "04", "valor": "CITALA" },
+          { "codigo": "12", "valor": "LA PALMA" },
+          { "codigo": "25", "valor": "SAN IGNACIO" }
+        ]},
+        { "municipio": "35", "municipioNombre": "CHALATENANGO CENTRO", "distritos": [
+          { "codigo": "01", "valor": "AGUA CALIENTE" },
+          { "codigo": "08", "valor": "DULCE NOMBRE DE MARIA" },
+          { "codigo": "10", "valor": "EL PARAISO" },
+          { "codigo": "13", "valor": "LA REINA" },
+          { "codigo": "16", "valor": "NUEVA CONCEPCION" },
+          { "codigo": "22", "valor": "SAN FERNANDO" },
+          { "codigo": "24", "valor": "SAN FRANCISCO MORAZAN" },
+          { "codigo": "31", "valor": "SAN RAFAEL" },
+          { "codigo": "32", "valor": "SANTA RITA" },
+          { "codigo": "33", "valor": "TEJUTLA" }
+        ]},
+        { "municipio": "36", "municipioNombre": "CHALATENANGO SUR", "distritos": [
+          { "codigo": "02", "valor": "ARCATAO" },
+          { "codigo": "03", "valor": "AZACUALPA" },
+          { "codigo": "05", "valor": "COMALAPA" },
+          { "codigo": "06", "valor": "CONCEPCION QUEZALTEPEQUE" },
+          { "codigo": "07", "valor": "CHALATENANGO" },
+          { "codigo": "09", "valor": "EL CARRIZAL" },
+          { "codigo": "11", "valor": "LA LAGUNA" },
+          { "codigo": "14", "valor": "LAS VUELTAS" },
+          { "codigo": "15", "valor": "NOMBRE DE JESUS" },
+          { "codigo": "17", "valor": "NUEVA TRINIDAD" },
+          { "codigo": "18", "valor": "OJOS DE AGUA" },
+          { "codigo": "19", "valor": "POTONICO" },
+          { "codigo": "20", "valor": "SAN ANTONIO DE LA CRUZ" },
+          { "codigo": "21", "valor": "SAN ANTONIO LOS RANCHOS" },
+          { "codigo": "23", "valor": "SAN FRANCISCO LEMPA" },
+          { "codigo": "26", "valor": "SAN ISIDRO LABRADOR" },
+          { "codigo": "27", "valor": "SAN JOSE CANCASQUE" },
+          { "codigo": "28", "valor": "SAN JOSE LAS FLORES" },
+          { "codigo": "29", "valor": "SAN LUIS DEL CARMEN" },
+          { "codigo": "30", "valor": "SAN MIGUEL DE MERCEDES" }
+        ]}
+      ]
+    },
+    {
+      "departamento": "05",
+      "nombre": "La Libertad",
+      "municipios": [
+        { "municipio": "23", "municipioNombre": "LA LIBERTAD NORTE", "distritos": [
+          { "codigo": "12", "valor": "QUEZALTEPEQUE" },
+          { "codigo": "16", "valor": "SAN MATIAS" },
+          { "codigo": "17", "valor": "SAN PABLO TACACHICO" }
+        ]},
+        { "municipio": "24", "municipioNombre": "LA LIBERTAD CENTRO", "distritos": [
+          { "codigo": "02", "valor": "CIUDAD ARCE" },
+          { "codigo": "15", "valor": "SAN JUAN OPICO" }
+        ]},
+        { "municipio": "25", "municipioNombre": "LA LIBERTAD OESTE", "distritos": [
+          { "codigo": "03", "valor": "COLON" },
+          { "codigo": "07", "valor": "JAYAQUE" },
+          { "codigo": "13", "valor": "SACACOYO" },
+          { "codigo": "19", "valor": "TALNIQUE" },
+          { "codigo": "21", "valor": "TEPECOYO" }
+        ]},
+        { "municipio": "26", "municipioNombre": "LA LIBERTAD ESTE", "distritos": [
+          { "codigo": "01", "valor": "ANTIGUO CUSCATLAN" },
+          { "codigo": "06", "valor": "HUIZUCAR" },
+          { "codigo": "10", "valor": "NUEVO CUSCATLAN" },
+          { "codigo": "14", "valor": "SAN JOSE VILLANUEVA" },
+          { "codigo": "22", "valor": "ZARAGOZA" }
+        ]},
+        { "municipio": "27", "municipioNombre": "LA LIBERTAD COSTA", "distritos": [
+          { "codigo": "05", "valor": "CHILTIUPAN" },
+          { "codigo": "08", "valor": "JICALAPA" },
+          { "codigo": "09", "valor": "LA LIBERTAD" },
+          { "codigo": "18", "valor": "TAMANIQUE" },
+          { "codigo": "20", "valor": "TEOTEPEQUE" }
+        ]},
+        { "municipio": "28", "municipioNombre": "LA LIBERTAD SUR", "distritos": [
+          { "codigo": "04", "valor": "COMASAGUA" },
+          { "codigo": "11", "valor": "SANTA TECLA" }
+        ]}
+      ]
+    },
+    {
+      "departamento": "06",
+      "nombre": "San Salvador",
+      "municipios": [
+        { "municipio": "20", "municipioNombre": "SAN SALVADOR NORTE", "distritos": [
+          { "codigo": "01", "valor": "AGUILARES" },
+          { "codigo": "05", "valor": "EL PAISNAL" },
+          { "codigo": "06", "valor": "GUAZAPA" }
+        ]},
+        { "municipio": "21", "municipioNombre": "SAN SALVADOR OESTE", "distritos": [
+          { "codigo": "02", "valor": "APOPA" },
+          { "codigo": "09", "valor": "NEJAPA" }
+        ]},
+        { "municipio": "22", "municipioNombre": "SAN SALVADOR ESTE", "distritos": [
+          { "codigo": "07", "valor": "ILOPANGO" },
+          { "codigo": "13", "valor": "SAN MARTIN" },
+          { "codigo": "17", "valor": "SOYAPANGO" },
+          { "codigo": "18", "valor": "TONACATEPEQUE" }
+        ]},
+        { "municipio": "23", "municipioNombre": "SAN SALVADOR CENTRO", "distritos": [
+          { "codigo": "03", "valor": "AYUTUXTEPEQUE" },
+          { "codigo": "04", "valor": "CUSCATANCINGO" },
+          { "codigo": "08", "valor": "MEJICANOS" },
+          { "codigo": "14", "valor": "SAN SALVADOR" },
+          { "codigo": "19", "valor": "CIUDAD DELGADO" }
+        ]},
+        { "municipio": "24", "municipioNombre": "SAN SALVADOR SUR", "distritos": [
+          { "codigo": "10", "valor": "PANCHIMALCO" },
+          { "codigo": "11", "valor": "ROSARIO DE MORA" },
+          { "codigo": "12", "valor": "SAN MARCOS" },
+          { "codigo": "15", "valor": "SANTIAGO TEXACUANGOS" },
+          { "codigo": "16", "valor": "SANTO TOMAS" }
+        ]}
+      ]
+    },
+    {
+      "departamento": "07",
+      "nombre": "Cuscatlan",
+      "municipios": [
+        { "municipio": "17", "municipioNombre": "CUSCATLAN NORTE", "distritos": [
+          { "codigo": "06", "valor": "ORATORIO DE CONCEPCION" },
+          { "codigo": "07", "valor": "SAN BARTOLOME PERULAPIA" },
+          { "codigo": "09", "valor": "SAN JOSE GUAYABAL" },
+          { "codigo": "10", "valor": "SAN PEDRO PERULAPAN" },
+          { "codigo": "15", "valor": "SUCHITOTO" }
+        ]},
+        { "municipio": "18", "municipioNombre": "CUSCATLAN SUR", "distritos": [
+          { "codigo": "01", "valor": "CANDELARIA" },
+          { "codigo": "02", "valor": "COJUTEPEQUE" },
+          { "codigo": "03", "valor": "EL CARMEN" },
+          { "codigo": "04", "valor": "EL ROSARIO" },
+          { "codigo": "05", "valor": "MONTE SAN JUAN" },
+          { "codigo": "08", "valor": "SAN CRISTOBAL" },
+          { "codigo": "11", "valor": "SAN RAFAEL CEDROS" },
+          { "codigo": "12", "valor": "SAN RAMON" },
+          { "codigo": "13", "valor": "SANTA CRUZ ANALQUITO" },
+          { "codigo": "14", "valor": "SANTA CRUZ MICHAPA" },
+          { "codigo": "16", "valor": "TENANCINGO" }
+        ]}
+      ]
+    },
+    {
+      "departamento": "08",
+      "nombre": "La Paz",
+      "municipios": [
+        { "municipio": "23", "municipioNombre": "LA PAZ OESTE", "distritos": [
+          { "codigo": "01", "valor": "CUYULTITAN" },
+          { "codigo": "05", "valor": "OLOCUILTA" },
+          { "codigo": "09", "valor": "SAN FRANCISCO CHINAMECA" },
+          { "codigo": "11", "valor": "SAN JUAN TALPA" },
+          { "codigo": "13", "valor": "SAN LUIS TALPA" },
+          { "codigo": "15", "valor": "SAN PEDRO MASAHUAT" },
+          { "codigo": "20", "valor": "TAPALHUACA" }
+        ]},
+        { "municipio": "24", "municipioNombre": "LA PAZ CENTRO", "distritos": [
+          { "codigo": "02", "valor": "EL ROSARIO" },
+          { "codigo": "03", "valor": "JERUSALEN" },
+          { "codigo": "04", "valor": "MERCEDES LA CEIBA" },
+          { "codigo": "06", "valor": "PARAISO DE OSORIO" },
+          { "codigo": "07", "valor": "SAN ANTONIO MASAHUAT" },
+          { "codigo": "08", "valor": "SAN EMIGDIO" },
+          { "codigo": "12", "valor": "SAN JUAN TEPEZONTES" },
+          { "codigo": "14", "valor": "SAN MIGUEL TEPEZONTES" },
+          { "codigo": "16", "valor": "SAN PEDRO NONUALCO" },
+          { "codigo": "18", "valor": "SANTA MARIA OSTUMA" },
+          { "codigo": "19", "valor": "SANTIAGO NONUALCO" },
+          { "codigo": "22", "valor": "SAN LUIS LA HERRADURA" }
+        ]},
+        { "municipio": "25", "municipioNombre": "LA PAZ ESTE", "distritos": [
+          { "codigo": "10", "valor": "SAN JUAN NONUALCO" },
+          { "codigo": "17", "valor": "SAN RAFAEL OBRAJUELO" },
+          { "codigo": "21", "valor": "ZACATECOLUCA" }
+        ]}
+      ]
+    },
+    {
+      "departamento": "09",
+      "nombre": "Cabanas",
+      "municipios": [
+        { "municipio": "10", "municipioNombre": "CABANAS OESTE", "distritos": [
+          { "codigo": "01", "valor": "CINQUERA" },
+          { "codigo": "03", "valor": "ILOBASCO" },
+          { "codigo": "04", "valor": "JUTIAPA" },
+          { "codigo": "07", "valor": "TEJUTEPEQUE" }
+        ]},
+        { "municipio": "11", "municipioNombre": "CABANAS ESTE", "distritos": [
+          { "codigo": "02", "valor": "GUACOTECTI" },
+          { "codigo": "05", "valor": "SAN ISIDRO" },
+          { "codigo": "06", "valor": "SENSUNTEPEQUE" },
+          { "codigo": "08", "valor": "VICTORIA" },
+          { "codigo": "09", "valor": "DOLORES" }
+        ]}
+      ]
+    },
+    {
+      "departamento": "10",
+      "nombre": "San Vicente",
+      "municipios": [
+        { "municipio": "14", "municipioNombre": "SAN VICENTE NORTE", "distritos": [
+          { "codigo": "01", "valor": "APASTEPEQUE" },
+          { "codigo": "04", "valor": "SANTA CLARA" },
+          { "codigo": "05", "valor": "SANTO DOMINGO" },
+          { "codigo": "06", "valor": "SAN ESTEBAN CATARINA" },
+          { "codigo": "07", "valor": "SAN ILDEFONSO" },
+          { "codigo": "08", "valor": "SAN LORENZO" },
+          { "codigo": "09", "valor": "SAN SEBASTIAN" }
+        ]},
+        { "municipio": "15", "municipioNombre": "SAN VICENTE SUR", "distritos": [
+          { "codigo": "02", "valor": "GUADALUPE" },
+          { "codigo": "03", "valor": "SAN CAYETANO ISTEPEQUE" },
+          { "codigo": "10", "valor": "SAN VICENTE" },
+          { "codigo": "11", "valor": "TECOLUCA" },
+          { "codigo": "12", "valor": "TEPETITAN" },
+          { "codigo": "13", "valor": "VERAPAZ" }
+        ]}
+      ]
+    },
+    {
+      "departamento": "11",
+      "nombre": "Usulutan",
+      "municipios": [
+        { "municipio": "24", "municipioNombre": "USULUTAN NORTE", "distritos": [
+          { "codigo": "01", "valor": "ALEGRIA" },
+          { "codigo": "02", "valor": "BERLIN" },
+          { "codigo": "05", "valor": "EL TRIUNFO" },
+          { "codigo": "07", "valor": "ESTANZUELAS" },
+          { "codigo": "09", "valor": "JUCUAPA" },
+          { "codigo": "11", "valor": "MERCEDES UMANA" },
+          { "codigo": "12", "valor": "NUEVA GRANADA" },
+          { "codigo": "16", "valor": "SAN BUENAVENTURA" },
+          { "codigo": "21", "valor": "SANTIAGO DE MARIA" }
+        ]},
+        { "municipio": "25", "municipioNombre": "USULUTAN ESTE", "distritos": [
+          { "codigo": "03", "valor": "CALIFORNIA" },
+          { "codigo": "04", "valor": "CONCEPCION BATRES" },
+          { "codigo": "06", "valor": "EREGUAYQUIN" },
+          { "codigo": "10", "valor": "JUCUARAN" },
+          { "codigo": "13", "valor": "OZATLAN" },
+          { "codigo": "17", "valor": "SAN DIONISIO" },
+          { "codigo": "18", "valor": "SANTA ELENA" },
+          { "codigo": "20", "valor": "SANTA MARIA" },
+          { "codigo": "22", "valor": "TECAPAN" },
+          { "codigo": "23", "valor": "USULUTAN" }
+        ]},
+        { "municipio": "26", "municipioNombre": "USULUTAN OESTE", "distritos": [
+          { "codigo": "08", "valor": "JIQUILISCO" },
+          { "codigo": "14", "valor": "PUERTO EL TRIUNFO" },
+          { "codigo": "15", "valor": "SAN AGUSTIN" },
+          { "codigo": "19", "valor": "SAN FRANCISCO JAVIER" }
+        ]}
+      ]
+    },
+    {
+      "departamento": "12",
+      "nombre": "San Miguel",
+      "municipios": [
+        { "municipio": "21", "municipioNombre": "SAN MIGUEL NORTE", "distritos": [
+          { "codigo": "01", "valor": "CAROLINA" },
+          { "codigo": "02", "valor": "CIUDAD BARRIOS" },
+          { "codigo": "04", "valor": "CHAPELTIQUE" },
+          { "codigo": "11", "valor": "NUEVO EDEN DE SAN JUAN" },
+          { "codigo": "13", "valor": "SAN ANTONIO DEL MOSCO" },
+          { "codigo": "14", "valor": "SAN GERARDO" },
+          { "codigo": "16", "valor": "SAN LUIS DE LA REINA" },
+          { "codigo": "19", "valor": "SESORI" }
+        ]},
+        { "municipio": "22", "municipioNombre": "SAN MIGUEL CENTRO", "distritos": [
+          { "codigo": "03", "valor": "COMACARAN" },
+          { "codigo": "06", "valor": "CHIRILAGUA" },
+          { "codigo": "09", "valor": "MONCAGUA" },
+          { "codigo": "12", "valor": "QUELEPA" },
+          { "codigo": "17", "valor": "SAN MIGUEL" },
+          { "codigo": "20", "valor": "ULUAZAPA" }
+        ]},
+        { "municipio": "23", "municipioNombre": "SAN MIGUEL OESTE", "distritos": [
+          { "codigo": "05", "valor": "CHINAMECA" },
+          { "codigo": "07", "valor": "EL TRANSITO" },
+          { "codigo": "08", "valor": "LOLOTIQUE" },
+          { "codigo": "10", "valor": "NUEVA GUADALUPE" },
+          { "codigo": "15", "valor": "SAN JORGE" },
+          { "codigo": "18", "valor": "SAN RAFAEL ORIENTE" }
+        ]}
+      ]
+    },
+    {
+      "departamento": "13",
+      "nombre": "Morazan",
+      "municipios": [
+        { "municipio": "27", "municipioNombre": "MORAZAN NORTE", "distritos": [
+          { "codigo": "01", "valor": "ARAMBALA" },
+          { "codigo": "02", "valor": "CACAOPERA" },
+          { "codigo": "03", "valor": "CORINTO" },
+          { "codigo": "07", "valor": "EL ROSARIO" },
+          { "codigo": "10", "valor": "JOATECA" },
+          { "codigo": "11", "valor": "JOCOAITIQUE" },
+          { "codigo": "14", "valor": "MEANGUERA" },
+          { "codigo": "16", "valor": "PERQUIN" },
+          { "codigo": "18", "valor": "SAN FERNANDO" },
+          { "codigo": "20", "valor": "SAN ISIDRO" },
+          { "codigo": "24", "valor": "TOROLA" }
+        ]},
+        { "municipio": "28", "municipioNombre": "MORAZAN SUR", "distritos": [
+          { "codigo": "04", "valor": "CHILANGA" },
+          { "codigo": "05", "valor": "DELICIAS DE CONCEPCION" },
+          { "codigo": "06", "valor": "EL DIVISADERO" },
+          { "codigo": "08", "valor": "GUALOCOCTI" },
+          { "codigo": "09", "valor": "GUATAJIAGUA" },
+          { "codigo": "12", "valor": "JOCORO" },
+          { "codigo": "13", "valor": "LOLOTIQUILLO" },
+          { "codigo": "15", "valor": "OSICALA" },
+          { "codigo": "17", "valor": "SAN CARLOS" },
+          { "codigo": "19", "valor": "SAN FRANCISCO GOTERA" },
+          { "codigo": "21", "valor": "SAN SIMON" },
+          { "codigo": "22", "valor": "SENSEMBRA" },
+          { "codigo": "23", "valor": "SOCIEDAD" },
+          { "codigo": "25", "valor": "YAMABAL" },
+          { "codigo": "26", "valor": "YOLOAIQUIN" }
+        ]}
+      ]
+    },
+    {
+      "departamento": "14",
+      "nombre": "La Union",
+      "municipios": [
+        { "municipio": "19", "municipioNombre": "LA UNION NORTE", "distritos": [
+          { "codigo": "01", "valor": "ANAMOROS" },
+          { "codigo": "02", "valor": "BOLIVAR" },
+          { "codigo": "03", "valor": "CONCEPCION DE ORIENTE" },
+          { "codigo": "06", "valor": "EL SAUCE" },
+          { "codigo": "09", "valor": "LISLIQUE" },
+          { "codigo": "11", "valor": "NUEVA ESPARTA" },
+          { "codigo": "12", "valor": "PASAQUINA" },
+          { "codigo": "13", "valor": "POLOROS" },
+          { "codigo": "15", "valor": "SAN JOSE LA FUENTE" },
+          { "codigo": "16", "valor": "SANTA ROSA DE LIMA" }
+        ]},
+        { "municipio": "20", "municipioNombre": "LA UNION SUR", "distritos": [
+          { "codigo": "04", "valor": "CONCHAGUA" },
+          { "codigo": "05", "valor": "EL CARMEN" },
+          { "codigo": "07", "valor": "INTIPUCA" },
+          { "codigo": "08", "valor": "LA UNION" },
+          { "codigo": "10", "valor": "MEANGUERA DEL GOLFO" },
+          { "codigo": "14", "valor": "SAN ALEJO" },
+          { "codigo": "17", "valor": "YAYANTIQUE" },
+          { "codigo": "18", "valor": "YUCUAIQUIN" }
+        ]}
+      ]
+    }
+  ]
+}

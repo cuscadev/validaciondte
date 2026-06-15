@@ -7,8 +7,6 @@ import { toast } from 'sonner';
 
 import { auth } from '@/lib/firebase';
 import {
-  buildDepartamentosMap,
-  buildMunicipiosByIdMap,
   departamentoOptions,
   distritoOptions,
   municipioOptions,
@@ -21,8 +19,10 @@ import {
 import {
   normalizeLocationCode,
   sanitizeLocationCodeForForm,
+  sanitizeLocationCodeForStorage,
 } from '@/lib/facturacion/resolve-location';
 import { Button } from '@/components/ui/button';
+import { DteDireccionPreview } from '@/components/facturacion/DteDireccionPreview';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -58,10 +58,11 @@ export type EmitterForm = {
 type CatalogRow = {
   id?: number;
   codigo: string;
+  valor?: string;
   nombre?: string;
   descripcion?: string;
   departamento_codigo?: string;
-  municipio_id?: number;
+  municipio_codigo?: string;
 };
 
 type ProfileCatalogs = {
@@ -249,16 +250,6 @@ export function EmitterSettingsForm({
     };
   }, [defaultValuesKey]);
 
-  const departamentosMap = useMemo(
-    () => buildDepartamentosMap(catalogs.departamentos),
-    [catalogs.departamentos]
-  );
-
-  const municipiosById = useMemo(
-    () => buildMunicipiosByIdMap(catalogs.municipios),
-    [catalogs.municipios]
-  );
-
   const selectedActividad = useMemo(
     () => catalogs.actividades.find((row) => row.codigo === form.codigoActividad),
     [catalogs.actividades, form.codigoActividad]
@@ -267,45 +258,60 @@ export function EmitterSettingsForm({
   const options = useMemo(
     () => ({
       departamentos: departamentoOptions(catalogs.departamentos),
-      municipios: municipioOptions(catalogs.municipios, departamentosMap),
-      distritos: distritoOptions(catalogs.distritos, municipiosById),
+      municipios: municipioOptions(catalogs.municipios, form.departamentoCodigo),
+      distritos: distritoOptions(catalogs.distritos),
       tiposEstablecimiento: catalogOptions(catalogs.tiposEstablecimiento),
       actividades: catalogOptions(catalogs.actividades),
       regimenesTributarios: catalogOptions(catalogs.regimenesTributarios),
       tiposAfiliacion: catalogOptions(catalogs.tiposAfiliacion),
     }),
-    [catalogs, departamentosMap, municipiosById]
+    [catalogs, form.departamentoCodigo]
   );
 
   function setMunicipioFromSelectKey(key: string) {
-    const { departamentoCodigo, municipioCodigo } = parseMunicipioSelectKey(key);
+    const { municipioCodigo } = parseMunicipioSelectKey(key);
     setMunicipioSelectKey(key);
     setForm((prev) => ({
       ...prev,
-      ...(departamentoCodigo ? { departamentoCodigo } : {}),
       municipioCodigo,
     }));
   }
 
   function setDistritoFromSelectKey(key: string) {
-    const { departamentoCodigo, municipioCodigo, distritoCodigo } = parseDistritoSelectKey(
-      key,
-      municipiosById
-    );
+    const { distritoCodigo } = parseDistritoSelectKey(key);
     setDistritoSelectKey(key);
-    if (departamentoCodigo && municipioCodigo) {
-      setMunicipioSelectKey(buildMunicipioSelectKey(departamentoCodigo, municipioCodigo));
-    }
     setForm((prev) => ({
       ...prev,
-      ...(departamentoCodigo ? { departamentoCodigo } : {}),
-      ...(municipioCodigo ? { municipioCodigo } : {}),
       distritoCodigo,
     }));
   }
 
   function setField(name: keyof EmitterForm, value: string) {
     setForm((prev) => {
+      if (name === 'departamentoCodigo') {
+        if (value !== prev.departamentoCodigo) {
+          setMunicipioSelectKey('');
+          setDistritoSelectKey('');
+          return {
+            ...prev,
+            departamentoCodigo: value,
+            municipioCodigo: '',
+            distritoCodigo: '',
+          };
+        }
+        return {
+          ...prev,
+          departamentoCodigo: value,
+        };
+      }
+
+      if (name === 'municipioCodigo') {
+        return {
+          ...prev,
+          municipioCodigo: value,
+        };
+      }
+
       if (name === 'codigoActividad') {
         const actividad = catalogs.actividades.find((row) => row.codigo === value);
         return {
@@ -364,8 +370,8 @@ export function EmitterSettingsForm({
         body: JSON.stringify({
           ...form,
           departamentoCodigo: normalizeLocationCode(form.departamentoCodigo),
-          municipioCodigo: normalizeLocationCode(form.municipioCodigo),
-          distritoCodigo: normalizeLocationCode(form.distritoCodigo),
+          municipioCodigo: sanitizeLocationCodeForStorage(form.municipioCodigo),
+          distritoCodigo: sanitizeLocationCodeForStorage(form.distritoCodigo),
           codEstable: normalizeEstableCode(form.codEstable),
           codPuntoVenta: normalizeEstableCode(form.codPuntoVenta),
         }),
@@ -503,6 +509,14 @@ export function EmitterSettingsForm({
             placeholder="Seleccionar distrito"
             searchPlaceholder="Buscar distrito"
             clearable
+          />
+        </div>
+        <div className="space-y-2 sm:col-span-2">
+          <DteDireccionPreview
+            departamentoCodigo={form.departamentoCodigo}
+            municipioCodigo={form.municipioCodigo}
+            distritoCodigo={form.distritoCodigo}
+            complemento={form.complementoDireccion}
           />
         </div>
         <div className="space-y-2">

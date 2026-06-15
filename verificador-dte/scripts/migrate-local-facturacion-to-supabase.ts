@@ -37,17 +37,18 @@ async function sanitizeLocationCodes(client: pg.PoolClient, row: Record<string, 
   const departamento = nullIfZero(row.departamento_codigo) as string | null;
   const municipio = nullIfZero(row.municipio_codigo) as string | null;
   const distrito = nullIfZero(row.distrito_codigo) as string | null;
+  const geoDistrito =
+    departamento && distrito ? `${departamento.padStart(2, '0').slice(-2)}${distrito.padStart(2, '0').slice(-2)}` : null;
 
   return {
-    departamento_codigo: departamento && (await fkExists(client, 'cat_005_departamentos', departamento))
+    departamento_codigo: departamento && (await fkExists(client, 'cat_012_departamento', departamento))
       ? departamento
       : null,
-    municipio_codigo: municipio && (await fkExists(client, 'cat_006_municipios', municipio))
+    municipio_codigo: municipio && (await fkExists(client, 'cat_013_municipio', municipio))
       ? municipio
       : null,
-    distrito_codigo: distrito && (await fkExists(client, 'cat_008_distritos', distrito))
-      ? distrito
-      : null,
+    distrito_codigo:
+      geoDistrito && (await fkExists(client, 'cat_008_distrito', geoDistrito)) ? distrito : null,
   };
 }
 

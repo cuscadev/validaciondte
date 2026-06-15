@@ -11,18 +11,10 @@ Base de datos Docker con catálogos de facturación electrónica del Ministerio 
 
 ## Catálogos Incluidos
 
-### CAT-005: Departamentos
-- 14 departamentos de El Salvador
-- Códigos y nombres
-
-### CAT-008: Distritos
-- 30 distritos disponibles (01-30)
-- Aplicable según municipio/departamento
-
-### CAT-009: Municipios
-- Municipios por departamento
-- Relación con departamentos
-- Actualmente poblados: La Libertad (05) y San Miguel (12)
+### CAT-012 / CAT-013 / CAT-008: Ubicación (Departamento, Municipio, Distrito)
+- Catálogo oficial MH (reestructuración municipal 2023)
+- Jerarquía en cascada: departamento → municipio → distrito
+- Aplicar con `scripts/fix-ubicacion-flat.sql` o `npx tsx verificador-dte/scripts/run-ubicacion-flat-migration.ts`
 
 ### Tipos de Documento
 - NIT, DUI, Pasaporte, etc.
@@ -72,12 +64,12 @@ psql -h localhost -U facturacion -d facturacion
 
 ### Listar todos los departamentos
 ```sql
-SELECT * FROM cat_005_departamentos WHERE activo = true;
+SELECT * FROM cat_012_departamento ORDER BY codigo;
 ```
 
 ### Listar distritos
 ```sql
-SELECT * FROM cat_008_distritos WHERE activo = true;
+SELECT * FROM cat_008_distrito WHERE departamento_codigo = '05' AND municipio_codigo = '28';
 ```
 
 ### Listar municipios de un departamento

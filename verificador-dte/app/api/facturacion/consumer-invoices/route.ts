@@ -14,19 +14,12 @@ import { requireAuth } from '@/lib/server-auth';
 
 type JsonRecord = Record<string, unknown>;
 
-type InvoiceItem = {
-  codigo?: string;
-  descripcion?: string;
-  cantidad?: number;
-  uniMedida?: number;
-  precioUni?: number;
-  montoDescu?: number;
-  ventaNoSuj?: number;
-  ventaExenta?: number;
-  ventaGravada?: number;
-  noGravado?: number;
-  tipoItem?: number;
-};
+import {
+  buildConsumerInvoiceDocumentRequest,
+  type ConsumerInvoiceItemInput,
+} from '@/lib/facturacion/consumer-invoice-document';
+
+type InvoiceItem = ConsumerInvoiceItemInput;
 
 type ProcessTiming = {
   startedAt: string;
@@ -107,66 +100,6 @@ async function getReceptor(emisorId: number, receptorId: number) {
   return result.rows[0] ?? null;
 }
 
-function buildReceptor(row: Record<string, unknown>) {
-  return {
-    tipoDocumento: nullableString(row.tipo_documento_codigo),
-    numDocumento: nullableString(row.numero_documento),
-    nrc: normalizeNrc(row.nrc),
-    nombre: nullableString(row.nombre),
-    codActividad: nullableString(row.codigo_actividad),
-    descActividad: nullableString(row.actividad_nombre),
-    direccion: null,
-    telefono: nullableString(row.telefono),
-    correo: nullableString(row.correo),
-  };
-}
-
-function validateItems(items: InvoiceItem[]) {
-  if (!Array.isArray(items) || items.length === 0) {
-    throw new Error('Agrega al menos un item para facturar.');
-  }
-
-  return items.map((item, index) => {
-    const descripcion = String(item.descripcion || '').trim();
-    const cantidad = toNumber(item.cantidad);
-    const precioUni = toNumber(item.precioUni);
-    const montoDescu = toNumber(item.montoDescu);
-
-    if (!descripcion) throw new Error(`Item ${index + 1}: descripcion requerida.`);
-    if (cantidad <= 0) throw new Error(`Item ${index + 1}: cantidad debe ser mayor a cero.`);
-    if (
-      precioUni <= 0 &&
-      toNumber(item.ventaGravada) <= 0 &&
-      toNumber(item.ventaExenta) <= 0 &&
-      toNumber(item.ventaNoSuj) <= 0 &&
-      toNumber(item.noGravado) <= 0
-    ) {
-      throw new Error(`Item ${index + 1}: precio unitario o venta requerida.`);
-    }
-
-    return {
-      tipoItem: Number(item.tipoItem || 2),
-      codigo: nullableString(item.codigo),
-      descripcion,
-      cantidad,
-      uniMedida: Number(item.uniMedida || 59),
-      precioUni,
-      montoDescu,
-      ventaNoSuj: toNumber(item.ventaNoSuj),
-      ventaExenta: toNumber(item.ventaExenta),
-      ventaGravada: toNumber(item.ventaGravada),
-      noGravado: toNumber(item.noGravado),
-    };
-  });
-}
-
-function sumItems(items: ReturnType<typeof validateItems>) {
-  return items.reduce((total, item) => {
-    const explicit = item.ventaNoSuj + item.ventaExenta + item.ventaGravada + item.noGravado;
-    return total + (explicit > 0 ? explicit : item.cantidad * item.precioUni - item.montoDescu);
-  }, 0);
-}
-
 export async function POST(req: NextRequest) {
   let emisionId: string | null = null;
   const requestStartedAtMs = Date.now();
@@ -203,26 +136,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Receptor no encontrado para este emisor.' }, { status: 404 });
     }
 
-    const items = validateItems(body.items || []);
-
-    const documentRequest = {
-      ambiente,
-      correlativo: sequenceFields.correlativo,
-      numeroControl: sequenceFields.numeroControl,
-      establecimientoTipo: sequenceFields.establecimientoTipo,
-      establecimiento: sequenceFields.establecimiento,
-      puntoVenta: sequenceFields.puntoVenta,
-      emisor,
-      receptor: buildReceptor(receptor),
-      items,
-      pagos: [
-        {
-          codigo: '01',
-          montoPago: Number(sumItems(items).toFixed(2)),
-        },
-      ],
-      observaciones: nullableString(body.observaciones),
-    };
+    const documentRequest = buildConsumerInvoiceDocumentRequest(
+      prepared,
+      receptor,
+      body.items || [],
+      body.observaciones
+    );
 
     emisionId = await createEmision('01', {
       uid: user.uid,

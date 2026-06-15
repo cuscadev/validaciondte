@@ -143,6 +143,13 @@ func (s *Service) CreateConsumerInvoice(req dto.CreateConsumerInvoiceRequest) (d
 		Apendice:             mapApendice(req.Apendice),
 	}
 
+	fmt.Printf(
+		"[DTE-EMISOR-DIRECCION] dept=%s municipio=%s distrito=%s\n",
+		dte.Emisor.Direccion.Departamento,
+		dte.Emisor.Direccion.Municipio,
+		dte.Emisor.Direccion.Distrito,
+	)
+
 	raw, err := json.Marshal(dte)
 	if err != nil {
 		return dto.CreateConsumerInvoiceResponse{}, err
@@ -1000,7 +1007,7 @@ func mapEmisor(input dto.EmisorInput) domain.Emisor {
 		CodActividad:    input.CodActividad,
 		DescActividad:   input.DescActividad,
 		NombreComercial: input.NombreComercial,
-		Direccion:       mapDireccion(input.Direccion),
+		Direccion:       mapEmisorDireccion(input.NIT, input.Direccion),
 		Telefono:        input.Telefono,
 		Correo:          input.Correo,
 		CodEstable:      input.CodEstable,
@@ -1040,18 +1047,8 @@ func mapDireccion(input dto.Direccion) domain.Direccion {
 	}
 }
 
-func mapEmisorDireccion(input dto.Direccion) domain.Direccion {
-	dept, muni, comp := location.MapEmisorDteDireccion(
-		input.Departamento,
-		input.Municipio,
-		input.Complemento,
-		input.Municipio,
-	)
-	return domain.Direccion{
-		Departamento: dept,
-		Municipio:    muni,
-		Complemento:  comp,
-	}
+func mapEmisorDireccion(_nit string, input dto.Direccion) domain.Direccion {
+	return mapDireccion(input)
 }
 
 func mapOptionalDireccion(input *dto.Direccion) *domain.Direccion {

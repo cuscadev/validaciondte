@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Clock3, Loader2, Plus, Search, Trash2, UserRoundSearch } from 'lucide-react';
 
 import { useAuth } from '@/components/AuthProvider';
@@ -19,6 +19,7 @@ import { Label } from '@/components/ui/label';
 import { Modal } from '@/components/ui/modal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EmitterSettingsForm, type EmitterForm } from '@/components/profile/EmitterSettingsForm';
+import { DteHaciendaJsonPreview } from '@/components/facturacion/DteHaciendaJsonPreview';
 
 type Emitter = Partial<EmitterForm>;
 
@@ -336,6 +337,51 @@ export default function FacturarConsumidorFinalPage() {
     setReceptorModalOpen(false);
   }
 
+  const canPreviewInvoice = Boolean(
+    selectedReceptorId &&
+      items.length > 0 &&
+      items.every(
+        (line) =>
+          line.descripcion.trim() &&
+          line.cantidad > 0 &&
+          line.precioUni > 0
+      )
+  );
+
+  const loadHaciendaPreview = useCallback(async () => {
+    const token = await firebaseToken();
+    const res = await fetch('/api/facturacion/documents/preview', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        tipoDte: '01',
+        receptorId: Number(selectedReceptorId),
+        items: items.map(buildLinePayload),
+        observaciones,
+        environment: 'test',
+      }),
+    });
+    const payload = (await res.json()) as {
+      error?: string;
+      dteJson?: unknown;
+      codigoGeneracion?: string;
+      numeroControl?: string;
+      totalPagar?: number;
+      tipoDte?: string;
+    };
+    if (!res.ok) throw new Error(payload.error || 'No se pudo generar la vista previa');
+    return {
+      dteJson: payload.dteJson,
+      codigoGeneracion: payload.codigoGeneracion,
+      numeroControl: payload.numeroControl,
+      totalPagar: payload.totalPagar,
+      tipoDte: payload.tipoDte,
+    };
+  }, [items, observaciones, selectedReceptorId]);
+
   async function submitInvoice() {
     setSubmitting(true);
     setError('');
@@ -614,6 +660,12 @@ export default function FacturarConsumidorFinalPage() {
                   </div>
                 </CardContent>
               </Card>
+
+              <DteHaciendaJsonPreview
+                disabled={!canPreviewInvoice || loading || submitting}
+                loadPreview={loadHaciendaPreview}
+                description="Revisa el JSON exacto que se firmara y transmitira a Hacienda. El numero de control final puede cambiar al emitir porque usa el correlativo real."
+              />
 
               <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
                 <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">

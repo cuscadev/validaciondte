@@ -5,8 +5,8 @@ export const runtime = 'nodejs';
 
 const allowedCatalogs = {
   tiposDocumento: 'cat_003_tipo_documento',
-  departamentos: 'cat_005_departamentos',
-  municipios: 'cat_006_municipios',
+  departamentos: 'cat_012_departamento',
+  municipios: 'cat_013_municipio',
 } as const;
 
 async function readCatalog(tableName: string) {

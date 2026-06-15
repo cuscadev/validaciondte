@@ -1,14 +1,25 @@
 import type { SearchableSelectOption } from '@/components/ui/searchable-select';
-import { normalizeLocationCode } from '@/lib/facturacion/resolve-location';
+import {
+  distritoCodigoFromGeo,
+  geoCodigoDistrito,
+  requiresDistritoForMunicipio,
+} from '@/lib/facturacion/ubicacion-maps';
+import { normalizeLocationCode, toDteMunicipioCode } from '@/lib/facturacion/resolve-location';
 
 export type LocationCatalogRow = {
   id?: number;
   codigo: string;
+  departamento_codigo?: string;
+  valor?: string;
   nombre?: string;
   descripcion?: string;
-  departamento_codigo?: string;
-  municipio_id?: number;
 };
+
+function pad2(value: unknown) {
+  const digits = String(value ?? '').replace(/\D/g, '');
+  if (!digits) return '';
+  return digits.slice(-2).padStart(2, '0');
+}
 
 export type LocationCatalogs = {
   departamentos: LocationCatalogRow[];
@@ -16,188 +27,146 @@ export type LocationCatalogs = {
   distritos: LocationCatalogRow[];
 };
 
-function catalogName(row: LocationCatalogRow) {
-  return row.nombre || row.descripcion || row.codigo;
+function catalogValor(row: LocationCatalogRow) {
+  return row.valor || row.nombre || row.descripcion || row.codigo;
 }
 
-export function municipioSelectKey(departamentoCodigo: string, municipioCodigo: string) {
-  const dept = normalizeLocationCode(departamentoCodigo);
-  const muni = normalizeLocationCode(municipioCodigo);
-  if (!dept || !muni) return '';
-  return `${dept}:${muni}`;
+/** Municipio CAT-013: codigo global 2 digitos. */
+export function municipioSelectKey(municipioCodigo: string) {
+  return normalizeLocationCode(municipioCodigo);
 }
 
-export function distritoSelectKey(municipioId: number | string, distritoCodigo: string) {
-  const distrito = normalizeLocationCode(distritoCodigo);
-  if (!municipioId || !distrito) return '';
-  return `${municipioId}:${distrito}`;
+/** Distrito CAT-008: codigo unico en catalogo (4 digitos dept + distrito DTE). */
+export function distritoSelectKey(codigo: string) {
+  const digits = codigo.replace(/\D/g, '');
+  if (digits.length >= 4) return digits.slice(-4).padStart(4, '0');
+  if (digits.length >= 2) return digits.padStart(4, '0');
+  return '';
 }
 
 export function parseMunicipioSelectKey(key: string) {
-  const trimmed = key.trim();
-  if (!trimmed) return { departamentoCodigo: '', municipioCodigo: '' };
-
-  const colonIndex = trimmed.indexOf(':');
-  if (colonIndex === -1) {
-    return { departamentoCodigo: '', municipioCodigo: normalizeLocationCode(trimmed) };
-  }
-
-  return {
-    departamentoCodigo: normalizeLocationCode(trimmed.slice(0, colonIndex)),
-    municipioCodigo: normalizeLocationCode(trimmed.slice(colonIndex + 1)),
-  };
+  return { municipioCodigo: normalizeLocationCode(key) };
 }
 
-export function parseDistritoSelectKey(
-  key: string,
-  municipiosById?: Map<number, LocationCatalogRow>
-) {
-  const trimmed = key.trim();
-  if (!trimmed) {
-    return { departamentoCodigo: '', municipioCodigo: '', distritoCodigo: '' };
-  }
-
-  const colonIndex = trimmed.indexOf(':');
-  if (colonIndex === -1) {
-    return {
-      departamentoCodigo: '',
-      municipioCodigo: '',
-      distritoCodigo: normalizeLocationCode(trimmed),
-    };
-  }
-
-  const municipioId = trimmed.slice(0, colonIndex);
-  const distritoCodigo = normalizeLocationCode(trimmed.slice(colonIndex + 1));
-  const municipio = municipioId ? municipiosById?.get(Number(municipioId)) : undefined;
-
-  return {
-    departamentoCodigo: normalizeLocationCode(municipio?.departamento_codigo),
-    municipioCodigo: normalizeLocationCode(municipio?.codigo),
-    distritoCodigo,
-  };
+export function parseDistritoSelectKey(key: string) {
+  const catalogCodigo = String(key ?? '').trim();
+  const geo = distritoSelectKey(catalogCodigo);
+  const distritoCodigo = geo ? distritoCodigoFromGeo(geo) : normalizeLocationCode(catalogCodigo);
+  return { distritoCodigo, distritoCatalogoCodigo: geo || catalogCodigo };
 }
 
 export function departamentoOptions(rows: LocationCatalogRow[]): SearchableSelectOption[] {
   return rows.map((row) => ({
     value: row.codigo,
-    label: `${row.codigo} - ${catalogName(row)}`,
+    label: `${row.codigo} - ${catalogValor(row)}`,
     description: row.descripcion,
   }));
 }
 
+/**
+ * Municipios CAT-013 del departamento. Los codigos se repiten entre
+ * departamentos, por eso SIEMPRE se filtra por el departamento seleccionado.
+ */
 export function municipioOptions(
   rows: LocationCatalogRow[],
-  departamentosByCodigo?: Map<string, LocationCatalogRow>
+  departamentoCodigo?: string
 ): SearchableSelectOption[] {
-  return rows.map((row) => {
-    const dept = row.departamento_codigo ?? '';
-    const deptName = departamentosByCodigo?.get(dept)?.nombre;
-    const deptLabel = deptName ? `${dept} ${deptName}` : `Dept ${dept}`;
-
-    return {
-      value: municipioSelectKey(dept, row.codigo),
-      label: `${row.codigo} - ${catalogName(row)} (${deptLabel})`,
-      description: row.descripcion,
-    };
-  });
+  const dept = pad2(departamentoCodigo);
+  const filtered = dept
+    ? rows.filter((row) => pad2(row.departamento_codigo) === dept)
+    : rows;
+  return filtered.map((row) => ({
+    value: municipioSelectKey(row.codigo),
+    label: `${pad2(row.codigo)} - ${catalogValor(row)}`,
+    description: row.descripcion,
+  }));
 }
 
-export function distritoOptions(
-  rows: LocationCatalogRow[],
-  municipiosById?: Map<number, LocationCatalogRow>
-): SearchableSelectOption[] {
+/** Distrito CAT-008: value = columna codigo del catalogo (4 digitos). */
+export function distritoOptions(rows: LocationCatalogRow[]): SearchableSelectOption[] {
   return rows.map((row) => {
-    const municipio = row.municipio_id != null ? municipiosById?.get(Number(row.municipio_id)) : undefined;
-    const dept = row.departamento_codigo ?? municipio?.departamento_codigo ?? '';
-    const muniCod = municipio?.codigo ?? '';
-    const context = dept && muniCod ? `${dept}/${muniCod}` : String(row.municipio_id ?? '');
-
+    const catalogCodigo = distritoSelectKey(row.codigo) || normalizeLocationCode(row.codigo);
+    const distritoDte = catalogCodigo.length >= 4
+      ? distritoCodigoFromGeo(catalogCodigo)
+      : normalizeLocationCode(row.codigo);
     return {
-      value: distritoSelectKey(row.municipio_id ?? '', row.codigo),
-      label: `${row.codigo} - ${catalogName(row)} (${context})`,
-      description: row.descripcion,
+      value: row.codigo,
+      label: `${row.codigo} - ${catalogValor(row)}`,
+      description: distritoDte !== row.codigo ? `DTE distrito ${distritoDte}` : row.descripcion,
     };
   });
 }
 
 export function resolveMunicipioSelectKey(
-  catalogs: LocationCatalogs,
-  departamentoCodigo: string,
+  _catalogs: LocationCatalogs,
+  _departamentoCodigo: string,
   municipioCodigo: string
 ) {
-  const dept = normalizeLocationCode(departamentoCodigo);
-  const muni = normalizeLocationCode(municipioCodigo);
-  if (!dept || !muni) return '';
-
-  const match = catalogs.municipios.find(
-    (row) =>
-      normalizeLocationCode(row.departamento_codigo) === dept &&
-      normalizeLocationCode(row.codigo) === muni
-  );
-
-  if (!match) return municipioSelectKey(dept, muni);
-  return municipioSelectKey(match.departamento_codigo ?? dept, match.codigo);
+  return municipioSelectKey(municipioCodigo);
 }
 
 export function resolveDistritoSelectKey(
   catalogs: LocationCatalogs,
   departamentoCodigo: string,
-  municipioCodigo: string,
+  _municipioCodigo: string,
   distritoCodigo: string
 ) {
   const dept = normalizeLocationCode(departamentoCodigo);
-  const muni = normalizeLocationCode(municipioCodigo);
   const distrito = normalizeLocationCode(distritoCodigo);
-  if (!dept || !muni || !distrito) return '';
+  if (!distrito) return '';
 
-  const municipio = catalogs.municipios.find(
-    (row) =>
-      normalizeLocationCode(row.departamento_codigo) === dept &&
-      normalizeLocationCode(row.codigo) === muni
+  if (dept) {
+    const geo = geoCodigoDistrito(dept, distrito);
+    const match = catalogs.distritos.find((row) => distritoSelectKey(row.codigo) === geo);
+    return match?.codigo ?? '';
+  }
+
+  const match = catalogs.distritos.find((row) => row.codigo === distrito || row.codigo === distrito.padStart(4, '0'));
+  if (match) return match.codigo;
+
+  const matchBySuffix = catalogs.distritos.find(
+    (row) => distritoCodigoFromGeo(distritoSelectKey(row.codigo)) === distrito
   );
-  if (!municipio?.id) return '';
-
-  const match = catalogs.distritos.find(
-    (row) =>
-      Number(row.municipio_id) === Number(municipio.id) &&
-      normalizeLocationCode(row.codigo) === distrito
-  );
-
-  if (!match) return distritoSelectKey(municipio.id, distrito);
-  return distritoSelectKey(match.municipio_id ?? municipio.id, match.codigo);
+  return matchBySuffix?.codigo ?? '';
 }
 
 export function municipioRequiresDistrito(
-  catalogs: LocationCatalogs,
-  departamentoCodigo: string,
+  _catalogs: LocationCatalogs,
+  _departamentoCodigo: string,
   municipioCodigo: string
 ) {
-  const dept = normalizeLocationCode(departamentoCodigo);
-  const muni = normalizeLocationCode(municipioCodigo);
-  if (!dept || !muni) return false;
+  return requiresDistritoForMunicipio(municipioCodigo);
+}
 
-  const municipio = catalogs.municipios.find(
-    (row) =>
-      normalizeLocationCode(row.departamento_codigo) === dept &&
-      normalizeLocationCode(row.codigo) === muni
-  );
-  if (!municipio?.id) return false;
+export type DteDireccionPreview = {
+  departamento: string;
+  municipio: string;
+  distrito: string;
+  complemento: string;
+};
 
-  return catalogs.distritos.some(
-    (row) => Number(row.municipio_id) === Number(municipio.id)
-  );
+/** Vista previa del bloque direccion que se envia a Hacienda (codigos 2 digitos). */
+export function buildDteDireccionPreview(
+  departamentoCodigo: string,
+  municipioCodigo: string,
+  distritoCodigo: string,
+  complemento?: string
+): DteDireccionPreview | null {
+  const departamento = normalizeLocationCode(departamentoCodigo);
+  const municipio = normalizeLocationCode(municipioCodigo);
+  const distrito = normalizeLocationCode(distritoCodigo);
+  if (!departamento || !municipio) return null;
+
+  return {
+    departamento,
+    municipio: toDteMunicipioCode(departamento, municipio, distrito),
+    distrito,
+    complemento: String(complemento ?? '').trim(),
+  };
 }
 
 export function buildDepartamentosMap(rows: LocationCatalogRow[]) {
   return new Map(rows.map((row) => [row.codigo, row]));
-}
-
-export function buildMunicipiosByIdMap(rows: LocationCatalogRow[]) {
-  return new Map(
-    rows
-      .filter((row): row is LocationCatalogRow & { id: number } => row.id != null)
-      .map((row) => [Number(row.id), row])
-  );
 }
 
 export function syncLocationSelectKeys(

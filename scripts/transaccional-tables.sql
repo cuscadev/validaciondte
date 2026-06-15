@@ -40,9 +40,9 @@ CREATE TABLE IF NOT EXISTS emisores (
     descripcion_actividad TEXT,
     
     -- Dirección
-    departamento_codigo VARCHAR(2), -- FK a CAT-005
-    municipio_codigo VARCHAR(4),    -- FK a CAT-006
-    distrito_codigo VARCHAR(2),     -- FK a CAT-008
+    departamento_codigo VARCHAR(2), -- FK a cat_012_departamento
+    municipio_codigo VARCHAR(2),    -- FK a cat_013_municipio (con departamento_codigo)
+    distrito_codigo VARCHAR(2),     -- FK a cat_008_distrito (con dept + municipio)
     complemento_direccion VARCHAR(200),
     
     -- Contacto
@@ -71,9 +71,8 @@ CREATE TABLE IF NOT EXISTS emisores (
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL,
     FOREIGN KEY (tipo_establecimiento_codigo) REFERENCES cat_007_tipo_establecimiento(codigo),
     FOREIGN KEY (codigo_actividad) REFERENCES cat_024_codigo_actividad(codigo),
-    FOREIGN KEY (departamento_codigo) REFERENCES cat_005_departamentos(codigo),
-    FOREIGN KEY (municipio_codigo) REFERENCES cat_006_municipios(codigo),
-    FOREIGN KEY (distrito_codigo) REFERENCES cat_008_distritos(codigo),
+    FOREIGN KEY (departamento_codigo) REFERENCES cat_012_departamento(codigo),
+    FOREIGN KEY (municipio_codigo) REFERENCES cat_013_municipio(codigo),
     FOREIGN KEY (regimen_tributario_codigo) REFERENCES cat_023_regimen_tributario(codigo),
     FOREIGN KEY (tipo_afiliacion_codigo) REFERENCES cat_022_tipo_afiliacion(codigo),
     FOREIGN KEY (ambiente_codigo) REFERENCES cat_001_ambiente(codigo)
@@ -104,9 +103,9 @@ CREATE TABLE IF NOT EXISTS clientes (
     correo VARCHAR(255),
     
     -- Dirección
-    departamento_codigo VARCHAR(2), -- FK a CAT-005
-    municipio_codigo VARCHAR(4),    -- FK a CAT-006
-    distrito_codigo VARCHAR(2),     -- FK a CAT-008
+    departamento_codigo VARCHAR(2), -- FK a cat_012_departamento
+    municipio_codigo VARCHAR(2),    -- FK a cat_013_municipio (con departamento_codigo)
+    distrito_codigo VARCHAR(2),     -- FK a cat_008_distrito (con dept + municipio)
     complemento_direccion VARCHAR(200),
     
     -- Datos Tributarios (opcional para clientes)
@@ -139,9 +138,8 @@ CREATE TABLE IF NOT EXISTS clientes (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     FOREIGN KEY (tipo_documento_codigo) REFERENCES cat_003_tipo_documento(codigo),
-    FOREIGN KEY (departamento_codigo) REFERENCES cat_005_departamentos(codigo),
-    FOREIGN KEY (municipio_codigo) REFERENCES cat_006_municipios(codigo),
-    FOREIGN KEY (distrito_codigo) REFERENCES cat_008_distritos(codigo),
+    FOREIGN KEY (departamento_codigo) REFERENCES cat_012_departamento(codigo),
+    FOREIGN KEY (municipio_codigo) REFERENCES cat_013_municipio(codigo),
     FOREIGN KEY (codigo_actividad) REFERENCES cat_024_codigo_actividad(codigo),
     FOREIGN KEY (regimen_tributario_codigo) REFERENCES cat_023_regimen_tributario(codigo),
     FOREIGN KEY (pais_codigo) REFERENCES cat_paises(codigo),

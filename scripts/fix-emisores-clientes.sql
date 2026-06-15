@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS emisores (
     descripcion_actividad TEXT,
     
     -- Dirección (2 dígitos c/u)
-    departamento_codigo VARCHAR(2), -- FK a CAT-005
+    departamento_codigo VARCHAR(2), -- FK a cat_012_departamento
     municipio_codigo VARCHAR(2),    -- FK a CAT-006 (ahora 2 dígitos)
     distrito_codigo VARCHAR(2),     -- FK a CAT-008 (ahora 2 dígitos)
     complemento_direccion VARCHAR(200),
@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS emisores (
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL,
     FOREIGN KEY (tipo_establecimiento_codigo) REFERENCES cat_007_tipo_establecimiento(codigo),
     FOREIGN KEY (codigo_actividad) REFERENCES cat_024_codigo_actividad(codigo),
-    FOREIGN KEY (departamento_codigo) REFERENCES cat_005_departamentos(codigo),
+    FOREIGN KEY (departamento_codigo) REFERENCES cat_012_departamento(codigo),
     FOREIGN KEY (regimen_tributario_codigo) REFERENCES cat_023_regimen_tributario(codigo),
     FOREIGN KEY (tipo_afiliacion_codigo) REFERENCES cat_022_tipo_afiliacion(codigo),
     FOREIGN KEY (ambiente_codigo) REFERENCES cat_001_ambiente(codigo)
@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS clientes (
     correo VARCHAR(255),
     
     -- Dirección (2 dígitos c/u)
-    departamento_codigo VARCHAR(2), -- FK a CAT-005
+    departamento_codigo VARCHAR(2), -- FK a cat_012_departamento
     municipio_codigo VARCHAR(2),    -- FK a CAT-006 (ahora 2 dígitos)
     distrito_codigo VARCHAR(2),     -- FK a CAT-008 (ahora 2 dígitos) - NULLABLE
     complemento_direccion VARCHAR(200),
@@ -129,7 +129,7 @@ CREATE TABLE IF NOT EXISTS clientes (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     FOREIGN KEY (tipo_documento_codigo) REFERENCES cat_003_tipo_documento(codigo),
-    FOREIGN KEY (departamento_codigo) REFERENCES cat_005_departamentos(codigo),
+    FOREIGN KEY (departamento_codigo) REFERENCES cat_012_departamento(codigo),
     FOREIGN KEY (codigo_actividad) REFERENCES cat_024_codigo_actividad(codigo),
     FOREIGN KEY (regimen_tributario_codigo) REFERENCES cat_023_regimen_tributario(codigo),
     FOREIGN KEY (pais_codigo) REFERENCES cat_paises(codigo),

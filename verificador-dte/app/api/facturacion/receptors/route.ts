@@ -3,8 +3,10 @@ import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { getPostgresPool } from '@/lib/postgres';
 import {
   LocationValidationError,
+  normalizeLocationCode,
   resolveLocation,
 } from '@/lib/facturacion/resolve-location';
+import { requiresDistritoForMunicipio } from '@/lib/facturacion/ubicacion-maps';
 
 export const runtime = 'nodejs';
 
@@ -53,6 +55,7 @@ async function resolveReceptorLocation(body: ReceptorInput) {
     };
   }
 
+  const municipioCodigo = normalizeLocationCode(body.municipioCodigo);
   const location = await resolveLocation(
     getPostgresPool(),
     {
@@ -60,7 +63,10 @@ async function resolveReceptorLocation(body: ReceptorInput) {
       municipioCodigo: body.municipioCodigo,
       distritoCodigo: body.distritoCodigo,
     },
-    { requireDistrito: Boolean(body.distritoCodigo) }
+    {
+      requireDistrito:
+        Boolean(body.distritoCodigo) || requiresDistritoForMunicipio(municipioCodigo),
+    }
   );
 
   return {
@@ -160,15 +166,14 @@ async function listReceptors(emisorId: number, search: string) {
       SELECT
         c.*,
         td.nombre AS tipo_documento_nombre,
-        d.nombre AS departamento_nombre,
-        m.nombre AS municipio_nombre,
+        d.valor AS departamento_nombre,
+        m.valor AS municipio_nombre,
         a.nombre AS actividad_nombre,
         p.nombre AS pais_nombre
       FROM clientes c
       LEFT JOIN cat_003_tipo_documento td ON td.codigo = c.tipo_documento_codigo
-      LEFT JOIN cat_005_departamentos d ON d.codigo = c.departamento_codigo
-      LEFT JOIN cat_006_municipios m ON m.codigo = c.municipio_codigo
-        AND m.departamento_codigo = c.departamento_codigo
+      LEFT JOIN cat_012_departamento d ON d.codigo = c.departamento_codigo
+      LEFT JOIN cat_013_municipio m ON m.codigo = c.municipio_codigo
       LEFT JOIN cat_024_codigo_actividad a ON a.codigo = c.codigo_actividad
       LEFT JOIN cat_paises p ON p.codigo = c.pais_codigo
       WHERE c.emisor_id = $1

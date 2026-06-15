@@ -16,12 +16,12 @@ async function main() {
   `);
 
   const departamentos = await pool.query<{ n: number }>(
-    'SELECT count(*)::int AS n FROM cat_005_departamentos',
+    'SELECT count(*)::int AS n FROM cat_012_departamento',
   );
 
   console.log('URL:', getFacturacionDatabaseUrl().replace(/:[^:@/]+@/, ':***@'));
   console.log('tablas facturacion:', tables.rows[0]?.n ?? 0);
-  console.log('departamentos (cat_005):', departamentos.rows[0]?.n ?? 0);
+  console.log('departamentos (cat_012):', departamentos.rows[0]?.n ?? 0);
 
   await pool.end();
 }

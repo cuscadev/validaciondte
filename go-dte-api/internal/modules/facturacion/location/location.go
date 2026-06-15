@@ -2,15 +2,21 @@ package location
 
 import "strings"
 
-// DteMunicipioCode returns the 2-digit CAT-013 municipio suffix for DTE JSON.
-func DteMunicipioCode(_departamento, municipio, codigoDte string) string {
-	if digits := DigitsOnly(codigoDte); len(digits) >= 4 {
-		return LeftPadDigits(digits[len(digits)-2:], 2)
-	}
-	if digits := DigitsOnly(municipio); len(digits) >= 4 {
-		return LeftPadDigits(digits[len(digits)-2:], 2)
-	}
+// DteMunicipioCode normalizes the CAT-013 municipio code for emisor.direccion.municipio.
+func DteMunicipioCode(_departamento, municipio, _codigoDte string) string {
 	return LeftPadDigits(municipio, 2)
+}
+
+func MapDteDireccion(departamento, municipio, distrito, complemento, _codigoDte string) (string, string, string, string) {
+	dept := LeftPadDigits(departamento, 2)
+	muni := LeftPadDigits(municipio, 2)
+	dist := LeftPadDigits(distrito, 2)
+	return dept, muni, dist, strings.TrimSpace(complemento)
+}
+
+func MapEmisorDteDireccion(departamento, municipio, distrito, complemento, codigoDte string) (string, string, string) {
+	dept, muni, _, comp := MapDteDireccion(departamento, municipio, distrito, complemento, codigoDte)
+	return dept, muni, comp
 }
 
 func DigitsOnly(value string) string {
@@ -35,14 +41,4 @@ func LeftPadDigits(value string, width int) string {
 		clean = "0" + clean
 	}
 	return clean
-}
-
-func MapDteDireccion(departamento, municipio, distrito, complemento, codigoDte string) (string, string, string, string) {
-	dept := LeftPadDigits(departamento, 2)
-	return dept, DteMunicipioCode(dept, municipio, codigoDte), LeftPadDigits(distrito, 2), strings.TrimSpace(complemento)
-}
-
-func MapEmisorDteDireccion(departamento, municipio, complemento, codigoDte string) (string, string, string) {
-	dept := LeftPadDigits(departamento, 2)
-	return dept, DteMunicipioCode(dept, municipio, codigoDte), strings.TrimSpace(complemento)
 }

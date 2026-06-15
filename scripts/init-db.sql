@@ -93,99 +93,9 @@ INSERT INTO cat_004_monedas (codigo, nombre, simbolo, descripcion) VALUES
 ON CONFLICT DO NOTHING;
 
 -- ============================================================
--- CAT-005: DEPARTAMENTOS
+-- CATÁLOGOS DE UBICACIÓN (CAT-012 Departamento, CAT-013 Municipio, CAT-008 Distrito)
+-- Datos oficiales MH: ejecutar scripts/fix-ubicacion-flat.sql después de este init
 -- ============================================================
-CREATE TABLE IF NOT EXISTS cat_005_departamentos (
-    id SERIAL PRIMARY KEY,
-    codigo VARCHAR(2) UNIQUE NOT NULL,
-    nombre VARCHAR(100) NOT NULL,
-    activo BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-INSERT INTO cat_005_departamentos (codigo, nombre) VALUES
-('01', 'AHUACHAPÁN'),
-('02', 'SONSONATE'),
-('03', 'SANTA ANA'),
-('04', 'CHALATENANGO'),
-('05', 'LA LIBERTAD'),
-('06', 'SAN SALVADOR'),
-('07', 'CUSCATLÁN'),
-('08', 'CABAÑAS'),
-('09', 'SAN VICENTE'),
-('10', 'LA PAZ'),
-('11', 'USULUTÁN'),
-('12', 'SAN MIGUEL'),
-('13', 'MORAZÁN'),
-('14', 'LA UNIÓN')
-ON CONFLICT DO NOTHING;
-
--- ============================================================
--- CAT-006: MUNICIPIOS
--- ============================================================
-CREATE TABLE IF NOT EXISTS cat_006_municipios (
-    id SERIAL PRIMARY KEY,
-    codigo VARCHAR(4) UNIQUE NOT NULL,
-    departamento_codigo VARCHAR(2) NOT NULL,
-    nombre VARCHAR(100) NOT NULL,
-    activo BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (departamento_codigo) REFERENCES cat_005_departamentos(codigo)
-);
-
--- Insertando municipios principales (select from)
-INSERT INTO cat_006_municipios (codigo, departamento_codigo, nombre) VALUES
--- La Libertad (05)
-('0501', '05', 'SANTA TECLA'),
-('0502', '05', 'NUEVO CUSCATLÁN'),
-('0503', '05', 'CHILTIUPÁN'),
-('0504', '05', 'ANTIGUO CUSCATLÁN'),
-('0505', '05', 'LA LIBERTAD'),
-('0506', '05', 'NEJAPA'),
-('0507', '05', 'QUETZALTEPEQUE'),
-('0508', '05', 'TEPECOYO'),
-('0509', '05', 'TALNIQUE'),
-('0510', '05', 'SOYAPANGO'),
-('0511', '05', 'CIUDAD ARCE'),
-('0512', '05', 'COLÓN'),
-('0513', '05', 'TAMANIQUE'),
-('0514', '05', 'APOPA'),
-('0515', '05', 'OJUTLA'),
-('0516', '05', 'PUENTE DE ORO'),
-('0517', '05', 'JAYAQUE'),
-('0518', '05', 'ZARAGOZA'),
-('0519', '05', 'SANTO DOMINGO'),
-('0520', '05', 'SAN JUAN OPICO'),
--- San Miguel (12)
-('1201', '12', 'SAN MIGUEL'),
-('1202', '12', 'SAN RAFAEL ORIENTE'),
-('1203', '12', 'SANTIAGO DE MARÍA'),
-('1204', '12', 'CHIRILAGUA'),
-('1205', '12', 'EL TRÁNSITO'),
-('1206', '12', 'MONCAGUA'),
-('1207', '12', 'NUEVA GUADALUPE'),
-('1208', '12', 'CIUDAD BARRIO'),
-('1209', '12', 'SAN LUIS'),
-('1210', '12', 'SAN CARLOS'),
-('1211', '12', 'NUEVO EDÉN DE JUAN DÍAZ'),
-('1212', '12', 'SAN GERARDO'),
-('1213', '12', 'JUCUAPA'),
-('1214', '12', 'CHINAMECA'),
-('1215', '12', 'JUCUARÁN'),
--- San Salvador (06)
-('0601', '06', 'SAN SALVADOR'),
-('0602', '06', 'APOPA'),
-('0603', '06', 'CUSCATANCINGO'),
-('0604', '06', 'DELGADO'),
-('0605', '06', 'GUACHAPALI'),
-('0606', '06', 'ILOPANGO'),
-('0607', '06', 'MEJICANOS'),
-('0608', '06', 'PANCHIMALCO'),
-('0609', '06', 'SAN MARTÍN'),
-('0610', '06', 'SANTO DOMINGO DE GUZMÁN'),
-('0611', '06', 'SOYAPANGO'),
-('0612', '06', 'TONACATEPEQUE')
-ON CONFLICT DO NOTHING;
 
 -- ============================================================
 -- CAT-007: TIPO DE ESTABLECIMIENTO
@@ -203,51 +113,6 @@ INSERT INTO cat_007_tipo_establecimiento (codigo, nombre, descripcion) VALUES
 ('01', 'MATRIZ', 'Establecimiento Principal'),
 ('02', 'SUCURSAL', 'Sucursal de la Empresa'),
 ('03', 'AGENCIA', 'Agencia de Servicios')
-ON CONFLICT DO NOTHING;
-
--- ============================================================
--- CAT-008: DISTRITOS
--- ============================================================
-CREATE TABLE IF NOT EXISTS cat_008_distritos (
-    id SERIAL PRIMARY KEY,
-    codigo VARCHAR(2) UNIQUE NOT NULL,
-    nombre VARCHAR(100) NOT NULL,
-    descripcion TEXT,
-    activo BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-INSERT INTO cat_008_distritos (codigo, nombre, descripcion) VALUES
-('01', 'Distrito Central', 'Centro Urbano Principal'),
-('02', 'Distrito 2', 'Segundo Distrito'),
-('03', 'Distrito 3', 'Tercer Distrito'),
-('04', 'Distrito 4', 'Cuarto Distrito'),
-('05', 'Distrito 5', 'Quinto Distrito'),
-('06', 'Distrito 6', 'Sexto Distrito'),
-('07', 'Distrito 7', 'Séptimo Distrito'),
-('08', 'Distrito 8', 'Octavo Distrito'),
-('09', 'Distrito 9', 'Noveno Distrito'),
-('10', 'Distrito 10', 'Décimo Distrito'),
-('11', 'Distrito 11', 'Decimoprimer Distrito'),
-('12', 'Distrito 12', 'Decimosegundo Distrito'),
-('13', 'Distrito 13', 'Decimotercer Distrito'),
-('14', 'Distrito 14', 'Decimocuarto Distrito'),
-('15', 'Distrito 15', 'Decimoquinto Distrito'),
-('16', 'Distrito 16', 'Decimosexto Distrito'),
-('17', 'Distrito 17', 'Decimoséptimo Distrito'),
-('18', 'Distrito 18', 'Decimoctavo Distrito'),
-('19', 'Distrito 19', 'Decimonoveno Distrito'),
-('20', 'Distrito 20', 'Vigésimo Distrito'),
-('21', 'Distrito 21', 'Vigesimoprimer Distrito'),
-('22', 'Distrito 22', 'Vigesimosegundo Distrito'),
-('23', 'Distrito 23', 'Vigesimotercer Distrito'),
-('24', 'Distrito 24', 'Vigesimocuarto Distrito'),
-('25', 'Distrito 25', 'Vigésimoquinto Distrito'),
-('26', 'Distrito 26', 'Vigesimosexto Distrito'),
-('27', 'Distrito 27', 'Vigesimoséptimo Distrito'),
-('28', 'Distrito 28', 'Vigesimooctavo Distrito'),
-('29', 'Distrito 29', 'Vigesimonoveno Distrito'),
-('30', 'Distrito 30', 'Trigésimo Distrito')
 ON CONFLICT DO NOTHING;
 
 -- ============================================================
@@ -863,11 +728,8 @@ CREATE INDEX IF NOT EXISTS idx_cat_001_codigo ON cat_001_ambiente(codigo);
 CREATE INDEX IF NOT EXISTS idx_cat_002_codigo ON cat_002_version_formato(codigo);
 CREATE INDEX IF NOT EXISTS idx_cat_003_codigo ON cat_003_tipo_documento(codigo);
 CREATE INDEX IF NOT EXISTS idx_cat_004_codigo ON cat_004_monedas(codigo);
-CREATE INDEX IF NOT EXISTS idx_cat_005_codigo ON cat_005_departamentos(codigo);
-CREATE INDEX IF NOT EXISTS idx_cat_006_codigo ON cat_006_municipios(codigo);
-CREATE INDEX IF NOT EXISTS idx_cat_006_departamento ON cat_006_municipios(departamento_codigo);
+-- Indices ubicacion: scripts/fix-ubicacion-flat.sql
 CREATE INDEX IF NOT EXISTS idx_cat_007_codigo ON cat_007_tipo_establecimiento(codigo);
-CREATE INDEX IF NOT EXISTS idx_cat_008_codigo ON cat_008_distritos(codigo);
 CREATE INDEX IF NOT EXISTS idx_cat_009_codigo ON cat_009_tipo_ingreso(codigo);
 CREATE INDEX IF NOT EXISTS idx_cat_010_codigo ON cat_010_tipo_retencion(codigo);
 CREATE INDEX IF NOT EXISTS idx_cat_011_codigo ON cat_011_tipo_doc_relacionado(codigo);

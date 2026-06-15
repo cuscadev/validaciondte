@@ -8,6 +8,7 @@ import {
   parseGoUpstreamError,
 } from '@/lib/facturacion/go-facturacion-client';
 import { buildMultipartBody } from '@/lib/facturacion/multipart-body';
+import { saveCertificatePassword } from '@/lib/facturacion/certificate-credentials';
 import { getPostgresPool } from '@/lib/postgres';
 import { requireAuth } from '@/lib/server-auth';
 
@@ -171,6 +172,7 @@ export async function POST(req: NextRequest) {
 
     const payload = data as { path?: string };
 
+    await saveCertificatePassword(user.uid, passwordPri);
     await warmupCertificate(user.uid, emitter.id, emitter.nit);
 
     return NextResponse.json({
