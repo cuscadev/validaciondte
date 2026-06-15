@@ -11,17 +11,8 @@ import {
   UsersRound,
 } from 'lucide-react';
 
-import {
-  departamentoOptions,
-  distritoOptions,
-  municipioOptions,
-  municipioRequiresDistrito,
-  municipioSelectKey as buildMunicipioSelectKey,
-  parseDistritoSelectKey,
-  parseMunicipioSelectKey,
-  syncLocationSelectKeys,
-} from '@/lib/facturacion/location-catalog-options';
-import { DteDireccionPreview } from '@/components/facturacion/DteDireccionPreview';
+import { municipioRequiresDistrito } from '@/lib/facturacion/location-catalog-options';
+import { LocationSelect } from '@/components/facturacion/LocationSelect';
 import {
   normalizeLocationCode,
   sanitizeLocationCodeForForm,
@@ -212,39 +203,11 @@ function formFromReceptor(row: Receptor): ReceptorForm {
   };
 }
 
-function clearLocationSelectKeys(
-  setMunicipioSelectKey: (value: string) => void,
-  setDistritoSelectKey: (value: string) => void
-) {
-  setMunicipioSelectKey('');
-  setDistritoSelectKey('');
-}
-
-function applyReceptorForm(
-  nextForm: ReceptorForm,
-  catalogs: ReceptorCatalogs,
-  setForm: (value: ReceptorForm) => void,
-  setMunicipioSelectKey: (value: string) => void,
-  setDistritoSelectKey: (value: string) => void
-) {
-  setForm(nextForm);
-  const keys = syncLocationSelectKeys(
-    catalogs,
-    nextForm.departamentoCodigo,
-    nextForm.municipioCodigo,
-    nextForm.distritoCodigo
-  );
-  setMunicipioSelectKey(keys.municipioSelectKey);
-  setDistritoSelectKey(keys.distritoSelectKey);
-}
-
 export default function FacturacionReceptoresPage() {
   const { appUser, authChecked } = useAuth();
   const [catalogs, setCatalogs] = useState<ReceptorCatalogs>(emptyCatalogs);
   const [rows, setRows] = useState<Receptor[]>([]);
   const [form, setForm] = useState<ReceptorForm>(emptyForm);
-  const [municipioSelectKey, setMunicipioSelectKey] = useState('');
-  const [distritoSelectKey, setDistritoSelectKey] = useState('');
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -259,14 +222,11 @@ export default function FacturacionReceptoresPage() {
   const optionGroups = useMemo(
     () => ({
       tiposDocumento: catalogOptions(catalogs.tiposDocumento),
-      departamentos: departamentoOptions(catalogs.departamentos),
-      municipios: municipioOptions(catalogs.municipios, form.departamentoCodigo),
-      distritos: distritoOptions(catalogs.distritos),
       actividades: catalogOptions(catalogs.actividades),
       regimenesTributarios: catalogOptions(catalogs.regimenesTributarios),
       paises: catalogOptions(catalogs.paises),
     }),
-    [catalogs, form.departamentoCodigo]
+    [catalogs]
   );
 
   async function loadData(search = query) {
@@ -309,34 +269,14 @@ export default function FacturacionReceptoresPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authChecked, canAccess]);
 
-  function setMunicipioFromSelectKey(key: string) {
-    const { municipioCodigo } = parseMunicipioSelectKey(key);
-    setMunicipioSelectKey(key);
-    setForm((current) => ({
-      ...current,
-      municipioCodigo,
-    }));
-  }
-
-  function setDistritoFromSelectKey(key: string) {
-    const { distritoCodigo } = parseDistritoSelectKey(key);
-    setDistritoSelectKey(key);
-    setForm((current) => ({
-      ...current,
-      distritoCodigo,
-    }));
-  }
-
   function resetForm() {
     setForm(emptyForm);
-    clearLocationSelectKeys(setMunicipioSelectKey, setDistritoSelectKey);
   }
 
   function setField(name: keyof ReceptorForm, value: string | boolean | number) {
     setForm((current) => {
       if (name === 'departamentoCodigo' && typeof value === 'string') {
         if (value !== current.departamentoCodigo) {
-          clearLocationSelectKeys(setMunicipioSelectKey, setDistritoSelectKey);
           return {
             ...current,
             departamentoCodigo: value,
@@ -571,50 +511,16 @@ export default function FacturacionReceptoresPage() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="departamento">Departamento</Label>
-                  <SearchableSelect
-                    id="departamento"
-                    value={form.departamentoCodigo}
-                    options={optionGroups.departamentos}
-                    onValueChange={(value) => setField('departamentoCodigo', value)}
-                    placeholder="Departamento"
-                    searchPlaceholder="Buscar departamento"
-                    clearable
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="municipio">Municipio</Label>
-                  <SearchableSelect
-                    id="municipio"
-                    value={municipioSelectKey}
-                    options={optionGroups.municipios}
-                    onValueChange={setMunicipioFromSelectKey}
-                    placeholder="Seleccionar municipio"
-                    searchPlaceholder="Buscar municipio"
-                    clearable
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="distrito">Distrito</Label>
-                  <SearchableSelect
-                    id="distrito"
-                    value={distritoSelectKey}
-                    options={optionGroups.distritos}
-                    onValueChange={setDistritoFromSelectKey}
-                    placeholder="Seleccionar distrito"
-                    searchPlaceholder="Buscar distrito"
-                    clearable
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <DteDireccionPreview
-                    departamentoCodigo={form.departamentoCodigo}
-                    municipioCodigo={form.municipioCodigo}
-                    distritoCodigo={form.distritoCodigo}
+                <div className="space-y-4 md:col-span-2">
+                  <LocationSelect
+                    idPrefix="receptor"
+                    catalogs={catalogs}
+                    value={{
+                      departamentoCodigo: form.departamentoCodigo,
+                      municipioCodigo: form.municipioCodigo,
+                      distritoCodigo: form.distritoCodigo,
+                    }}
+                    onChange={(next) => setForm((current) => ({ ...current, ...next }))}
                     complemento={form.complementoDireccion}
                   />
                 </div>
@@ -824,15 +730,7 @@ export default function FacturacionReceptoresPage() {
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() =>
-                              applyReceptorForm(
-                                formFromReceptor(row),
-                                catalogs,
-                                setForm,
-                                setMunicipioSelectKey,
-                                setDistritoSelectKey
-                              )
-                            }
+                            onClick={() => setForm(formFromReceptor(row))}
                           >
                             <Pencil className="size-4" />
                             Editar

@@ -45,7 +45,7 @@ async function requireAuth(req: NextRequest) {
 const locationCatalogColumns: Record<string, string> = {
   cat_012_departamento: 'id, codigo, valor',
   cat_013_municipio: 'id, departamento_codigo, codigo, valor',
-  cat_008_distrito: 'id, codigo, valor',
+  cat_008_distrito: 'id, departamento_codigo, municipio_codigo, codigo, codigo_dte, valor',
 };
 
 async function readCatalog(tableName: string) {

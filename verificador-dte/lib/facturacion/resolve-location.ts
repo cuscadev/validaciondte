@@ -165,14 +165,15 @@ export async function resolveLocation(
       distritoDigits.length >= 4
         ? distritoDigits.slice(-4).padStart(4, '0')
         : geoCodigoDistrito(departamentoCodigo, resolvedDistrito);
-    const distrito = await pool.query<{ codigo: string }>(
+    const distrito = await pool.query<{ codigo: string; codigo_dte: string; municipio_codigo: string }>(
       `
-        SELECT codigo
+        SELECT codigo, codigo_dte, municipio_codigo
         FROM cat_008_distrito
-        WHERE codigo = $1
+        WHERE departamento_codigo = $1
+          AND codigo = $2
         LIMIT 1
       `,
-      [geoCodigo]
+      [departamentoCodigo, geoCodigo]
     );
     if (!distrito.rows[0]) {
       throw new LocationValidationError(
@@ -180,7 +181,17 @@ export async function resolveLocation(
       );
     }
 
-    resolvedDistrito = distritoCodigoFromGeo(distrito.rows[0].codigo);
+    // Hacienda valida que el distrito pertenezca al municipio (zona) CAT-013.
+    const distritoMunicipio = normalizeLocationCode(distrito.rows[0].municipio_codigo);
+    if (distritoMunicipio && distritoMunicipio !== municipioCodigoStored) {
+      throw new LocationValidationError(
+        `El distrito ${resolvedDistrito} no pertenece al municipio ${municipioCodigoStored} (CAT-008/CAT-013). Selecciona un distrito valido para ese municipio.`
+      );
+    }
+
+    resolvedDistrito =
+      normalizeLocationCode(distrito.rows[0].codigo_dte) ||
+      distritoCodigoFromGeo(distrito.rows[0].codigo);
   } else if (options.requireDistrito) {
     throw new LocationValidationError('Distrito es obligatorio para este tipo de documento.');
   }

@@ -10,6 +10,8 @@ export type LocationCatalogRow = {
   id?: number;
   codigo: string;
   departamento_codigo?: string;
+  municipio_codigo?: string;
+  codigo_dte?: string;
   valor?: string;
   nombre?: string;
   descripcion?: string;
@@ -82,17 +84,33 @@ export function municipioOptions(
   }));
 }
 
-/** Distrito CAT-008: value = columna codigo del catalogo (4 digitos). */
-export function distritoOptions(rows: LocationCatalogRow[]): SearchableSelectOption[] {
-  return rows.map((row) => {
+/**
+ * Distrito CAT-008 del municipio (zona). Cada distrito pertenece a un unico
+ * municipio CAT-013, por eso SIEMPRE se filtra por departamento + municipio.
+ * value = columna codigo del catalogo (4 digitos geo). El codigo DTE (2 digitos)
+ * se muestra en la etiqueta.
+ */
+export function distritoOptions(
+  rows: LocationCatalogRow[],
+  departamentoCodigo?: string,
+  municipioCodigo?: string
+): SearchableSelectOption[] {
+  const dept = pad2(departamentoCodigo);
+  const muni = pad2(municipioCodigo);
+  const filtered = rows.filter((row) => {
+    if (dept && pad2(row.departamento_codigo) !== dept) return false;
+    if (muni && pad2(row.municipio_codigo) !== muni) return false;
+    return true;
+  });
+  return filtered.map((row) => {
     const catalogCodigo = distritoSelectKey(row.codigo) || normalizeLocationCode(row.codigo);
-    const distritoDte = catalogCodigo.length >= 4
-      ? distritoCodigoFromGeo(catalogCodigo)
-      : normalizeLocationCode(row.codigo);
+    const distritoDte =
+      pad2(row.codigo_dte) ||
+      (catalogCodigo.length >= 4 ? distritoCodigoFromGeo(catalogCodigo) : normalizeLocationCode(row.codigo));
     return {
       value: row.codigo,
-      label: `${row.codigo} - ${catalogValor(row)}`,
-      description: distritoDte !== row.codigo ? `DTE distrito ${distritoDte}` : row.descripcion,
+      label: `${distritoDte} - ${catalogValor(row)}`,
+      description: row.descripcion,
     };
   });
 }

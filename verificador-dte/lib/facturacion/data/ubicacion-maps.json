@@ -1,598 +1,4 @@
 {
-  "distritoGeoZona": {
-    "1001": "42",
-    "1002": "41",
-    "1003": "42",
-    "1004": "42",
-    "1005": "42",
-    "1006": "41",
-    "1007": "41",
-    "1008": "41",
-    "1009": "41",
-    "1010": "41",
-    "1012": "42",
-    "1013": "42",
-    "1101": "44",
-    "1102": "43",
-    "1103": "43",
-    "1104": "44",
-    "1105": "44",
-    "1106": "43",
-    "1107": "44",
-    "1108": "43",
-    "1109": "45",
-    "1110": "43",
-    "1111": "44",
-    "1112": "43",
-    "1113": "43",
-    "1114": "44",
-    "1115": "45",
-    "1116": "45",
-    "1117": "43",
-    "1118": "44",
-    "1119": "45",
-    "1120": "44",
-    "1121": "44",
-    "1122": "43",
-    "1123": "44",
-    "1201": "47",
-    "1202": "46",
-    "1203": "46",
-    "1204": "48",
-    "1205": "47",
-    "1206": "46",
-    "1207": "47",
-    "1208": "48",
-    "1209": "48",
-    "1210": "47",
-    "1211": "48",
-    "1212": "46",
-    "1213": "47",
-    "1214": "46",
-    "1215": "46",
-    "1216": "48",
-    "1217": "46",
-    "1218": "48",
-    "1219": "46",
-    "1220": "47",
-    "1301": "50",
-    "1302": "49",
-    "1303": "49",
-    "1304": "50",
-    "1305": "49",
-    "1306": "50",
-    "1307": "50",
-    "1308": "49",
-    "1309": "50",
-    "1310": "50",
-    "1311": "49",
-    "1312": "49",
-    "1313": "50",
-    "1314": "50",
-    "1315": "49",
-    "1316": "50",
-    "1317": "49",
-    "1318": "50",
-    "1319": "49",
-    "1320": "49",
-    "1321": "50",
-    "1322": "50",
-    "1323": "50",
-    "1324": "49",
-    "1325": "50",
-    "1326": "50",
-    "1401": "52",
-    "1402": "51",
-    "1403": "51",
-    "1404": "51",
-    "1405": "52",
-    "1406": "52",
-    "1407": "51",
-    "1408": "52",
-    "1409": "51",
-    "1411": "52",
-    "1412": "51",
-    "1413": "51",
-    "1414": "51",
-    "1415": "52",
-    "1416": "51",
-    "1417": "51",
-    "1418": "52",
-    "1419": "52",
-    "0103": "13",
-    "0105": "13",
-    "0109": "13",
-    "0112": "13",
-    "0101": "14",
-    "0102": "14",
-    "0104": "14",
-    "0111": "14",
-    "0106": "15",
-    "0107": "15",
-    "0108": "15",
-    "0110": "15",
-    "0602": "31",
-    "0606": "31",
-    "0607": "31",
-    "0603": "34",
-    "0610": "34",
-    "0608": "33",
-    "0614": "33",
-    "0617": "33",
-    "0618": "33",
-    "0604": "32",
-    "0609": "32",
-    "0601": "32",
-    "0605": "32",
-    "0619": "32",
-    "0611": "33",
-    "0612": "33",
-    "0613": "33",
-    "0616": "33",
-    "0615": "33",
-    "0513": "27",
-    "0516": "27",
-    "0517": "27",
-    "0515": "29",
-    "0504": "28",
-    "0505": "30",
-    "0509": "30",
-    "0518": "30",
-    "0522": "30",
-    "0519": "30",
-    "0502": "29",
-    "0508": "29",
-    "0512": "29",
-    "0523": "29",
-    "0507": "30",
-    "0510": "30",
-    "0511": "30",
-    "0520": "30",
-    "0521": "30",
-    "0506": "29",
-    "0501": "29",
-    "0412": "24",
-    "0405": "24",
-    "0425": "24",
-    "0416": "25",
-    "0431": "25",
-    "0413": "25",
-    "0402": "25",
-    "0408": "25",
-    "0410": "25",
-    "0424": "26",
-    "0429": "25",
-    "0430": "25",
-    "0422": "26",
-    "0401": "26",
-    "0403": "26",
-    "0404": "26",
-    "0406": "26",
-    "0407": "26",
-    "0409": "26",
-    "0411": "26",
-    "0414": "26",
-    "0415": "26",
-    "0417": "26",
-    "0418": "26",
-    "0419": "26",
-    "0420": "26",
-    "0421": "26",
-    "0423": "26",
-    "0426": "26",
-    "0428": "26",
-    "0427": "26",
-    "0714": "37",
-    "0709": "35",
-    "0706": "37",
-    "0704": "37",
-    "0710": "35",
-    "0701": "37",
-    "0702": "37",
-    "0703": "37",
-    "0705": "37",
-    "0708": "37",
-    "0713": "37",
-    "0711": "37",
-    "0712": "37",
-    "0901": "11",
-    "0909": "11",
-    "0903": "11",
-    "0904": "11",
-    "0907": "11",
-    "0905": "11",
-    "0908": "11",
-    "0906": "11",
-    "0902": "11",
-    "0802": "38",
-    "0806": "38",
-    "0812": "38",
-    "0815": "38",
-    "0817": "38",
-    "0822": "38",
-    "0810": "38",
-    "0803": "39",
-    "0804": "39",
-    "0805": "39",
-    "0807": "39",
-    "0808": "39",
-    "0809": "39",
-    "0813": "39",
-    "0814": "39",
-    "0816": "39",
-    "0818": "39",
-    "0820": "39",
-    "0821": "39",
-    "0811": "40",
-    "0819": "40",
-    "0801": "40",
-    "0308": "20",
-    "0309": "20",
-    "0311": "20",
-    "0314": "20",
-    "0301": "21",
-    "0316": "21",
-    "0310": "21",
-    "0312": "21",
-    "0315": "21",
-    "0307": "22",
-    "0303": "22",
-    "0304": "22",
-    "0313": "22",
-    "0305": "22",
-    "0306": "22",
-    "0302": "23",
-    "0207": "16",
-    "0208": "16",
-    "0211": "16",
-    "0213": "16",
-    "0201": "17",
-    "0204": "18",
-    "0205": "18",
-    "0202": "19",
-    "0203": "19",
-    "0206": "19",
-    "0209": "19",
-    "0210": "19",
-    "0212": "19"
-  },
-  "zonaDistritos": {
-    "11": [
-      "01",
-      "02",
-      "03",
-      "04",
-      "05",
-      "06",
-      "07",
-      "08",
-      "09"
-    ],
-    "13": [
-      "03",
-      "05",
-      "09",
-      "12"
-    ],
-    "14": [
-      "01",
-      "02",
-      "04",
-      "11"
-    ],
-    "15": [
-      "06",
-      "07",
-      "08",
-      "10"
-    ],
-    "16": [
-      "07",
-      "08",
-      "11",
-      "13"
-    ],
-    "17": [
-      "01"
-    ],
-    "18": [
-      "04",
-      "05"
-    ],
-    "19": [
-      "02",
-      "03",
-      "06",
-      "09",
-      "10",
-      "12"
-    ],
-    "20": [
-      "08",
-      "09",
-      "11",
-      "14"
-    ],
-    "21": [
-      "01",
-      "10",
-      "12",
-      "15",
-      "16"
-    ],
-    "22": [
-      "03",
-      "04",
-      "05",
-      "06",
-      "07",
-      "13"
-    ],
-    "23": [
-      "02"
-    ],
-    "24": [
-      "05",
-      "12",
-      "25"
-    ],
-    "25": [
-      "02",
-      "08",
-      "10",
-      "13",
-      "16",
-      "29",
-      "30",
-      "31"
-    ],
-    "26": [
-      "01",
-      "03",
-      "04",
-      "06",
-      "07",
-      "09",
-      "11",
-      "14",
-      "15",
-      "17",
-      "18",
-      "19",
-      "20",
-      "21",
-      "22",
-      "23",
-      "24",
-      "26",
-      "27",
-      "28"
-    ],
-    "27": [
-      "13",
-      "16",
-      "17"
-    ],
-    "28": [
-      "04"
-    ],
-    "29": [
-      "01",
-      "02",
-      "06",
-      "08",
-      "12",
-      "15",
-      "23"
-    ],
-    "30": [
-      "05",
-      "07",
-      "09",
-      "10",
-      "11",
-      "18",
-      "19",
-      "20",
-      "21",
-      "22"
-    ],
-    "31": [
-      "02",
-      "06",
-      "07"
-    ],
-    "32": [
-      "01",
-      "04",
-      "05",
-      "09",
-      "19"
-    ],
-    "33": [
-      "08",
-      "11",
-      "12",
-      "13",
-      "14",
-      "15",
-      "16",
-      "17",
-      "18"
-    ],
-    "34": [
-      "03",
-      "10"
-    ],
-    "35": [
-      "09",
-      "10"
-    ],
-    "37": [
-      "01",
-      "02",
-      "03",
-      "04",
-      "05",
-      "06",
-      "08",
-      "11",
-      "12",
-      "13",
-      "14"
-    ],
-    "38": [
-      "02",
-      "06",
-      "10",
-      "12",
-      "15",
-      "17",
-      "22"
-    ],
-    "39": [
-      "03",
-      "04",
-      "05",
-      "07",
-      "08",
-      "09",
-      "13",
-      "14",
-      "16",
-      "18",
-      "20",
-      "21"
-    ],
-    "40": [
-      "01",
-      "11",
-      "19"
-    ],
-    "41": [
-      "02",
-      "06",
-      "07",
-      "08",
-      "09",
-      "10"
-    ],
-    "42": [
-      "01",
-      "03",
-      "04",
-      "05",
-      "12",
-      "13"
-    ],
-    "43": [
-      "02",
-      "03",
-      "06",
-      "08",
-      "10",
-      "12",
-      "13",
-      "17",
-      "22"
-    ],
-    "44": [
-      "01",
-      "04",
-      "05",
-      "07",
-      "11",
-      "14",
-      "18",
-      "20",
-      "21",
-      "23"
-    ],
-    "45": [
-      "09",
-      "15",
-      "16",
-      "19"
-    ],
-    "46": [
-      "02",
-      "03",
-      "06",
-      "12",
-      "14",
-      "15",
-      "17",
-      "19"
-    ],
-    "47": [
-      "01",
-      "05",
-      "07",
-      "10",
-      "13",
-      "20"
-    ],
-    "48": [
-      "04",
-      "08",
-      "09",
-      "11",
-      "16",
-      "18"
-    ],
-    "49": [
-      "02",
-      "03",
-      "05",
-      "08",
-      "11",
-      "12",
-      "15",
-      "17",
-      "19",
-      "20",
-      "24"
-    ],
-    "50": [
-      "01",
-      "04",
-      "06",
-      "07",
-      "09",
-      "10",
-      "13",
-      "14",
-      "16",
-      "18",
-      "21",
-      "22",
-      "23",
-      "25",
-      "26"
-    ],
-    "51": [
-      "02",
-      "03",
-      "04",
-      "07",
-      "09",
-      "12",
-      "13",
-      "14",
-      "16",
-      "17"
-    ],
-    "52": [
-      "01",
-      "05",
-      "06",
-      "08",
-      "11",
-      "15",
-      "18",
-      "19"
-    ]
-  },
   "municipiosByDepartamento": {
     "10": [
       {
@@ -796,6 +202,1144 @@
       {
         "codigo": "11",
         "valor": "CABANAS ESTE"
+      }
+    ]
+  },
+  "distritosByMunicipio": {
+    "01-13": [
+      {
+        "codigo": "03",
+        "valor": "ATIQUIZAYA"
+      },
+      {
+        "codigo": "05",
+        "valor": "EL REFUGIO"
+      },
+      {
+        "codigo": "09",
+        "valor": "SAN LORENZO"
+      },
+      {
+        "codigo": "12",
+        "valor": "TURIN"
+      }
+    ],
+    "01-14": [
+      {
+        "codigo": "01",
+        "valor": "AHUACHAPAN"
+      },
+      {
+        "codigo": "02",
+        "valor": "APANECA"
+      },
+      {
+        "codigo": "04",
+        "valor": "CONCEPCION DE ATACO"
+      },
+      {
+        "codigo": "11",
+        "valor": "TACUBA"
+      }
+    ],
+    "01-15": [
+      {
+        "codigo": "06",
+        "valor": "GUAYMANGO"
+      },
+      {
+        "codigo": "07",
+        "valor": "JUJUTLA"
+      },
+      {
+        "codigo": "08",
+        "valor": "SAN FRANCISCO MENENDEZ"
+      },
+      {
+        "codigo": "10",
+        "valor": "SAN PEDRO PUXTLA"
+      }
+    ],
+    "02-14": [
+      {
+        "codigo": "06",
+        "valor": "MASAHUAT"
+      },
+      {
+        "codigo": "07",
+        "valor": "METAPAN"
+      },
+      {
+        "codigo": "11",
+        "valor": "SANTA ROSA GUACHIPILIN"
+      },
+      {
+        "codigo": "13",
+        "valor": "TEXISTEPEQUE"
+      }
+    ],
+    "02-15": [
+      {
+        "codigo": "10",
+        "valor": "SANTA ANA"
+      }
+    ],
+    "02-16": [
+      {
+        "codigo": "02",
+        "valor": "COATEPEQUE"
+      },
+      {
+        "codigo": "04",
+        "valor": "EL CONGO"
+      }
+    ],
+    "02-17": [
+      {
+        "codigo": "01",
+        "valor": "CANDELARIA DE LA FRONTERA"
+      },
+      {
+        "codigo": "03",
+        "valor": "CHALCHUAPA"
+      },
+      {
+        "codigo": "05",
+        "valor": "EL PORVENIR"
+      },
+      {
+        "codigo": "08",
+        "valor": "SAN ANTONIO PAJONAL"
+      },
+      {
+        "codigo": "09",
+        "valor": "SAN SEBASTIAN SALITRILLO"
+      },
+      {
+        "codigo": "12",
+        "valor": "SANTIAGO DE LA FRONTERA"
+      }
+    ],
+    "03-17": [
+      {
+        "codigo": "07",
+        "valor": "JUAYUA"
+      },
+      {
+        "codigo": "08",
+        "valor": "NAHUIZALCO"
+      },
+      {
+        "codigo": "10",
+        "valor": "SALCOATITAN"
+      },
+      {
+        "codigo": "13",
+        "valor": "SANTA CATARINA MASAHUAT"
+      }
+    ],
+    "03-18": [
+      {
+        "codigo": "09",
+        "valor": "NAHULINGO"
+      },
+      {
+        "codigo": "11",
+        "valor": "SAN ANTONIO DEL MONTE"
+      },
+      {
+        "codigo": "14",
+        "valor": "SANTO DOMINGO DE GUZMAN"
+      },
+      {
+        "codigo": "15",
+        "valor": "SONSONATE"
+      },
+      {
+        "codigo": "16",
+        "valor": "SONZACATE"
+      }
+    ],
+    "03-19": [
+      {
+        "codigo": "02",
+        "valor": "ARMENIA"
+      },
+      {
+        "codigo": "03",
+        "valor": "CALUCO"
+      },
+      {
+        "codigo": "04",
+        "valor": "CUISNAHUAT"
+      },
+      {
+        "codigo": "06",
+        "valor": "IZALCO"
+      },
+      {
+        "codigo": "12",
+        "valor": "SAN JULIAN"
+      },
+      {
+        "codigo": "05",
+        "valor": "SANTA ISABEL ISHUATAN"
+      }
+    ],
+    "03-20": [
+      {
+        "codigo": "01",
+        "valor": "ACAJUTLA"
+      }
+    ],
+    "04-34": [
+      {
+        "codigo": "04",
+        "valor": "CITALA"
+      },
+      {
+        "codigo": "12",
+        "valor": "LA PALMA"
+      },
+      {
+        "codigo": "25",
+        "valor": "SAN IGNACIO"
+      }
+    ],
+    "04-35": [
+      {
+        "codigo": "01",
+        "valor": "AGUA CALIENTE"
+      },
+      {
+        "codigo": "08",
+        "valor": "DULCE NOMBRE DE MARIA"
+      },
+      {
+        "codigo": "10",
+        "valor": "EL PARAISO"
+      },
+      {
+        "codigo": "13",
+        "valor": "LA REINA"
+      },
+      {
+        "codigo": "16",
+        "valor": "NUEVA CONCEPCION"
+      },
+      {
+        "codigo": "22",
+        "valor": "SAN FERNANDO"
+      },
+      {
+        "codigo": "24",
+        "valor": "SAN FRANCISCO MORAZAN"
+      },
+      {
+        "codigo": "31",
+        "valor": "SAN RAFAEL"
+      },
+      {
+        "codigo": "32",
+        "valor": "SANTA RITA"
+      },
+      {
+        "codigo": "33",
+        "valor": "TEJUTLA"
+      }
+    ],
+    "04-36": [
+      {
+        "codigo": "02",
+        "valor": "ARCATAO"
+      },
+      {
+        "codigo": "03",
+        "valor": "AZACUALPA"
+      },
+      {
+        "codigo": "07",
+        "valor": "CHALATENANGO"
+      },
+      {
+        "codigo": "05",
+        "valor": "COMALAPA"
+      },
+      {
+        "codigo": "06",
+        "valor": "CONCEPCION QUEZALTEPEQUE"
+      },
+      {
+        "codigo": "09",
+        "valor": "EL CARRIZAL"
+      },
+      {
+        "codigo": "11",
+        "valor": "LA LAGUNA"
+      },
+      {
+        "codigo": "14",
+        "valor": "LAS VUELTAS"
+      },
+      {
+        "codigo": "15",
+        "valor": "NOMBRE DE JESUS"
+      },
+      {
+        "codigo": "17",
+        "valor": "NUEVA TRINIDAD"
+      },
+      {
+        "codigo": "18",
+        "valor": "OJOS DE AGUA"
+      },
+      {
+        "codigo": "19",
+        "valor": "POTONICO"
+      },
+      {
+        "codigo": "20",
+        "valor": "SAN ANTONIO DE LA CRUZ"
+      },
+      {
+        "codigo": "21",
+        "valor": "SAN ANTONIO LOS RANCHOS"
+      },
+      {
+        "codigo": "23",
+        "valor": "SAN FRANCISCO LEMPA"
+      },
+      {
+        "codigo": "26",
+        "valor": "SAN ISIDRO LABRADOR"
+      },
+      {
+        "codigo": "27",
+        "valor": "SAN JOSE CANCASQUE"
+      },
+      {
+        "codigo": "28",
+        "valor": "SAN JOSE LAS FLORES"
+      },
+      {
+        "codigo": "29",
+        "valor": "SAN LUIS DEL CARMEN"
+      },
+      {
+        "codigo": "30",
+        "valor": "SAN MIGUEL DE MERCEDES"
+      }
+    ],
+    "05-23": [
+      {
+        "codigo": "12",
+        "valor": "QUEZALTEPEQUE"
+      },
+      {
+        "codigo": "16",
+        "valor": "SAN MATIAS"
+      },
+      {
+        "codigo": "17",
+        "valor": "SAN PABLO TACACHICO"
+      }
+    ],
+    "05-24": [
+      {
+        "codigo": "02",
+        "valor": "CIUDAD ARCE"
+      },
+      {
+        "codigo": "15",
+        "valor": "SAN JUAN OPICO"
+      }
+    ],
+    "05-25": [
+      {
+        "codigo": "03",
+        "valor": "COLON"
+      },
+      {
+        "codigo": "07",
+        "valor": "JAYAQUE"
+      },
+      {
+        "codigo": "13",
+        "valor": "SACACOYO"
+      },
+      {
+        "codigo": "19",
+        "valor": "TALNIQUE"
+      },
+      {
+        "codigo": "21",
+        "valor": "TEPECOYO"
+      }
+    ],
+    "05-26": [
+      {
+        "codigo": "01",
+        "valor": "ANTIGUO CUSCATLAN"
+      },
+      {
+        "codigo": "06",
+        "valor": "HUIZUCAR"
+      },
+      {
+        "codigo": "10",
+        "valor": "NUEVO CUSCATLAN"
+      },
+      {
+        "codigo": "14",
+        "valor": "SAN JOSE VILLANUEVA"
+      },
+      {
+        "codigo": "22",
+        "valor": "ZARAGOZA"
+      }
+    ],
+    "05-27": [
+      {
+        "codigo": "05",
+        "valor": "CHILTIUPAN"
+      },
+      {
+        "codigo": "08",
+        "valor": "JICALAPA"
+      },
+      {
+        "codigo": "09",
+        "valor": "LA LIBERTAD"
+      },
+      {
+        "codigo": "18",
+        "valor": "TAMANIQUE"
+      },
+      {
+        "codigo": "20",
+        "valor": "TEOTEPEQUE"
+      }
+    ],
+    "05-28": [
+      {
+        "codigo": "04",
+        "valor": "COMASAGUA"
+      },
+      {
+        "codigo": "11",
+        "valor": "SANTA TECLA"
+      }
+    ],
+    "06-20": [
+      {
+        "codigo": "01",
+        "valor": "AGUILARES"
+      },
+      {
+        "codigo": "05",
+        "valor": "EL PAISNAL"
+      },
+      {
+        "codigo": "06",
+        "valor": "GUAZAPA"
+      }
+    ],
+    "06-21": [
+      {
+        "codigo": "02",
+        "valor": "APOPA"
+      },
+      {
+        "codigo": "09",
+        "valor": "NEJAPA"
+      }
+    ],
+    "06-22": [
+      {
+        "codigo": "07",
+        "valor": "ILOPANGO"
+      },
+      {
+        "codigo": "13",
+        "valor": "SAN MARTIN"
+      },
+      {
+        "codigo": "17",
+        "valor": "SOYAPANGO"
+      },
+      {
+        "codigo": "18",
+        "valor": "TONACATEPEQUE"
+      }
+    ],
+    "06-23": [
+      {
+        "codigo": "03",
+        "valor": "AYUTUXTEPEQUE"
+      },
+      {
+        "codigo": "19",
+        "valor": "CIUDAD DELGADO"
+      },
+      {
+        "codigo": "04",
+        "valor": "CUSCATANCINGO"
+      },
+      {
+        "codigo": "08",
+        "valor": "MEJICANOS"
+      },
+      {
+        "codigo": "14",
+        "valor": "SAN SALVADOR"
+      }
+    ],
+    "06-24": [
+      {
+        "codigo": "10",
+        "valor": "PANCHIMALCO"
+      },
+      {
+        "codigo": "11",
+        "valor": "ROSARIO DE MORA"
+      },
+      {
+        "codigo": "12",
+        "valor": "SAN MARCOS"
+      },
+      {
+        "codigo": "15",
+        "valor": "SANTIAGO TEXACUANGOS"
+      },
+      {
+        "codigo": "16",
+        "valor": "SANTO TOMAS"
+      }
+    ],
+    "07-17": [
+      {
+        "codigo": "06",
+        "valor": "ORATORIO DE CONCEPCION"
+      },
+      {
+        "codigo": "07",
+        "valor": "SAN BARTOLOME PERULAPIA"
+      },
+      {
+        "codigo": "09",
+        "valor": "SAN JOSE GUAYABAL"
+      },
+      {
+        "codigo": "10",
+        "valor": "SAN PEDRO PERULAPAN"
+      },
+      {
+        "codigo": "15",
+        "valor": "SUCHITOTO"
+      }
+    ],
+    "07-18": [
+      {
+        "codigo": "01",
+        "valor": "CANDELARIA"
+      },
+      {
+        "codigo": "02",
+        "valor": "COJUTEPEQUE"
+      },
+      {
+        "codigo": "03",
+        "valor": "EL CARMEN"
+      },
+      {
+        "codigo": "04",
+        "valor": "EL ROSARIO"
+      },
+      {
+        "codigo": "05",
+        "valor": "MONTE SAN JUAN"
+      },
+      {
+        "codigo": "08",
+        "valor": "SAN CRISTOBAL"
+      },
+      {
+        "codigo": "11",
+        "valor": "SAN RAFAEL CEDROS"
+      },
+      {
+        "codigo": "12",
+        "valor": "SAN RAMON"
+      },
+      {
+        "codigo": "13",
+        "valor": "SANTA CRUZ ANALQUITO"
+      },
+      {
+        "codigo": "14",
+        "valor": "SANTA CRUZ MICHAPA"
+      },
+      {
+        "codigo": "16",
+        "valor": "TENANCINGO"
+      }
+    ],
+    "08-23": [
+      {
+        "codigo": "01",
+        "valor": "CUYULTITAN"
+      },
+      {
+        "codigo": "05",
+        "valor": "OLOCUILTA"
+      },
+      {
+        "codigo": "09",
+        "valor": "SAN FRANCISCO CHINAMECA"
+      },
+      {
+        "codigo": "11",
+        "valor": "SAN JUAN TALPA"
+      },
+      {
+        "codigo": "13",
+        "valor": "SAN LUIS TALPA"
+      },
+      {
+        "codigo": "15",
+        "valor": "SAN PEDRO MASAHUAT"
+      },
+      {
+        "codigo": "20",
+        "valor": "TAPALHUACA"
+      }
+    ],
+    "08-24": [
+      {
+        "codigo": "02",
+        "valor": "EL ROSARIO"
+      },
+      {
+        "codigo": "03",
+        "valor": "JERUSALEN"
+      },
+      {
+        "codigo": "04",
+        "valor": "MERCEDES LA CEIBA"
+      },
+      {
+        "codigo": "06",
+        "valor": "PARAISO DE OSORIO"
+      },
+      {
+        "codigo": "07",
+        "valor": "SAN ANTONIO MASAHUAT"
+      },
+      {
+        "codigo": "08",
+        "valor": "SAN EMIGDIO"
+      },
+      {
+        "codigo": "12",
+        "valor": "SAN JUAN TEPEZONTES"
+      },
+      {
+        "codigo": "22",
+        "valor": "SAN LUIS LA HERRADURA"
+      },
+      {
+        "codigo": "14",
+        "valor": "SAN MIGUEL TEPEZONTES"
+      },
+      {
+        "codigo": "16",
+        "valor": "SAN PEDRO NONUALCO"
+      },
+      {
+        "codigo": "18",
+        "valor": "SANTA MARIA OSTUMA"
+      },
+      {
+        "codigo": "19",
+        "valor": "SANTIAGO NONUALCO"
+      }
+    ],
+    "08-25": [
+      {
+        "codigo": "10",
+        "valor": "SAN JUAN NONUALCO"
+      },
+      {
+        "codigo": "17",
+        "valor": "SAN RAFAEL OBRAJUELO"
+      },
+      {
+        "codigo": "21",
+        "valor": "ZACATECOLUCA"
+      }
+    ],
+    "09-10": [
+      {
+        "codigo": "01",
+        "valor": "CINQUERA"
+      },
+      {
+        "codigo": "03",
+        "valor": "ILOBASCO"
+      },
+      {
+        "codigo": "04",
+        "valor": "JUTIAPA"
+      },
+      {
+        "codigo": "07",
+        "valor": "TEJUTEPEQUE"
+      }
+    ],
+    "09-11": [
+      {
+        "codigo": "09",
+        "valor": "DOLORES"
+      },
+      {
+        "codigo": "02",
+        "valor": "GUACOTECTI"
+      },
+      {
+        "codigo": "05",
+        "valor": "SAN ISIDRO"
+      },
+      {
+        "codigo": "06",
+        "valor": "SENSUNTEPEQUE"
+      },
+      {
+        "codigo": "08",
+        "valor": "VICTORIA"
+      }
+    ],
+    "10-14": [
+      {
+        "codigo": "01",
+        "valor": "APASTEPEQUE"
+      },
+      {
+        "codigo": "06",
+        "valor": "SAN ESTEBAN CATARINA"
+      },
+      {
+        "codigo": "07",
+        "valor": "SAN ILDEFONSO"
+      },
+      {
+        "codigo": "08",
+        "valor": "SAN LORENZO"
+      },
+      {
+        "codigo": "09",
+        "valor": "SAN SEBASTIAN"
+      },
+      {
+        "codigo": "04",
+        "valor": "SANTA CLARA"
+      },
+      {
+        "codigo": "05",
+        "valor": "SANTO DOMINGO"
+      }
+    ],
+    "10-15": [
+      {
+        "codigo": "02",
+        "valor": "GUADALUPE"
+      },
+      {
+        "codigo": "03",
+        "valor": "SAN CAYETANO ISTEPEQUE"
+      },
+      {
+        "codigo": "10",
+        "valor": "SAN VICENTE"
+      },
+      {
+        "codigo": "11",
+        "valor": "TECOLUCA"
+      },
+      {
+        "codigo": "12",
+        "valor": "TEPETITAN"
+      },
+      {
+        "codigo": "13",
+        "valor": "VERAPAZ"
+      }
+    ],
+    "11-24": [
+      {
+        "codigo": "01",
+        "valor": "ALEGRIA"
+      },
+      {
+        "codigo": "02",
+        "valor": "BERLIN"
+      },
+      {
+        "codigo": "05",
+        "valor": "EL TRIUNFO"
+      },
+      {
+        "codigo": "07",
+        "valor": "ESTANZUELAS"
+      },
+      {
+        "codigo": "09",
+        "valor": "JUCUAPA"
+      },
+      {
+        "codigo": "11",
+        "valor": "MERCEDES UMANA"
+      },
+      {
+        "codigo": "12",
+        "valor": "NUEVA GRANADA"
+      },
+      {
+        "codigo": "16",
+        "valor": "SAN BUENAVENTURA"
+      },
+      {
+        "codigo": "21",
+        "valor": "SANTIAGO DE MARIA"
+      }
+    ],
+    "11-25": [
+      {
+        "codigo": "03",
+        "valor": "CALIFORNIA"
+      },
+      {
+        "codigo": "04",
+        "valor": "CONCEPCION BATRES"
+      },
+      {
+        "codigo": "06",
+        "valor": "EREGUAYQUIN"
+      },
+      {
+        "codigo": "10",
+        "valor": "JUCUARAN"
+      },
+      {
+        "codigo": "13",
+        "valor": "OZATLAN"
+      },
+      {
+        "codigo": "17",
+        "valor": "SAN DIONISIO"
+      },
+      {
+        "codigo": "18",
+        "valor": "SANTA ELENA"
+      },
+      {
+        "codigo": "20",
+        "valor": "SANTA MARIA"
+      },
+      {
+        "codigo": "22",
+        "valor": "TECAPAN"
+      },
+      {
+        "codigo": "23",
+        "valor": "USULUTAN"
+      }
+    ],
+    "11-26": [
+      {
+        "codigo": "08",
+        "valor": "JIQUILISCO"
+      },
+      {
+        "codigo": "14",
+        "valor": "PUERTO EL TRIUNFO"
+      },
+      {
+        "codigo": "15",
+        "valor": "SAN AGUSTIN"
+      },
+      {
+        "codigo": "19",
+        "valor": "SAN FRANCISCO JAVIER"
+      }
+    ],
+    "12-21": [
+      {
+        "codigo": "01",
+        "valor": "CAROLINA"
+      },
+      {
+        "codigo": "04",
+        "valor": "CHAPELTIQUE"
+      },
+      {
+        "codigo": "02",
+        "valor": "CIUDAD BARRIOS"
+      },
+      {
+        "codigo": "11",
+        "valor": "NUEVO EDEN DE SAN JUAN"
+      },
+      {
+        "codigo": "13",
+        "valor": "SAN ANTONIO DEL MOSCO"
+      },
+      {
+        "codigo": "14",
+        "valor": "SAN GERARDO"
+      },
+      {
+        "codigo": "16",
+        "valor": "SAN LUIS DE LA REINA"
+      },
+      {
+        "codigo": "19",
+        "valor": "SESORI"
+      }
+    ],
+    "12-22": [
+      {
+        "codigo": "06",
+        "valor": "CHIRILAGUA"
+      },
+      {
+        "codigo": "03",
+        "valor": "COMACARAN"
+      },
+      {
+        "codigo": "09",
+        "valor": "MONCAGUA"
+      },
+      {
+        "codigo": "12",
+        "valor": "QUELEPA"
+      },
+      {
+        "codigo": "17",
+        "valor": "SAN MIGUEL"
+      },
+      {
+        "codigo": "20",
+        "valor": "ULUAZAPA"
+      }
+    ],
+    "12-23": [
+      {
+        "codigo": "05",
+        "valor": "CHINAMECA"
+      },
+      {
+        "codigo": "07",
+        "valor": "EL TRANSITO"
+      },
+      {
+        "codigo": "08",
+        "valor": "LOLOTIQUE"
+      },
+      {
+        "codigo": "10",
+        "valor": "NUEVA GUADALUPE"
+      },
+      {
+        "codigo": "15",
+        "valor": "SAN JORGE"
+      },
+      {
+        "codigo": "18",
+        "valor": "SAN RAFAEL ORIENTE"
+      }
+    ],
+    "13-27": [
+      {
+        "codigo": "01",
+        "valor": "ARAMBALA"
+      },
+      {
+        "codigo": "02",
+        "valor": "CACAOPERA"
+      },
+      {
+        "codigo": "03",
+        "valor": "CORINTO"
+      },
+      {
+        "codigo": "07",
+        "valor": "EL ROSARIO"
+      },
+      {
+        "codigo": "10",
+        "valor": "JOATECA"
+      },
+      {
+        "codigo": "11",
+        "valor": "JOCOAITIQUE"
+      },
+      {
+        "codigo": "14",
+        "valor": "MEANGUERA"
+      },
+      {
+        "codigo": "16",
+        "valor": "PERQUIN"
+      },
+      {
+        "codigo": "18",
+        "valor": "SAN FERNANDO"
+      },
+      {
+        "codigo": "20",
+        "valor": "SAN ISIDRO"
+      },
+      {
+        "codigo": "24",
+        "valor": "TOROLA"
+      }
+    ],
+    "13-28": [
+      {
+        "codigo": "04",
+        "valor": "CHILANGA"
+      },
+      {
+        "codigo": "05",
+        "valor": "DELICIAS DE CONCEPCION"
+      },
+      {
+        "codigo": "06",
+        "valor": "EL DIVISADERO"
+      },
+      {
+        "codigo": "08",
+        "valor": "GUALOCOCTI"
+      },
+      {
+        "codigo": "09",
+        "valor": "GUATAJIAGUA"
+      },
+      {
+        "codigo": "12",
+        "valor": "JOCORO"
+      },
+      {
+        "codigo": "13",
+        "valor": "LOLOTIQUILLO"
+      },
+      {
+        "codigo": "15",
+        "valor": "OSICALA"
+      },
+      {
+        "codigo": "17",
+        "valor": "SAN CARLOS"
+      },
+      {
+        "codigo": "19",
+        "valor": "SAN FRANCISCO GOTERA"
+      },
+      {
+        "codigo": "21",
+        "valor": "SAN SIMON"
+      },
+      {
+        "codigo": "22",
+        "valor": "SENSEMBRA"
+      },
+      {
+        "codigo": "23",
+        "valor": "SOCIEDAD"
+      },
+      {
+        "codigo": "25",
+        "valor": "YAMABAL"
+      },
+      {
+        "codigo": "26",
+        "valor": "YOLOAIQUIN"
+      }
+    ],
+    "14-19": [
+      {
+        "codigo": "01",
+        "valor": "ANAMOROS"
+      },
+      {
+        "codigo": "02",
+        "valor": "BOLIVAR"
+      },
+      {
+        "codigo": "03",
+        "valor": "CONCEPCION DE ORIENTE"
+      },
+      {
+        "codigo": "06",
+        "valor": "EL SAUCE"
+      },
+      {
+        "codigo": "09",
+        "valor": "LISLIQUE"
+      },
+      {
+        "codigo": "11",
+        "valor": "NUEVA ESPARTA"
+      },
+      {
+        "codigo": "12",
+        "valor": "PASAQUINA"
+      },
+      {
+        "codigo": "13",
+        "valor": "POLOROS"
+      },
+      {
+        "codigo": "15",
+        "valor": "SAN JOSE LA FUENTE"
+      },
+      {
+        "codigo": "16",
+        "valor": "SANTA ROSA DE LIMA"
+      }
+    ],
+    "14-20": [
+      {
+        "codigo": "04",
+        "valor": "CONCHAGUA"
+      },
+      {
+        "codigo": "05",
+        "valor": "EL CARMEN"
+      },
+      {
+        "codigo": "07",
+        "valor": "INTIPUCA"
+      },
+      {
+        "codigo": "08",
+        "valor": "LA UNION"
+      },
+      {
+        "codigo": "10",
+        "valor": "MEANGUERA DEL GOLFO"
+      },
+      {
+        "codigo": "14",
+        "valor": "SAN ALEJO"
+      },
+      {
+        "codigo": "17",
+        "valor": "YAYANTIQUE"
+      },
+      {
+        "codigo": "18",
+        "valor": "YUCUAIQUIN"
       }
     ]
   }

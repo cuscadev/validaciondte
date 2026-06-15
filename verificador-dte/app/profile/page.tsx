@@ -27,17 +27,8 @@ import {
 import { auth, storage } from '@/lib/firebase';
 import { AppUser, getUser, updateUser } from '@/lib/firestoreUser';
 import { QUERY_CACHE_MS } from '@/components/QueryProvider';
-import {
-	departamentoOptions,
-	distritoOptions,
-	municipioOptions,
-	municipioRequiresDistrito,
-	municipioSelectKey as buildMunicipioSelectKey,
-	parseDistritoSelectKey,
-	parseMunicipioSelectKey,
-	syncLocationSelectKeys,
-} from '@/lib/facturacion/location-catalog-options';
-import { DteDireccionPreview } from '@/components/facturacion/DteDireccionPreview';
+import { municipioRequiresDistrito } from '@/lib/facturacion/location-catalog-options';
+import { LocationSelect } from '@/components/facturacion/LocationSelect';
 import {
 	normalizeLocationCode,
 	sanitizeLocationCodeForForm,
@@ -246,8 +237,6 @@ export default function ProfilePage() {
 	const [hasEmitter, setHasEmitter] = useState(false);
 	const [catalogs, setCatalogs] = useState<ProfileCatalogs>(emptyCatalogs);
 	const [catalogsLoading, setCatalogsLoading] = useState(false);
-	const [municipioSelectKey, setMunicipioSelectKey] = useState('');
-	const [distritoSelectKey, setDistritoSelectKey] = useState('');
 
 	const [pwData, setPwData] = useState({
 		current: '',
@@ -277,9 +266,6 @@ export default function ProfilePage() {
 	);
 	const catalogOptionGroups = useMemo(
 		() => ({
-			departamentos: departamentoOptions(catalogs.departamentos),
-			municipios: municipioOptions(catalogs.municipios, emitterForm.departamentoCodigo),
-			distritos: distritoOptions(catalogs.distritos),
 			tiposEstablecimiento: catalogOptions(catalogs.tiposEstablecimiento),
 			actividades: catalogOptions(catalogs.actividades),
 			regimenesTributarios: catalogOptions(catalogs.regimenesTributarios),
@@ -293,7 +279,6 @@ export default function ProfilePage() {
 		}),
 		[
 			catalogs.actividades,
-			catalogs.departamentos,
 			catalogs.regimenesTributarios,
 			catalogs.tiposAfiliacion,
 			catalogs.tiposEstablecimiento,
@@ -303,9 +288,6 @@ export default function ProfilePage() {
 			catalogs.tiposVenta,
 			catalogs.monedas,
 			catalogs.tiposRetencion,
-			catalogs.municipios,
-			catalogs.distritos,
-			emitterForm.departamentoCodigo,
 		]
 	);
 
@@ -373,14 +355,6 @@ export default function ProfilePage() {
 					if (emitterRes.ok && emitterData.emitter) {
 						const nextForm = emitterToForm(emitterData.emitter);
 						setEmitterForm(nextForm);
-						const keys = syncLocationSelectKeys(
-							loadedCatalogs,
-							nextForm.departamentoCodigo,
-							nextForm.municipioCodigo,
-							nextForm.distritoCodigo
-						);
-						setMunicipioSelectKey(keys.municipioSelectKey);
-						setDistritoSelectKey(keys.distritoSelectKey);
 						setHasEmitter(true);
 					} else {
 						setHasEmitter(false);
@@ -439,30 +413,18 @@ export default function ProfilePage() {
 		setEmitterField(name as keyof EmitterForm, value);
 	};
 
-	const setMunicipioFromSelectKey = (key: string) => {
-		const { municipioCodigo } = parseMunicipioSelectKey(key);
-		setMunicipioSelectKey(key);
-		setEmitterForm((prev) => ({
-			...prev,
-			municipioCodigo,
-		}));
-	};
-
-	const setDistritoFromSelectKey = (key: string) => {
-		const { distritoCodigo } = parseDistritoSelectKey(key);
-		setDistritoSelectKey(key);
-		setEmitterForm((prev) => ({
-			...prev,
-			distritoCodigo,
-		}));
+	const setEmitterLocation = (next: {
+		departamentoCodigo: string;
+		municipioCodigo: string;
+		distritoCodigo: string;
+	}) => {
+		setEmitterForm((prev) => ({ ...prev, ...next }));
 	};
 
 	const setEmitterField = (name: keyof EmitterForm, value: string) => {
 		setEmitterForm((prev) => {
 			if (name === 'departamentoCodigo') {
 				if (value !== prev.departamentoCodigo) {
-					setMunicipioSelectKey('');
-					setDistritoSelectKey('');
 					return {
 						...prev,
 						departamentoCodigo: value,
@@ -554,14 +516,6 @@ export default function ProfilePage() {
 			if (data.emitter) {
 				const nextForm = emitterToForm(data.emitter);
 				setEmitterForm(nextForm);
-				const keys = syncLocationSelectKeys(
-					catalogs,
-					nextForm.departamentoCodigo,
-					nextForm.municipioCodigo,
-					nextForm.distritoCodigo
-				);
-				setMunicipioSelectKey(keys.municipioSelectKey);
-				setDistritoSelectKey(keys.distritoSelectKey);
 				setHasEmitter(true);
 			}
 
@@ -1297,64 +1251,19 @@ export default function ProfilePage() {
 											</div>
 
 											<div className="grid gap-4 md:grid-cols-3">
-												<div className="space-y-2">
-													<Label htmlFor="emitter-departamento" className="text-foreground">
-														Departamento
-													</Label>
-													<SearchableSelect
-														id="emitter-departamento"
-														name="departamentoCodigo"
-														value={emitterForm.departamentoCodigo}
-														options={catalogOptionGroups.departamentos}
-														onValueChange={(nextValue) =>
-															setEmitterField('departamentoCodigo', nextValue)
-														}
-														placeholder="Seleccionar departamento"
-														searchPlaceholder="Buscar departamento"
-														clearable
-													/>
-												</div>
-
-												<div className="space-y-2">
-													<Label htmlFor="emitter-municipio" className="text-foreground">
-														Municipio
-													</Label>
-													<SearchableSelect
-														id="emitter-municipio"
-														name="municipioCodigo"
-														value={municipioSelectKey}
-														options={catalogOptionGroups.municipios}
-														onValueChange={setMunicipioFromSelectKey}
-														placeholder="Seleccionar municipio"
-														searchPlaceholder="Buscar municipio"
-														clearable
-													/>
-												</div>
-
-												<div className="space-y-2">
-													<Label htmlFor="emitter-distrito" className="text-foreground">
-														Distrito
-													</Label>
-													<SearchableSelect
-														id="emitter-distrito"
-														name="distritoCodigo"
-														value={distritoSelectKey}
-														options={catalogOptionGroups.distritos}
-														onValueChange={setDistritoFromSelectKey}
-														placeholder="Seleccionar distrito"
-														searchPlaceholder="Buscar distrito"
-														clearable
-													/>
-												</div>
-
-												<div className="md:col-span-3">
-													<DteDireccionPreview
-														departamentoCodigo={emitterForm.departamentoCodigo}
-														municipioCodigo={emitterForm.municipioCodigo}
-														distritoCodigo={emitterForm.distritoCodigo}
-														complemento={emitterForm.complementoDireccion}
-													/>
-												</div>
+											<div className="space-y-4 md:col-span-3">
+												<LocationSelect
+													idPrefix="emitter"
+													catalogs={catalogs}
+													value={{
+														departamentoCodigo: emitterForm.departamentoCodigo,
+														municipioCodigo: emitterForm.municipioCodigo,
+														distritoCodigo: emitterForm.distritoCodigo,
+													}}
+													onChange={setEmitterLocation}
+													complemento={emitterForm.complementoDireccion}
+												/>
+											</div>
 
 												<div className="space-y-2">
 													<Label htmlFor="emitter-cod-estable" className="text-foreground">

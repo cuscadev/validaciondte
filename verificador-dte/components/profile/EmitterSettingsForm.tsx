@@ -6,23 +6,14 @@ import { Loader2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { auth } from '@/lib/firebase';
-import {
-  departamentoOptions,
-  distritoOptions,
-  municipioOptions,
-  municipioRequiresDistrito,
-  municipioSelectKey as buildMunicipioSelectKey,
-  parseDistritoSelectKey,
-  parseMunicipioSelectKey,
-  syncLocationSelectKeys,
-} from '@/lib/facturacion/location-catalog-options';
+import { municipioRequiresDistrito } from '@/lib/facturacion/location-catalog-options';
 import {
   normalizeLocationCode,
   sanitizeLocationCodeForForm,
   sanitizeLocationCodeForStorage,
 } from '@/lib/facturacion/resolve-location';
 import { Button } from '@/components/ui/button';
-import { DteDireccionPreview } from '@/components/facturacion/DteDireccionPreview';
+import { LocationSelect } from '@/components/facturacion/LocationSelect';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -176,8 +167,6 @@ export function EmitterSettingsForm({
     emitterToForm({ ...emptyEmitterForm, ...defaultValues })
   );
   const [catalogs, setCatalogs] = useState<ProfileCatalogs>(emptyCatalogs);
-  const [municipioSelectKey, setMunicipioSelectKey] = useState('');
-  const [distritoSelectKey, setDistritoSelectKey] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -219,17 +208,6 @@ export function EmitterSettingsForm({
 
         if (!cancelled) {
           setForm(nextForm);
-          const loadedCatalogs = catalogsRes.ok && catalogsData.catalogs
-            ? { ...emptyCatalogs, ...catalogsData.catalogs }
-            : emptyCatalogs;
-          const keys = syncLocationSelectKeys(
-            loadedCatalogs,
-            nextForm.departamentoCodigo,
-            nextForm.municipioCodigo,
-            nextForm.distritoCodigo
-          );
-          setMunicipioSelectKey(keys.municipioSelectKey);
-          setDistritoSelectKey(keys.distritoSelectKey);
         }
 
         if (!catalogsRes.ok) {
@@ -257,61 +235,16 @@ export function EmitterSettingsForm({
 
   const options = useMemo(
     () => ({
-      departamentos: departamentoOptions(catalogs.departamentos),
-      municipios: municipioOptions(catalogs.municipios, form.departamentoCodigo),
-      distritos: distritoOptions(catalogs.distritos),
       tiposEstablecimiento: catalogOptions(catalogs.tiposEstablecimiento),
       actividades: catalogOptions(catalogs.actividades),
       regimenesTributarios: catalogOptions(catalogs.regimenesTributarios),
       tiposAfiliacion: catalogOptions(catalogs.tiposAfiliacion),
     }),
-    [catalogs, form.departamentoCodigo]
+    [catalogs]
   );
-
-  function setMunicipioFromSelectKey(key: string) {
-    const { municipioCodigo } = parseMunicipioSelectKey(key);
-    setMunicipioSelectKey(key);
-    setForm((prev) => ({
-      ...prev,
-      municipioCodigo,
-    }));
-  }
-
-  function setDistritoFromSelectKey(key: string) {
-    const { distritoCodigo } = parseDistritoSelectKey(key);
-    setDistritoSelectKey(key);
-    setForm((prev) => ({
-      ...prev,
-      distritoCodigo,
-    }));
-  }
 
   function setField(name: keyof EmitterForm, value: string) {
     setForm((prev) => {
-      if (name === 'departamentoCodigo') {
-        if (value !== prev.departamentoCodigo) {
-          setMunicipioSelectKey('');
-          setDistritoSelectKey('');
-          return {
-            ...prev,
-            departamentoCodigo: value,
-            municipioCodigo: '',
-            distritoCodigo: '',
-          };
-        }
-        return {
-          ...prev,
-          departamentoCodigo: value,
-        };
-      }
-
-      if (name === 'municipioCodigo') {
-        return {
-          ...prev,
-          municipioCodigo: value,
-        };
-      }
-
       if (name === 'codigoActividad') {
         const actividad = catalogs.actividades.find((row) => row.codigo === value);
         return {
@@ -384,14 +317,6 @@ export function EmitterSettingsForm({
 
       const next = emitterToForm(data.emitter || form);
       setForm(next);
-      const keys = syncLocationSelectKeys(
-        catalogs,
-        next.departamentoCodigo,
-        next.municipioCodigo,
-        next.distritoCodigo
-      );
-      setMunicipioSelectKey(keys.municipioSelectKey);
-      setDistritoSelectKey(keys.distritoSelectKey);
       toast.success('Datos de emisor guardados.');
       onSaved?.(next);
     } catch (err) {
@@ -472,50 +397,16 @@ export function EmitterSettingsForm({
             </p>
           )}
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="emitter-departamento">Departamento</Label>
-          <SearchableSelect
-            id="emitter-departamento"
-            name="departamentoCodigo"
-            value={form.departamentoCodigo}
-            options={options.departamentos}
-            onValueChange={(value) => setField('departamentoCodigo', value)}
-            placeholder="Seleccionar departamento"
-            searchPlaceholder="Buscar departamento"
-            clearable
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="emitter-municipio">Municipio</Label>
-          <SearchableSelect
-            id="emitter-municipio"
-            name="municipioCodigo"
-            value={municipioSelectKey}
-            options={options.municipios}
-            onValueChange={setMunicipioFromSelectKey}
-            placeholder="Seleccionar municipio"
-            searchPlaceholder="Buscar municipio"
-            clearable
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="emitter-distrito">Distrito</Label>
-          <SearchableSelect
-            id="emitter-distrito"
-            name="distritoCodigo"
-            value={distritoSelectKey}
-            options={options.distritos}
-            onValueChange={setDistritoFromSelectKey}
-            placeholder="Seleccionar distrito"
-            searchPlaceholder="Buscar distrito"
-            clearable
-          />
-        </div>
-        <div className="space-y-2 sm:col-span-2">
-          <DteDireccionPreview
-            departamentoCodigo={form.departamentoCodigo}
-            municipioCodigo={form.municipioCodigo}
-            distritoCodigo={form.distritoCodigo}
+        <div className="space-y-4 sm:col-span-2">
+          <LocationSelect
+            idPrefix="emitter"
+            catalogs={catalogs}
+            value={{
+              departamentoCodigo: form.departamentoCodigo,
+              municipioCodigo: form.municipioCodigo,
+              distritoCodigo: form.distritoCodigo,
+            }}
+            onChange={(next) => setForm((prev) => ({ ...prev, ...next }))}
             complemento={form.complementoDireccion}
           />
         </div>
